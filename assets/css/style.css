@@ -1,0 +1,45 @@
+#id-form select,
+#id-form input {
+	padding: 10px;
+	font-size: 12px;
+	outline: none;
+	background: #eee;
+	border: none;
+	width: 100%;
+	max-width: 100%;
+}
+
+#id-form li {
+	padding-left: 10px;
+	padding-right: 10px;
+	padding-bottom: 10px;
+}
+
+#id-form label {
+	font-size: 12px;
+	cursor: pointer;
+}
+
+#id-form li:first-child {
+	padding-top: 10px;
+}
+
+#id-form input.btn-custom {
+	color: #fff;
+	background: #440e62;
+	width: 100%;
+	border: none;
+}
+
+#id-form .daftar {
+	background: #d35400;
+	display: block;
+	padding: 10px;
+	font-size: 12px;
+	text-align: center;
+	width: 100%;
+	border: none;
+	outline: none;
+	color: #fff;
+	border-radius: 5px;
+}

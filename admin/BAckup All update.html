@@ -1,0 +1,156 @@
+<html>
+<head>
+<title>Cari</title>
+	<link rel="stylesheet" href="layar.css" media="screen"/>  
+    <link rel="stylesheet" href="print.css" media="print"/>  
+    <link rel="stylesheet" href="tabel.css" />
+       <style type="text/css">
+	<!--
+.header1 {color: #ffffff; background: #4682B4; font-weight: bold; font-family: Tahoma, Verdana; font-size: 13px; margin: 0px;}
+-->
+       </style>
+</head>
+<body onLoad="document.postform.elements['kode_cabang'].focus();">
+<table width="100%" border="0" cellpadding="3" cellspacing="0" bgcolor="#4682B4">
+  <tr>
+    <td class="header1" width="100%">Pilih Aksi :  </td>
+  </tr>
+</table>
+<form method="post" action="<?php echo $_SERVER['PHP_SELF']; ?>" name="postform">  <table width="796" border="0">
+<tr>
+    <td width="237" height="10" bgcolor="#CCCCCC"><div align="left">Masukan Tanggal Pencarian </div></td>
+    <td width="183" bgcolor="#CCCCCC"><input name="norek" type="text" id="norek" value="" size="30" maxlength="16"/>
+    <td width="362" colspan="2"bgcolor="#CCCCCC">&nbsp;</td>
+</tr>
+<tr>
+  <td height="10" bgcolor="#CCCCCC">&nbsp;</td>
+  <td bgcolor="#CCCCCC"><select name="aksi" id="aksi">
+    <option value="Pilih Aksi">Pilih Aksi </option>
+    <option value="renewal">Pembaharuan</option>
+    <option value="cl">CLaim Asuransi</option>
+    <option value="lr">Lunas Reguler</option>
+    <option value="Pin01">Pinjam</option>
+  </select>
+  <td colspan="2"bgcolor="#CCCCCC"><input name="submit" type="submit" id="submit" value="submit"></td>
+</tr>
+</table>
+<?php  
+  	include "conn.php";
+	$koneksi=open_connection();
+	$norek = $_POST ['norek'];
+	$aksi = $_POST['aksi'];
+	$tgl_trn= date("y-m-d");
+	$norekbr=$_POST['norekbr'];
+    
+if ($_POST['submit'])
+{
+if (empty($norek)){
+	echo "<script>alert('Maaf,.isi norek pencarian dengan benar!!!');</script>";
+         echo "<script language='javascript'>document.location.href='allupdate.php'</script>";}
+if ($_POST['aksi']==''){
+	echo "<script>alert('Maaf,.isi aksi dengan benar!!!');</script>";
+         echo "<script language='javascript'>document.location.href='allupdate.php'</script>";}
+
+	else{
+	$select = "select * from skep where norek='$norek'";
+	$select_query = mysql_query($select);
+	}
+
+	if(mysql_num_rows($select_query)==0){
+			echo "<script>alert('Maaf...,data tidak di temukan, isi kembali norek pencarian dengan benar!!!');</script>";
+         echo "<script language='javascript'>document.location.href='allupdate.php'</script>";
+		 }
+		 
+	if ($_POST['aksi']=='renewal'){
+	while($select_result = mysql_fetch_array($select_query))
+{
+		$norek = $select_result['norek'] ;
+		$cif = $select_result['cif'] ;
+		$nama= $select_result['nama'] ;
+		}
+		
+			echo "anda memilih pembaharuan";
+echo "
+<form method=\"POST\" action=\"renewal.php?norek=$norek\">
+
+<table border=\"1\" width=\"40%\" cellpadding=\"1\" cellspacing=\"1\" align=\"left\" bgcolor=\"\" font=\"#ffffff\">
+
+<table border=\"1\" width=\"80%\" cellpadding=\"3\" cellspacing=\"2\" align=\"left\" bgcolor=\"#CCCCCC\">
+ <td> Nomor Rekening </td>
+ <td><input type=\"text\" name=\"norek\" size=\"30\" disabled=\"disabled\"maxlength=\"16\" value=$norek ></td>
+</tr>
+ <td> Nama </td>
+ <td><input type=\"text\" name=\"nama\" size=\"30\" disabled=\"disabled\"maxlength=\"16\" value=$nama ></td>
+</tr>
+
+<tr><td><b> Nomor Rekening Baru *</td>
+  <td><input type=\"text\" name=\"norekbr\" size=\"30\" maxlength=\"16\" ></td>
+</tr>
+<tr><td colspan=\"2\">
+  <div align=\"center\">
+  <input type=\"hidden\" value=\"$norek\" name=\"norek\">
+    <input type=\"submit\" name=\"action\" value=\"Ganti\"> 
+     </div></td></tr>
+</table>";
+}
+
+}
+if ($_POST['aksi']=='cl'){
+echo "
+<table border=\"1\" width=\"40%\" cellpadding=\"1\" cellspacing=\"1\" align=\"left\" bgcolor=\"\" font=\"#ffffff\">
+
+<table border=\"1\" width=\"80%\" cellpadding=\"3\" cellspacing=\"2\" align=\"left\" bgcolor=\"#CCCCCC\">
+ <td> Nomor Rekening </td>
+ <td><input type=\"text\" name=\"nomor\" size=\"30\" maxlength=\"16\" ></td>
+</tr>
+<tr><td colspan=\"2\">
+<div align=\"center\">
+
+<input type=\"submit\" name=\"action\" value=\"Claim Asuransi\"> 
+     </div></td></tr>
+</table>";
+} 
+if ($_POST['aksi']=='lr'){
+echo "
+<table border=\"1\" width=\"40%\" cellpadding=\"1\" cellspacing=\"1\" align=\"left\" bgcolor=\"\" font=\"#ffffff\">
+
+<table border=\"1\" width=\"80%\" cellpadding=\"3\" cellspacing=\"2\" align=\"left\" bgcolor=\"#CCCCCC\">
+ <td> Nomor Rekening </td>
+ <td><input type=\"text\" name=\"nomor\" size=\"30\" maxlength=\"16\" ></td>
+</tr>
+<tr><td colspan=\"2\">
+<div align=\"center\">
+<input type=\"submit\" name=\"action\" value=\"Lunas Reguler\"> 
+     </div></td></tr>
+</table>";
+
+} 
+if ($_POST['aksi']=='Pin01'){
+echo "
+<table border=\"1\" width=\"40%\" cellpadding=\"1\" cellspacing=\"1\" align=\"left\" bgcolor=\"\" font=\"#ffffff\">
+
+<table border=\"1\" width=\"80%\" cellpadding=\"3\" cellspacing=\"2\" align=\"left\" bgcolor=\"#CCCCCC\">
+ <td> Nomor Rekening </td>
+ <td><input type=\"text\" name=\"nomor\" size=\"30\" maxlength=\"16\" ></td>
+</tr>
+<tr><td colspan=\"2\">
+<div align=\"center\">
+<input type=\"submit\" name=\"action\" value=\"SKEP di Pinjam\"> 
+     </div></td></tr>
+</table>";
+
+} 
+
+else
+{
+
+}
+
+?>
+
+
+</form>
+<iframe width=174 height=189 name="gToday:normal:calender/normal.js" id="gToday:normal:calender/normal.js" src="calender/ipopeng.htm" scrolling="no" frameborder="0" style="visibility:visible; z-index:999; position:absolute; top:-500px; left:-500px;">
+</iframe>
+</body>
+</html>

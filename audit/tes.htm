@@ -1,0 +1,41 @@
+<html>
+<head>
+<meta http-equiv=”Content-Type” content=”text/html; charset=UTF-8?>
+<title>aaa</title>
+</head>
+<body>
+<?php
+ include "conn.php";
+  $koneksi=open_connection();
+$conn = mysql_connect($host, $user, $pass);
+mysql_select_db($DB_name, $conn) or die(‘Database not found’);
+?>
+<form name=”frmPegawai” method=”post” action=””>
+Pilih Nama Pegawai :
+<select name=”pilihPegawai” onclick=”javascript:
+var val = frmPegawai.pilihPegawai.value;
+if(val!=”){
+var data = val.split(‘/’, 2);
+frmPegawai.txtTglLahir.value=data[0];
+frmPegawai.txtTemLahir.value=data[1];
+}else{
+frmPegawai.txtTglLahir.value=”;
+frmPegawai.txtTemLahir.value=”;
+}
+“>
+<option value=””>-Pilih-</option>
+<?php
+$query = “select id,nama,tgl_lahir,tem_lahir from pegawai”;
+$result = mysql_query($query);
+while($row = mysql_fetch_array($result)){
+?>
+<option  value=”<?php echo $row[2].”/”.$row[3]; ?>”><?php echo $row[1]; ?></option>
+<?php
+}
+?>
+</select><br/>
+Tanggal Lahir : <input name=”txtTglLahir” type=”text”/><br/>
+Tempat Lahir : <input name=”txtTemLahir” type=”text”/>
+</form>
+</body>
+</html>

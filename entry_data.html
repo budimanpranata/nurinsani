@@ -1,0 +1,255 @@
+<?php
+session_start();
+
+//cek apakah user sudah login
+if(!isset($_SESSION['userid'])){
+   header("location:index.html");
+}
+
+//cek level user
+if($_SESSION['level']!="user"){
+   header("location:index.html");
+}
+
+include "conn2.php";
+$koneksi=open_connection2();
+
+$nopen = abs((int)$_GET['nopen']);
+$query= mysql_query("select No_Pegawai,Branch,Birth_date,Gaji_Bersih,Deal_type,Cust_Short_name 
+FROM loan where No_Pegawai ='$nopen' ");  
+$data   = mysql_fetch_array($query); 
+  $nama=$data['Cust_Short_name'];
+  
+?>
+<html>
+<head><title>Form Insert</title>
+<style type="text/css">
+<!--
+.header1 {color: #ffffff; background: #4682B4; font-weight: bold; font-family: Tahoma, Verdana; font-size: 13px; margin: 0px;}
+.style1 {color: #CCCCCC}
+.style5 {color: #FF0000}
+.style9 {color: #FF0000; font-size: 14px; }
+.style13 {font-family: Verdana, Arial, Helvetica, sans-serif; font-size: 14px; }
+.style14 {
+	color: #FFFFFF;
+	font-weight: bold;
+}
+-->
+</style>
+</head>
+<script type="text/javascript" src="calendarDateInput.js"></script>
+<script language="JavaScript">
+<!--
+function validateForm() 
+{
+ var okSoFar=true 
+ with (document.form)
+ {
+  if (kode_cabang.value=="" && okSoFar)
+  {
+    okSoFar=false
+    alert("Masukkan kode cabang Lengkap Nasabah")
+    kode_cabang.focus()
+  }
+  if (cif.value=="" && okSoFar)
+  {
+    okSoFar=false
+	alert("Masukkan cif Lengkap Nasabah")
+    cif.focus()
+  }
+  if (nama.value=="" && okSoFar)
+  {
+    okSoFar=false
+    alert("Masukkan nama Lengkap nasabah")
+    nama.focus()
+  }
+ 
+ if (norek.value=="" && okSoFar)
+  {
+    okSoFar=false
+    alert("Masukkan nomor rekening Lengkap Nasabah")
+    norek.focus()
+  }
+  if (nopen.value=="" && okSoFar)
+  {
+    okSoFar=false
+    alert("Masukkan nomor pensiun Lengkap nasabah")
+    nopen.focus()
+  }
+   if (kode_jenis.value=="" && okSoFar)
+  {
+  okSoFar=false 
+  alert("Masukan Jenis pinjaman nasabah dengan benar")
+  kode_jenis.focus()
+  }
+  
+  if (noskep.value=="" && okSoFar)
+  {
+    okSoFar=false
+    alert("Masukkan nomer skep  Lengkap nasabah")
+    noskep.focus()
+  }
+  if (penerbit.value=="" && okSoFar)
+  {
+  okSoFar=false
+  alert("Masukan penerbit skep dengan benar")
+  penerbit.focus()
+   }
+  if (cek.value=="" && okSoFar)
+  {
+  okSoFar=false 
+  alert("Masukan Keberadaan SKEP dengan benar")
+  cek.focus()
+  }
+  if (okSoFar==true)  submit();
+ }
+}
+// -->
+</script>
+<body>
+<form name="form" action="inputlog.php" align="center" method="post">
+
+<table border='1' width='65%' cellpadding='2'  cellspacing='2' bgcolor="#FFFFFF">
+</table>
+<table width="100%" border="0" cellpadding="3" cellspacing="0" bgcolor="#4682B4">
+  <tr>
+    <td width="100%" bgcolor="#776a56" class="style1"><span class="style14">Entry Data Debitur </span></td>
+  </tr>
+</table>
+<table width='100%' border='0' cellpadding='2'  cellspacing='2' bordercolor="#ECE9D8" bgcolor="#EAEAEA">
+  <tr>
+    <td width="23%" bgcolor="#CCCCCC"><span class="style13">Cabang </span><span class="style9">* </span></td>
+    <td width="21%" bgcolor="#CCCCCC"><span class="style1">
+      <input name="branch" type="text" id="branch" size="30" maxlength="6"/>
+    </span></td>
+    <td width="22%" bgcolor="#CCCCCC"><span class="style13">Nama Gadis Ibu Kandung </span><span class="style9">* </span></td>
+    <td width="34%" bgcolor="#CCCCCC"><input name="ibu" type="text" id="ibu"></td>
+  </tr>
+  <tr>
+    <td><span class="style13">Cif <span class="style5">* </span></span></td>
+    <td><input type="text" name="cif" size="30" maxlength="6"/></td>
+    <td><span class="style13">Agama </span><span class="style9">* </span></td>
+    <td><select name="select">
+      <option>Pilih Salah satu</option>
+      <option value="Islam">Islam</option>
+      <option value="Keristen">Keristen</option>
+      <option value="Budha">Budha</option>
+      <option value="Hindu">Hindu</option>
+      <option value="Konghuci">Konghucu</option>
+    </select></td>
+  </tr>
+   <tr>
+     <td bgcolor="#CCCCCC"><span class="style13">Nama Sesuai KTP <span class="style5">* </span></span></td>
+     <td bgcolor="#CCCCCC"><input type="text" name="nama" size="30" maxlength="20"/></td>
+     <td bgcolor="#CCCCCC"><span class="style13">Kewarganegaraan </span><span class="style9">* </span></td>
+     <td bgcolor="#CCCCCC"><select name="select2">
+       <option>Pilih Salah satu</option>
+       <option value="ID">Indonesia</option>
+          </select></td>
+   </tr>
+   <tr>
+     <td><span class="style13">Nama Pelapor <span class="style5">* </span></span></td>
+     <td><input name="alamat" type="text" id="alamat" size="30" maxlength="20"/></td>
+     <td><span class="style13">Pendidikan </span><span class="style9">* </span></td>
+     <td><select name="select3">
+       <option>Pilih Salah satu</option>
+       <option value="S3">S3</option>
+       <option value="S2">S2</option>
+       <option value="S1">S1</option>
+       <option value="D3">D3</option>
+       <option value="D1">D1</option>
+       <option value="SMA">SMA</option>
+       <option value="SMP">SMP</option>
+       <option value="SD">SD</option>
+          </select></td>
+   </tr>
+   <tr>
+     <td bgcolor="#CCCCCC"><span class="style13">No telepon  <span class="style5">* </span></span></td>
+     <td bgcolor="#CCCCCC"><input name="notlp" type="text" id="notlp" size="30" maxlength="20"/></td>
+     <td bgcolor="#CCCCCC"><span class="style13">NPWP </span><span class="style9">* </span></td>
+     <td bgcolor="#CCCCCC"><input name="NPWP" type="text" id="NPWP"></td>
+   </tr>
+   <tr>
+     <td><span class="style13">No Tlp Rumah <span class="style5">* </span></span></td>
+     <td><input name="norek" type="text" id="norek" size="30" maxlength="15"/></td>
+     <td><span class="style13">Jenis Pensiun </span><span class="style9">* </span></td>
+     <td><input name="jenis_pen" type="text" id="jenis_pen"></td>
+   </tr>
+   <tr>
+     <td bgcolor="#CCCCCC"><span class="style13">Nomor Pensiun  <span class="style5">* </span></span></td>
+     <td bgcolor="#CCCCCC"><input name="nopen" type="text" id="nopen" value="<?php echo $nopen; ?>" size="30" maxlength="15"/></td>
+     <td bgcolor="#CCCCCC"><span class="style13">Kode Jiwa </span><span class="style9">* </span></td>
+     <td bgcolor="#CCCCCC"><input name="kd_jiwa" type="text" id="kd_jiwa"></td>
+   </tr>
+   <tr>
+     <td><span class="style13">Tanggal Lahir Sesuai KTP <span class="style5">* </span></span></td>
+     <td><script>DateInput('today', true)</script></td>
+     <td><span class="style13">Alamat Sesuai KTP </span><span class="style9">* </span></td>
+     <td><input name="kd_jiwa2" type="text" id="kd_jiwa2" size="50" maxlength="50"></td>
+   </tr>
+
+   <tr>
+     <td bgcolor="#CCCCCC"><span class="style13">Tempat Lahir Sesuai KTP <span class="style5">* </span></span></td>
+     <td bgcolor="#CCCCCC"><input name="wali" type="text" id="wali" size="30" maxlength="15"/></td>
+     <td bgcolor="#CCCCCC"><span class="style13">RT/RW</span><span class="style9">* </span></td>
+     <td bgcolor="#CCCCCC"><input name="rt" type="text" id="rt"></td>
+   </tr>
+   <tr>
+    <td><span class="style13">Tanggal SKEP <span class="style5">* </span></span></td>
+    <td><script>DateInput('today', true)</script></td>
+    <td><span class="style13">Kode Pos </span><span class="style9">* </span></td>
+    <td><input name="rt2" type="text" id="rt2"></td>
+   </tr>
+  <tr>
+    <td bgcolor="#CCCCCC"><span class="style13">Jenis Pinjaman <span class="style5">* </span></span></td>
+    <td bgcolor="#CCCCCC"><select name="kode_jenis" id="kode_jenis">
+      <option value="Pilih Jenis ">Pilih Jenis</option>
+      <option value="KPN1">KPN</option>
+      <option value="KPP2">KPP</option>
+      <option value="N2504">N25</option>
+      <option value="B305">B30</option>
+      <option value="KMP03">KMP</option>
+    </select></td>
+    <td bgcolor="#CCCCCC"><span class="style13">Kelurahan </span><span class="style9">* </span></td>
+    <td bgcolor="#CCCCCC"><input name="rt22" type="text" id="rt22"></td>
+  </tr>
+  
+  <tr>
+    <td><span class="style13">Nomor SKEP  <span class="style5">* </span></span></td>
+    <td><input name="noskep" type="text" id="noskep" size="30" maxlength="15"/></td>
+    <td><span class="style13">Kecamatan </span><span class="style9">* </span></td>
+    <td><input name="rt23" type="text" id="rt23"></td>
+  </tr>
+  <tr>
+    <td bgcolor="#CCCCCC"><span class="style13">Penerbit <span class="style5">* </span></span></td>
+    <td bgcolor="#CCCCCC"><input type="text" name="penerbit" size="30" maxlength="15"/></td>
+    <td bgcolor="#CCCCCC"><span class="style13">Kabupaten/Kota </span><span class="style9">* </span></td>
+    <td bgcolor="#CCCCCC"><input name="rt24" type="text" id="rt24"></td>
+  </tr>
+  <tr>
+    <td><span class="style13">Keberadaan SKEP <span class="style5">* </span></span></td>
+    <td><select name="cek" id="cek">
+      <option value="Pilih Keberadaan">Pilih Keberadaan</option>
+      <option value="Ada1">Ada</option>
+      <option value="FC">Foto Copy</option>
+      <option value="Inf">Infasing</option>
+    </select></td>
+    <td><span class="style13">Status Perkawinan </span><span class="style9">* </span></td>
+    <td><input name="rt25" type="text" id="rt25"></td>
+  <tr>
+    <td bgcolor="#CCCCCC">&nbsp;</td>
+    <td bgcolor="#CCCCCC">&nbsp;</td>
+    <td bgcolor="#CCCCCC">&nbsp;</td>
+    <td bgcolor="#CCCCCC">&nbsp;</td>
+  <tr>
+  <td>&nbsp;</td>
+  <td><input type="button" name="kirim" value="Kirim" onClick="javascript:validateForm()"/></td>
+  <td>&nbsp;</td>
+  <td>&nbsp;</td>
+  </tr>
+</table>
+</form>
+</body>
+</html>
+
+

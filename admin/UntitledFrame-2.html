@@ -1,0 +1,28 @@
+<?php
+session_start();
+//cek apakah user sudah login
+if(!isset($_SESSION['userid'])){
+    die("Anda belum login");//jika belum login jangan lanjut..
+}
+
+//cek level user
+if($_SESSION['level']!="user"){
+    die("Anda bukan user");//jika bukan user jangan lanjut
+}
+$userid= $_GET['userid'];
+
+$q = mysql_query("select * from tabeluser where uerid='$userid'");
+
+$data = mysql_fetch_array($q);
+
+//tampilkan datanya
+
+?>	
+<html>
+<head>
+
+<body>
+<?php echo "<h2>Welcome ".$_SESSION['userid']."</h2>";?>
+
+</body>
+</html>

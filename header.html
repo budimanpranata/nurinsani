@@ -1,0 +1,83 @@
+<?php
+session_start();
+include "conn2.php";
+$koneksi=open_connection2();
+$userid=$_SESSION['userid'];
+$result = mysql_query("select * from user where userid='$userid'");
+while($row = mysql_fetch_array($result)){
+$nama=$row['nama'];
+}
+?>
+<html>
+<head>
+
+<LINK REL="SHORTCUT ICON" href="http://localhost/btpnsk/favicon.ico">
+	<title>Nur Insani</title>
+
+<style>
+	a, A:link, a:visited, a:active
+		{color: #0000aa; text-decoration: none; font-family: Tahoma, Verdana; font-size: 11px}
+	A:hover
+		{color: #FFFFFF; text-decoration: none; font-family: Tahoma, Verdana; font-size: 11px}
+	p, tr, td, ul, li
+		{color: #000000; font-family: Tahoma, Verdana; font-size: 11px}
+	.header1, h1
+		{color: #ffffff; background: #4682B4; font-weight: bold; font-family: Tahoma, Verdana; font-size: 13px; margin: 0px;}
+.style1 {
+	font-size: 14px;
+	color: #FF8040;
+	font-weight: bold;
+}
+</style>
+<link href="layar.css" rel="stylesheet" type="text/css" media="screen">
+<link href="print.css" rel="stylesheet" type="text/css" media="print">
+<style type="text/css">
+<!--
+.style3 {
+	color: #FFFFFF;
+	font-size: 13px;
+	font-weight: bold;
+}
+.style4 {color: #FFFFFF}
+a:link {
+	color: #FFFFFF;
+}
+a:visited {
+	color: #FFFFFF;
+}
+a:active {
+	color: #FFFFFF;
+}
+a {
+	font-size: 13px;
+	font-weight: bold;
+}
+-->
+</style>
+<meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1"></head>
+<body bottommargin="1" topmargin="1" leftmargin="1" rightmargin="1" marginheight="1" marginwidth="1" bgcolor="white">
+
+<!-- Header -->
+<table width="100%" border="0" cellpadding="0" cellspacing="5" bgcolor="#669900">
+<tr>
+	<td width="350" rowspan="2" align="left" valign="bottom" bgcolor="#669900" class="style1"><p>&nbsp;</p>
+    <p>&nbsp;</p>
+    <p>&nbsp;</p>    </td>
+	<td align="right" valign="top" bgcolor="#669900"><img src="Image/ni.png" width="100" height="60"></td>
+</tr>
+<tr>
+	<td align="right" valign="bottom" class="style3"><a href="Logout.php"><span class="style4"></span></a></td>
+</tr>
+<tr><td><img src="pixel.gif" width="1" height="5" border="0"></td></tr>
+</table>
+<table width="100%" cellpadding="1" bordercolor="#CCCCCC" bgcolor="#CCCCCC">
+ 
+  <tr>
+    <td width="551" height="20" bgcolor="#CCCCCC" class="style3">KSPS Nur Insani <?php echo $nama;?></td>
+    <td width="551" bgcolor="#CCCCCC" class="style3"> <div align="right">
+      <div align="right"><span class="style1"><a href="Logout.php" target="_top"> Keluar</a></a></span>
+      </div></td>
+  </tr>
+</table>
+</body>
+</html>

@@ -1,0 +1,1 @@
+Total bunga = besaran deposito x bunga pertahun x (tenor/12) x 100%

@@ -1,0 +1,5 @@
+# Tolak akses ke file backup editor / salinan lama.
+# Apache menampilkan file ini sebagai teks biasa (kode sumber & password database ikut terbaca).
+<FilesMatch "(~|\.bak|\.old|\.orig|\.save|\.swp|\.sql|\.md)$">
+    Require all denied
+</FilesMatch>
