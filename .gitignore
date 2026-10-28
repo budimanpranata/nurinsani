@@ -1,2 +1,5 @@
 # Dokumentasi/catatan tidak ikut repo
 *.md
+
+# Dump database (ukuran besar & berisi data)
+*.sql
