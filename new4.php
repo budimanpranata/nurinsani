@@ -8,7 +8,7 @@ $cif=$_GET['cif'];
 //cek apakah user sudah login
 if(!isset($_SESSION['userid'])){
    header("location:index.html");
-}
+ exit; }
 
 //$length = '6';
 //generate a random id. Encrypt it and set it as $random

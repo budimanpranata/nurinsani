@@ -45,15 +45,15 @@ while($row = mysql_fetch_array($result)){
     </tr>
     <tr>
       <td><span class="style13">Password <strong>Lama</strong>   <span class="style5">* </span></span></td>
-      <td><input name="passlama" type="password" id="passlama" value="<?php echo $password; ?>" size="30" disabled="disabled" maxlength="8"/></td>
+      <td><input name="passlama" type="password" id="passlama" size="30" maxlength="50" autocomplete="current-password"/></td>
     </tr>
     <tr>
       <td bgcolor="#CCCCCC"><span class="style13">Password <strong>Baru</strong>  <span class="style5">* </span></span></td>
-      <td bgcolor="#CCCCCC"><input name="passbaru" type="password" id="passbaru" size="30" maxlength="15"/></td>
+      <td bgcolor="#CCCCCC"><input name="passbaru" type="password" id="passbaru" size="30" maxlength="50" autocomplete="new-password"/> <small>minimal 8 karakter</small></td>
     </tr>
     <tr>
       <td><span class="style13"><strong>Confirmasi</strong> Password  <span class="style5">* </span></span></td>
-      <td><input name="passlagi" type="password" id="passlagi" size="30" maxlength="15"/></td>
+      <td><input name="passlagi" type="password" id="passlagi" size="30" maxlength="50" autocomplete="new-password"/></td>
     </tr>
     <tr>
       <td bgcolor="#CCCCCC"></td>

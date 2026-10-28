@@ -8,7 +8,7 @@ $tgl_system=$_SESSION['stgl_system'];
 
 if(!isset($_SESSION['userid'])){
    header("location:index.html");
-}
+ exit; }
 header('Content-Type: application/json; charset=utf-8');
 $host = "localhost";
 $user = "root";       // isi user database kamu

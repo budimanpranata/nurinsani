@@ -8,12 +8,12 @@ $unitt=1010;
 
 if(!isset($_SESSION['userid'])){
    header("location:index.html");
-}
+ exit; }
 
 //cek level user
 if($_SESSION['level']!="kp"){
    header("location:index.html");
-}
+ exit; }
 
 	include "../encryption/function.php";
 	include"../../indo_tgl.php";

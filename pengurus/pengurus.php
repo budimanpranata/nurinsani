@@ -5,12 +5,12 @@ ob_start();
 //cek apakah user sudah login
 if(!isset($_SESSION['userid'])){
    header("location:../index.html");
-}
+ exit; }
 
 //cek level user
 if($_SESSION['level']!="pengurus"){
    header("location:../index.html");
-}  
+ exit; }  
 
 
 ?>	

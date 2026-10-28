@@ -4,12 +4,12 @@ $userid=$_SESSION['userid'];
 //cek apakah user sudah login
 if(!isset($_SESSION['userid'])){
    header("location:index.html");
-}
+ exit; }
 
 //cek level user
 if($_SESSION['level']!="user"){
    header("location:index.html");
-}
+ exit; }
 $length = '6';
 
 //generate a random id. Encrypt it and set it as $random

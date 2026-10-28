@@ -4,12 +4,12 @@ $userid=$_SESSION['userid'];
 //cek apakah user sudah login
 if(!isset($_SESSION['userid'])){
    header("location:index.html");
-}
+ exit; }
 
 //cek level user
-if($_SESSION['level']!="unit"){
+if(!in_array($_SESSION['level'], array('unit', 'lead', 'kp', 'ho'))){
    header("location:index.html");
-}
+ exit; }
  include "conn2.php";
   $koneksi=open_connection2();
   $branch=$_POST ['branch'];
@@ -18,7 +18,7 @@ $buss_date=date("y-m-d");
 //cek apakah user sudah login
 if(!isset($_SESSION['userid'])){
    header("location:index.html");//jika belum login jangan lanjut..
-}
+ exit; }
 ?>	
 
 <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"

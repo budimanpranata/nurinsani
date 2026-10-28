@@ -3,7 +3,7 @@ session_start();
 //cek apakah user sudah login
 if(!isset($_SESSION['userid'])){
      header("location:index.html");//jika belum login jangan lanjut..
-}
+ exit; }
 include "conn2.php";
 $koneksi=open_connection2();
 $userid=$_SESSION['userid'];

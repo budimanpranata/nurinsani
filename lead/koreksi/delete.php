@@ -4,12 +4,12 @@ ob_start();
 $iduser=$_SESSION['userid'];
 if(!isset($_SESSION['userid'])){
    header("location:../../index.html");
-}
+ exit; }
 
 //cek level user
 if($_SESSION['level']!="lead"){
    header("location:../../index.html");
-}
+ exit; }
 
 include "../../conn2.php";
 $koneksi=open_connection2(); 

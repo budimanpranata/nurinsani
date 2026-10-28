@@ -5,7 +5,7 @@ $userid=$_SESSION['userid'];
 //cek apakah user sudah login
 if(!isset($_SESSION['userid'])){
    header("location:index.html");
-}
+ exit; }
 
 ?>
 <script>

@@ -6,12 +6,12 @@ $tanggal=$_SESSION['jatuh'];
 //cek apakah user sudah login
 if(!isset($_SESSION['userid'])){
    header("location:../../index.html");
-}
+ exit; }
 
 //cek level user
 if($_SESSION['level']!="fund"){
    header("location:../../index.html");
-}
+ exit; }
 db_ni();
 mysql_select_db('nur_insani');
 include "../function.php";

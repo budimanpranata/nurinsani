@@ -6,12 +6,12 @@ $tgl=$_SESSION['stgl_system'];
 //cek apakah user sudah login
 if(!isset($_SESSION['userid'])){
    header("location:index.html");
-}
+ exit; }
 
 //cek level user
 if($_SESSION['level']!="lead"){
    header("location:index.html");
-}  
+ exit; }  
 ?>
 <link rel="stylesheet" href="css/bootstrap.min.css"/>
 <script>

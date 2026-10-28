@@ -5,10 +5,10 @@ $userid=$_SESSION['userid'];
 
 if(!isset($_SESSION['userid'])){
    header("location:index.html");
-}
+ exit; }
 if($_SESSION['level']!="unit"){
    header("location:index.html");
-}
+ exit; }
 
 $connect = db_ni();
 $columns = array('unit','tanggal_transaksi','kode_transaksi','kode_rekening','nama_rek', 'keterangan_transaksi', 'debet','kredit');

@@ -10,12 +10,12 @@ $status=$_SESSION['status'];
 
 if(!isset($_SESSION['userid'])){
    header("location:index.html");
-}
+ exit; }
 
 //cek level user
 if($_SESSION['level']!="toko"){
    header("location:../../index.html");
-}
+ exit; }
 require_once('../excel/Worksheet.php');
 require_once('../excel/Workbook.php');
 include "../../indo_tgl.php";

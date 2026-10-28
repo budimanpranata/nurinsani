@@ -1,4 +1,4 @@
-<?php require_once __DIR__ . '/../php8_compat.php';
+<?php require_once __DIR__ . '/../php8_compat.php'; require_once __DIR__ . '/cek_admin.php';
 session_start();
 ob_start();
 $userid=$_SESSION['userid'];
@@ -7,12 +7,12 @@ $buss_date = date("y-m-d");
 $NIK_atasan=$_GET['sales'];
 if(!isset($_SESSION['userid'])){
    header("location:../index.html");//jika belum login jangan lanjut..
-}
+ exit; }
 
 //cek level user
 if($_SESSION['level']!="admin"){
      header("location:../index.html");//jika bukan user jangan lanjut
-}
+ exit; }
 
 // Fungsi untuk menampilkan progress bar
 function set_progress($val=0){

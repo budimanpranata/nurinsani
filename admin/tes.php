@@ -1,4 +1,4 @@
-<html>
+<?php require_once __DIR__ . '/cek_admin.php'; ?><html>
 <head>
 <meta http-equiv=”Content-Type” content=”text/html; charset=UTF-8?>
 <title>aaa</title>

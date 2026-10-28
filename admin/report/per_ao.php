@@ -1,4 +1,4 @@
-<?php require_once __DIR__ . '/../../php8_compat.php';
+<?php require_once __DIR__ . '/../../php8_compat.php'; require_once __DIR__ . '/../cek_admin.php';
 
 session_start();
 
@@ -16,7 +16,7 @@ if(!isset($_SESSION['userid'])){
 
 //cek level user
 
-if($_SESSION['level']!="unit"){
+if($_SESSION['level']!="admin"){
 
     die("Anda bukan user");//jika bukan user jangan lanjut
 

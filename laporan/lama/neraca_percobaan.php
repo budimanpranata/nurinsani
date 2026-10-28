@@ -5,10 +5,10 @@ $userid=$_SESSION['userid'];
 
 if(!isset($_SESSION['userid'])){
    header("location:../index.html");
-}
+ exit; }
 if($_SESSION['level']!="unit"){
    header("location:../index.html");
-}
+ exit; }
 
 	include "../encryption/function.php";
 	

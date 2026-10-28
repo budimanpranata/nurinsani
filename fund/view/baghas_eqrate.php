@@ -8,7 +8,7 @@ $buss_date2=$_SESSION['tgl_akhir_pos'];
 //cek apakah user sudah login
 if(!isset($_SESSION['userid'])){
    header("location:../index.html");
-}
+ exit; }
 
 function open_connection2(){
 

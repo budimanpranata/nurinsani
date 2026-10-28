@@ -4,7 +4,7 @@ ob_start();
 $userid=$_SESSION['userid'];
 if(!isset($_SESSION['userid'])){
    header("location:../index.html");//jika belum login jangan lanjut..
-}
+ exit; }
 
 include "../conn2.php";
 	$koneksi=open_connection2();

@@ -7,12 +7,12 @@ $tgl_mrb=$_SESSION['smrb'];
 //cek apakah user sudah login
 if(!isset($_SESSION['userid'])){
    header("location:index.html");
-}
+ exit; }
 
 //cek level user
 if($_SESSION['level']!="unit"){
    header("location:index.html");
-}
+ exit; }
  include "conn2.php";
  include "indo_tgl.php";
  $koneksi=open_connection2();
@@ -41,12 +41,12 @@ $buss_date=date("y-m-d");
 //cek apakah user sudah login
 if(!isset($_SESSION['userid'])){
    header("location:../index.html");//jika belum login jangan lanjut..
-}
+ exit; }
 
 //cek level user
 if($_SESSION['level']!="unit"){
      header("location:../index.html");//jika bukan user jangan lanjut
-}
+ exit; }
 
 require ('fpdf17/fpdf.php');
 //$pdf=new FPDF('L','mm', array(216, 275));

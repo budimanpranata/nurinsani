@@ -1,4 +1,4 @@
-<style type="text/css">
+<?php require_once __DIR__ . '/cek_admin.php'; ?><style type="text/css">
 <!--
 .header1 {color: #ffffff; background: #4682B4; font-weight: bold; font-family: Tahoma, Verdana; font-size: 13px; margin: 0px;}
 .style13 {font-family: Verdana, Arial, Helvetica, sans-serif; font-size: 14px; }

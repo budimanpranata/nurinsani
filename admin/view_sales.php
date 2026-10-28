@@ -1,4 +1,4 @@
-<?php require_once __DIR__ . '/../php8_compat.php';
+<?php require_once __DIR__ . '/../php8_compat.php'; require_once __DIR__ . '/cek_admin.php';
 session_start();
 ob_start();  
 $userid=$_SESSION['userid'];
@@ -9,7 +9,7 @@ $today=date("Ymd");
 //cek apakah user sudah login
 if(!isset($_SESSION['userid'])){
    header("location:../index.html");//jika belum login jangan lanjut..
-}
+ exit; }
 
 //cek level user
 ?>	

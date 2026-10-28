@@ -7,12 +7,12 @@ $unitt=$_SESSION['unit_lead'];
 
 if(!isset($_SESSION['userid'])){
    header("location:index.html");
-}
+ exit; }
 
 //cek level user
 if($_SESSION['level']!="toko"){
    header("location:index.html");
-}
+ exit; }
 
 	include "encryption/function.php";
 	include"indo_tgl.php";

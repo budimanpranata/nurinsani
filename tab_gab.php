@@ -7,7 +7,7 @@ $buss_date = date("y-m-d");
 $code_kel=$_GET['code_kel'];
 if(!isset($_SESSION['userid'])){
    header("location:index.html");//jika belum login jangan lanjut..
-}
+ exit; }
 
 
 // Fungsi untuk menampilkan progress bar

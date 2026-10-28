@@ -1,4 +1,4 @@
-<?php require_once __DIR__ . '/../../php8_compat.php';
+<?php require_once __DIR__ . '/../../php8_compat.php'; require_once __DIR__ . '/../cek_admin.php';
 
 session_start();
 ob_start();
@@ -13,16 +13,16 @@ $npl=$_SESSION['jenis_npl'];
 
 if(!isset($_SESSION['userid'])){
    header("location:index.html");
-}
+ exit; }
 
 $sql1=mysql_query("Select kode_branch FROM user WHERE userid='$userid'");
 $dsmo= mysql_fetch_array($sql1);
 $unit=$dsmo['kode_branch'];
 //cek level user
 
-if($_SESSION['level']!="unit"){
+if($_SESSION['level']!="admin"){
    header("location:index.html");
-}
+ exit; }
 require_once('../excel/Worksheet.php');
 require_once('../excel/Workbook.php');
 include "../indo_tgl.php";

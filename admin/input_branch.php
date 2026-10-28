@@ -1,16 +1,16 @@
-<?php require_once __DIR__ . '/../php8_compat.php';
+<?php require_once __DIR__ . '/../php8_compat.php'; require_once __DIR__ . '/cek_admin.php';
 session_start();
 include "conn2.php";
 $koneksi=open_connection2();
 //cek apakah user sudah login
 if(!isset($_SESSION['userid'])){
    header("location:index.html");
-}
+ exit; }
 
 //cek level user
 if($_SESSION['level']!="admin"){
    header("location:index.html");
-}
+ exit; }
 
 // Fungsi untuk menampilkan progress bar
 function set_progress($val=0){

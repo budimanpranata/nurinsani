@@ -5,10 +5,10 @@ $buss_date1=$_SESSION['sbuss1'];
 $buss_date2=$_SESSION['sbuss2'];
 if(!isset($_SESSION['userid'])){
    header("location:index.html");
-}
+ exit; }
 if($_SESSION['level']!="unit"){
    header("location:index.html");
-}
+ exit; }
 header("Content-type: application/vnd-ms-excel");
 header("Content-Disposition: attachment; filename=NERACA.xls");
 	

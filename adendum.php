@@ -5,7 +5,7 @@ $tgl_system=$_SESSION['stgl_system'];
 //cek apakah user sudah login
 if(!isset($_SESSION['userid'])){
    header("location:index.html");
-}
+ exit; }
 
 ?>	
 	<script type="text/javascript" src="jquery.js"></script>

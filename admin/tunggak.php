@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<?php require_once __DIR__ . '/cek_admin.php'; ?><!DOCTYPE html>
 <html>
 <head>
 <title>KSPPS Nurinsani</title>

@@ -15,7 +15,7 @@ $list_unit=$_SESSION['sunit'];
 
 if(!isset($_SESSION['userid'])){
    header("location:../../index.html");//jika belum login jangan lanjut..
-}
+ exit; }
 
 
 // Fungsi untuk menampilkan progress bar

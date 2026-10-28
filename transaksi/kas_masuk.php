@@ -3,12 +3,12 @@ session_start();
 $userid=$_SESSION['userid'];
 if(!isset($_SESSION['userid'])){
    header("location:../index.html");
-}
+ exit; }
 
 //cek level user
 if($_SESSION['level']!="unit"){
    header("location:../index.html");
-}
+ exit; }
 
 	include "../encryption/function.php";
 	

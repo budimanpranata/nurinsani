@@ -12,7 +12,7 @@ $unit=$r['kode_branch'];
 //cek apakah user sudah login
 if(!isset($_SESSION['userid'])){
    header("location:index.html");
-}
+ exit; }
 
 ?>
 

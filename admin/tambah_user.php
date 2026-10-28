@@ -1,4 +1,4 @@
-<?php require_once __DIR__ . '/../php8_compat.php';
+<?php require_once __DIR__ . '/../php8_compat.php'; require_once __DIR__ . '/cek_admin.php';
 session_start();
 include "../conn2.php";
 $userid=$_SESSION['userid'];
@@ -8,11 +8,11 @@ $userid=$_SESSION['userid'];
 //cek apakah user sudah login
 if(!isset($_SESSION['userid'])){
    header("location:../index.html");//jika belum login jangan lanjut..
-}
+ exit; }
 if($_SESSION['level']!="admin"){
   echo "<script>alert('Anda Buka Admin');</script>";
          echo "<script language='javascript'>document.location.href='../index.html'</script>";
-}
+ exit; }
 ?>
 <html>
 <head>

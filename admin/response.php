@@ -1,4 +1,4 @@
-
+<?php require_once __DIR__ . '/cek_admin.php'; ?>
 <?php require_once __DIR__ . '/../koneksi_db.php';
 session_start();
  include "conn2.php";
@@ -13,12 +13,12 @@ $unit=$r['kode_branch'];
 //cek apakah user sudah login
 if(!isset($_SESSION['userid'])){
    header("location:index.html");//jika belum login jangan lanjut..
-}
+ exit; }
 
 //cek level user
-if($_SESSION['level']!="unit"){
+if($_SESSION['level']!="admin"){
      header("location:index.html");//jika bukan user jangan lanjut
-}
+ exit; }
 	//include connection file 
 	$db_host = "localhost";
 $db_user = "root";

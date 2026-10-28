@@ -6,12 +6,12 @@ $userid=$_SESSION['userid'];
 //cek apakah user sudah login
 if(!isset($_SESSION['userid'])){
    header("location:../../index.html");
-}
+ exit; }
 
 //cek level user
 if($_SESSION['level']!="toko"){
    header("location:../../index.html");
-}
+ exit; }
 	include "../encryption/function.php";
 	//untuk waktu
 	$tanggal=date("y-m-d");

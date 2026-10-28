@@ -5,10 +5,10 @@ $userid=$_SESSION['userid'];
 //cek apakah user sudah login
 if(!isset($_SESSION['userid'])){
    header("location:index.html");
-}
-if($_SESSION['level']!="lead"){
+ exit; }
+if(!in_array($_SESSION['level'], array('lead', 'ho'))){
    header("location:../index.html");
-}
+ exit; }
 ?>	
 	<script type="text/javascript" src="jquery.js"></script>
 	<script>

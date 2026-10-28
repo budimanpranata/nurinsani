@@ -13,7 +13,7 @@ $hari= mysql_real_escape_string($_POST['hari']);
 //cek apakah user sudah login
 if(!isset($_SESSION['userid'])){
    header("location:index.html");
-}
+ exit; }
 
 
 $data = mysql_query ("select kode_branch from user where userid ='$userid'");

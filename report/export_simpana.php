@@ -11,12 +11,12 @@ $dat='2018-04-30';
 
 if(!isset($_SESSION['userid'])){
    header("location:index.html");
-}
+ exit; }
 
 //cek level user
 if($_SESSION['level']!="unit"){
    header("location:../index.html");
-}
+ exit; }
 require_once('../excel/Worksheet.php');
 require_once('../excel/Workbook.php');
 include "../indo_tgl.php";

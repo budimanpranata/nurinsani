@@ -6,7 +6,7 @@ $userid=$_SESSION['userid'];
 //cek apakah user sudah login
 if(!isset($_SESSION['userid'])){
    header("location:index.html");
-}else{
+ exit; }else{
 	include "conn2.php";
 	include "indo_tgl.php";
 	$koneksi=open_connection2();

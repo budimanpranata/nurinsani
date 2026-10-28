@@ -7,12 +7,12 @@ $cao=$_SESSION['code_cao'];
 //cek apakah user sudah login
 if(!isset($_SESSION['userid'])){
    header("location:../index.html");
-}
+ exit; }
 
 //cek level user
 if($_SESSION['level']!="toko"){
    header("location:../index.html");
-}
+ exit; }
  include "../conn2.php";
  include "../indo_tgl.php";
  $koneksi=open_connection2();	

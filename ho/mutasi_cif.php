@@ -15,10 +15,10 @@ $area=$level_area['area'];
 
 if(!isset($_SESSION['userid'])){
    header("location:index.html");
-}
+ exit; }
 if($_SESSION['level']!="ho"){
    header("location:../index.html");
-}
+ exit; }
 
 ?>
     <script type="text/javascript" src="../jquery.js"></script>

@@ -1,4 +1,4 @@
-<?php require_once __DIR__ . '/../php8_compat.php';
+<?php require_once __DIR__ . '/../php8_compat.php'; require_once __DIR__ . '/cek_admin.php';
 session_start();
 $userid=$_SESSION['userid'];
  include "../conn2.php";
@@ -6,7 +6,7 @@ $userid=$_SESSION['userid'];
 //cek apakah user sudah login
 if(!isset($_SESSION['userid'])){
    header("location:../index.html");//jika belum login jangan lanjut..
-}
+ exit; }
 ?>
 <?php
 $pass = $_POST['pass'];

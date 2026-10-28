@@ -4,10 +4,10 @@ $userid=$_SESSION['userid'];
 $tgl_system=$_SESSION['stgl_system'];
 if(!isset($_SESSION['userid'])){
    header("location:index.html");
-}
+ exit; }
 if($_SESSION['level']!="lead"){
    header("location:index.html");
-}
+ exit; }
 if(!isset($_SESSION['stgl_system'])){
 echo "<script>alert('Maaf,.tanggal system belum di setup');</script>";
    }

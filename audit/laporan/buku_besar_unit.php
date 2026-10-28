@@ -7,10 +7,10 @@ $tgl_system=$_SESSION['stgl_system'];
 
 if(!isset($_SESSION['userid'])){
    header("location:index.html");
-}
+ exit; }
 if($_SESSION['level']!="audit"){
    header("location:index.html");
-}
+ exit; }
  include "../../conn2.php";
   include "../../function.php";
   $koneksi=open_connection2();

@@ -10,12 +10,12 @@ $userid=$_SESSION['userid'];
 //cek apakah user sudah login
 if(!isset($_SESSION['userid'])){
    header("location:index.html");//jika belum login jangan lanjut..
-}
+ exit; }
 
 //cek level user
 if($_SESSION['level']!="user"){
      header("location:index.html");//jika bukan user jangan lanjut
-}
+ exit; }
 ?>	
 
 <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"

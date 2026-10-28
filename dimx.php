@@ -7,7 +7,7 @@ $tgl_waka=$_SESSION['tgl_wakalah'];
 //cek apakah user sudah login
 if(!isset($_SESSION['userid'])){
    header("location:index.html");
-}
+ exit; }
 
 //cek level user
 

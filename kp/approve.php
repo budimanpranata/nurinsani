@@ -7,7 +7,7 @@ include "config.php";
 $buss_date = date("y-m-d");
 if(!isset($_SESSION['userid'])){
    header("location:../index.html");//jika belum login jangan lanjut..
-}
+ exit; }
 
 // Fungsi untuk menampilkan progress bar
 function set_progress($val=0){

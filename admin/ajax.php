@@ -1,4 +1,4 @@
-<?php require_once __DIR__ . '/../php8_compat.php'; 
+<?php require_once __DIR__ . '/../php8_compat.php'; require_once __DIR__ . '/cek_admin.php'; 
 	require_once("ajax_table.class.php");
 	$obj = new ajax_table();
 

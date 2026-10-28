@@ -4,7 +4,7 @@ $userid=$_SESSION['userid'];
 $tgl_system=$_SESSION['stgl_system'];
 if(!isset($_SESSION['userid'])){
    header("location:index.html");
-}
+ exit; }
 
 
 	/**

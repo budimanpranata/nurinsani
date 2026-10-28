@@ -13,7 +13,7 @@ $npl=$_SESSION['jenis_npl'];
 
 if(!isset($_SESSION['userid'])){
    header("location:index.html");
-}
+ exit; }
 
 $sql1=mysql_query("Select kode_branch FROM user WHERE userid='$userid'");
 $dsmo= mysql_fetch_array($sql1);
@@ -22,7 +22,7 @@ $unit=$dsmo['kode_branch'];
 
 if($_SESSION['level']!="unit"){
    header("location:index.html");
-}
+ exit; }
 require_once('../excel/Worksheet.php');
 require_once('../excel/Workbook.php');
 include "../indo_tgl.php";

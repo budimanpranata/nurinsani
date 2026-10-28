@@ -1,4 +1,4 @@
-<?php require_once __DIR__ . '/../php8_compat.php';
+<?php require_once __DIR__ . '/../php8_compat.php'; require_once __DIR__ . '/cek_admin.php';
 session_start();
 $userid=$_SESSION['userid'];
 $tgl_system=$_SESSION['stgl_system'];

@@ -5,10 +5,10 @@ $tgl_mrb=$_SESSION['smrb'];
 
 if(!isset($_SESSION['userid'])){
    header("location:index.html");
-}
+ exit; }
 if($_SESSION['level']!="unit"){
    header("location:index.html");
-}
+ exit; }
 header("Content-type: application/vnd-ms-excel");
 header("Content-Disposition: attachment; filename=rekap_booking.xls");
 	

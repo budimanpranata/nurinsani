@@ -45,6 +45,21 @@ if (COMPAT_WARNING_LOG) {
     }, E_WARNING | E_USER_WARNING | E_NOTICE | E_USER_NOTICE | E_DEPRECATED | E_USER_DEPRECATED);
 }
 
+/* =====================================================================
+ * Cookie session: tidak bisa dibaca JavaScript (HttpOnly), tidak dikirim
+ * dari situs lain (SameSite=Lax), id session buatan pihak luar ditolak
+ * (use_strict_mode), dan hanya lewat HTTPS bila aplikasi diakses via HTTPS.
+ * ===================================================================== */
+if (PHP_SAPI !== 'cli' && session_status() === PHP_SESSION_NONE && !headers_sent()) {
+    ini_set('session.cookie_httponly', '1');
+    ini_set('session.cookie_samesite', 'Lax');
+    ini_set('session.use_strict_mode', '1');
+    ini_set('session.use_only_cookies', '1');
+    if (!empty($_SERVER['HTTPS']) && strtolower($_SERVER['HTTPS']) !== 'off') {
+        ini_set('session.cookie_secure', '1');
+    }
+}
+
 // Charset koneksi untuk mysql_connect(). null = biarkan default mysqli (utf8mb4 di PHP 8).
 // Jika data lama tampil aneh (karakter non-ASCII rusak), coba ganti menjadi 'latin1'.
 if (!defined('COMPAT_MYSQL_CHARSET')) {

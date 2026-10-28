@@ -3,19 +3,19 @@ session_start();
 $userid=$_SESSION['userid'];
 if(!isset($_SESSION['userid'])){
    header("location:../../index.html");
-}
+ exit; }
 $tgl_system=$_SESSION['stgl_system'];
 //cek apakah user sudah login
 if(!isset($_SESSION['stgl_system'])){
 echo "<script>alert('Maaf,.tanggal system belum di setup');</script>";
 
    header("location:../param_tgl.php");
-}
+ exit; }
 
 //cek level user
 if($_SESSION['level']!="toko"){
    header("location:../../index.html");
-}
+ exit; }
 
 	include "../encryption/function.php";
 	include"../../indo_tgl.php";

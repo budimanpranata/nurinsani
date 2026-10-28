@@ -1,4 +1,4 @@
-<?php require_once __DIR__ . '/../../php8_compat.php';
+<?php require_once __DIR__ . '/../../php8_compat.php'; require_once __DIR__ . '/../cek_admin.php';
 session_start();
 ob_start();
 $userid=$_SESSION['userid'];
@@ -10,12 +10,12 @@ $status=$_SESSION['status'];
 
 if(!isset($_SESSION['userid'])){
    header("location:index.html");
-}
+ exit; }
 
 //cek level user
-if($_SESSION['level']!="unit"){
+if($_SESSION['level']!="admin"){
    header("location:../index.html");
-}
+ exit; }
 require_once('../excel/Worksheet.php');
 require_once('../excel/Workbook.php');
 include "../indo_tgl.php";

@@ -8,7 +8,7 @@ $tgl_system=$_SESSION['stgl_system'];
 
 if(!isset($_SESSION['userid'])){
    header("location:index.html");
-}
+ exit; }
 /* Database connection start */
 $servername = "76.13.20.176";
 $username = "admin";

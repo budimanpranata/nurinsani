@@ -9,10 +9,10 @@ if(!isset($_SESSION['stgl_system'])){
 echo "<script>alert('Maaf,.tanggal system belum di setup');</script>";
 
    header("location:param_tgl.php");
-}
+ exit; }
 if(!isset($_SESSION['userid'])){
    header("location:../index.html");
-}
+ exit; }
 
 ?>	
 	<script type="text/javascript" src="jquery.js"></script>

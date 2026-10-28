@@ -8,12 +8,12 @@ $wadiah=$_SESSION['swadiah'];
 //cek apakah user sudah login
 if(!isset($_SESSION['userid'])){
    header("location:index.html");
-}
+ exit; }
 
 //cek level user
 if($_SESSION['level']!="unit"){
    header("location:index.html");
-}  
+ exit; }  
 ?>
 <link rel="stylesheet" href="css/bootstrap.min.css"/>
 <script>

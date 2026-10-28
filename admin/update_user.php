@@ -1,4 +1,4 @@
-<!--
+<?php require_once __DIR__ . '/cek_admin.php'; ?><!--
 	/*
 	* Add edit delete rows dynamically using jquery and php
 	* http://www.amitpatil.me/
