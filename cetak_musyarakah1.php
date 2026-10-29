@@ -1,4 +1,4 @@
-<?php require_once __DIR__ . '/php8_compat.php';
+<?php require_once __DIR__ . '/koneksi_db.php';
 session_start();  
 ob_start();
 ini_set('display_errors',1);
@@ -10,29 +10,27 @@ $userid=$_SESSION['userid'];
 $unit = $userid;
 
 
-$ckel= mysql_query(" Select cao  from kelompok where code_unit='2004'");
-$cckel= mysql_fetch_array($ckel);
+$cckel = db_satu(" Select cao  from kelompok where code_unit='2004'");
 $cao=$cckel['cao'];
 
 
-$dataum= mysql_query(" Select Nama as um,jabatan from person  
-where unit='$unit'");
-$um= mysql_fetch_array($dataum);
+$um = db_satu(" Select Nama as um,jabatan from person  
+where unit=?", 's', $unit);
 $nama_um=$um['um'];
 $jabatan=$um['jabatan'];
 //$feed = 1;
 
-$pot = mysql_query("select calon_loan.cif as CIF,bidang_usaha.nama_usaha usaha_anggota, maturity_date,calon_loan.Cust_Short_name,tgl_wakalah,Plafond,bagi_hasil,Tenor,angsuran,ID_NUMBER,HADDRESS1,HADDRESS2,HADDRESS3,HADDRESS4,month(tgl_akad) as bulan,year(tgl_akad) as tahun, ELT(WEEKDAY(tgl_akad)+1, 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu', 'Minggu') AS hari, day(tgl_akad) as hari_angka,tgl_akad,bulat
+$pot = db_semua("select calon_loan.cif as CIF,bidang_usaha.nama_usaha usaha_anggota, maturity_date,calon_loan.Cust_Short_name,tgl_wakalah,Plafond,bagi_hasil,Tenor,angsuran,ID_NUMBER,HADDRESS1,HADDRESS2,HADDRESS3,HADDRESS4,month(tgl_akad) as bulan,year(tgl_akad) as tahun, ELT(WEEKDAY(tgl_akad)+1, 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu', 'Minggu') AS hari, day(tgl_akad) as hari_angka,tgl_akad,bulat
  from calon_loan left join anggota on anggota.cif = calon_loan.cif 
  left join bidang_usaha on bidang_usaha.code_bidang = calon_loan.usaha
- where calon_loan.unit='$userid' and calon_loan.status_app='MUSYAROKAH' and tgl_akad='$tgl_mrb' order by calon_loan.code_kel,calon_loan.cust_Short_name");
+ where calon_loan.unit=? and calon_loan.status_app='MUSYAROKAH' and tgl_akad=? order by calon_loan.code_kel,calon_loan.cust_Short_name", 'ss', $userid, $tgl_mrb);
 $page=0;
 require ('fpdf17/fpdf.php');
 $pdf=new FPDF ('P','mm','A4');
 $pdf->SetMargins(10, 10, 10);
 $pdf->SetAutoPageBreak(true, 10);
 
-while($p = mysql_fetch_array($pot)){
+foreach ($pot as $p){
 $page++;
 $pdf->addPage();
 $nama=$p['Cust_Short_name'];
@@ -47,7 +45,7 @@ $usaha_anggota=$p['usaha_anggota'];
 $bulan=$p['bulan'];
 $bulat=number_format(compat_num($p['bulat']));
 $tahun_full=$p['tahun'];
-$row_sal= mysql_fetch_array(mysql_query("select nisbah from nisbah WHERE cif ='$cif'")) or die(mysql_error());
+$row_sal= db_satu("select nisbah from nisbah WHERE cif =?", 's', $cif) or die(db_ni()->error);
 $nisbah=$row_sal['nisbah'];
 $persen_nisbah = number_format(compat_num($nisbah * 100), 2) . ' %';
 $komplementer = 1 - $nisbah; // Hasil: 0.925 (92.5%)

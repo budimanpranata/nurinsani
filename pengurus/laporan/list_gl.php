@@ -205,7 +205,7 @@ a:active {
 
 <table width="100%">
   <tr>
-    <td height="20" bgcolor="#669900" class="style3 style9">List Jurnal
+    <td height="20" bgcolor="#2F6B4F" class="style3 style9">List Jurnal
       <div align="right"></div></td>
   </tr>
 </table>
@@ -213,7 +213,7 @@ a:active {
 <table width="428" border="1" align="center">
 </table>
   <form method="post" action="<?php echo $_SERVER['PHP_SELF']; ?>" name="postform">  <table width="502" border="0" align="center">
-<tr bgcolor="#669900">
+<tr bgcolor="#2F6B4F">
   <td height="10" colspan="4" nowrap><div align="center" class="style3 style9"> Pencarian Berdasarkan Tanggal </div></td>
   </tr>
 <tr>

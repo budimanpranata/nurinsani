@@ -665,6 +665,9 @@ function Cell($w, $h=0, $txt='', $border=0, $ln=0, $align='', $fill=false, $link
 	if($s)
 		$this->_out($s);
 	$this->lasth = $h;
+	// PHP 5: teks non-angka (mis. 'L') dibandingkan sebagai 0; PHP 8 membandingkannya sebagai teks
+	if(is_string($ln))
+		$ln = (int)$ln;
 	if($ln>0)
 	{
 		// Go to next line

@@ -17,7 +17,7 @@ include "../conn2.php";
 <body>
 <table width="100%" border="0" cellpadding="3" cellspacing="0" bgcolor="#4682B4">
   <tr>
-    <td width="100%" bgcolor="#669900"><span class="style1">Home</span></td>
+    <td width="100%" bgcolor="#2F6B4F"><span class="style1">Home</span></td>
   </tr>
 </table>
 </body>

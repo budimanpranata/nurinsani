@@ -15,9 +15,9 @@
        </style>
 </head>
 <body onLoad="document.postform.elements['kode_cabang'].focus();">
-<table width="100%" border="0" cellpadding="3" cellspacing="0" bgcolor="#669900">
+<table width="100%" border="0" cellpadding="3" cellspacing="0" bgcolor="#2F6B4F">
   <tr>
-    <td width="100%" bgcolor="#669900"><span class="style1">Cari Data Approve </span></td>
+    <td width="100%" bgcolor="#2F6B4F"><span class="style1">Cari Data Approve </span></td>
   </tr>
 </table>
 <form action="listapprove.php" method="post" name="postform">

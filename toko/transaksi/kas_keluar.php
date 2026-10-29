@@ -96,8 +96,8 @@ $user=mysql_query("select kode_branch,GL from branch where kode_branch='$userid'
 		margin: 26px 0px 0px 0px;
 		width: 200px;
 		padding:0px;
-		background-color:#669900;
-		border-top: 3px solid #669900;
+		background-color:#2F6B4F;
+		border-top: 3px solid #2F6B4F;
 		color: #fff;
 	}
 	.suggestionList {
@@ -168,7 +168,7 @@ a:active {
 <div class="col-md-12 col">
 	<body onLoad="document.postform.elements['keterangan_jurnal'].focus();">
 	<table width="100%">
-  <tr bgcolor="#669900">
+  <tr bgcolor="#2F6B4F">
   <td height="25" colspan="4" nowrap><div align="left" class="style3 style9">Jurnal Keluar</div></td>
   </tr>
 </table>
@@ -186,7 +186,7 @@ a:active {
 			 <table width="502" border="0" bordercolor="#FFFFFF" align="center">
 			 </table>
 			<form action="?<?php echo paramEncrypt('page=../transaksi/kas_keluar')?>" method="post" name="postform"> <table width="502" border="1" border bordercolor="#FFFFFF" align="center">
-			   <tr bgcolor="#669900">
+			   <tr bgcolor="#2F6B4F">
   				<td height="25" colspan="4" nowrap><div align="center" class="style3 style9">Kriteria Input</div></td>
   				</tr>
 				  <tr>

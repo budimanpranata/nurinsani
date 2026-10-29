@@ -7,7 +7,7 @@ include "conn2.php";
 
 <style type="text/css">
 <!--
-.header1 {color: #ffffff; background: #00b050; font-weight: bold; font-family: Tahoma, Verdana; font-size: 13px; margin: 0px;}
+.header1 {color: #ffffff; background: #2F6B4F; font-weight: bold; font-family: Tahoma, Verdana; font-size: 13px; margin: 0px;}
 .style1 {
 	color: #FFFFFF;
 	font-weight: bold;
@@ -15,9 +15,9 @@ include "conn2.php";
 -->
 </style>
 <body>
-<table width="100%" border="0" cellpadding="3" cellspacing="0" bgcolor="#00b050">
+<table width="100%" border="0" cellpadding="3" cellspacing="0" bgcolor="#2F6B4F">
   <tr>
-    <td width="100%" bgcolor="#00b050"><span class="style1">Home</span></td>
+    <td width="100%" bgcolor="#2F6B4F"><span class="style1">Home</span></td>
   </tr>
 </table>
 </body>
@@ -94,7 +94,7 @@ while($row = mysql_fetch_array($result)){
 echo "<h>Selamat Datang ".$row['nama']. " Di Sistem Informasi KSPPS NurInsani </h>";
 echo "<br>";
 echo "<table width=\"500\" border=\"0\" cellpadding=\"3\" cellspacing=\"1\" bgcolor=\"#ffffff\">";
-echo "<tr bgcolor=\"#00CC00\">";
+echo "<tr bgcolor=\"#4F9A72\">";
 echo '<tr><th>Jenis Transaksi </th><th>Nominatif</th><th>Neraca</th> <th>status</th></tr>';
 echo "<tr><td>Outstanding </td><td>".number_format(compat_num($os))."</td><td align ='right'> ".number_format(compat_num($coa_os))."</td> <td bgcolor=\"$warna_belakang\"\n> ".$status_os."</td> </tr>";
 echo "<tr><td>Saldo Margin</td><td>".number_format(compat_num($margin))."</td><td align ='right'>".number_format(compat_num($coa_margin))."</td> <td bgcolor=\"$warna_belakang\"\n> ".$status_margin." </td></tr>";

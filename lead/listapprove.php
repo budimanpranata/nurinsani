@@ -15,7 +15,7 @@ if($_SESSION['level']!="lead"){
 ?>
 <style type="text/css">
 <!--
-.header1 {color: #ffffff; background: #669900; font-weight: bold; font-family: Tahoma, Verdana; font-size: 13px; margin: 0px;}
+.header1 {color: #ffffff; background: #2F6B4F; font-weight: bold; font-family: Tahoma, Verdana; font-size: 13px; margin: 0px;}
 .style1 {color: #CCCCCC}
 .style5 {color: #FF0000}
 .style9 {color: #FF0000; font-size: 14px; }
@@ -26,9 +26,9 @@ if($_SESSION['level']!="lead"){
 -->
 </style>
 <title>List approve</title>
-  <table width="100%" border="0" cellpadding="3" cellspacing="0" bgcolor="#669900">
+  <table width="100%" border="0" cellpadding="3" cellspacing="0" bgcolor="#2F6B4F">
     <tr>
-      <td width="100%" bgcolor="#669900"><span class="style14">Approve Dokumen </span></td>
+      <td width="100%" bgcolor="#2F6B4F"><span class="style14">Approve Dokumen </span></td>
     </tr>
   </table>
   </p>
@@ -89,7 +89,7 @@ echo " </tr>";
 ?>
 
   <tr class="style1">
-    <td colspan='8' align=center bgcolor="#669900"><input type="submit" value="Approve" name="confirm" />
+    <td colspan='8' align=center bgcolor="#2F6B4F"><input type="submit" value="Approve" name="confirm" />
     <input type="submit" value="Cancel" name="cancel" /></td>
   </tr>
 </table>

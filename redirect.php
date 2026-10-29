@@ -1,77 +1,29 @@
-<!DOCTYPE HTML PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
-<html dir="ltr" xmlns="http://www.w3.org/1999/xhtml" lang="id"><head>
-
-
-	<title>Redirect Page</title>
-	<META HTTP-EQUIV=Refresh CONTENT='2; URL=homeuse.php'>
-    <style type="text/css">
-<!--
-.style4 {
-	font-size: 12px;
-	font-weight: bold;
-}
--->
-* { margin: 0; padding: 0; }
-
-body {
-	border-top-width: 30px;
-	border-top-style: hidden;
-	font: 11px "Lucida Grande", Verdana, Arial, "Bitstream Vera Sans", sans-serif;
-}
-
-form {
-	margin-left: 8px;
-	padding: 16px 16px 40px 16px;
-	font-weight: normal;
-	-moz-border-radius: 11px;
-	-khtml-border-radius: 11px;
-	-webkit-border-radius: 11px;
-	border-radius: 5px;
-	background: #fff;
-	border: 1px solid #e5e5e5;
-	-moz-box-shadow: rgba(200,200,200,1) 0 4px 18px;
-	-webkit-box-shadow: rgba(200,200,200,1) 0 4px 18px;
-	-khtml-box-shadow: rgba(200,200,200,1) 0 4px 18px;
-	box-shadow: rgba(200,200,200,1) 0 4px 18px;
-}
-
-form .forgetmenot { font-weight: normal; float: left; margin-bottom: 0; }
-
-#redirect form p {
-	margin-bottom: 0;
-}
-
-label {
-	color: #777;
-	font-size: 13px;
-}
-
-form .forgetmenot label {
-	font-size: 11px;
-	line-height: 19px;
-}
-form p { margin-bottom: 24px; }
-
-#nav {
-	text-shadow: rgba(255,255,255,1) 0 1px 0;
-}
-#redirect { width: 320px; margin: 7em auto; }
-#nav { margin: 0 0 0 8px; padding: 16px; }
-    </style>
-    </head>
-<body class="login">
-
-<div id="redirect" align="center">
-<p class="message"><h2>&nbsp;</h2>
-<p>&nbsp;</p>
-<form name="loading" id="loading">
-  <p><img src="loading.gif" alt="Loading" width="150" height="13" /></p>
-  <p><span class="style4"><a href="homeuse.php"> </span></p>
-	<p>&nbsp;</p>
-	<p> <span class="style4">Loading...</span></p>
-	<p>&nbsp;</p>
-  </form>
-
-</div>
-
-</body></html>
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Redirect Page</title>
+<META HTTP-EQUIV=Refresh CONTENT='2; URL=homeuse.php'>
+<link rel="stylesheet" href="assets/vendor/bootstrap-5.3.3/css/bootstrap.min.css">
+<link rel="stylesheet" href="assets/app/app.css">
+<link rel="stylesheet" href="assets/app/login.css">
+<style>
+    .muat-kartu { text-align: center; }
+    .muat-batang { height: .375rem; margin: 1.5rem 0 1rem; border-radius: 1rem; background: var(--ni-hijau-muda); overflow: hidden; }
+    .muat-batang span { display: block; width: 40%; height: 100%; border-radius: 1rem; background: var(--ni-hijau); animation: muat 1.1s ease-in-out infinite; }
+    @keyframes muat { 0% { transform: translateX(-100%); } 100% { transform: translateX(250%); } }
+    @media (prefers-reduced-motion: reduce) { .muat-batang span { animation: none; width: 100%; } }
+</style>
+</head>
+<body class="halaman-login">
+<main class="login-panel" style="min-height:100vh">
+  <div class="login-kartu muat-kartu">
+    <img class="login-logo mx-auto" src="Image/ni.png" alt="KSPPS Nur Insani">
+    <div class="muat-batang" role="progressbar" aria-label="Memuat"><span></span></div>
+    <p class="mb-1 fw-semibold" style="color:#1f4a37">Loading...</p>
+    <p class="small text-body-secondary mb-0"><a href="homeuse.php">Lanjutkan jika halaman tidak berpindah</a></p>
+  </div>
+</main>
+</body>
+</html>

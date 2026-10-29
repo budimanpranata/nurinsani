@@ -173,7 +173,7 @@ $url_cari = 'ao.php?cari=' . urlencode($cari);
 <link href="css/bootstrap.min.css" rel="stylesheet">
 <style>
 body { padding: 0 0 20px; font-size: 13px; }
-.judul { background: #669900; color: #fff; font-weight: bold; font-size: 14px; padding: 4px 8px; margin-bottom: 12px; }
+.judul { background: #2F6B4F; color: #fff; font-weight: bold; font-size: 14px; padding: 4px 8px; margin-bottom: 12px; }
 .isi { padding: 0 12px; }
 .table > thead > tr > th { background: #e9f2dc; white-space: nowrap; }
 .table td form { display: inline; }

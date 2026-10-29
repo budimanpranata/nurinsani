@@ -65,7 +65,7 @@ a {
 
 <table width="100%" cellpadding="1" bordercolor="#CCCCCC" bgcolor="#CCCCCC">
   <tr>
-    <td height="20" bordercolor="#FFFFFF" bgcolor="#669900" class="style3 style8">Upload Dokumen
+    <td height="20" bordercolor="#FFFFFF" bgcolor="#2F6B4F" class="style3 style8">Upload Dokumen
       <div align="right"></div></td>
   </tr>
 </table>
@@ -73,7 +73,7 @@ a {
 <table width="428" border="1" align="center">
 </table>
   <form method="post" action="<?php echo $_SERVER['PHP_SELF']; ?>" name="postform">  <table width="502" border="0" align="center">
-<tr bgcolor="#669900">
+<tr bgcolor="#2F6B4F">
   <td height="10" colspan="4" nowrap><div align="center" class="style3 style9">Kriteria Pencarian </div></td>
   </tr>
 <tr>

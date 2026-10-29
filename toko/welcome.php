@@ -7,7 +7,7 @@ include "conn2.php";
 
 <style type="text/css">
 <!--
-.header1 {color: #ffffff; background: #00b050; font-weight: bold; font-family: Tahoma, Verdana; font-size: 13px; margin: 0px;}
+.header1 {color: #ffffff; background: #2F6B4F; font-weight: bold; font-family: Tahoma, Verdana; font-size: 13px; margin: 0px;}
 .style1 {
 	color: #FFFFFF;
 	font-weight: bold;
@@ -15,9 +15,9 @@ include "conn2.php";
 -->
 </style>
 <body>
-<table width="100%" border="0" cellpadding="3" cellspacing="0" bgcolor="#00b050">
+<table width="100%" border="0" cellpadding="3" cellspacing="0" bgcolor="#2F6B4F">
   <tr>
-    <td width="100%" bgcolor="#00b050"><span class="style1">Home</span></td>
+    <td width="100%" bgcolor="#2F6B4F"><span class="style1">Home</span></td>
   </tr>
 </table>
 </body>

@@ -564,7 +564,7 @@ function fill56(thisValue) {
             </table>
             <table width="100%" border="0" cellpadding="3" cellspacing="0" bgcolor="#4682B4">
                 <tr>
-                    <td width="100%" bgcolor="#669900" class="style1"><span class="style14">Entry Calon Anggota </span></td>
+                    <td width="100%" bgcolor="#2F6B4F" class="style1"><span class="style14">Entry Calon Anggota </span></td>
                 </tr>
             </table>
             <table width='100%' border='0' cellpadding='2' cellspacing='2' bordercolor="#ECE9D8" bgcolor="#EAEAEA">
@@ -738,7 +738,7 @@ function fill56(thisValue) {
 </iframe>
             <table width="100%" border="0" cellpadding="3" cellspacing="0" bgcolor="#4682B4">
                 <tr>
-                    <td width="100%" bgcolor="#669900" class="style14">Informasi Pengajuan Pembiayaan </td>
+                    <td width="100%" bgcolor="#2F6B4F" class="style14">Informasi Pengajuan Pembiayaan </td>
                 </tr>
          </table>
             <table width='100%' border='0' cellpadding='2' cellspacing='2' bordercolor="#ECE9D8" bgcolor="#EAEAEA">
@@ -828,7 +828,7 @@ function fill56(thisValue) {
             <br>
             <table width="100%" border="0" cellpadding="3" cellspacing="0" bgcolor="#4682B4">
                 <tr>
-                    <td width="100%" bgcolor="#669900" class="style14">Informasi Pembiayaan dan Simpanan Anggota </td>
+                    <td width="100%" bgcolor="#2F6B4F" class="style14">Informasi Pembiayaan dan Simpanan Anggota </td>
                 </tr>
             </table>
             <table width="100%" border="0">

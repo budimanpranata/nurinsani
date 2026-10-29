@@ -354,7 +354,7 @@ $CAO=$r['cao'];
             </table>
             <table width="100%" border="0" cellpadding="3" cellspacing="0" bgcolor="#4682B4">
                 <tr>
-                    <td width="100%" bgcolor="#669900" class="style1"><span class="style14">Informasi Anggota </span></td>
+                    <td width="100%" bgcolor="#2F6B4F" class="style1"><span class="style14">Informasi Anggota </span></td>
                 </tr>
             </table>
             <table width='100%' border='0' cellpadding='2' cellspacing='2' bordercolor="#ECE9D8" bgcolor="#EAEAEA">
@@ -519,7 +519,7 @@ $CAO=$r['cao'];
 </iframe>
             <table width="100%" border="0" cellpadding="3" cellspacing="0" bgcolor="#4682B4">
                 <tr>
-                    <td width="100%" bgcolor="#669900" class="style14">Informasi Pengajuan Pembiayaan </td>
+                    <td width="100%" bgcolor="#2F6B4F" class="style14">Informasi Pengajuan Pembiayaan </td>
                 </tr>
          </table>
             <table width='100%' border='0' cellpadding='2' cellspacing='2' bordercolor="#ECE9D8" bgcolor="#EAEAEA">
@@ -610,7 +610,7 @@ $CAO=$r['cao'];
             <br>
             <table width="100%" border="0" cellpadding="3" cellspacing="0" bgcolor="#4682B4">
                 <tr>
-                    <td width="100%" bgcolor="#669900" class="style14">Informasi Pembiayaan dan Simpanan Anggota </td>
+                    <td width="100%" bgcolor="#2F6B4F" class="style14">Informasi Pembiayaan dan Simpanan Anggota </td>
                 </tr>
             </table>
             <table width="100%" border="0">

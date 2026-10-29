@@ -13,7 +13,7 @@ function namahari($tanggal){
     $bln=substr($tanggal,5,2);
     $thn=substr($tanggal,0,4);
  
-    $info=date('w', mktime(0,0,0,$bln,$tgl,$thn));
+    $info=(is_numeric($bln) && is_numeric($tgl) && is_numeric($thn)) ? date('w', mktime(0,0,0,$bln,$tgl,$thn)) : date('w', 0); // PHP 5/7: tanggal kosong -> mktime gagal -> date('w', NULL) = 1970-01-01 (PHP 8: TypeError)
     
     switch($info){
         case '0': return "Minggu"; break;

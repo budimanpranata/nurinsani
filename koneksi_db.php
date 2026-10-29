@@ -103,6 +103,43 @@ function db_mobcol()
     return db_connect('mobcol');
 }
 
+/**
+ * Semua baris hasil query (prepared statement) ke nur_insani.
+ *   db_semua('SELECT * FROM loan WHERE unit = ? AND cao = ?', 'ss', $unit, $cao)
+ * Hasil array kosong bila query gagal.
+ */
+function db_semua($sql, $tipe = '', ...$param)
+{
+    $db = db_ni();
+    $st = $db->prepare($sql);
+    if (!$st || ($tipe !== '' && !$st->bind_param($tipe, ...$param)) || !$st->execute()) {
+        trigger_error('db_semua(): ' . ($st ? $st->error : $db->error) . ' | SQL: '
+            . substr(preg_replace('/\s+/', ' ', $sql), 0, 300), E_USER_WARNING);
+        return array();
+    }
+    return $st->get_result()->fetch_all(MYSQLI_ASSOC);
+}
+
+/** Jalankan query tulis (INSERT/UPDATE/DELETE, prepared statement); true bila berhasil. */
+function db_jalankan($sql, $tipe = '', ...$param)
+{
+    $db = db_ni();
+    $st = $db->prepare($sql);
+    if (!$st || ($tipe !== '' && !$st->bind_param($tipe, ...$param)) || !$st->execute()) {
+        trigger_error('db_jalankan(): ' . ($st ? $st->error : $db->error) . ' | SQL: '
+            . substr(preg_replace('/\s+/', ' ', $sql), 0, 300), E_USER_WARNING);
+        return false;
+    }
+    return true;
+}
+
+/** Baris pertama hasil query (prepared statement), atau null. */
+function db_satu($sql, $tipe = '', ...$param)
+{
+    $baris = db_semua($sql, $tipe, ...$param);
+    return $baris ? $baris[0] : null;
+}
+
 /** Koneksi PDO (untuk kode yang memakai PDO). $key: 'nur_insani' atau 'mobcol'. */
 function db_pdo($key = 'nur_insani')
 {

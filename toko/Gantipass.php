@@ -43,7 +43,7 @@ while($row = mysql_fetch_array($result)){
   </table>
   <table width="100%" border="0" cellpadding="3" cellspacing="0" bgcolor="#4682B4">
     <tr>
-      <td bgcolor="#669900" width="100%"><span class="style14">Ganti Password </span></td>
+      <td bgcolor="#2F6B4F" width="100%"><span class="style14">Ganti Password </span></td>
     </tr>
   </table>
   <table border='0' width='65%' cellpadding='2'  cellspacing='2' bgcolor="#FFFFFF">

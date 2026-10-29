@@ -1,4 +1,4 @@
-<?php require_once __DIR__ . '/php8_compat.php';
+<?php require_once __DIR__ . '/koneksi_db.php';
 session_start();
 ob_start();
 $userid=$_SESSION['userid'];
@@ -21,26 +21,22 @@ $code_kel = $_GET['code_kel'];
 
 
 
-$sql1=mysql_query("Select nama,kode_branch FROM user WHERE userid='$userid'");
-$dsmo= mysql_fetch_array($sql1);
+$dsmo = db_satu("Select nama,kode_branch FROM user WHERE userid=?", 's', (string) $userid);
 $kode_branch=$dsmo['kode_branch'];
 
-$sql1=mysql_query("Select nama_akad FROM jenis_akad WHERE unit='$kode_branch'");
-$dsmo= mysql_fetch_array($sql1);
+$dsmo = db_satu("Select nama_akad FROM jenis_akad WHERE unit=?", 's', (string) $kode_branch);
 $jenis_akad=$dsmo['nama_akad'];
 
 
-@mysql_query("delete from total_laris where unit='$kode_branch'");
+db_jalankan("delete from total_laris where unit=?", 's', (string) $kode_branch);
 
-$sql2=mysql_query("Select * FROM branch WHERE kode_branch='$kode_branch'");
-$br= mysql_fetch_array($sql2);
+$br = db_satu("Select * FROM branch WHERE kode_branch=?", 's', (string) $kode_branch);
 $nama_unit=$br['unit'];
 $alamat=$br['alamat'];
 
 
-$sql4=mysql_query("Select nama_kel,calon_loan.code_kel,next_schedule,calon_loan.cao, tgl_akad  FROM calon_loan 
-left join kelompok on kelompok.code_kel = calon_loan.code_kel WHERE calon_loan.code_kel='$code_kel'");
-$cd= mysql_fetch_array($sql4);
+$cd = db_satu("Select nama_kel,calon_loan.code_kel,next_schedule,calon_loan.cao, tgl_akad  FROM calon_loan 
+left join kelompok on kelompok.code_kel = calon_loan.code_kel WHERE calon_loan.code_kel=?", 's', (string) $code_kel);
 $nama_kel=$cd['nama_kel'];
 $cao=$cd['cao'];
 $hari=$cd['next_schedule'];
@@ -56,12 +52,10 @@ $dayList = array(
 	'Fri' => 'Jumat',
 	'Sat' => 'Sabtu'
 );
-$sql111=mysql_query("Select nama_ao FROM ao WHERE cao='$cao'");
-$ca= mysql_fetch_array($sql111);
+$ca = db_satu("Select nama_ao FROM ao WHERE cao=?", 's', (string) $cao);
 $nama_sales=$ca['nama_ao'];
 
-$dataum= mysql_query(" Select Nama as um,jabatan from person where unit='$kode_branch'");
-$um= mysql_fetch_array($dataum);
+$um = db_satu(" Select Nama as um,jabatan from person where unit=?", 's', (string) $kode_branch);
 $nama_um=$um['um'];
 $jabatan=$um['jabatan'];
 
@@ -164,10 +158,10 @@ $pdf->Ln(2);
 
 $pdf->Cell(5,5,'II.',0,1,'L');
 
-$sql=mysql_query("select cif,no_anggota,Plafond as tot_pla,cust_Short_name,tgl_wakalah from calon_loan
-where code_kel='$code_kel' and status_app in ('MURAB','MUSYAROKAH','PENDING') order by cust_Short_name");
+$sql = db_semua("select cif,no_anggota,Plafond as tot_pla,cust_Short_name,tgl_wakalah from calon_loan
+where code_kel=? and status_app in ('MURAB','MUSYAROKAH','PENDING') order by cust_Short_name", 's', (string) $code_kel);
 $members = array();
-while($result= mysql_fetch_array($sql)){
+foreach ($sql as $result){
     $members[] = $result['cust_Short_name'];
 }
 

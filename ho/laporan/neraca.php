@@ -114,7 +114,7 @@ a:active {
         </style>
 
 <table width="100%">
-  <tr bgcolor="#669900">
+  <tr bgcolor="#2F6B4F">
   <td height="30" colspan="4" nowrap><div align="left" class="style9 style3 style1 style1"><strong>Laporan Neraca </strong></div></td>
   </tr>
 </table>

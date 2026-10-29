@@ -24,7 +24,7 @@ function open_connection2(){
 	
 	//koneksi database
 	$koneksi2=db_ni();
-	mysql_select_db($db,$koneksi2);
+	mysqli_select_db($koneksi2, $db);
 	
 	return $koneksi2;
 }
@@ -35,23 +35,19 @@ header("Content-Disposition: attachment; filename=neraca.xls");
 
 $code_kel=$_GET['kode_kel'];
 
-$sql111=mysql_query("Select nama_ao FROM ao WHERE cao='$cao'");
-$ca= mysql_fetch_array($sql111);
+$ca = db_satu("Select nama_ao FROM ao WHERE cao=?", 's', (string) $cao);
 $nama_sales=$ca['nama_ao'];
 
 
-$sql1=mysql_query("Select nama,kode_branch FROM user WHERE userid='$userid'");
-$dsmo= mysql_fetch_array($sql1);
+$dsmo = db_satu("Select nama,kode_branch FROM user WHERE userid=?", 's', (string) $userid);
 $kode_branch=$dsmo['kode_branch'];
 
-$sql2=mysql_query("Select * FROM branch WHERE kode_branch='$kode_branch'");
-$br= mysql_fetch_array($sql2);
+$br = db_satu("Select * FROM branch WHERE kode_branch=?", 's', (string) $kode_branch);
 $nama_unit=$br['unit'];
 $alamat=$br['alamat'];
 
-$sql4=mysql_query("Select nama_kel,loan.code_kel,next_schedule  FROM loan 
-inner join kelompok on kelompok.code_kel = loan.code_kel WHERE loan.code_kel='$code_kel'");
-$cd= mysql_fetch_array($sql4);
+$cd = db_satu("Select nama_kel,loan.code_kel,next_schedule  FROM loan 
+inner join kelompok on kelompok.code_kel = loan.code_kel WHERE loan.code_kel=?", 's', (string) $code_kel);
 $nama_kel=$cd['nama_kel'];
 $hari=$cd['next_schedule'];
 $hari2=tgl_indo($tgl_jatuh_tempo);
@@ -66,21 +62,21 @@ $dayList = array(
 	'Sat' => 'Sabtu'
 );
 			
-			$sql=mysql_query("select loan.Plafond as tot_pla,sum(bulat)as tot_bulat,loan.unit,ao.nama_ao, loan.cif,ke,run_tenor,sum(KREDIT)-sum(DEBIT) as saldo,nama_kel,loan.cao, loan.cust_Short_name,loan.Plafond,loan.bagi_hasil,sum(loan.bagi_hasil) as baghas,bulat,os,loan.angsuran,sum(loan.angsuran)tot_angsur,loan.bulat
+			$sql = db_semua("select loan.Plafond as tot_pla,sum(bulat)as tot_bulat,loan.unit,ao.nama_ao, loan.cif,ke,run_tenor,sum(KREDIT)-sum(DEBIT) as saldo,nama_kel,loan.cao, loan.cust_Short_name,loan.Plafond,loan.bagi_hasil,sum(loan.bagi_hasil) as baghas,bulat,os,loan.angsuran,sum(loan.angsuran)tot_angsur,loan.bulat
  from loan
 LEFT join anggota on anggota.CIF = loan.cif
 inner join kelompok on kelompok.code_kel=loan.code_kel
 INNER join simpanan on simpanan.cif=loan.cif
-LEFT join ao on ao.cao=loan.cao where loan.code_kel='$code_kel' AND loan.hari='$dayList[$day]' and loan.cao='$cao' and os > 0 group by loan.cif");
+LEFT join ao on ao.cao=loan.cao where loan.code_kel=? AND loan.hari=? and loan.cao=? and os > 0 group by loan.cif", 'sss', (string) $code_kel, (string) $dayList[$day], (string) $cao);
 
-if(mysql_num_rows($sql)==0){
-$sql=mysql_query("select loan.Plafond as tot_pla,sum(bulat)as tot_bulat,loan.unit,ao.nama_ao, loan.cif,ke,run_tenor,sum(KREDIT)-sum(DEBIT) as saldo,nama_kel,loan.cao, loan.cust_Short_name,loan.Plafond,loan.bagi_hasil,sum(loan.bagi_hasil) as baghas,bulat,os,loan.angsuran,sum(loan.angsuran)tot_angsur,loan.bulat
+if(count($sql)==0){
+$sql = db_semua("select loan.Plafond as tot_pla,sum(bulat)as tot_bulat,loan.unit,ao.nama_ao, loan.cif,ke,run_tenor,sum(KREDIT)-sum(DEBIT) as saldo,nama_kel,loan.cao, loan.cust_Short_name,loan.Plafond,loan.bagi_hasil,sum(loan.bagi_hasil) as baghas,bulat,os,loan.angsuran,sum(loan.angsuran)tot_angsur,loan.bulat
  from loan
 LEFT join anggota on anggota.CIF = loan.cif
 inner join kelompok on kelompok.code_kel=loan.code_kel
 INNER join simpanan on simpanan.cif=loan.cif
 LEFT join pinjaman_detail_jatpo on loan.no_anggota=pinjaman_detail_jatpo.id_pinjam
-LEFT join ao on ao.cao=loan.cao where loan.code_kel='$code_kel' AND pinjaman_detail_jatpo.tgl_jatuh_tempo='$tgl_jatuh_tempo' and loan.cao='$cao' and os > 0 group by loan.cif");
+LEFT join ao on ao.cao=loan.cao where loan.code_kel=? AND pinjaman_detail_jatpo.tgl_jatuh_tempo=? and loan.cao=? and os > 0 group by loan.cif", 'sss', (string) $code_kel, (string) $tgl_jatuh_tempo, (string) $cao);
 		
 		 }
 
@@ -134,7 +130,7 @@ echo '<table class="grey">
 				</tr>
 		</thead>
 		<tbody>';
-while($result=mysql_fetch_array($sql))
+foreach ($sql as $result)
 {
 	$no ++;
  $TGL_KUNJUNGAN = $result['nama_ao'];
@@ -153,16 +149,16 @@ $run_tenor = $result['run_tenor'];
 $os = ($result['os']);
 $norek="$cao-$cif";
 $bagi_hasil = ($result['bagi_hasil']);
-$cek_pokok= mysql_fetch_array(mysql_query("select sum(KREDIT)- sum(DEBIT) as pokok from tunggakan WHERE cif='$cif' and type='01'"));
+$cek_pokok= db_satu("select sum(KREDIT)- sum(DEBIT) as pokok from tunggakan WHERE cif=? and type='01'", 's', (string) $cif);
 $tunggak_pokok =$cek_pokok['pokok'];
-$cek_margin= mysql_fetch_array(mysql_query("select sum(KREDIT)- sum(DEBIT) as margin from tunggakan WHERE cif='$cif' and type='02'"));
+$cek_margin= db_satu("select sum(KREDIT)- sum(DEBIT) as margin from tunggakan WHERE cif=? and type='02'", 's', (string) $cif);
 $tunggak_margin =$cek_margin['margin'];
-$cek_saldo= mysql_fetch_array(mysql_query("select sum(KREDIT - DEBIT) as saldo from simpanan WHERE cif='$cif' and type not in ('04','05')"));
+$cek_saldo= db_satu("select sum(KREDIT - DEBIT) as saldo from simpanan WHERE cif=? and type not in ('04','05')", 's', (string) $cif);
 $saldo =$cek_saldo['saldo'];
 
-$cek_saldo_p= mysql_fetch_array(mysql_query("select sum(KREDIT - DEBIT) as saldo from simpanan_pokok WHERE cif='$cif'"));
+$cek_saldo_p= db_satu("select sum(KREDIT - DEBIT) as saldo from simpanan_pokok WHERE cif=?", 's', (string) $cif);
 $saldo_p =$cek_saldo_p['saldo'];
-$cek_saldo_w= mysql_fetch_array(mysql_query("select sum(KREDIT - DEBIT) as saldo from simpanan_wajib WHERE cif='$cif'"));
+$cek_saldo_w= db_satu("select sum(KREDIT - DEBIT) as saldo from simpanan_wajib WHERE cif=?", 's', (string) $cif);
 $saldo_w =$cek_saldo_w['saldo'];
 $wp=($saldo_p + $saldo_w);
 

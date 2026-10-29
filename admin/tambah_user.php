@@ -19,7 +19,7 @@ if($_SESSION['level']!="admin"){
 <title>Tambah User</title>
 <style type="text/css">
 <!--
-.header1 {color: #ffffff; background: #669900; font-weight: bold; font-family: Tahoma, Verdana; font-size: 13px; margin: 0px;}
+.header1 {color: #ffffff; background: #2F6B4F; font-weight: bold; font-family: Tahoma, Verdana; font-size: 13px; margin: 0px;}
 .style5 {color: #FF0000}
 .style9 {color: #FF0000; font-size: 14px; }
 .style13 {font-family: Verdana, Arial, Helvetica, sans-serif; font-size: 14px; }

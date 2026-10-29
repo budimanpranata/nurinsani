@@ -160,7 +160,7 @@ function fill5(thisValue) {
 <body onLoad="document.postform.elements['nopen'].focus();">
 <table width="100%" border="0" cellpadding="3" cellspacing="0" bgcolor="#4682B4">
   <tr>
-    <td width="100%" bgcolor="#669900" class="style14">Update Kelompok </td>
+    <td width="100%" bgcolor="#2F6B4F" class="style14">Update Kelompok </td>
   </tr>
 </table>
 <form action="update_kel.php" method="post" name="postform">

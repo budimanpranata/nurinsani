@@ -1,4 +1,4 @@
-<?php require_once __DIR__ . '/php8_compat.php';
+<?php require_once __DIR__ . '/koneksi_db.php';
 session_start();
 ob_start();
 $userid=$_SESSION['userid'];
@@ -20,25 +20,21 @@ $code_kel = $_GET['code_kel'];
 $jenis =$_GET['jenis'];
 //var_dump($jenis);
 
-$sql111=mysql_query("Select nama_ao FROM ao WHERE cao='$cao'");
-$ca= mysql_fetch_array($sql111);
+$ca = db_satu("Select nama_ao FROM ao WHERE cao=?", 's', (string) $cao);
 $nama_sales=$ca['nama_ao'];
 
 
-$sql1=mysql_query("Select nama,kode_branch FROM user WHERE userid='$userid'");
-$dsmo= mysql_fetch_array($sql1);
+$dsmo = db_satu("Select nama,kode_branch FROM user WHERE userid=?", 's', (string) $userid);
 $kode_branch=$dsmo['kode_branch'];
 
-@mysql_query("delete from total_laris where unit='$kode_branch'");
+db_jalankan("delete from total_laris where unit=?", 's', (string) $kode_branch);
 
-$sql2=mysql_query("Select * FROM branch WHERE kode_branch='$kode_branch'");
-$br= mysql_fetch_array($sql2);
+$br = db_satu("Select * FROM branch WHERE kode_branch=?", 's', (string) $kode_branch);
 $nama_unit=$br['unit'];
 $alamat=$br['alamat'];
 
-$sql4=mysql_query("Select nama_kel,calon_loan.code_kel,next_schedule  FROM calon_loan 
-left join kelompok on kelompok.code_kel = calon_loan.code_kel WHERE calon_loan.code_kel='$code_kel'");
-$cd= mysql_fetch_array($sql4);
+$cd = db_satu("Select nama_kel,calon_loan.code_kel,next_schedule  FROM calon_loan 
+left join kelompok on kelompok.code_kel = calon_loan.code_kel WHERE calon_loan.code_kel=?", 's', (string) $code_kel);
 $nama_kel=$cd['nama_kel'];
 $hari=$cd['next_schedule'];
 $hari2=tgl_indo($tgl_jatuh_tempo);
@@ -167,21 +163,21 @@ $pdf->Ln();
 $no=0;
 $tot_blt=0;
 if($jenis=="MURAB"){
-$sql=mysql_query("select cif,no_anggota,Plafond as tot_pla,cust_Short_name,tgl_wakalah from calon_loan
-where code_kel='$code_kel' and status_app ='PENDING'");
+$sql = db_semua("select cif,no_anggota,Plafond as tot_pla,cust_Short_name,tgl_wakalah from calon_loan
+where code_kel=? and status_app ='PENDING'", 's', (string) $code_kel);
 $jenis ="Murabahah";
-$sql2=mysql_query("select sum(Plafond) as totpla, sum(Plafond *(5/100)) as persen from calon_loan
-where code_kel='$code_kel' and status_app ='PENDING' group by code_kel");
+$sql2 = db_semua("select sum(Plafond) as totpla, sum(Plafond *(5/100)) as persen from calon_loan
+where code_kel=? and status_app ='PENDING' group by code_kel", 's', (string) $code_kel);
 }else{
-$sql=mysql_query("select cif,no_anggota,Plafond as tot_pla,cust_Short_name,tgl_wakalah from calon_loan
-where code_kel='$code_kel' and status_app ='MUSYAROKAH'");
+$sql = db_semua("select cif,no_anggota,Plafond as tot_pla,cust_Short_name,tgl_wakalah from calon_loan
+where code_kel=? and status_app ='MUSYAROKAH'", 's', (string) $code_kel);
 $jenis ="Musyarakah";
-$sql2=mysql_query("select sum(Plafond) as totpla, sum(Plafond *(5/100)) as persen from calon_loan
-where code_kel='$code_kel' and status_app ='MUSYAROKAH' group by code_kel");
+$sql2 = db_semua("select sum(Plafond) as totpla, sum(Plafond *(5/100)) as persen from calon_loan
+where code_kel=? and status_app ='MUSYAROKAH' group by code_kel", 's', (string) $code_kel);
 }
 		
 		 
-while($result= mysql_fetch_array($sql)){
+foreach ($sql as $result){
 	$no ++;
  $cust_Short_name= $result['cust_Short_name'];
  $norek= $result['no_anggota'];
@@ -190,7 +186,7 @@ while($result= mysql_fetch_array($sql)){
 $Plafond= number_format (compat_num($result['tot_pla']));  
 $persen= number_format (compat_num($result['tot_pla']*5/100));
 $cif=$result['cif'];
-$sal_simpan= mysql_fetch_array(mysql_query("select sum(KREDIT - DEBIT) as saldo from simpanan WHERE cif='$cif' and type not in ('04','05')"));
+$sal_simpan= db_satu("select sum(KREDIT - DEBIT) as saldo from simpanan WHERE cif=? and type not in ('04','05')", 's', (string) $cif);
 $saldo =$sal_simpan['saldo'];
 $ft=$Pla*(5/100);
 $pensiun=number_format(compat_num($ft));
@@ -204,7 +200,7 @@ $nyata=abs(compat_num($nyata));
 	$nyata=$ft;
 	$nyata=abs(compat_num($nyata));
 }
-@mysql_query("insert into total_laris values('$kode_brach','$nyata')");
+db_jalankan("insert into total_laris values(?,?)", 'ss', (string) (isset($kode_brach) ? $kode_brach : ''), (string) $nyata);
 
 //query dan arraying
 $pdf->SetFont('Arial','',10);
@@ -222,7 +218,7 @@ $pdf->Ln();
 
 
 
-while($result1= mysql_fetch_array($sql2)){
+foreach ($sql2 as $result1){
 
 $tot_angsur+=$result1['tot_angsur'];
 $totpla+=$result1['totpla'];
@@ -232,16 +228,16 @@ $biaya=$result1['biaya'];
 $tot_blt +=$result1['tot_bulat'];
 
 }
-$sql3=mysql_query("select sum(KREDIT - DEBIT) as saldo from simpanan
-where code_kel='$code_kel' and type not in ('04','05') and cif in (select cif from calon_loan) group by code_kel");
-while($result3= mysql_fetch_array($sql3)){
+$sql3 = db_semua("select sum(KREDIT - DEBIT) as saldo from simpanan
+where code_kel=? and type not in ('04','05') and cif in (select cif from calon_loan) group by code_kel", 's', (string) $code_kel);
+foreach ($sql3 as $result3){
 
 $saldo1+=$result3['saldo'];
 
 }
 
-$sql4=mysql_query("select sum(total) as total_laris from total_laris where unit ='$kode_branch' ");
-while($result4= mysql_fetch_array($sql4)){
+$sql4 = db_semua("select sum(total) as total_laris from total_laris where unit =? ", 's', (string) $kode_branch);
+foreach ($sql4 as $result4){
 
 $laris+=$result4['total_laris'];
 

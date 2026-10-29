@@ -227,7 +227,7 @@ a:active {
 
 <table width="100%" >
   <tr>
-    <td height="20" bordercolor="#FFFFFF" bgcolor="#669900" class="style3 style9"><span class="style8">Cetak Kartu Angsuran
+    <td height="20" bordercolor="#FFFFFF" bgcolor="#2F6B4F" class="style3 style9"><span class="style8">Cetak Kartu Angsuran
       </span>
     <div align="right"></div></td>
   </tr>
@@ -236,7 +236,7 @@ a:active {
 <table width="428" border="1" align="center">
 </table>
   <form method="post" action="<?php echo $_SERVER['PHP_SELF'];?>" name="postform">  <table width="543" border="0" align="center">
-<tr bgcolor="#669900">
+<tr bgcolor="#2F6B4F">
   <td height="10" colspan="4" nowrap><div align="center" class="style3 style9">Input Data </div></td>
   </tr>
   <tr>

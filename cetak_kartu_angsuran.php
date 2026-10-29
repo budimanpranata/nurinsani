@@ -1,4 +1,4 @@
-<?php require_once __DIR__ . '/php8_compat.php';
+<?php require_once __DIR__ . '/koneksi_db.php';
 session_start();
 ob_start();
     $userid=$_SESSION['userid'];
@@ -13,25 +13,21 @@ $pilih=$_GET['jenis'];
 
 
 
-$data = mysql_query ("select kode_branch from user where userid ='$userid'");
-$r = mysql_fetch_array($data);
+$r = db_satu("select kode_branch from user where userid =?", 's', (string) $userid);
 $branch=$r['kode_branch'];
-$nama_brnach = mysql_query ("select * from branch where kode_branch ='$branch'");
-$r = mysql_fetch_array($nama_brnach);
+$r = db_satu("select * from branch where kode_branch =?", 's', (string) $branch);
 $nama_unit=$r['unit'];
 $alamat=$r['alamat'];
 
-$sql1=mysql_query("Select nama,kode_branch FROM user WHERE userid='$userid'");
-$dsmo= mysql_fetch_array($sql1);
+$dsmo = db_satu("Select nama,kode_branch FROM user WHERE userid=?", 's', (string) $userid);
 $kode_branch=$dsmo['kode_branch'];
 
 
 
-$datacif = mysql_query ("select cif from anggota where cif ='$norek'");
-$d = mysql_fetch_array($datacif);
+$d = db_satu("select cif from anggota where cif =?", 's', (string) $norek);
 $cif=$d['cif'];
-$data_loan = mysql_query ("select * from loan where cif ='$cif'");
-while($data_l= mysql_fetch_array($data_loan)){
+$data_loan = db_semua("select * from loan where cif =?", 's', (string) $cif);
+foreach ($data_loan as $data_l){
 $os=number_format(compat_num($data_l['os']));
 
 $plafond=number_format(compat_num($data_l['Plafond']));
@@ -54,20 +50,17 @@ require ('fpdf17/fpdf.php');
     {
      case "01":
 
-$sql3 =mysql_query ("select CUST_SHORT_NAME,id_pinjam,bulat,angsuran_pokok,bunga,tgl_jatuh_tempo,tgl_bayar,cicilan from pinjaman_detail
+$sql3 = db_semua("select CUST_SHORT_NAME,id_pinjam,bulat,angsuran_pokok,bunga,tgl_jatuh_tempo,tgl_bayar,cicilan from pinjaman_detail
 inner join loan on loan.no_anggota=pinjaman_detail.id_pinjam
-where loan.cif='$norek' and tenor <=tenor order by cicilan");
+where loan.cif=? and tenor <=tenor order by cicilan", 's', (string) $norek);
 
-$datapokok = mysql_query ("select SUM(KREDIT - DEBIT) as spokok from simpanan_pokok where cif='$cif'");
-$sp = mysql_fetch_array($datapokok);
+$sp = db_satu("select SUM(KREDIT - DEBIT) as spokok from simpanan_pokok where cif=?", 's', (string) $cif);
 $spokok=number_format(compat_num($sp['spokok']));
 
-$datawajib = mysql_query ("select SUM(KREDIT - DEBIT) as swajib from simpanan_wajib where cif='$cif'");
-$sw = mysql_fetch_array($datawajib);
+$sw = db_satu("select SUM(KREDIT - DEBIT) as swajib from simpanan_wajib where cif=?", 's', (string) $cif);
 $swajib=number_format(compat_num($sw['swajib']));
 
-$datas = mysql_query ("select SUM(KREDIT - DEBIT) as saldo from simpanan where cif='$cif' and type not in('04','05')");
-$s = mysql_fetch_array($datas);
+$s = db_satu("select SUM(KREDIT - DEBIT) as saldo from simpanan where cif=? and type not in('04','05')", 's', (string) $cif);
 $simpanan=number_format(compat_num($s['saldo']));
 
 $pdf=new FPDF('P','mm', array(216, 275));
@@ -148,7 +141,7 @@ $pdf->Cell(20,5,'Saldo',1,0,'C');
 $pdf->Cell(20,5,'Anggota',1,0,'C');
 $pdf->Ln();
 $no3 =0;
-while($result3= mysql_fetch_array($sql3)){
+foreach ($sql3 as $result3){
 $no3 ++;
 $id_pinjam = $result3['id_pinjam'];
 $CUST_SHORT_NAME = $result3['CUST_SHORT_NAME'];
@@ -222,10 +215,10 @@ $pdf=new FPDF ('P','mm','A4');
 
 $pdf->addPage();
 
-$pot = mysql_query("select * from loan where code_kel='$norek'  ");
+$pot = db_semua("select * from loan where code_kel=?  ", 's', (string) $norek);
 
 $page=0;
-while($p = mysql_fetch_array($pot)){
+foreach ($pot as $p){
 $page++;
 $nama=$p['Cust_Short_name'];
 $norekk=$p['no_anggota'];
@@ -242,24 +235,21 @@ $untung =$p['bagi_hasil'];
 $margin = number_format (compat_num($p['bagi_hasil']));
 
 
-$pot2 =mysql_query ("select id_pinjam,angsuran_pokok,bunga,tgl_jatuh_tempo,tgl_bayar,cicilan from pinjaman_detail
-where id_pinjam='$norekk' order by cicilan");
+$pot2 = db_semua("select id_pinjam,angsuran_pokok,bunga,tgl_jatuh_tempo,tgl_bayar,cicilan from pinjaman_detail
+where id_pinjam=? order by cicilan", 's', (string) $norekk);
 
 
 //$pot2 =mysql_query ("select CUST_SHORT_NAME,id_pinjam,bulat,angsuran_pokok,bunga,tgl_jatuh_tempo,tgl_bayar,cicilan from pinjaman_detail
 //inner join loan on loan.cif=pinjaman_detail.cif
 //where loan.cif='$cif' order by cicilan");
 
-$datapokok = mysql_query ("select SUM(KREDIT - DEBIT) as spokok from simpanan_pokok where cif='$cif'");
-$sp = mysql_fetch_array($datapokok);
+$sp = db_satu("select SUM(KREDIT - DEBIT) as spokok from simpanan_pokok where cif=?", 's', (string) $cif);
 $spokok=number_format(compat_num($sp['spokok']));
 
-$datawajib = mysql_query ("select SUM(KREDIT - DEBIT) as swajib from simpanan_wajib where cif='$cif'");
-$sw = mysql_fetch_array($datawajib);
+$sw = db_satu("select SUM(KREDIT - DEBIT) as swajib from simpanan_wajib where cif=?", 's', (string) $cif);
 $swajib=number_format(compat_num($sw['swajib']));
 
-$datas = mysql_query ("select SUM(KREDIT - DEBIT) as saldo from simpanan where cif='$cif' and type not in('04','05')");
-$s = mysql_fetch_array($datas);
+$s = db_satu("select SUM(KREDIT - DEBIT) as saldo from simpanan where cif=? and type not in('04','05')", 's', (string) $cif);
 $simpanan=number_format(compat_num($s['saldo']));
 
  do {
@@ -340,7 +330,7 @@ $pdf->Cell(20,5,'Anggota',1,0,'C');
 
 $pdf->Ln();
 $no3 =0;
-while($result3= mysql_fetch_array($pot2)){
+foreach ($pot2 as $result3){
 $no3 ++;
 $id_pinjam = $result3['id_pinjam'];
 $CUST_SHORT_NAME = $result3['CUST_SHORT_NAME'];
@@ -454,10 +444,10 @@ $pdf->Output();
         
         $pdf->addPage();
         
-        $pot = mysql_query("select * from loan where code_kel='$norek' and status='CETAK' ");
+        $pot = db_semua("select * from loan where code_kel=? and status='CETAK' ", 's', (string) $norek);
         
         $page=0;
-        while($p = mysql_fetch_array($pot)){
+        foreach ($pot as $p){
         $page++;
         $nama=$p['Cust_Short_name'];
         $norekk=$p['no_anggota'];
@@ -475,25 +465,25 @@ $pdf->Output();
         $margin = number_format (compat_num($p['bagi_hasil']));
         
         
-        $pot2 =mysql_query ("select id_pinjam,angsuran_pokok,bunga,tgl_jatuh_tempo,tgl_bayar,cicilan from pinjaman_detail_temp
-        where id_pinjam='$norekk' order by cicilan");
+        $pot2 = db_semua("select id_pinjam,angsuran_pokok,bunga,tgl_jatuh_tempo,tgl_bayar,cicilan from pinjaman_detail_temp
+        where id_pinjam=? order by cicilan", 's', (string) $norekk);
 
 	if($status_app=='MURAB'){
-        $pot3 =mysql_query (" insert into pinjaman_detail select * from  pinjaman_detail_temp
-        where id_pinjam='$norekk' order by cicilan");
+        $pot3 = db_jalankan(" insert into pinjaman_detail select * from  pinjaman_detail_temp
+        where id_pinjam=? order by cicilan", 's', (string) $norekk);
 	}else{
-	        $pot3 =mysql_query (" insert into pinjaman_detail_mus 
+	        $pot3 = db_jalankan(" insert into pinjaman_detail_mus
 	select id, id_pinjam, cicilan, angsuran_pokok,bunga as nisbah,tgl_jatuh_tempo,tgl_bayar,jumlah_bayar as nisbah_anggota,ket,cif,unit,ao,code_kel from  pinjaman_detail_temp_mus
-        where id_pinjam='$norekk' order by cicilan");
-	 $pot3 =mysql_query (" insert into pinjaman_detail select * from  pinjaman_detail_temp_mus
-        where id_pinjam='$norekk' order by cicilan");
-     $pot2 =mysql_query ("select id_pinjam,angsuran_pokok,bunga,tgl_jatuh_tempo,tgl_bayar,cicilan from pinjaman_detail_temp_mus
-        where id_pinjam='$norekk' order by cicilan");
+        where id_pinjam=? order by cicilan", 's', (string) $norekk);
+	 $pot3 = db_jalankan(" insert into pinjaman_detail select * from  pinjaman_detail_temp_mus
+        where id_pinjam=? order by cicilan", 's', (string) $norekk);
+     $pot2 = db_semua("select id_pinjam,angsuran_pokok,bunga,tgl_jatuh_tempo,tgl_bayar,cicilan from pinjaman_detail_temp_mus
+        where id_pinjam=? order by cicilan", 's', (string) $norekk);
 	}
 
-$pot5 = mysql_query("delete from pinjaman_detail_temp_mus where id_pinjam='$norekk' ");
+$pot5 = db_jalankan("delete from pinjaman_detail_temp_mus where id_pinjam=? ", 's', (string) $norekk);
 
-$pot5 = mysql_query("delete from pinjaman_detail_temp where id_pinjam='$norekk' ");
+$pot5 = db_jalankan("delete from pinjaman_detail_temp where id_pinjam=? ", 's', (string) $norekk);
 
 
 
@@ -508,16 +498,13 @@ $pot5 = mysql_query("delete from pinjaman_detail_temp where id_pinjam='$norekk' 
         //inner join loan on loan.cif=pinjaman_detail.cif
         //where loan.cif='$cif' order by cicilan");
         
-        $datapokok = mysql_query ("select SUM(KREDIT - DEBIT) as spokok from simpanan_pokok where cif='$cif'");
-        $sp = mysql_fetch_array($datapokok);
+        $sp = db_satu("select SUM(KREDIT - DEBIT) as spokok from simpanan_pokok where cif=?", 's', (string) $cif);
         $spokok=number_format(compat_num($sp['spokok']));
         
-        $datawajib = mysql_query ("select SUM(KREDIT - DEBIT) as swajib from simpanan_wajib where cif='$cif'");
-        $sw = mysql_fetch_array($datawajib);
+        $sw = db_satu("select SUM(KREDIT - DEBIT) as swajib from simpanan_wajib where cif=?", 's', (string) $cif);
         $swajib=number_format(compat_num($sw['swajib']));
         
-        $datas = mysql_query ("select SUM(KREDIT - DEBIT) as saldo from simpanan where cif='$cif' and type not in('04','05')");
-        $s = mysql_fetch_array($datas);
+        $s = db_satu("select SUM(KREDIT - DEBIT) as saldo from simpanan where cif=? and type not in('04','05')", 's', (string) $cif);
         $simpanan=number_format(compat_num($s['saldo']));
         
          do {
@@ -600,7 +587,7 @@ $pot5 = mysql_query("delete from pinjaman_detail_temp where id_pinjam='$norekk' 
         
         $pdf->Ln();
         $no3 =0;
-        while($result3= mysql_fetch_array($pot2)){
+foreach ($pot2 as $result3){
         $no3 ++;
         $id_pinjam = $result3['id_pinjam'];
         $CUST_SHORT_NAME = $result3['CUST_SHORT_NAME'];
@@ -705,7 +692,7 @@ $pdf->Ln(202);
         }
 
 
-        $pot = mysql_query("update loan set status='ANGGOTA' where code_kel='$norek' and status='CETAK' ");
+        $pot = db_jalankan("update loan set status='ANGGOTA' where code_kel=? and status='CETAK' ", 's', (string) $norek);
     
         $pdf->Output();
 

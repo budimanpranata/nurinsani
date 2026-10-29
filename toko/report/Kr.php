@@ -136,7 +136,7 @@ $('#bulan').show();
 
 <table width="100%">
 
-  <tr bgcolor="#669900">
+  <tr bgcolor="#2F6B4F">
 
   <td height="10" colspan="4" nowrap><div align="left" class="style3 style9">Nominative Kredit</div></td>
 
@@ -152,7 +152,7 @@ $('#bulan').show();
 
   <form method="post" action="<?php echo $_SERVER['PHP_SELF']; ?>" name="form">  <table width="566" border="0" align="center">
 
-<tr bgcolor="#669900">
+<tr bgcolor="#2F6B4F">
 
   <td height="10" colspan="4" nowrap><div align="center" class="style3 style9">Criteria Pencarian </div></td>
 

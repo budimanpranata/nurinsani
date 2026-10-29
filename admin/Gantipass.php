@@ -32,7 +32,7 @@ while($row = mysql_fetch_array($result)){
   </table>
   <table width="100%" cellpadding="1" bordercolor="#CCCCCC" bgcolor="#CCCCCC">
     <tr>
-      <td height="20" bordercolor="#FFFFFF" bgcolor="#669900" class="style3 style8"><span class="style14">Cari Data Disbursement
+      <td height="20" bordercolor="#FFFFFF" bgcolor="#2F6B4F" class="style3 style8"><span class="style14">Cari Data Disbursement
           </span>
       <div align="right"></div></td>
     </tr>

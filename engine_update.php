@@ -1,263 +1,206 @@
-<?php require_once __DIR__ . '/php8_compat.php';
+<?php require_once __DIR__ . '/koneksi_db.php';
+/**
+ * Proses pengajuan pembiayaan dari pengajuan_ex.php.
+ *   POST ?p=update  -> "Sukses" atau daftar pesan error (satu per baris)
+ *
+ * Perhitungan dan query sama dengan versi lama (mysql_*); yang berubah:
+ * prepared statement, wajib login + token, CIF harus milik unit user,
+ * dan semua validasi dilakukan sebelum ada data yang ditulis.
+ */
 session_start();
-ob_start();
-$userid=$_SESSION['userid'];
 date_default_timezone_set('Asia/Jakarta');
+header('Content-Type: text/plain; charset=utf-8');
 
-include "config.php";
-include "function.php";
-	
-switch ( $_GET['p'] ) {
-
-	default: echo "Halaman tidak ditemukan"; break;
-
-	case "tambah":
-
-		
-	break;
-
-	case "update":
-		$id = $_POST['id'];
-		$tgl_wakalah = $_POST['inn'];
-		$pla=$_POST['pla'];
-		$cif=$_POST['cif'];
-		$akad=$_POST['akad'];
-		$tenor=$_POST['tenor'];
-		$jenis_akad=$_POST['jenisAkad'];
-		$tgl_wakal=strtotime($tgl_wakalah);
-		$murab1 =  date("Y-m-d", strtotime("+7 day", $tgl_wakal));
-		$Newmurab = date ("Y-m-d", strtotime("+7 day" , strtotime ($tgl_wakal))) ;
-		$tgl_m	= strtotime($murab1);
-		$maturity_date1 =  date("Y-m-d", strtotime("+$tenor WEEK", $tgl_m));
-		
-		$tanggal = $tgl_wakalah;
-    $day = date('D', strtotime($tanggal));
-    $dayList = array(
-    	'Sun' => 'Minggu',
-    	'Mon' => 'Senin',
-    	'Tue' => 'Selasa',
-    	'Wed' => 'Rabu',
-    	'Thu' => 'Kamis',
-    	'Fri' => 'Jumat',
-    	'Sat' => 'Sabtu'
-    );
-		
-		
-		
-		
-		$sql = $conn->query("select unit from loan WHERE cif = '$cif'");
-		while ( $r = $sql->fetch_assoc() ) {
-		$unit=$r['unit'];
-		}
-
-		$sql = $conn->query("select nominal from omzet WHERE cif = '$cif'");
-		while ( $r = $sql->fetch_assoc() ) {
-		$omzet=$r['nominal']; 
-		}
-		if ($jenis_akad=="MUSYAROKAH"){
-			$omzet =$omzet;
-			if($omzet==0){
-				{$err[] = "<h5>* Omzet tidakdi Temukan</h5>";}
-
-			}else{
-				$omzet * (50/100);
-			}
-		}else{
-			$omzet =$omzet;
-
-		} 
-		
-		
-		$sql1 = $conn->query("select margin,tab,pla,jw FROM param_biaya where jw ='$tenor' and pla='$pla'");
-		while ( $pbiaya = $sql1->fetch_assoc() ) {				
-				$param_margin=$pbiaya['margin'];
-				$param_tabung=$pbiaya['tab'];
-				$param_tenor=$pbiaya['jw'];
-				$param_pla=$pbiaya['pla'];
-				}
-				
-				if ($param_tenor==$tenor and $pla==$param_pla)
-					{
-						
-					$pokok=$pla/$tenor;
-					$margin=$pla * ($param_margin/100);
-					$ijaroh=$margin/$tenor;
-					$angsuran=$ijaroh+$pokok;
-					$uang =$param_tabung+$angsuran;
-					$os =$pla + $margin + (2500 * $tenor);
-					$margin=$pla * ($param_margin/100) + (2500 * $tenor);	
-
-				} else {$err[] = "<h5>* parameter pembiyaan tidak ditemukan</h5>";}
-
-
-$sql2 = $conn->query("select status_approve FROM branch where kode_branch ='$unit' and status_approve='YA'");
-		while ( $pbiaya2 = $sql2->fetch_assoc() ) {				
-				$param_status=$pbiaya2['status_approve'];
-				
-				}
-				
-				if ($param_status=='YA')
-					{
-						
-					
-					$gol ='0';	
-
-				} else {
-				$gol ='0';
-				}
-		
-
-
-		
-		empty( $pla ) 	 ? $err[] = "<h5>* PLAFOND YANG DISETUJUI Masih Kosong</h5>" : "";
-		//empty( $tgl_kunjung) ? $err[] = "<h5>* TGL Kunjungan Masih Kosong</h5>" : "";
-		empty( $tgl_wakalah ) ? $err[] = "<h5>* TANGGAL WAKALAH  masih kosong</h5>" : "";
-		empty( $akad ) ? $err[] = "<h5>* TANGGAL AKAD  masih kosong</h5>" : "";
-
-
-
-		if ( isset( $err ) ) {
-
-			foreach ( $err as $val ) {
-				echo $val;
-			}
-
-		} else {
-					$_SESSION['sakadd']=$akad;
-					$_SESSION['swakall']=$tgl_wakalah;
-
-					//var_dump($jenis_akad);
-
-					
-					if ($jenis_akad=='MURAB'){
-			
-					
-					$ang=6;
-					$acak=acakangkahuruf($ang);
-					$kode_transaksi="BU/".$acak;
-					$buss_date=date("ymd");
-					
-					$conn->query("replace into calon_loan select * from loan WHERE cif = '$cif'");
-					$conn->query("UPDATE calon_loan set Plafond = 
-'$pla',tgl_wakalah='$tgl_wakalah',maturity_date='$maturity_date1',tgl_murab='$Newmurab' 
-,status='CALON_ANGGOTA',saldo_margin='$margin',angsuran='$angsuran',pokok='$pokok',ijaroh='$ijaroh',ke ='1',suffix=suffix+1,deal_produk='2',os=$os,hari='$hari', tgl_akad='$akad',bulat='$uang',hari='$dayList[$day]', tenor ='$tenor',  status_app='PENDING',run_tenor='0',gol ='$gol' WHERE cif = '$cif'");
-					$conn->query("UPDATE calon_loan set status='CALON_ANGGOTA' WHERE cif = '$cif'");
-					$sqll = $conn->query("select suffix,Cust_Short_name,tgl_murab,maturity_date  from calon_loan WHERE cif = '$cif'");
-					while ( $d = $sqll->fetch_assoc() ) {
-						$suffix		=$d['suffix'];
-						$nama		=$d['Cust_Short_name '];
-						$murab		=$d['tgl_murab'];
-						$maturity_date=$d['maturity_date'];
-						$next_schedule=$d['next_schedule']; 	
-					}
-
-					$nol='0';
-					$anggota="$unit$cif$nol$suffix";
-					$keterangan_transaksi="Realisasi Wakalah An $nama";
-					$conn->query("UPDATE calon_loan set no_anggota= '$anggota' where cif='$cif'");
-					$conn->query("UPDATE anggota set status='CALON_ANGGOTA' WHERE cif = '$cif'");
-					
-									
-					$awal_hari = $murab;
-					$akhir_hari = $maturity_date;
-					
-					$x=0;
-					while (strtotime($awal_hari) < strtotime($akhir_hari)) {
-					$x ++;
-					$awal_hari= date ("Y-m-d", strtotime("+7 day", strtotime($awal_hari)));
-
-					$conn->query("INSERT DELAYED INTO pinjaman_detail_c (id,id_pinjam,cicilan,angsuran_pokok,bunga,tgl_jatuh_tempo,tgl_bayar,jumlah_bayar,ket) values('','$anggota','$x','$pokok','$ijaroh','$awal_hari','$next_schedule','0','$next_schedule')");
-					
-					}
-					$sql_tgl=$conn->query ("SELECT COUNT(tgl_libur) as libur from param_libur 
-					INNER join pinjaman_detail_c on pinjaman_detail_c.tgl_jatuh_tempo = param_libur.tgl_libur");
-					while ( $c = $sql_tgl->fetch_assoc() ) {
-					$libur =$c['libur'];
-					}
-					$conn->query("delete from pinjaman_detail_c where id_pinjam='$anggota'");
-					//@mysql_query ("delete from pinjaman_detail where id_pinjam='$no_anggota'");
-		 
-		 
-					$akhir_hari = $maturity_date;
-					$newdate2 = date ("Y-m-d", strtotime("+$libur WEEK" , strtotime ($akhir_hari))) ;
-				
-				//$awal_hari = $murab;
-				$new_akhir_hari = $newdate2;
-						
-				$conn->query("UPDATE calon_loan set maturity_date='$new_akhir_hari' WHERE cif = '$cif'");
-				//$conn->query("delete from loan  WHERE no = '$id'");
-			$_SESSION['info'] = "Proses Pengajuan Berhasil";
-			echo "Sukses";
-				}else{
-					$_SESSION['sakadd']=$akad;
-					$_SESSION['swakall']=$tgl_wakalah;
-					$angsuran=$pla/$tenor;
-					$pokok=$pla/$tenor;
-					
-					
-					$conn->query("UPDATE anggota set status='CALON_ANGGOTA' WHERE cif = '$cif'");
-					$conn->query("replace into calon_loan select * from loan WHERE cif = '$cif'");
-					
-
-						$sqll = $conn->query("select min(nominal) as omzet from omzet WHERE cif = '$cif' and nominal > 0");
-						while ( $d = $sqll->fetch_assoc() ) {
-							$omzet = $d['omzet'];
-							//$omzet =1;						
-						}	
-						//$omzet=250000;	
-						//var_dump($data);				
-							if($omzet==0 || $omzet ==null || $omzet ==''){
-								$err[] = "<h5>* Belum memiliki omzet</h5>";
-
-							}else{
-
-								$omzet = $omzet/2;
-							}
-							//var_dump($omzet);
-						
-						
-						
-						
-						
-						//var_dump($nisbah);
-						$ijaroh = (($param_margin/100)*$pla)/$tenor;
-						//var_dump($ijaroh);
-						
-						$angsuran_pokok = $pla/$tenor;
-						$angsuran = $angsuran_pokok + $ijaroh + 2500;
-						$nisbah = $ijaroh/$omzet;
-
-						
-					$conn->query("UPDATE calon_loan set Plafond = 
-					'$pla',tgl_wakalah='$akad',maturity_date='$maturity_date1',tgl_murab='$Newmurab' 
-					,status='CALON_ANGGOTA',saldo_margin='0',angsuran='$angsuran',pokok='$angsuran_pokok',ijaroh='$ijaroh',ke ='1',suffix=suffix+1, deal_produk='3', gol='0', os=$pla,hari='$hari', tgl_akad='$akad',tgl_murab ='$akad',bulat='$uang',hari='$dayList[$day]', tenor ='$tenor',status_app='MUSYAROKAH',run_tenor='0' WHERE cif = '$cif'");
-					
-						$conn->query("UPDATE calon_loan set status='CALON_ANGGOTA', status_app ='MUSYAROKAH' WHERE cif = '$cif'");
-						$conn->query("UPDATE nisbah set nisbah = '$nisbah', omzet='$omzet' WHERE cif = '$cif'");
-
-						
-						$_SESSION['info'] = "Musarokah sukses di input";
-						echo "Sukses";
-
-
-					
-				}
-		}
-
-		
-
-	break;
-
-	case "hapus" :
-
-		$id = $_GET['id'];
-		echo "Maaf ada tidak bisa mengkases menu ini silahkan hubungi atasan anda";
-		$_SESSION['info'] = "GAGAL";
-		header("location:feedback_edit.php");
-
-	break;
+if (!isset($_SESSION['userid'])) {
+    http_response_code(401);
+    exit('Sesi login sudah berakhir, silakan login kembali.');
 }
 
-ob_end_flush();
+$p = isset($_GET['p']) ? $_GET['p'] : '';
 
-?>
+if ($p === 'hapus') {
+    $_SESSION['info'] = 'GAGAL';
+    exit('Maaf ada tidak bisa mengkases menu ini silahkan hubungi atasan anda');
+}
+if ($p !== 'update') {
+    exit('Halaman tidak ditemukan');
+}
+if ($_SERVER['REQUEST_METHOD'] !== 'POST' || !isset($_POST['csrf'], $_SESSION['csrf_pengajuan'])
+    || !hash_equals($_SESSION['csrf_pengajuan'], (string) $_POST['csrf'])) {
+    exit('Sesi formulir sudah tidak berlaku, muat ulang halaman lalu coba lagi.');
+}
+
+$db = db_ni();
+
+/** Satu baris hasil query (prepared), atau null. */
+function satu_baris($db, $sql, $tipe = '', ...$param)
+{
+    $st = $db->prepare($sql);
+    if (!$st) return null;
+    if ($tipe !== '') $st->bind_param($tipe, ...$param);
+    if (!$st->execute()) return null;
+    $baris = null;
+    $hasil = $st->get_result();
+    while ($r = $hasil->fetch_assoc()) {
+        $baris = $r; // versi lama memakai baris terakhir
+    }
+    return $baris;
+}
+
+/** Jalankan query tulis (prepared); hasil true/false. */
+function jalankan($db, $sql, $tipe = '', ...$param)
+{
+    $st = $db->prepare($sql);
+    if (!$st) return false;
+    if ($tipe !== '') $st->bind_param($tipe, ...$param);
+    return $st->execute();
+}
+
+$id = isset($_POST['id']) ? trim((string) $_POST['id']) : '';
+$tgl_wakalah = isset($_POST['inn']) ? trim((string) $_POST['inn']) : '';
+$pla = isset($_POST['pla']) ? trim((string) $_POST['pla']) : '';
+$cif = isset($_POST['cif']) ? trim((string) $_POST['cif']) : '';
+$akad = isset($_POST['akad']) ? trim((string) $_POST['akad']) : '';
+$tenor = isset($_POST['tenor']) ? trim((string) $_POST['tenor']) : '';
+$jenis_akad = isset($_POST['jenisAkad']) ? trim((string) $_POST['jenisAkad']) : '';
+$err = array();
+
+// CIF harus anggota di unit user yang login
+$user = satu_baris($db, 'SELECT kode_branch FROM user WHERE userid = ?', 's', $_SESSION['userid']);
+$branch = $user ? $user['kode_branch'] : '';
+if ($cif === '' || !satu_baris($db, 'SELECT cif FROM anggota WHERE cif = ? AND UNIT = ?', 'ss', $cif, $branch)) {
+    exit('Anggota tidak ditemukan di unit Anda.');
+}
+if ($tenor === '' || !ctype_digit($tenor) || (int) $tenor <= 0) {
+    $err[] = '* TENOR harus diisi angka lebih dari 0';
+}
+if ($pla !== '' && !is_numeric($pla)) {
+    $err[] = '* PLAFOND harus berupa angka';
+}
+if ($jenis_akad === '') {
+    $err[] = '* JENIS AKAD belum dipilih';
+}
+
+$tgl_wakal = strtotime($tgl_wakalah);
+$murab1 = date('Y-m-d', strtotime('+7 day', (int) $tgl_wakal));
+// Sama seperti versi lama: strtotime() atas timestamp angka -> false -> 0, hasilnya 1970-01-08.
+$Newmurab = date('Y-m-d', strtotime('+7 day', (int) strtotime((string) $tgl_wakal)));
+$tgl_m = strtotime($murab1);
+$maturity_date1 = date('Y-m-d', strtotime('+' . (int) $tenor . ' WEEK', $tgl_m));
+$dayList = array('Sun' => 'Minggu', 'Mon' => 'Senin', 'Tue' => 'Selasa', 'Wed' => 'Rabu',
+    'Thu' => 'Kamis', 'Fri' => 'Jumat', 'Sat' => 'Sabtu');
+$hari = $tgl_wakal ? $dayList[date('D', $tgl_wakal)] : '';
+
+$r = satu_baris($db, 'SELECT unit FROM loan WHERE cif = ?', 's', $cif);
+$unit = $r ? $r['unit'] : '';
+$r = satu_baris($db, 'SELECT nominal FROM omzet WHERE cif = ?', 's', $cif);
+$omzet = $r ? $r['nominal'] : 0;
+if ($jenis_akad === 'MUSYAROKAH' && $omzet == 0) {
+    $err[] = '* Omzet tidak di Temukan';
+}
+
+$param_margin = 0;
+$param_tabung = 0;
+if (!$err) {
+    $pbiaya = satu_baris($db, 'SELECT margin, tab, pla, jw FROM param_biaya WHERE jw = ? AND pla = ?', 'ss', $tenor, $pla);
+    if ($pbiaya && $pbiaya['jw'] == $tenor && $pbiaya['pla'] == $pla) {
+        $param_margin = $pbiaya['margin'];
+        $param_tabung = $pbiaya['tab'];
+        $pokok = $pla / $tenor;
+        $margin = $pla * ($param_margin / 100);
+        $ijaroh = $margin / $tenor;
+        $angsuran = $ijaroh + $pokok;
+        $uang = $param_tabung + $angsuran;
+        $os = $pla + $margin + (2500 * $tenor);
+        $margin = $pla * ($param_margin / 100) + (2500 * $tenor);
+    } else {
+        $err[] = '* parameter pembiyaan tidak ditemukan';
+    }
+}
+
+// status approve unit tidak mengubah golongan (sama seperti versi lama)
+$gol = '0';
+
+if ($pla === '') $err[] = '* PLAFOND YANG DISETUJUI Masih Kosong';
+if ($tgl_wakalah === '') $err[] = '* TANGGAL WAKALAH masih kosong';
+if ($akad === '') $err[] = '* TANGGAL AKAD masih kosong';
+
+// akad selain MURAB (musyarokah) memerlukan omzet > 0 untuk menghitung nisbah
+if (!$err && $jenis_akad !== 'MURAB') {
+    $r = satu_baris($db, 'SELECT MIN(nominal) AS omzet FROM omzet WHERE cif = ? AND nominal > 0', 's', $cif);
+    $omzet_min = $r ? $r['omzet'] : null;
+    if ($omzet_min == 0 || $omzet_min === null || $omzet_min === '') {
+        $err[] = '* Belum memiliki omzet';
+    }
+}
+
+if ($err) {
+    exit(implode("\n", $err));
+}
+
+$_SESSION['sakadd'] = $akad;
+$_SESSION['swakall'] = $tgl_wakalah;
+
+if ($jenis_akad === 'MURAB') {
+    jalankan($db, 'REPLACE INTO calon_loan SELECT * FROM loan WHERE cif = ?', 's', $cif);
+    jalankan($db, "UPDATE calon_loan SET Plafond = ?, tgl_wakalah = ?, maturity_date = ?, tgl_murab = ?,
+            status = 'CALON_ANGGOTA', saldo_margin = ?, angsuran = ?, pokok = ?, ijaroh = ?, ke = '1', suffix = suffix + 1,
+            deal_produk = '2', os = ?, tgl_akad = ?, bulat = ?, hari = ?, tenor = ?, status_app = 'PENDING',
+            run_tenor = '0', gol = ? WHERE cif = ?",
+        'ssssddddssdssss', $pla, $tgl_wakalah, $maturity_date1, $Newmurab, $margin, $angsuran, $pokok, $ijaroh,
+        $os, $akad, $uang, $hari, $tenor, $gol, $cif);
+    jalankan($db, "UPDATE calon_loan SET status = 'CALON_ANGGOTA' WHERE cif = ?", 's', $cif);
+
+    $d = satu_baris($db, 'SELECT suffix, tgl_murab, maturity_date, next_schedule FROM calon_loan WHERE cif = ?', 's', $cif);
+    $suffix = $d ? $d['suffix'] : '';
+    $murab = $d ? $d['tgl_murab'] : '';
+    $maturity_date = $d ? $d['maturity_date'] : '';
+    $next_schedule = ''; // versi lama: variabel ini tidak pernah terisi
+
+    $anggota = $unit . $cif . '0' . $suffix;
+    jalankan($db, 'UPDATE calon_loan SET no_anggota = ? WHERE cif = ?', 'ss', $anggota, $cif);
+    jalankan($db, "UPDATE anggota SET status = 'CALON_ANGGOTA' WHERE cif = ?", 's', $cif);
+
+    // jadwal sementara untuk menghitung jumlah hari libur pada masa angsuran
+    $st = $db->prepare("INSERT INTO pinjaman_detail_c (id_pinjam, cicilan, angsuran_pokok, bunga, tgl_jatuh_tempo, tgl_bayar, jumlah_bayar, ket)
+        VALUES (?, ?, ?, ?, ?, ?, '0', ?)");
+    $awal_hari = $murab;
+    $x = 0;
+    while ($st && strtotime($awal_hari) < strtotime($maturity_date)) {
+        $x++;
+        $awal_hari = date('Y-m-d', strtotime('+7 day', strtotime($awal_hari)));
+        $st->bind_param('sisssss', $anggota, $x, $pokok, $ijaroh, $awal_hari, $next_schedule, $next_schedule);
+        $st->execute();
+    }
+    $c = satu_baris($db, 'SELECT COUNT(tgl_libur) AS libur FROM param_libur
+        INNER JOIN pinjaman_detail_c ON pinjaman_detail_c.tgl_jatuh_tempo = param_libur.tgl_libur');
+    $libur = $c ? (int) $c['libur'] : 0;
+    jalankan($db, 'DELETE FROM pinjaman_detail_c WHERE id_pinjam = ?', 's', $anggota);
+
+    $new_akhir_hari = date('Y-m-d', strtotime('+' . $libur . ' WEEK', strtotime($maturity_date)));
+    jalankan($db, 'UPDATE calon_loan SET maturity_date = ? WHERE cif = ?', 'ss', $new_akhir_hari, $cif);
+
+    $_SESSION['info'] = 'Proses Pengajuan Berhasil';
+    echo 'Sukses';
+} else {
+    jalankan($db, "UPDATE anggota SET status = 'CALON_ANGGOTA' WHERE cif = ?", 's', $cif);
+    jalankan($db, 'REPLACE INTO calon_loan SELECT * FROM loan WHERE cif = ?', 's', $cif);
+
+    $omzet = $omzet_min / 2;
+    $ijaroh = (($param_margin / 100) * $pla) / $tenor;
+    $angsuran_pokok = $pla / $tenor;
+    $angsuran = $angsuran_pokok + $ijaroh + 2500;
+    $nisbah = $ijaroh / $omzet;
+
+    jalankan($db, "UPDATE calon_loan SET Plafond = ?, tgl_wakalah = ?, maturity_date = ?, tgl_murab = ?,
+            status = 'CALON_ANGGOTA', saldo_margin = '0', angsuran = ?, pokok = ?, ijaroh = ?, ke = '1', suffix = suffix + 1,
+            deal_produk = '3', gol = '0', os = ?, tgl_akad = ?, bulat = ?, hari = ?, tenor = ?,
+            status_app = 'MUSYAROKAH', run_tenor = '0' WHERE cif = ?",
+        'ssssdddssdsss', $pla, $akad, $maturity_date1, $akad, $angsuran, $angsuran_pokok, $ijaroh,
+        $pla, $akad, $uang, $hari, $tenor, $cif);
+    jalankan($db, "UPDATE calon_loan SET status = 'CALON_ANGGOTA', status_app = 'MUSYAROKAH' WHERE cif = ?", 's', $cif);
+    jalankan($db, 'UPDATE nisbah SET nisbah = ?, omzet = ? WHERE cif = ?', 'dds', $nisbah, $omzet, $cif);
+
+    $_SESSION['info'] = 'Musarokah sukses di input';
+    echo 'Sukses';
+}

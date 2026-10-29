@@ -64,9 +64,9 @@ a {
 </style>
 </head>
 
-<table width="100%" cellpadding="1" bordercolor="#CCCCCC" bgcolor="#669900">
+<table width="100%" cellpadding="1" bordercolor="#CCCCCC" bgcolor="#2F6B4F">
   <tr>
-    <td height="20" bordercolor="#FFFFFF" bgcolor="#669900" class="style3 style8">Pebukaan Unit Baru 
+    <td height="20" bordercolor="#FFFFFF" bgcolor="#2F6B4F" class="style3 style8">Pebukaan Unit Baru 
     <div align="right"></div></td>
   </tr>
 </table>
@@ -74,7 +74,7 @@ a {
 <table width="428" border="1" align="center">
 </table>
   <form method="post" action="<?php echo $_SERVER['PHP_SELF']; ?>" name="postform">  <table width="502" border="0" align="center">
-<tr bgcolor="#669900">
+<tr bgcolor="#2F6B4F">
   <td height="10" colspan="4" nowrap><div align="center" class="style3 style9">Input Data </div></td>
   </tr>
 <tr>

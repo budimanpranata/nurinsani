@@ -1,0 +1,201 @@
+/* Halaman login: panel hijau zamrud di kiri (disembunyikan di layar kecil), kartu form di kanan. */
+body.halaman-login {
+    min-height: 100vh;
+    margin: 0;
+    background: #f4f7f5;
+    font-size: .9375rem;
+}
+
+.login-bungkus {
+    display: grid;
+    grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
+    min-height: 100vh;
+}
+
+/* ---------- panel kiri ---------- */
+.login-sisi {
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    padding: 3rem 4rem;
+    color: #fff;
+    background:
+        radial-gradient(circle at 15% 20%, rgba(201, 169, 110, .22), transparent 45%),
+        radial-gradient(circle at 85% 90%, rgba(255, 255, 255, .08), transparent 40%),
+        linear-gradient(150deg, #1f4a37 0%, #2f6b4f 55%, #3d7d5f 100%);
+}
+
+.login-sisi-isi {
+    position: relative;
+    z-index: 1;
+    max-width: 28rem;
+}
+
+.login-lencana {
+    display: inline-block;
+    padding: .25rem .75rem;
+    margin-bottom: 1rem;
+    border: 1px solid rgba(201, 169, 110, .7);
+    border-radius: 2rem;
+    color: #e6d3ad;
+    font-size: .75rem;
+    letter-spacing: .2em;
+}
+
+.login-sisi h1 {
+    margin: 0 0 .5rem;
+    font-size: clamp(2.25rem, 4vw, 3.25rem);
+    font-weight: 700;
+    letter-spacing: -.01em;
+}
+
+.login-sisi p {
+    margin-bottom: 2rem;
+    color: rgba(255, 255, 255, .8);
+    font-size: 1.125rem;
+    font-style: italic;
+}
+
+.login-poin {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.login-poin li {
+    position: relative;
+    padding: .375rem 0 .375rem 1.5rem;
+    color: rgba(255, 255, 255, .85);
+}
+
+.login-poin li::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: .875rem;
+    width: .5rem;
+    height: .5rem;
+    border-radius: 50%;
+    background: #c9a96e;
+}
+
+.login-ornamen {
+    position: absolute;
+    right: -6rem;
+    bottom: -6rem;
+    width: 26rem;
+    height: 26rem;
+    color: rgba(255, 255, 255, .09);
+}
+
+/* ---------- panel kanan ---------- */
+.login-panel {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem 1.5rem;
+}
+
+.login-kartu {
+    width: 100%;
+    max-width: 24rem;
+}
+
+.login-logo {
+    display: block;
+    width: 13rem;
+    max-width: 100%;
+    height: auto;
+    margin-bottom: 2rem;
+}
+
+.login-kartu h2 {
+    margin-bottom: .25rem;
+    color: #1f4a37;
+    font-size: 1.625rem;
+    font-weight: 700;
+}
+
+.login-kartu .form-control {
+    border-color: #d6e2db;
+    border-radius: .625rem;
+}
+
+.login-kartu .form-control:focus {
+    border-color: var(--ni-hijau);
+    box-shadow: 0 0 0 .25rem rgba(47, 107, 79, .15);
+}
+
+.login-sandi {
+    position: relative;
+}
+
+.login-sandi .form-control {
+    padding-right: 5rem;
+}
+
+.login-lihat {
+    position: absolute;
+    top: 50%;
+    right: .5rem;
+    transform: translateY(-50%);
+    padding: .25rem .5rem;
+    border: 0;
+    border-radius: .375rem;
+    background: none;
+    color: var(--ni-hijau);
+    font-size: .8125rem;
+    font-weight: 600;
+}
+
+.login-lihat:hover {
+    background: var(--ni-hijau-muda);
+}
+
+.login-capslock {
+    margin-top: .25rem;
+    color: #a0672b;
+    font-size: .8125rem;
+}
+
+.halaman-login .btn-ni {
+    --bs-btn-font-size: 1rem;
+    border-radius: .625rem;
+    box-shadow: 0 6px 18px rgba(47, 107, 79, .25);
+}
+
+.login-hak {
+    margin: 2.5rem 0 0;
+    color: #8a998f;
+    font-size: .8125rem;
+    text-align: center;
+}
+
+/* ---------- layar kecil ---------- */
+@media (max-width: 991.98px) {
+    .login-bungkus {
+        grid-template-columns: 1fr;
+    }
+
+    .login-sisi {
+        display: none;
+    }
+
+    body.halaman-login {
+        background:
+            linear-gradient(180deg, #1f4a37 0, #2f6b4f 11rem, #f4f7f5 11rem);
+    }
+
+    .login-panel {
+        align-items: flex-start;
+        padding-top: 4rem;
+    }
+
+    .login-kartu {
+        padding: 2rem 1.5rem;
+        border-radius: 1rem;
+        background: #fff;
+        box-shadow: 0 10px 30px rgba(31, 74, 55, .12);
+    }
+}

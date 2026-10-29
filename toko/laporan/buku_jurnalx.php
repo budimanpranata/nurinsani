@@ -80,7 +80,7 @@ a {
 
 <table width="100%">
 
-  <tr bgcolor="#669900">
+  <tr bgcolor="#2F6B4F">
 
   <td height="10" colspan="4" nowrap><div align="left" class="style3 style9">List Jurnal</div></td>
 

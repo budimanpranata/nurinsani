@@ -183,7 +183,7 @@ a:active {
 
 
 <table width="100%">
-  <tr bgcolor="#669900">
+  <tr bgcolor="#2F6B4F">
   <td height="20" colspan="4" nowrap><div align="left" class="style3 style9">Pelunasan Hapus Margin</div></td>
   </tr>
 </table>
@@ -191,7 +191,7 @@ a:active {
 <table width="428" border="1" align="center">
 </table>
   <form method="post" action="<?php require_once __DIR__ . '/php8_compat.php'; echo $_SERVER['PHP_SELF']; ?>" name="postform">  <table width="502" border="0" align="center">
-<tr bgcolor="#669900">
+<tr bgcolor="#2F6B4F">
   <td height="10" colspan="4" nowrap><div align="center" class="style3 style9">Kriteria Pencarian </div></td>
   </tr>
 <tr>

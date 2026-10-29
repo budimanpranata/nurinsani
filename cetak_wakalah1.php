@@ -1,10 +1,13 @@
-<?php require_once __DIR__ . '/php8_compat.php';  
+<?php require_once __DIR__ . '/koneksi_db.php';  
 //error_reporting(0);
 session_start();  
 ob_start();  
 $tgl_mrb=$_SESSION['smrb'];
 $userid=$_SESSION['userid'];
 //cek apakah user sudah login
+if(!isset($_SESSION['userid']) || $_SESSION['level']!="unit"){
+   header("location:index.html");
+ exit; }
 
 include "conn2.php";
 include "indo_tgl.php";
@@ -17,14 +20,12 @@ $buss_date1=getdate();
 $today=date("Y-m-d");
 $date=tgl_indo($today);
 
-$ckel= mysql_query(" Select cao  from kelompok where code_unit='$unit'");
-$cckel= mysql_fetch_array($ckel);
+$cckel = db_satu(" Select cao  from kelompok where code_unit=?", 's', $unit);
 $cao=$cckel['cao'];
 
 
-$dataum= mysql_query(" Select Nama as um,jabatan from person  
-where unit='$unit'");
-$um= mysql_fetch_array($dataum);
+$um = db_satu(" Select Nama as um,jabatan from person  
+where unit=?", 's', $unit);
 $nama_um=$um['um'];
 $jabatan=$um['jabatan'];
 
@@ -39,10 +40,10 @@ $pdf=new FPDF('P','mm', array(241,279.4));
 //$pdf=new FPDF ('P','mm','A4');
 $pdf->addPage();
 
-$pot = mysql_query("select calon_loan.cif as CIF, calon_loan.Cust_Short_name,tgl_wakalah,Plafond,bagi_hasil,Tenor,angsuran,HADDRESS1,HADDRESS2,HADDRESS3,HADDRESS4,month(tgl_wakalah) as bulan,year(tgl_wakalah) as tahun, day(tgl_wakalah) as hari
- from calon_loan left join anggota on anggota.cif = calon_loan.cif where calon_loan.unit='$userid' and calon_loan.status_app='PENDING' and tgl_murab='$tgl_mrb' order by calon_loan.code_kel,calon_loan.cust_Short_name");
+$pot = db_semua("select calon_loan.cif as CIF, calon_loan.Cust_Short_name,tgl_wakalah,Plafond,bagi_hasil,Tenor,angsuran,HADDRESS1,HADDRESS2,HADDRESS3,HADDRESS4,month(tgl_wakalah) as bulan,year(tgl_wakalah) as tahun, day(tgl_wakalah) as hari
+ from calon_loan left join anggota on anggota.cif = calon_loan.cif where calon_loan.unit=? and calon_loan.status_app='PENDING' and tgl_murab=? order by calon_loan.code_kel,calon_loan.cust_Short_name", 'ss', $userid, $tgl_mrb);
 $page=0;
-while($p = mysql_fetch_array($pot)){
+foreach ($pot as $p){
 $page++;
 $nama=$p['Cust_Short_name'];
 $plafond=$p['Plafond'];

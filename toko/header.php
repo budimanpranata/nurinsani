@@ -58,7 +58,7 @@ if(!isset($_SESSION['userid'])){
 <!-- /Header -->
 
 <!-- Body -->
-<table cellpadding="3" cellspacing="0" border="0" bgcolor="#669900" width="100%">
+<table cellpadding="3" cellspacing="0" border="0" bgcolor="#2F6B4F" width="100%">
 <tr>
   <td width="100%"><span class="style2">KSPPS Nur insani</span></td>
 </tr>

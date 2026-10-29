@@ -1,4 +1,4 @@
-<?php require_once __DIR__ . '/php8_compat.php';
+<?php require_once __DIR__ . '/koneksi_db.php';
 session_start();
 ob_start();
 date_default_timezone_set('Asia/Jakarta');
@@ -17,23 +17,19 @@ if($_SESSION['level']!="unit"){
  include "indo_tgl.php";
  $koneksi=open_connection2();
 $code_kel=$_GET['code_kel'];
-$sql4=mysql_query("Select nama_kel,code_kel FROM kelompok WHERE code_kel='$code_kel'");
-$kode= mysql_fetch_array($sql4);
+$kode = db_satu("Select nama_kel,code_kel FROM kelompok WHERE code_kel=?", 's', $code_kel);
 $nkel=$kode['nama_kel'];
 
-$sql1=mysql_query("Select nama,kode_branch FROM user WHERE userid='$userid'");
-$dsmo= mysql_fetch_array($sql1);
+$dsmo = db_satu("Select nama,kode_branch FROM user WHERE userid=?", 's', $userid);
 $nama_sales=$dsmo['nama'];
 $kode_branch=$dsmo['kode_branch'];
 
-$sql2=mysql_query("Select person.nama, branch.unit,branch.alamat FROM branch inner join person on person.unit = branch.kode_branch WHERE kode_branch='$kode_branch'");
-$br= mysql_fetch_array($sql2);
+$br = db_satu("Select person.nama, branch.unit,branch.alamat FROM branch inner join person on person.unit = branch.kode_branch WHERE kode_branch=?", 's', $kode_branch);
 $nama_unit=$br['unit'];
 $alamat=$br['alamat'];
 $nama_um=$br['nama'];
 
-$sqlm=mysql_query("Select tgl_akad FROM calon_loan WHERE code_kel='$code_kel'");
-$mur= mysql_fetch_array($sqlm);
+$mur = db_satu("Select tgl_akad FROM calon_loan WHERE code_kel=?", 's', $code_kel);
 $tgl_mur=$mur['tgl_akad'];
 $tgl_mur=tgl_indo($tgl_mur);
 $buss_date=date("y-m-d");
@@ -101,21 +97,21 @@ $pdf->Ln();
 //query dan arraying
 $no=0;
 $tot_blt=0;
-  $sql=mysql_query("select calon_loan.unit,calon_loan.cif as CIF,calon_loan.suffix,calon_loan.cust_Short_name,HADDRESS1,(select nama_usaha from bidang_usaha where code_bidang=calon_loan.usaha) as nama_usaha,WARIS,calon_loan.Plafond as rek,nama_kel,loan.Plafond as sebelum,calon_loan.tgl_akad,calon_loan.tenor,calon_loan.code_kel,loan.run_tenor
+  $sql = db_semua("select calon_loan.unit,calon_loan.cif as CIF,calon_loan.suffix,calon_loan.cust_Short_name,HADDRESS1,(select nama_usaha from bidang_usaha where code_bidang=calon_loan.usaha) as nama_usaha,WARIS,calon_loan.Plafond as rek,nama_kel,loan.Plafond as sebelum,calon_loan.tgl_akad,calon_loan.tenor,calon_loan.code_kel,loan.run_tenor
 from calon_loan
 inner join anggota on anggota.cif = calon_loan.cif
 inner join kelompok on kelompok.code_kel = calon_loan.code_kel
 left join loan on loan.cif=calon_loan.cif
-where calon_loan.USERID='$userid' AND calon_loan.tgl_wakalah='$tgl_mrb' and calon_loan.status_app in ('PENDING','MUSYAROKAH') and calon_loan.status_usia <> 'YA' order by nama_kel,calon_loan.cust_Short_name ");
+where calon_loan.USERID=? AND calon_loan.tgl_wakalah=? and calon_loan.status_app in ('PENDING','MUSYAROKAH') and calon_loan.status_usia <> 'YA' order by nama_kel,calon_loan.cust_Short_name ", 'ss', $userid, $tgl_mrb);
 
-$sql2=mysql_query("select sum(calon_loan.Plafond) as total, count(calon_loan.cif) as noa,nama_kel,nama_ao,calon_loan.code_kel from calon_loan
+$sql2 = db_semua("select sum(calon_loan.Plafond) as total, count(calon_loan.cif) as noa,nama_kel,nama_ao,calon_loan.code_kel from calon_loan
 left join kelompok on kelompok.code_kel = calon_loan.code_kel
 left join ao on ao.cao=calon_loan.cao
-where calon_loan.USERID='$userid' AND calon_loan.tgl_wakalah='$tgl_mrb' and status_app in  ('PENDING','MUSYAROKAH') and calon_loan.status_usia <> 'YA' group by nama_kel order by nama_kel ");
+where calon_loan.USERID=? AND calon_loan.tgl_wakalah=? and status_app in  ('PENDING','MUSYAROKAH') and calon_loan.status_usia <> 'YA' group by nama_kel order by nama_kel ", 'ss', $userid, $tgl_mrb);
 
-$sql3=mysql_query("select sum(calon_loan.Plafond) as total_pla, count(cif) as total_noa from calon_loan
-where calon_loan.USERID='$userid' AND calon_loan.tgl_wakalah='$tgl_mrb' and status_app in  ('PENDING','MUSYAROKAH') and calon_loan.status_usia <> 'YA'");
-while($result= mysql_fetch_array($sql)){
+$sql3 = db_semua("select sum(calon_loan.Plafond) as total_pla, count(cif) as total_noa from calon_loan
+where calon_loan.USERID=? AND calon_loan.tgl_wakalah=? and status_app in  ('PENDING','MUSYAROKAH') and calon_loan.status_usia <> 'YA'", 'ss', $userid, $tgl_mrb);
+foreach ($sql as $result){
 	$no ++;
  $TGL_KUNJUNGAN = $result['nama_ao'];
 $cif = $result['CIF'];
@@ -159,7 +155,7 @@ $pdf->Cell(17,4,''.$Plafond,1,0,'R');
 $pdf->Cell(10,4,''.$suffix,1,0,'R');
 $pdf->Ln();
 }
-while($result3= mysql_fetch_array($sql3)){
+foreach ($sql3 as $result3){
 	 $total_pla = $result3['total_pla'];
 		$total_noa = $result3['total_noa'];
 $pdf->SetFont('Arial','',7);
@@ -178,7 +174,7 @@ $pdf->Cell(40,4,'Nama AO',1,0,'C');
 $pdf->Ln();
 
 $no2=0;
-while($result2= mysql_fetch_array($sql2)){
+foreach ($sql2 as $result2){
 	$no2 ++;
  $TGL_KUNJUNGAN = $result['nama_ao'];
 $nama_kel = $result2['nama_kel'];

@@ -31,7 +31,7 @@ $userid=$_SESSION['userid'];
 	<link rel="stylesheet" href="../css/bootstrap.min.css"/>
 	<link rel="stylesheet" href="../css/dataTables.bootstrap.min.css"/>
 <table width="100%">
-  <tr bgcolor="#669900">
+  <tr bgcolor="#2F6B4F">
   <td height="30" colspan="4" nowrap><div align="left" class="style9 style3 style1"><strong>Buku Jurnal </strong></div></td>
   </tr>
 </table>

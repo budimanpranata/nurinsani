@@ -57,8 +57,8 @@ $dcount = db_query ($koneksi,"select max(norek) AS last FROM deposito where nore
         margin: 26px 0px 0px 0px;
         width: 200px;
         padding:0px;
-        background-color:#669900;
-        border-top: 3px solid #669900;
+        background-color:#2F6B4F;
+        border-top: 3px solid #2F6B4F;
         color: #fff;
     }
     .suggestionList {

@@ -77,8 +77,8 @@ a {
 		margin: 26px 0px 0px 0px;
 		width: 200px;
 		padding:0px;
-		background-color:#669900;
-		border-top: 3px solid #669900;
+		background-color:#2F6B4F;
+		border-top: 3px solid #2F6B4F;
 		color: #fff;
 	}
 	.suggestionList {
@@ -119,7 +119,7 @@ a {
 
 <table width="100%" >
   <tr>
-    <td height="0" bordercolor="#FFFFFF" bgcolor="#669900" class="style3 style7">Data Tunggakan
+    <td height="0" bordercolor="#FFFFFF" bgcolor="#2F6B4F" class="style3 style7">Data Tunggakan
     <div align="right"></div></td>
   </tr>
 </table>

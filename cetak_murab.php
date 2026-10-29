@@ -1,4 +1,4 @@
-<?php require_once __DIR__ . '/php8_compat.php';  
+<?php require_once __DIR__ . '/koneksi_db.php';  
 //error_reporting(0);
 session_start();  
 ob_start();  
@@ -12,14 +12,12 @@ $code_kel = $_GET['code_kel'];
 
 
 
-$kel= mysql_query(" Select cao from kelompok 
- where code_kel='$code_kel'");
-$datakel= mysql_fetch_array($kel);
+$datakel = db_satu(" Select cao from kelompok 
+ where code_kel=?", 's', $code_kel);
 $cao=$datakel['cao'];
 
-$dataao= mysql_query(" Select person.Nama as um,person.jabatan as jabatan,cao from ao 
-inner join person on ao.atasan = person.NIK where cao='$cao'");
-$ao= mysql_fetch_array($dataao);
+$ao = db_satu(" Select person.Nama as um,person.jabatan as jabatan,cao from ao 
+inner join person on ao.atasan = person.NIK where cao=?", 's', $cao);
 $nama_um=$ao['um'];
 $jabatan=$ao['jabatan'];
 
@@ -35,12 +33,12 @@ $pdf=new FPDF ('P','mm','A4');
 
 $pdf->addPage();
 
-$pot = mysql_query("select calon_loan.buss_date,calon_loan.Cust_Short_name,norek,Plafond,bagi_hasil,Tenor,angsuran,hari,HADDRESS1,HADDRESS2,HADDRESS3,HADDRESS4,WARIS,no_anggota,tgl_murab,tgl_wakalah,tgl_akad,maturity_date,calon_loan.nama_usaha,ID_NUMBER, bulat from calon_loan 
+$pot = db_semua("select calon_loan.buss_date,calon_loan.Cust_Short_name,norek,Plafond,bagi_hasil,Tenor,angsuran,hari,HADDRESS1,HADDRESS2,HADDRESS3,HADDRESS4,WARIS,no_anggota,tgl_murab,tgl_wakalah,tgl_akad,maturity_date,calon_loan.nama_usaha,ID_NUMBER, bulat from calon_loan 
 left join anggota on anggota.cif=calon_loan.cif 
 left join bidang_usaha on bidang_usaha.code_bidang=calon_loan.usaha 
-where calon_loan.cao='$cao' and calon_loan.code_kel='$code_kel' order by calon_loan.code_kel");
+where calon_loan.cao=? and calon_loan.code_kel=? order by calon_loan.code_kel", 'ss', $cao, $code_kel);
 $page=0;
-while($p = mysql_fetch_array($pot)){
+foreach ($pot as $p){
 $page++;
 $nama=$p['Cust_Short_name'];
 $plafond=$p['Plafond'];

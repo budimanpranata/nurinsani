@@ -134,7 +134,7 @@ a:active {
 	<div class="entry">
 	
 			<table width="100%">
-		<tr bgcolor="#669900">
+		<tr bgcolor="#2F6B4F">
 		<td height="25" colspan="4" nowrap><div align="left" class="style3 style9">Porses Posting Jurnal</div></td>
 			</tr>
             </table>

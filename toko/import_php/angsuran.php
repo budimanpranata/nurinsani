@@ -180,9 +180,9 @@ a:active {
 	</head>
 	<body>
 		<!-- Membuat Menu Header / Navbar -->
-			<table width="100%" cellpadding="1" bordercolor="#CCCCCC" bgcolor="#669900">
+			<table width="100%" cellpadding="1" bordercolor="#CCCCCC" bgcolor="#2F6B4F">
   <tr>
-    <td height="20" bordercolor="#FFFFFF" bgcolor="#669900" class="style3 style9">Import Transaksi Angsuran
+    <td height="20" bordercolor="#FFFFFF" bgcolor="#2F6B4F" class="style3 style9">Import Transaksi Angsuran
     <div align="right"></div></td>
   </tr>
 </table>

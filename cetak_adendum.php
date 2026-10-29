@@ -1,4 +1,4 @@
-<?php require_once __DIR__ . '/php8_compat.php';  
+<?php require_once __DIR__ . '/koneksi_db.php';  
 error_reporting(0);
 session_start();  
 ob_start();  
@@ -22,14 +22,12 @@ $buss_date1=getdate();
 $today=date("Y-m-d");
 $date=tgl_indo($today);
 
-$kel= mysql_query(" Select cao from loan 
- where code_kel='$code_kel'");
-$datakel= mysql_fetch_array($kel);
+$datakel = db_satu(" Select cao from loan
+ where code_kel=?", 's', $code_kel);
 $cao=$datakel['cao'];
 
-$dataao= mysql_query(" Select person.Nama as um,person.jabatan as jabatan,cao from ao 
-inner join person on ao.atasan = person.NIK where cao='$cao'");
-$ao= mysql_fetch_array($dataao);
+$ao = db_satu(" Select person.Nama as um,person.jabatan as jabatan,cao from ao
+inner join person on ao.atasan = person.NIK where cao=?", 's', (string) $cao);
 $nama_um=$ao['um'];
 $jabatan=$ao['jabatan'];
 
@@ -45,9 +43,10 @@ $pdf=new FPDF ('P','mm','A4');
 
 $pdf->addPage();
 
+$pot = array(); // jenis lain: tidak ada data (sama seperti versi lama)
 switch ($jenis) {
   case "COVID":
-$pot = mysql_query("select loan.buss_date,loan.Cust_Short_name,Plafond,bagi_hasil,rest_covid.tenor,hari,HADDRESS1,HADDRESS2,HADDRESS3,HADDRESS4,WARIS,NOREK,tgl_murab,tgl_wakalah,tgl_akad,maturity_date,loan.nama_usaha,hari,
+$pot = db_semua("select loan.buss_date,loan.Cust_Short_name,Plafond,bagi_hasil,rest_covid.tenor,hari,HADDRESS1,HADDRESS2,HADDRESS3,HADDRESS4,WARIS,NOREK,tgl_murab,tgl_wakalah,tgl_akad,maturity_date,loan.nama_usaha,hari,
 saldo_margin,rest_covid.ijaroh,rest_covid.angsuran,rest_covid.pokok,os,
 rest_covid.bulat,tgl_akad,(os-saldo_margin) as saldo_os,nama_kel,run_tenor,no_anggota,loan.cif,angsuran_baru,tenor_baru,jatpo,jatpo_baru,
 ID_NUMBER from loan 
@@ -55,12 +54,12 @@ left join anggota on anggota.cif=loan.cif
 left join kelompok on kelompok.code_kel = loan.code_kel
 left join rest_covid on rest_covid.cif = loan.cif
 left join bidang_usaha on bidang_usaha.code_bidang=loan.usaha 
-where loan.code_kel='$code_kel' and status_app='COVID' order by loan.cif");
+where loan.code_kel=? and status_app='COVID' order by loan.cif", 's', $code_kel);
     
     break;
   case "REST":
   
-  $pot = mysql_query("select loan.buss_date,loan.Cust_Short_name,Plafond,bagi_hasil,rest_covid.tenor,hari,HADDRESS1,HADDRESS2,HADDRESS3,HADDRESS4,WARIS,NOREK,tgl_murab,tgl_wakalah,tgl_akad,maturity_date,loan.nama_usaha,hari,
+  $pot = db_semua("select loan.buss_date,loan.Cust_Short_name,Plafond,bagi_hasil,rest_covid.tenor,hari,HADDRESS1,HADDRESS2,HADDRESS3,HADDRESS4,WARIS,NOREK,tgl_murab,tgl_wakalah,tgl_akad,maturity_date,loan.nama_usaha,hari,
 saldo_margin,rest_covid.ijaroh,rest_covid.angsuran,rest_covid.pokok,os,
 rest_covid.bulat_baru,tgl_akad,(os-saldo_margin) as saldo_os,nama_kel,run_tenor,no_anggota,loan.cif,angsuran_baru,tenor_baru,jatpo,jatpo_baru,
 ID_NUMBER from loan 
@@ -68,24 +67,24 @@ left join anggota on anggota.cif=loan.cif
 left join kelompok on kelompok.code_kel = loan.code_kel
 left join rest_covid on rest_covid.cif = loan.cif
 left join bidang_usaha on bidang_usaha.code_bidang=loan.usaha 
-where loan.code_kel='$code_kel' and status_app='REST' order by loan.cif");
+where loan.code_kel=? and status_app='REST' order by loan.cif", 's', $code_kel);
     
     break;
   case "JATPO":
   
-  $pot = mysql_query("select loan.buss_date,loan.Cust_Short_name,Plafond,bagi_hasil,tenor,angsuran,hari,HADDRESS1,HADDRESS2,HADDRESS3,HADDRESS4,WARIS,NOREK,tgl_murab,tgl_wakalah,tgl_akad,maturity_date,loan.nama_usaha,hari,
+  $pot = db_semua("select loan.buss_date,loan.Cust_Short_name,Plafond,bagi_hasil,tenor,angsuran,hari,HADDRESS1,HADDRESS2,HADDRESS3,HADDRESS4,WARIS,NOREK,tgl_murab,tgl_wakalah,tgl_akad,maturity_date,loan.nama_usaha,hari,
 saldo_margin,ijaroh,angsuran,pokok,os,angsuran,bulat,tgl_akad,(os-saldo_margin) as saldo_os,nama_kel,run_tenor,no_anggota,loan.cif,
 ID_NUMBER from loan 
 left join anggota on anggota.cif=loan.cif 
 left join kelompok on kelompok.code_kel = loan.code_kel
 left join bidang_usaha on bidang_usaha.code_bidang=loan.usaha 
-where loan.code_kel='$code_kel' and status_app='JATPO' order by loan.cif");
+where loan.code_kel=? and status_app='JATPO' order by loan.cif", 's', $code_kel);
     
     break;
 
  case "REST_POKOK_MARGIN":
   
-  $pot = mysql_query("select loan.buss_date,loan.Cust_Short_name,Plafond,bagi_hasil,rest_covid.tenor,hari,HADDRESS1,HADDRESS2,HADDRESS3,HADDRESS4,WARIS,NOREK,tgl_murab,tgl_wakalah,tgl_akad,maturity_date,loan.nama_usaha,hari,
+  $pot = db_semua("select loan.buss_date,loan.Cust_Short_name,Plafond,bagi_hasil,rest_covid.tenor,hari,HADDRESS1,HADDRESS2,HADDRESS3,HADDRESS4,WARIS,NOREK,tgl_murab,tgl_wakalah,tgl_akad,maturity_date,loan.nama_usaha,hari,
 saldo_margin,rest_covid.ijaroh,rest_covid.angsuran,rest_covid.pokok,os,
 rest_covid.bulat_baru ,tgl_akad,(os-saldo_margin) as saldo_os,nama_kel,run_tenor,no_anggota,loan.cif,angsuran_baru,tenor_baru,jatpo,jatpo_baru,
 ID_NUMBER from loan 
@@ -93,7 +92,7 @@ left join anggota on anggota.cif=loan.cif
 left join kelompok on kelompok.code_kel = loan.code_kel
 left join rest_covid on rest_covid.cif = loan.cif
 left join bidang_usaha on bidang_usaha.code_bidang=loan.usaha 
-where loan.code_kel='$code_kel' and status_app='REST_POKOK_MARGIN' order by loan.cif");
+where loan.code_kel=? and status_app='REST_POKOK_MARGIN' order by loan.cif", 's', $code_kel);
         
     break;
 
@@ -104,17 +103,23 @@ where loan.code_kel='$code_kel' and status_app='REST_POKOK_MARGIN' order by loan
     
 }
 
-$row_saldo = mysql_fetch_array(mysql_query("select sum(kredit-DEBIT) as saldo_simpanan from simpanan where cif ='$cif' and type not in('04','05') ")) or die(mysql_error());
+$row_saldo = db_satu("select sum(kredit-DEBIT) as saldo_simpanan from simpanan where cif =? and type not in('04','05') ", 's', isset($cif) ? (string) $cif : '') or die(db_ni()->error);
        $saldo_simpanan=$row_saldo['saldo_simpanan'];     
 $saldo_simpan=$saldo_simpanan;
 
 
 $page=0;
-while($p = mysql_fetch_array($pot)){
+foreach ($pot as $p){
 $page++;
 $cif=$p['cif'];
-mysql_query ("insert into pinjaman_detail select * from pinjaman_detail_covid where cif ='$cif'");
-mysql_query ("delete from pinjaman_detail_covid where cif ='$cif'");
+// pindahkan jadwal hasil restrukturisasi ke pinjaman_detail, lalu hapus dari pinjaman_detail_covid.
+// Versi lama memakai "select *" padahal pinjaman_detail punya kolom tambahan code_kel (13 vs 12 kolom),
+// sehingga insert selalu gagal tetapi jadwal tetap dihapus. Kolom kini disebut satu per satu dan
+// jadwal hanya dihapus bila sudah berhasil dipindahkan.
+$kolom_jadwal = "id, id_pinjam, cicilan, angsuran_pokok, bunga, tgl_jatuh_tempo, tgl_bayar, jumlah_bayar, ket, cif, unit, ao";
+if (db_jalankan("insert into pinjaman_detail ($kolom_jadwal) select $kolom_jadwal from pinjaman_detail_covid where cif =?", 's', (string) $cif)) {
+db_jalankan("delete from pinjaman_detail_covid where cif =?", 's', (string) $cif);
+}
 $nama=$p['Cust_Short_name'];
 $plafond=$p['Plafond'];
 $os=$p['os'];

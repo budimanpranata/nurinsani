@@ -19,7 +19,7 @@
 </style>
 <body>
 <div id="maindiv">
-  <table width="979" border="1" bgcolor="#669900">
+  <table width="979" border="1" bgcolor="#2F6B4F">
     <tr>
       <td><span class="style2">Uplod Dokumen</span></td>
     </tr>

@@ -197,7 +197,7 @@ if (okSoFar==true)  submit();
 </table>
 <table width="100%" border="0" cellpadding="3" cellspacing="0" bgcolor="#4682B4">
   <tr>
-    <td width="100%" bgcolor="#669900" class="style1"><span class="style14">Entry Data Debitur </span></td>
+    <td width="100%" bgcolor="#2F6B4F" class="style1"><span class="style14">Entry Data Debitur </span></td>
   </tr>
 </table>
 <table width='100%' border='0' cellpadding='2'  cellspacing='2' bordercolor="#ECE9D8" bgcolor="#EAEAEA">
@@ -357,9 +357,9 @@ if (okSoFar==true)  submit();
 </form>
 <iframe width=174 height=189 name="gToday:normal:calender/normal.js" id="gToday:normal:calender/normal.js" src="calender/ipopeng.htm" scrolling="no" frameborder="0" style="visibility:visible; z-index:999; position:absolute; top:-500px; left:-500px;">
 </iframe>
-<table width="100%" border="0" cellpadding="3" cellspacing="0" bgcolor="#669900">
+<table width="100%" border="0" cellpadding="3" cellspacing="0" bgcolor="#2F6B4F">
   <tr>
-    <td width="100%" bgcolor="#669900" class="style14">Informasi Kredit Debitur </td>
+    <td width="100%" bgcolor="#2F6B4F" class="style14">Informasi Kredit Debitur </td>
   </tr>
 </table>
 <table width="1104" border="0">

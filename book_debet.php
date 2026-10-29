@@ -108,8 +108,8 @@ a {
 		margin: 26px 0px 0px 0px;
 		width: 200px;
 		padding:0px;
-		background-color:#669900;
-		border-top: 3px solid #669900;
+		background-color:#2F6B4F;
+		border-top: 3px solid #2F6B4F;
 		color: #fff;
 	}
 	.suggestionList {
@@ -150,7 +150,7 @@ a {
 
 <table width="100%" >
   <tr>
-    <td height="10" bordercolor="#FFFFFF" bgcolor="#669900" class="style3 style9">Transaksi Booking Debet
+    <td height="10" bordercolor="#FFFFFF" bgcolor="#2F6B4F" class="style3 style9">Transaksi Booking Debet
     <div align="right"></div></td>
   </tr>
 </table>
@@ -158,7 +158,7 @@ a {
 <table width="428" border="1" align="center">
 </table>
   <form method="post" action="<?php echo $_SERVER['PHP_SELF']; ?>" name="postform" >  <table width="502" border="0" align="center">
-<tr bgcolor="#669900">
+<tr bgcolor="#2F6B4F">
   <td height="10" colspan="4" nowrap><div align="center" class="style3 style9">Kriteria Pencarian </div></td>
   </tr>
 <tr>

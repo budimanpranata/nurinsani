@@ -58,7 +58,7 @@ a {
 
 <table width="100%" cellpadding="1" bordercolor="#CCCCCC" bgcolor="#CCCCCC" hspace="20">
   <tr>
-    <td height="20" bordercolor="#FFFFFF" bgcolor="#669900" class="style3 style8" >Update Sales Feedback
+    <td height="20" bordercolor="#FFFFFF" bgcolor="#2F6B4F" class="style3 style8" >Update Sales Feedback
       <div align="right"></div></td>
   </tr>
 </table>

@@ -1,4 +1,4 @@
-<?php require_once __DIR__ . '/php8_compat.php';
+<?php require_once __DIR__ . '/koneksi_db.php';
 session_start();
 ob_start();
 $userid=$_SESSION['userid'];
@@ -11,28 +11,24 @@ if(!isset($_SESSION['userid'])){
 if($_SESSION['level']!="unit"){
    header("location:index.html");
  exit; }
- include "conn2.php";
  include "indo_tgl.php";
- $koneksi=open_connection2();
-$code_kel=$_GET['unit'];
-$sql4=mysql_query("Select nama_kel,code_kel FROM kelompok WHERE code_kel='$code_kel'");
-$kode= mysql_fetch_array($sql4);
-$nkel=$kode['nama_kel'];
+// wakalah.php mengirim kode unit sebagai ?code_kel=, versi lama membaca ?unit=
+$code_kel = isset($_GET['unit']) ? $_GET['unit'] : (isset($_GET['code_kel']) ? $_GET['code_kel'] : '');
+$kode = db_satu('SELECT nama_kel, code_kel FROM kelompok WHERE code_kel = ?', 's', $code_kel);
+$nkel = $kode ? $kode['nama_kel'] : '';
 
-$sql1=mysql_query("Select nama,kode_branch FROM user WHERE userid='$userid'");
-$dsmo= mysql_fetch_array($sql1);
-$nama_sales=$dsmo['nama'];
-$kode_branch=$dsmo['kode_branch'];
+$dsmo = db_satu('SELECT nama, kode_branch FROM user WHERE userid = ?', 's', $userid);
+$nama_sales = $dsmo ? $dsmo['nama'] : '';
+$kode_branch = $dsmo ? $dsmo['kode_branch'] : '';
 
-$sql2=mysql_query("Select person.nama, branch.unit,branch.alamat FROM branch inner join person on person.unit = branch.kode_branch WHERE kode_branch='$kode_branch'");
-$br= mysql_fetch_array($sql2);
-$nama_unit=$br['unit'];
-$alamat=$br['alamat'];
-$nama_um=$br['nama'];
+$br = db_satu('SELECT person.nama, branch.unit, branch.alamat FROM branch
+    INNER JOIN person ON person.unit = branch.kode_branch WHERE kode_branch = ?', 's', $kode_branch);
+$nama_unit = $br ? $br['unit'] : '';
+$alamat = $br ? $br['alamat'] : '';
+$nama_um = $br ? $br['nama'] : '';
 
-$sqlm=mysql_query("Select tgl_murab FROM calon_loan WHERE unit='$kode_branch'");
-$mur= mysql_fetch_array($sqlm);
-$tgl_mur=$mur['tgl_murab'];
+$mur = db_satu('SELECT tgl_murab FROM calon_loan WHERE unit = ?', 's', $kode_branch);
+$tgl_mur = $mur ? $mur['tgl_murab'] : '';
 $tgl_mur=tgl_indo($tgl_mur);
 $buss_date=date("y-m-d");
 
@@ -94,21 +90,27 @@ $pdf->Ln();
 //query dan arraying
 $no=0;
 $tot_blt=0;
-  $sql=mysql_query("select calon_loan.unit,calon_loan.cif,calon_loan.suffix,calon_loan.cust_Short_name,HADDRESS1,(select nama_usaha from bidang_usaha where code_bidang=calon_loan.usaha) as nama_usaha,WARIS,calon_loan.Plafond as rek,nama_kel,loan.Plafond as sebelum,calon_loan.tgl_murab,calon_loan.tenor
-from calon_loan
-inner join anggota on anggota.cif = calon_loan.cif
-inner join kelompok on kelompok.code_kel = calon_loan.code_kel
-left join loan on loan.cif=calon_loan.cif
-where calon_loan.USERID='$userid' AND calon_loan.unit='$kode_branch' and calon_loan.status_app ='PENDING' order by nama_kel ");
+$sql = db_semua("SELECT calon_loan.unit, calon_loan.cif, calon_loan.suffix, calon_loan.cust_Short_name, HADDRESS1,
+        (SELECT nama_usaha FROM bidang_usaha WHERE code_bidang = calon_loan.usaha) AS nama_usaha, WARIS,
+        calon_loan.Plafond AS rek, nama_kel, loan.Plafond AS sebelum, calon_loan.tgl_murab, calon_loan.tenor
+    FROM calon_loan
+    INNER JOIN anggota ON anggota.cif = calon_loan.cif
+    INNER JOIN kelompok ON kelompok.code_kel = calon_loan.code_kel
+    LEFT JOIN loan ON loan.cif = calon_loan.cif
+    WHERE calon_loan.USERID = ? AND calon_loan.unit = ? AND calon_loan.status_app = 'PENDING' ORDER BY nama_kel", 'ss', $userid, $kode_branch);
 
-$sql2=mysql_query("select sum(calon_loan.Plafond) as total, count(calon_loan.cif) as noa,nama_kel,nama_ao from calon_loan
-inner join kelompok on kelompok.code_kel = calon_loan.code_kel
-inner join ao on ao.cao=calon_loan.cao
-where calon_loan.USERID='$userid' AND calon_loan.unit='$kode_branch' and status_app ='PEDENDING' group by nama_kel order by nama_kel ");
+// versi lama: status_app = 'PEDENDING' (salah ketik) sehingga ringkasan per kelompok selalu kosong
+$sql2 = db_semua("SELECT SUM(calon_loan.Plafond) AS total, COUNT(calon_loan.cif) AS noa, nama_kel, MAX(nama_ao) AS nama_ao
+    FROM calon_loan
+    INNER JOIN kelompok ON kelompok.code_kel = calon_loan.code_kel
+    INNER JOIN ao ON ao.cao = calon_loan.cao
+    WHERE calon_loan.USERID = ? AND calon_loan.unit = ? AND status_app = 'PENDING' GROUP BY nama_kel ORDER BY nama_kel", 'ss', $userid, $kode_branch);
 
-$sql3=mysql_query("select sum(calon_loan.Plafond) as total_pla, count(cif) as total_noa from calon_loan
-where calon_loan.USERID='$userid' AND calon_loan.unit='$kode_branch'  and status_app ='PENDING'");
-while($result= mysql_fetch_array($sql)){
+$sql3 = db_semua("SELECT SUM(calon_loan.Plafond) AS total_pla, COUNT(cif) AS total_noa FROM calon_loan
+    WHERE calon_loan.USERID = ? AND calon_loan.unit = ? AND status_app = 'PENDING'", 'ss', $userid, $kode_branch);
+$total_pla = 0;
+$total_noa = 0;
+foreach ($sql as $result) {
 	$no ++;
  $TGL_KUNJUNGAN = $result['nama_ao'];
 $cif = $result['CIF'];
@@ -150,7 +152,7 @@ $pdf->Cell(17,3,''.$Plafond,1,0,'R');
 $pdf->Cell(10,3,''.$suffix,1,0,'R');
 $pdf->Ln();
 }
-while($result3= mysql_fetch_array($sql3)){
+foreach ($sql3 as $result3) {
 	 $total_pla = $result3['total_pla'];
 		$total_noa = $result3['total_noa'];
 $pdf->SetFont('ARIAL','B',6);
@@ -168,7 +170,7 @@ $pdf->Cell(40,3,'Nama AO',1,0,'C');
 $pdf->Ln();
 
 $no2=0;
-while($result2= mysql_fetch_array($sql2)){
+foreach ($sql2 as $result2) {
 	$no2 ++;
  $TGL_KUNJUNGAN = $result['nama_ao'];
 $nama_kel = $result2['nama_kel'];

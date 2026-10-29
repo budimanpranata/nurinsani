@@ -1,0 +1,96 @@
+/* Tema aplikasi Nur Insani di atas Bootstrap 5.
+   Hijau utama: hijau zamrud lembut #2F6B4F (pengganti hijau lama #2F6B4F); ungu muda #B3B3FF untuk label. */
+:root {
+    --ni-hijau: #2f6b4f;
+    --ni-hijau-gelap: #1f4a37;
+    --ni-hijau-muda: #eaf2ed;
+    --ni-label: #b3b3ff;
+    --bs-body-font-size: .8125rem;
+    --bs-link-color-rgb: 31, 74, 55;
+}
+
+body {
+    background: #fff;
+}
+
+/* bar judul di atas setiap halaman */
+.judul-halaman {
+    background: var(--ni-hijau);
+    color: #fff;
+    font-weight: 600;
+    font-size: 1rem;
+    padding: .375rem .75rem;
+}
+
+.isi-halaman {
+    padding: .75rem;
+}
+
+/* kartu / panel */
+.card-ni {
+    max-width: 40rem;
+    margin: 0 auto 1rem;
+    border-color: var(--ni-hijau);
+}
+
+.card-ni > .card-header {
+    background: var(--ni-hijau);
+    color: #fff;
+    font-weight: 600;
+    text-align: center;
+}
+
+/* judul bagian dalam form panjang (bar hijau seperti desain awal) */
+.card > .judul-bagian {
+    background: var(--ni-hijau);
+    color: #fff;
+    font-weight: 600;
+    padding: .375rem .75rem;
+}
+
+/* form dengan label berwarna seperti desain awal */
+.form-ni .col-form-label {
+    background: var(--ni-label);
+    border-radius: var(--bs-border-radius-sm);
+    margin-bottom: .25rem;
+}
+
+/* tombol utama */
+.btn-ni {
+    --bs-btn-color: #fff;
+    --bs-btn-bg: var(--ni-hijau);
+    --bs-btn-border-color: var(--ni-hijau);
+    --bs-btn-hover-color: #fff;
+    --bs-btn-hover-bg: var(--ni-hijau-gelap);
+    --bs-btn-hover-border-color: var(--ni-hijau-gelap);
+    --bs-btn-active-bg: var(--ni-hijau-gelap);
+    --bs-btn-active-border-color: var(--ni-hijau-gelap);
+}
+
+/* tabel data */
+.table-ni > thead th {
+    background: var(--ni-hijau);
+    color: #fff;
+    white-space: nowrap;
+    vertical-align: middle;
+}
+
+.table-ni > tbody tr:hover > * {
+    --bs-table-accent-bg: var(--ni-hijau-muda);
+}
+
+/* daftar saran autocomplete */
+.autocomplete {
+    position: relative;
+}
+
+.autocomplete .dropdown-menu {
+    width: 100%;
+    max-height: 16rem;
+    overflow-y: auto;
+}
+
+.autocomplete .dropdown-item.active,
+.autocomplete .dropdown-item:active {
+    background: var(--ni-hijau);
+}

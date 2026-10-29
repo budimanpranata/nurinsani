@@ -27,7 +27,7 @@ header("Content-Disposition: attachment; filename=NERACA.xls");
 	
 ?>
 <table width="100%">
-  <tr bgcolor="#669900">
+  <tr bgcolor="#2F6B4F">
   <td height="30" colspan="8" nowrap><div align="left" class="style9 style3 style1 style1"><strong> Neraca </strong></div></td>
   </tr>
 </table>

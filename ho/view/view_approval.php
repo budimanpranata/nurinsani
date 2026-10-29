@@ -72,8 +72,8 @@ function set_progress($val=0){
 		margin: 26px 0px 0px 0px;
 		width: 400px;
 		padding:0px;
-		background-color:#669900;
-		border-top: 3px solid #669900;
+		background-color:#2F6B4F;
+		border-top: 3px solid #2F6B4F;
 		color: #fff;
 	}
 	.suggestionList {
