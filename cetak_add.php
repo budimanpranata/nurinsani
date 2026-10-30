@@ -1,6 +1,8 @@
-<?php require_once __DIR__ . '/php8_compat.php';  
+<?php require_once __DIR__ . '/koneksi_db.php';  
 //error_reporting(0);
 session_start();  
+require_once __DIR__ . '/inc/cek_login.php';
+wajib_login();
 ob_start();  
 
 $userid=$_SESSION['userid'];
@@ -21,14 +23,14 @@ $buss_date1=getdate();
 $today=date("Y-m-d");
 $date=tgl_indo($today);
 
-$kel= mysql_query(" Select cao from loan 
- where cif='$cif'");
-$datakel= mysql_fetch_array($kel);
+$kel = db_semua(" Select cao from loan 
+ where cif=?", 's', (string) $cif);
+$datakel = $kel ? $kel[0] : false;
 $cao=$datakel['cao'];
 
-$dataao= mysql_query(" Select person.Nama as um,person.jabatan as jabatan,cao from ao 
-inner join person on ao.atasan = person.NIK where cao='$cao'");
-$ao= mysql_fetch_array($dataao);
+$dataao = db_semua(" Select person.Nama as um,person.jabatan as jabatan,cao from ao 
+inner join person on ao.atasan = person.NIK where cao=?", 's', (string) $cao);
+$ao = $dataao ? $dataao[0] : false;
 $nama_um=$ao['um'];
 $jabatan=$ao['jabatan'];
 
@@ -44,33 +46,33 @@ $pdf=new FPDF ('P','mm','A4');
 
 $pdf->addPage();
 
-$pot = mysql_query("select loan.buss_date,loan.Cust_Short_name,Plafond,bagi_hasil,Tenor,angsuran,hari,HADDRESS1,HADDRESS2,HADDRESS3,HADDRESS4,WARIS,NOREK,tgl_murab,tgl_wakalah,tgl_akad,maturity_date,loan.nama_usaha,
+$pot = db_semua("select loan.buss_date,loan.Cust_Short_name,Plafond,bagi_hasil,Tenor,angsuran,hari,HADDRESS1,HADDRESS2,HADDRESS3,HADDRESS4,WARIS,NOREK,tgl_murab,tgl_wakalah,tgl_akad,maturity_date,loan.nama_usaha,
 saldo_margin,ijaroh,angsuran,pokok,os,angsuran,bulat,tgl_akad,(os-saldo_margin) as saldo_os,nama_kel,
 ID_NUMBER from loan 
 left join anggota on anggota.cif=loan.cif 
 left join kelompok on kelompok.code_kel = loan.code_kel
 left join bidang_usaha on bidang_usaha.code_bidang=loan.usaha 
-where loan.cao='$cao' and loan.cif='$cif' order by loan.cif");
+where loan.cao=? and loan.cif=? order by loan.cif", 'ss', (string) $cao, (string) $cif);
 
-$row_saldo = mysql_fetch_array(mysql_query("select sum(kredit-DEBIT) as saldo_simpanan from simpanan where cif ='$cif' and type not in('04','05') ")) or die(mysql_error());
+$row_saldo=db_satu("select sum(kredit-DEBIT) as saldo_simpanan from simpanan where cif =? and type not in('04','05') ", 's', (string) $cif) or die(mysql_error());
        $saldo_simpanan=$row_saldo['saldo_simpanan'];     
 $saldo_simpan=$saldo_simpanan;
 
-$row_tunggak = mysql_fetch_array(mysql_query("select sum(KREDIT-DEBIT) as saldo_tunggak from tunggakan where cif ='$cif' ")) or die(mysql_error());
+$row_tunggak=db_satu("select sum(KREDIT-DEBIT) as saldo_tunggak from tunggakan where cif =? ", 's', (string) $cif) or die(mysql_error());
        $saldo_tunggak=$row_tunggak['saldo_tunggak'];     
 $tunggak=$saldo_tunggak;
 
 
 
-$row_covid_mar = mysql_fetch_array(mysql_query("select gol from data_loan where cif ='$cif' and buss_date ='2020-03-31'")) or die(mysql_error());
+$row_covid_mar=db_satu("select gol from data_loan where cif =? and buss_date ='2020-03-31'", 's', (string) $cif) or die(mysql_error());
        $covid_mar=$row_covid_mar['gol'];     
 
-$row_covid_feb = mysql_fetch_array(mysql_query("select gol from data_loan where cif ='$cif' and buss_date ='2020-02-28'")) or die(mysql_error());
+$row_covid_feb=db_satu("select gol from data_loan where cif =? and buss_date ='2020-02-28'", 's', (string) $cif) or die(mysql_error());
        $covid_feb=$row_covid_feb['gol'];   
 
 
 $page=0;
-while($p = mysql_fetch_array($pot)){
+foreach ($pot as $p){
 $page++;
 $nama=$p['Cust_Short_name'];
 $plafond=$p['Plafond'];
@@ -110,7 +112,7 @@ $saldo_margin=$p['saldo_margin'];
 $pokok_os=$p['saldo_os'];
 $angsur=$p['angsuran'];
 
-$ft =$tunggak/$angsur;
+$ft =compat_bagi($tunggak, $angsur); // PHP 5: pembagi 0/kosong -> false, bukan error
 switch($pilih){
 case "01":
 
@@ -118,7 +120,7 @@ case "01":
 	$saldo_simpan=$saldo_simpanan;
 			$os_res=$pokok_os - $saldo_simpan;
 
-			$pokok=$os_res/$tenor;
+			$pokok=compat_bagi($os_res, $tenor); // PHP 5: pembagi 0/kosong -> false, bukan error
 			$angsuran_res=$pokok;
   $totalharga = $angsuran_res;
 			$totalharga=ceil(compat_num($totalharga));
@@ -135,7 +137,7 @@ case "01":
 	//Hitung Restruturisasai
 			$os_res=$pokok_os - $saldo_simpan;
 			
-			$pokok=$os_res/$tenor;
+			$pokok=compat_bagi($os_res, $tenor); // PHP 5: pembagi 0/kosong -> false, bukan error
 			$angsuran_res=$pokok;
   $totalharga = $angsuran_res;
 			$totalharga=ceil(compat_num($totalharga));
@@ -152,7 +154,7 @@ case "02";
 	$saldo_simpan=$saldo_simpanan;
 			$os_res=$os - $saldo_simpan;
 
-			$pokok=$os_res/$tenor;
+			$pokok=compat_bagi($os_res, $tenor); // PHP 5: pembagi 0/kosong -> false, bukan error
 			$angsuran_res=$pokok;
   $totalharga = $angsuran_res;
 			$totalharga=ceil(compat_num($totalharga));
@@ -177,7 +179,7 @@ $maturity_date_res=tgl_indo($maturity_date_res);
 	//Hitung Restruturisasai
 			$os_res=$os - $saldo_simpan;
 			
-			$pokok=$os_res/$tenor;
+			$pokok=compat_bagi($os_res, $tenor); // PHP 5: pembagi 0/kosong -> false, bukan error
 			$angsuran_res=$pokok;
   $totalharga = $angsuran_res;
 			$totalharga=ceil(compat_num($totalharga));
@@ -207,9 +209,9 @@ if($wadiah =='ya'){
 if($covid_feb > 1){
 $os_res=$os;
 			$os_ress=$pokok_os - $saldo_simpan;
-			$pokok=$os_ress/$tenor;
+			$pokok=compat_bagi($os_ress, $tenor); // PHP 5: pembagi 0/kosong -> false, bukan error
 
-			$saldo_margin=$saldo_margin/$tenor;
+			$saldo_margin=compat_bagi($saldo_margin, $tenor); // PHP 5: pembagi 0/kosong -> false, bukan error
 			$angsuran_res=$pokok + $saldo_margin;
   $totalharga = $angsuran_res;
 			$totalharga=ceil(compat_num($totalharga));
@@ -251,8 +253,8 @@ $maturity_date_res=tgl_indo($maturity_date_res);
 $os_res=$os;
 			$os_ress=$pokok_os;
 
-			$pokok=$os_ress/$tenor;
-			$saldo_margin=$saldo_margin/$tenor;
+			$pokok=compat_bagi($os_ress, $tenor); // PHP 5: pembagi 0/kosong -> false, bukan error
+			$saldo_margin=compat_bagi($saldo_margin, $tenor); // PHP 5: pembagi 0/kosong -> false, bukan error
 			$angsuran_res=$pokok + $saldo_margin;
   $totalharga = $angsuran_res;
 			$totalharga=ceil(compat_num($totalharga));

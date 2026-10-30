@@ -128,9 +128,16 @@ function db_jalankan($sql, $tipe = '', ...$param)
     if (!$st || ($tipe !== '' && !$st->bind_param($tipe, ...$param)) || !$st->execute()) {
         trigger_error('db_jalankan(): ' . ($st ? $st->error : $db->error) . ' | SQL: '
             . substr(preg_replace('/\s+/', ' ', $sql), 0, 300), E_USER_WARNING);
+        $GLOBALS['__db_jumlah_gagal'] = db_jumlah_gagal() + 1;
         return false;
     }
     return true;
+}
+
+/** Jumlah db_jalankan() yang gagal sejak awal request; dipakai untuk memutuskan commit/rollback transaksi. */
+function db_jumlah_gagal()
+{
+    return isset($GLOBALS['__db_jumlah_gagal']) ? $GLOBALS['__db_jumlah_gagal'] : 0;
 }
 
 /** Baris pertama hasil query (prepared statement), atau null. */

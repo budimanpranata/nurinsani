@@ -120,7 +120,7 @@ halaman_awal('Cetak Dokumen Lariswah');
         <td><?php echo h($data['tgl_wakalah']); ?></td>
         <td class="text-center">
           <a href="cetak_lariswah1.php?code_kel=<?php echo urlencode($kelompok); ?>&amp;jenis=<?php echo urlencode($jenis); ?>" class="btn btn-ni btn-sm"
-             data-konfirmasi="anda yakin akan Cetak Murabahah ?">Detail</a>
+             data-konfirmasi="anda yakin akan Cetak Lariswah ?">Detail</a>
         </td>
       </tr>
     <?php endforeach; ?>

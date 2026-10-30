@@ -47,7 +47,7 @@ if (!empty($_POST['search'])) {
     }
 }
 
-halaman_awal('Cetak Dokumen Lariswah');
+halaman_awal('Cetak Dokumen 5%');
 ?>
 <div class="card card-ni">
   <div class="card-header">Kriteria Pencarian</div>
@@ -103,7 +103,7 @@ halaman_awal('Cetak Dokumen Lariswah');
         <td><?php echo h($data['tgl_wakalah']); ?></td>
         <td class="text-center">
           <a href="cetak_lariswah.php?code_kel=<?php echo urlencode($kelompok); ?>" class="btn btn-ni btn-sm"
-             data-konfirmasi="anda yakin akan Cetak Murabahah ?">Detail</a>
+             data-konfirmasi="anda yakin akan Cetak 5 % ?">Detail</a>
         </td>
       </tr>
     <?php endforeach; ?>

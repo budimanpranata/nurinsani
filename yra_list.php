@@ -1,138 +1,101 @@
-<?php require_once __DIR__ . '/php8_compat.php';
+<?php require_once __DIR__ . '/koneksi_db.php';
+/**
+ * Realisasi Murabahah langkah 2: daftar anggota kelompok berstatus MURAB pada tanggal akad terpilih,
+ * lalu dikirim ke realisasi_pinjaman.php. Perilaku sama dengan versi lama.
+ */
+require_once __DIR__ . '/inc/tampilan.php';
 session_start();
 ob_start();
-$userid=$_SESSION['userid'];
+$userid = $_SESSION['userid'];
 //cek apakah user sudah login
-if(!isset($_SESSION['userid'])){
-   header("location:index.html");
- exit; }
-
+if (!isset($_SESSION['userid'])) {
+    header('location:index.html');
+    exit;
+}
 //cek level user
-if($_SESSION['level']!="unit"){
-   header("location:index.html");
- exit; }  
-?>
-<link rel="stylesheet" href="css/bootstrap.min.css"/>
-<script>
-function cek(cekbox){
-    for(i=0; i < cekbox.length; i++){
-        cekbox[i].checked = true;
-    }
+if ($_SESSION['level'] != 'unit') {
+    header('location:index.html');
+    exit;
 }
-function uncek(cekbox){
-    for(i=0; i < cekbox.length; i++){
-        cekbox[i].checked = false;
-    }
+include 'indo_tgl.php';
+
+$code_kel = isset($_GET['code_kel']) ? (string) $_GET['code_kel'] : '';
+$tanggal = isset($_GET['tanggal']) ? (string) $_GET['tanggal'] : '';
+$data_anggota = array();
+if ($code_kel !== '') {
+    $data_anggota = db_semua("SELECT * FROM calon_loan WHERE code_kel = ? AND status_app = 'MURAB' AND tgl_akad = ?", 'ss', $code_kel, $tanggal);
 }
-</script>
-<?php  
+$tot_pla = 0;
+$margin = 0;
+$angsuran = 0;
 
-  
-include "conn2.php";
-include "indo_tgl.php";
-$koneksi=open_connection2(); 
-//ambil data dari database
-$buss_date1= $_POST['buss_date1'];
-$buss_date2= $_POST['buss_date2'];
-
-$gb=rtrim('gb1');
-
-
-//if(empty($ds)||empty($limit)||empty($sd)||empty($lurah)){
-        
-        //echo "<script>alert('Maaf data Anda belum lengkap');</script>";
-         //echo "<script language='javascript'>document.location.href='view.php'</script>";}
-        //else {
-		
-				//$query = mysql_query("SELECT COUNT(NOPEN) as counter FROM feed_back WHERE FEEB_BACK= 'P' AND KODE_SALES='$ds'");
-				//$check = mysql_fetch_array($query);
-				//$feed=$check['counter'];
-				//}
-//if ($feed>=10) {
-
-// jika data ditemukan
-//echo "<script> alert ('Maaf anda tidak bisa membuka menu ini, silahkan Update SALES FEEDBACK terlebih dahulu')</script>";
-
-   //echo "<script language='javascript'>document.location.href='view_feed.php'</script>";
-		 //}
-
-        //else {
-
-//$query = "SELECT NOPEN,NAMA,ALAMAT,KOTA,KELURAHAN,TGL_LAHIR,USIA,PLAFOND,GBAYAR FROM potensi WHERE NOT EXISTS (Select NOPEN From feed_back WHERE feed_back.NOPEN=tempfeed.NOPEN) AND KOTA like '%$kota%' AND KELURAHAN like '%$lurah%' AND GBAYAR='$gb' ORDER By ALAMAT LIMIT $limit, $sd  ";
- If ($_GET ['code_kel']){
-$code_kel=$_GET ['code_kel'];
-$tanggal=$_GET ['tanggal'];
-
-$date=date('Y-m-d');	
-$query = "Select * from calon_loan where code_kel='$code_kel' and status_app='MURAB' and tgl_akad ='$tanggal'";
-$result = mysql_query($query);
+halaman_awal('Realisasi Murabahah');
 ?>
-<form action="realisasi_pinjaman.php" method="post">
-    <table border="1" style="margin: 10px 0px" class="table table-striped" >
-            <tr>
-                <th><span class="badge"> PILIH</th>
-<th><span class="badge"> No</th>
-                <th><span class="badge"> KDE KELOMPOK</th>
-                <th><span class="badge">NAMA</th>
-                <th><span class="badge">JATUH TEMPO</th>
-			    <th><span class="badge">PEMBIAYAAN</th>
-			    <th><span class="badge">MARGIN</th>
-			    <th><span class="badge">ANGSURAN</th>
-			    <th><span class="badge">TANGGAL MURABAHAH</th>
-				<th><span class="badge">UNIT</th>
-				 
-			            </tr>
-    <?php 
-$no=0;
-    while ($data = mysql_fetch_array($result)) {
-$unit=$data['unit'];
-$tot_pla +=$data['Plafond'];
-$margin +=$data['bagi_hasil'];
-$angsuran +=$data['angsuran'];
-$no++;
-    ?>
-            <tr>
-                <td><input type="checkbox" id="cekbox" name="cekbox[]" value="<?php echo $data['no_anggota'] ?>"/></td>
-<td><?php echo $no ?></td>
-                <td><?php echo $data['no_anggota'] ?></td>
-				<td><?php echo $data['Cust_Short_name'] ?></td>
-                <td><?php echo tgl_indo ($data['maturity_date']) ?></td>
-				<td><?php echo number_format (compat_num($data['Plafond'])) ?></td>
-				<td><?php echo number_format (compat_num($data['bagi_hasil'])) ?></td>
-				<td><?php echo number_format (compat_num($data['angsuran'])) ?></td>
-             	<td><?php echo tgl_indo ($data['tgl_murab']) ?></td>
-				<td><?php echo $data['unit'] ?></td>
-            </tr>
-    
-    <?php
-    }
-	}
-
-    ?>
-<?php
-       
-        ///$total=mysql_query("select sum(Plafond) as tot_pla,sum(bagi_hasil) as margin,sum(angsuran) as angsuran from calon_loan where code_kel ='$code_kel' and unit ='$unit' and status_app ='MURAB' group by code_kel ");
-        //while($row_tran=mysql_fetch_array($total)){
-            //$tot_pla=$row_tran['tot_pla'];
-            //$margin=$row_tran['margin'];
-            //$angsuran=$row_tran['angsuran'];
-        //}
-            ?>
-    <tr>
-                <td colspan="5"><div align="center"><strong>TOTAL TRANSAKSI</strong></div></td>
-                <td align="right"><strong><?php echo number_format(compat_num($tot_pla)); ?></strong></td>
-                <td align="right"><strong><?php echo number_format(compat_num($margin)); ?></strong></td>
-                <td align="right"><strong><?php echo number_format(compat_num($angsuran)); ?></strong></td>
-                <td align="right"><strong><?php ; ?></strong></td>
-                <td align="right"><strong><?php ; ?></strong></td>
-            </tr>
+<form action="realisasi_pinjaman.php" method="post" id="form-realisasi">
+  <div class="table-responsive">
+    <table class="table table-sm table-bordered table-ni table-hover align-middle">
+      <thead>
+        <tr>
+          <th class="text-center">Pilih</th>
+          <th class="text-center">No</th>
+          <th>Kode Kelompok</th>
+          <th>Nama</th>
+          <th>Jatuh Tempo</th>
+          <th class="text-end">Pembiayaan</th>
+          <th class="text-end">Margin</th>
+          <th class="text-end">Angsuran</th>
+          <th>Tanggal Murabahah</th>
+          <th>Unit</th>
+        </tr>
+      </thead>
+      <tbody>
+      <?php $no = 0; foreach ($data_anggota as $data):
+          $tot_pla += compat_num($data['Plafond']);
+          $margin += compat_num($data['bagi_hasil']);
+          $angsuran += compat_num($data['angsuran']);
+          $no++; ?>
+        <tr>
+          <td class="text-center"><input type="checkbox" class="form-check-input" name="cekbox[]" value="<?php echo h($data['no_anggota']); ?>" aria-label="Pilih <?php echo h($data['Cust_Short_name']); ?>"></td>
+          <td class="text-center"><?php echo $no; ?></td>
+          <td><?php echo h($data['no_anggota']); ?></td>
+          <td><?php echo h($data['Cust_Short_name']); ?></td>
+          <td><?php echo h(tgl_indo($data['maturity_date'])); ?></td>
+          <td class="text-end"><?php echo number_format(compat_num($data['Plafond'])); ?></td>
+          <td class="text-end"><?php echo number_format(compat_num($data['bagi_hasil'])); ?></td>
+          <td class="text-end"><?php echo number_format(compat_num($data['angsuran'])); ?></td>
+          <td><?php echo h(tgl_indo($data['tgl_murab'])); ?></td>
+          <td><?php echo h($data['unit']); ?></td>
+        </tr>
+      <?php endforeach; ?>
+      </tbody>
+      <tfoot>
+        <tr class="fw-bold">
+          <td colspan="5" class="text-center">TOTAL TRANSAKSI</td>
+          <td class="text-end"><?php echo number_format(compat_num($tot_pla)); ?></td>
+          <td class="text-end"><?php echo number_format(compat_num($margin)); ?></td>
+          <td class="text-end"><?php echo number_format(compat_num($angsuran)); ?></td>
+          <td></td>
+          <td></td>
+        </tr>
+      </tfoot>
     </table>
-    <br />
-    <input type="button" class="alert-success" onclick="cek(this.form.cekbox)" value="Select All" />
-    <input type="button" class="btn-danger" onclick="uncek(this.form.cekbox)" value="Clear All" />
-	<input type="hidden" name="ds" id "ds" value=" <?php echo $ds ?>" >
-    <input name="submit" type="submit" class="btn-success" value="Realisasi Pembiayaan" />
-		
-	    <br />
-		
+  </div>
+  <div class="d-flex flex-wrap gap-2">
+    <button type="button" class="btn btn-outline-secondary btn-sm" data-pilih-semua="1">Select All</button>
+    <button type="button" class="btn btn-outline-danger btn-sm" data-pilih-semua="0">Clear All</button>
+    <input type="hidden" name="ds" value=" ">
+    <button name="submit" type="submit" value="Realisasi Pembiayaan" class="btn btn-ni btn-sm ms-auto px-4">Realisasi Pembiayaan</button>
+  </div>
 </form>
+<script>
+document.querySelectorAll('[data-pilih-semua]').forEach(function (b) {
+    b.addEventListener('click', function () {
+        var nilai = b.getAttribute('data-pilih-semua') === '1';
+        document.querySelectorAll('#form-realisasi input[name="cekbox[]"]').forEach(function (c) {
+            c.checked = nilai;
+        });
+    });
+});
+</script>
+<?php
+halaman_akhir();

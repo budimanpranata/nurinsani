@@ -1,111 +1,84 @@
-<?php require_once __DIR__ . '/php8_compat.php';
+<?php require_once __DIR__ . '/koneksi_db.php';
+/**
+ * Menu Pemeliharaan Data > Batal Wakalah / Musyarakah: daftar calon_loan unit berstatus APPROVE / MUSYAROKAH
+ * untuk dipilih, lalu dibatalkan di realisasi_batal.php. Perilaku sama dengan versi lama.
+ */
+require_once __DIR__ . '/inc/tampilan.php';
 session_start();
 ob_start();
-$userid=$_SESSION['userid'];
+$userid = $_SESSION['userid'];
 //cek apakah user sudah login
-if(!isset($_SESSION['userid'])){
-   header("location:index.html");
- exit; }
-
+if (!isset($_SESSION['userid'])) {
+    header('location:index.html');
+    exit;
+}
 //cek level user
-if($_SESSION['level']!="unit"){
-   header("location:index.html");
- exit; }  
-?>
-<link rel="stylesheet" href="css/bootstrap.min.css"/>
-<script>
-function cek(cekbox){
-    for(i=0; i < cekbox.length; i++){
-        cekbox[i].checked = true;
-    }
+if ($_SESSION['level'] != 'unit') {
+    header('location:index.html');
+    exit;
 }
-function uncek(cekbox){
-    for(i=0; i < cekbox.length; i++){
-        cekbox[i].checked = false;
-    }
-}
-</script>
-<?php  
+include 'indo_tgl.php';
 
-  
-include "conn2.php";
-include "indo_tgl.php";
-$koneksi=open_connection2(); 
-//ambil data dari database
+$dsmo = db_satu('SELECT nama, kode_branch FROM user WHERE userid = ?', 's', (string) $userid);
+$unit = $dsmo ? $dsmo['kode_branch'] : null;
+$data_anggota = db_semua("SELECT * FROM calon_loan WHERE unit = ? AND status_app IN ('APPROVE','MUSYAROKAH') ORDER BY code_kel, Cust_Short_name", 's', (string) $unit);
 
-//if(empty($ds)||empty($limit)||empty($sd)||empty($lurah)){
-        
-        //echo "<script>alert('Maaf data Anda belum lengkap');</script>";
-         //echo "<script language='javascript'>document.location.href='view.php'</script>";}
-        //else {
-		
-				//$query = mysql_query("SELECT COUNT(NOPEN) as counter FROM feed_back WHERE FEEB_BACK= 'P' AND KODE_SALES='$ds'");
-				//$check = mysql_fetch_array($query);
-				//$feed=$check['counter'];
-				//}
-//if ($feed>=10) {
-
-// jika data ditemukan
-//echo "<script> alert ('Maaf anda tidak bisa membuka menu ini, silahkan Update SALES FEEDBACK terlebih dahulu')</script>";
-
-   //echo "<script language='javascript'>document.location.href='view_feed.php'</script>";
-		 //}
-
-        //else {
-
-//$query = "SELECT NOPEN,NAMA,ALAMAT,KOTA,KELURAHAN,TGL_LAHIR,USIA,PLAFOND,GBAYAR FROM potensi WHERE NOT EXISTS (Select NOPEN From feed_back WHERE feed_back.NOPEN=tempfeed.NOPEN) AND KOTA like '%$kota%' AND KELURAHAN like '%$lurah%' AND GBAYAR='$gb' ORDER By ALAMAT LIMIT $limit, $sd  ";
-
-$date=date('Y-m-d');
-
-$sql1=mysql_query("Select nama,kode_branch FROM user WHERE userid='$userid'");
-$dsmo= mysql_fetch_array($sql1);
-$unit=$dsmo['kode_branch'];	
-$query = "Select * from calon_loan where unit ='$unit' and status_app in ('APPROVE','MUSYAROKAH') order by code_kel, Cust_Short_name ";
-$result = mysql_query($query);
+halaman_awal('Batal Wakalah / Musyarakah');
 ?>
-<form action="realisasi_batal.php" method="post">
-    <table border="1" style="margin: 10px 0px" class="table table-striped" >
-            <tr>
-                <th><span class="badge"> PILIH</th>
-                <th><span class="badge"> KDE KELOMPOK</th>
-<th><span class="badge"> CIF</th>
-                <th><span class="badge">NAMA</th>
-                <th><span class="badge">JATUH TEMPO</th>
-			    <th><span class="badge">PEMBIAYAAN</th>
-			    <th><span class="badge">MARGIN</th>
-			    <th><span class="badge">ANGSURAN</th>
-			    <th><span class="badge">TANGGAL MURABAHAH</th>
-				<th><span class="badge">UNIT</th>
-				 
-			            </tr>
-    <?php 
-    while ($data = mysql_fetch_array($result)) {
-    ?>
-            <tr>
-                <td><input type="checkbox" id="cekbox" name="cekbox[]" value="<?php echo $data['cif'] ?>"/></td>
-                <td><?php echo $data['code_kel'] ?></td>
-<td><?php echo $data['cif'] ?></td>
-				<td><?php echo $data['Cust_Short_name'] ?></td>
-                <td><?php echo tgl_indo ($data['maturity_date']) ?></td>
-				<td><?php echo number_format (compat_num($data['Plafond'])) ?></td>
-				<td><?php echo number_format (compat_num($data['bagi_hasil'])) ?></td>
-				<td><?php echo number_format (compat_num($data['angsuran'])) ?></td>
-             	<td><?php echo tgl_indo ($data['tgl_murab']) ?></td>
-				<td><?php echo $data['unit'] ?></td>
-            </tr>
-    
-    <?php
-
-	}
-
-    ?>
+<form action="realisasi_batal.php" method="post" id="form-batal">
+  <div class="table-responsive">
+    <table class="table table-sm table-bordered table-ni table-hover align-middle">
+      <thead>
+        <tr>
+          <th class="text-center">Pilih</th>
+          <th>Kode Kelompok</th>
+          <th>CIF</th>
+          <th>Nama</th>
+          <th>Jatuh Tempo</th>
+          <th class="text-end">Pembiayaan</th>
+          <th class="text-end">Margin</th>
+          <th class="text-end">Angsuran</th>
+          <th>Tanggal Murabahah</th>
+          <th>Unit</th>
+        </tr>
+      </thead>
+      <tbody>
+      <?php foreach ($data_anggota as $data): ?>
+        <tr>
+          <td class="text-center"><input type="checkbox" class="form-check-input" name="cekbox[]" value="<?php echo h($data['cif']); ?>" aria-label="Pilih <?php echo h($data['Cust_Short_name']); ?>"></td>
+          <td><?php echo h($data['code_kel']); ?></td>
+          <td><?php echo h($data['cif']); ?></td>
+          <td><?php echo h($data['Cust_Short_name']); ?></td>
+          <td><?php echo h(tgl_indo($data['maturity_date'])); ?></td>
+          <td class="text-end"><?php echo number_format(compat_num($data['Plafond'])); ?></td>
+          <td class="text-end"><?php echo number_format(compat_num($data['bagi_hasil'])); ?></td>
+          <td class="text-end"><?php echo number_format(compat_num($data['angsuran'])); ?></td>
+          <td><?php echo h(tgl_indo($data['tgl_murab'])); ?></td>
+          <td><?php echo h($data['unit']); ?></td>
+        </tr>
+      <?php endforeach; ?>
+      <?php if (!$data_anggota): ?>
+        <tr><td colspan="10" class="text-center text-muted py-3">Tidak ada data wakalah / musyarakah yang bisa dibatalkan.</td></tr>
+      <?php endif; ?>
+      </tbody>
     </table>
-    <br />
-    <input type="button" class="alert-success" onclick="cek(this.form.cekbox)" value="Select All" />
-    <input type="button" class="btn-danger" onclick="uncek(this.form.cekbox)" value="Clear All" />
-	<input type="hidden" name="ds" id "ds" value=" <?php echo $ds ?>" >
-    <input name="submit" type="submit" class="btn-success" value="Batal" />
-		
-	    <br />
-		
+  </div>
+  <div class="d-flex flex-wrap gap-2">
+    <button type="button" class="btn btn-outline-secondary btn-sm" data-pilih-semua="1">Select All</button>
+    <button type="button" class="btn btn-outline-danger btn-sm" data-pilih-semua="0">Clear All</button>
+    <input type="hidden" name="ds" value=" ">
+    <button name="submit" type="submit" value="Batal" class="btn btn-danger btn-sm ms-auto px-4">Batal</button>
+  </div>
 </form>
+<script>
+document.querySelectorAll('[data-pilih-semua]').forEach(function (b) {
+    b.addEventListener('click', function () {
+        var nilai = b.getAttribute('data-pilih-semua') === '1';
+        document.querySelectorAll('#form-batal input[name="cekbox[]"]').forEach(function (c) {
+            c.checked = nilai;
+        });
+    });
+});
+</script>
+<?php
+halaman_akhir();

@@ -2,6 +2,8 @@
 error_reporting(E_ALL);
 date_default_timezone_set('Asia/Jakarta');
 session_start();
+require_once __DIR__ . '/inc/cek_login.php';
+wajib_login();
 ob_start();
     $userid=$_SESSION['userid'];
 $tgl_system=$_SESSION['stgl_system'];
@@ -12,10 +14,8 @@ $wadiah=$_SESSION['swadiah'];
 $muqosah=$_SESSION['snominal'];
 $tenor=$_SESSION['stenor'];	
 	
-db_ni();
-mysql_select_db('nur_insani');
 include "function.php";
-$checbox = $_POST['cekbox'];
+$checbox = isset($_POST['cekbox']) ? $_POST['cekbox'] : null;
 
 
 
@@ -24,13 +24,11 @@ if (isset($_POST["realisasi"])){
     if ($checbox) {
         for ($i=0; $i <sizeof($checbox);$i++){
 
-    $row1 = mysql_query("select DATE_ADD(tgl_wakalah,INTERVAL 7 DAY) as tgl_murab1,DATE_ADD('$tgl_system',INTERVAL '$tenor' WEEK) as matur,tgl_murab,loan.buss_date,loan.code_kel,loan.no_anggota,loan.Cust_Short_name,maturity_date,Tenor,
+    $row = db_satu("select DATE_ADD(tgl_wakalah,INTERVAL 7 DAY) as tgl_murab1,DATE_ADD(?,INTERVAL ? WEEK) as matur,tgl_murab,loan.buss_date,loan.code_kel,loan.no_anggota,loan.Cust_Short_name,maturity_date,Tenor,
     loan.Deal_type,suffix,bagi_hasil,Tenor,Plafond,os,angsuran,pokok,ijaroh,bulat,ke,usaha,loan.unit,tgl_wakalah,hari,loan.cao,loan.USERID,loan.status,loan.cif,saldo_margin
     from loan 
      left join anggota on anggota.cif = loan.cif
-     WHERE loan.cif ='".$checbox[$i]."'");
-
-     $row = mysql_fetch_array($row1);
+     WHERE loan.cif =?", 'sss', (string) $tgl_system, (string) $tenor, (string) $checbox[$i]);
 
 
             $no_anggota=$row['no_anggota'];
@@ -38,7 +36,7 @@ if (isset($_POST["realisasi"])){
             $bagi_hasil=$row['bagi_hasil'];
             $os=$row['os'];
             $piutang=$os;
-            $Cust_Short_name=mysql_real_escape_string($row['Cust_Short_name']);
+            $Cust_Short_name=$row['Cust_Short_name']; // dikirim sebagai parameter, tidak perlu di-escape
             $maturity_date=$row['matur'];
 $pokok=$row['pokok'];
 $tenor_lama=$row['Tenor'];
@@ -58,7 +56,7 @@ $bulat_lama=$row['bulat'];
             $kode_trans="BU/".$unit .$kodetr;
 
 
-    $row_saldo = mysql_fetch_array(mysql_query("select sum(kredit-DEBIT) as saldo_simpanan from simpanan where cif ='$cif' and type not in('04','05') ")) or die(mysql_error());
+    $row_saldo=db_satu("select sum(kredit-DEBIT) as saldo_simpanan from simpanan where cif =? and type not in('04','05') ", 's', (string) $cif) or die(mysql_error());
        $saldo_simpanan=$row_saldo['saldo_simpanan'];
 if($wadiah =='ya'){
 	$simpanan=$saldo_simpanan;
@@ -85,7 +83,7 @@ if ($pilih=='01') {
 			//Hitung Restruturisasai
 			$os_res=$pokok_os-$simpanan;
 			
-			$pokok=$os_res/$tenor;
+			$pokok=compat_bagi($os_res, $tenor); // PHP 5: pembagi 0/kosong -> false, bukan error
 
 			$angsuran=$pokok;
 			
@@ -102,53 +100,53 @@ if ($pilih=='01') {
             
             $kode_transaksi="BU/".$kode_tr;
             //pencatatan du jurnal realasisi Piutang Murabahaha total jumlah Pokok dan margin
-            @mysql_query("insert into jurnal_umum(nomor_jurnal,kode_transaksi,tanggal_selesai) values('$nomor_jurnal','$kode_trans','$tgl_system')");
+            db_jalankan("insert into jurnal_umum(nomor_jurnal,kode_transaksi,tanggal_selesai) values(?,?,?)", 'sss', (string) $nomor_jurnal, (string) $kode_trans, (string) $tgl_system);
            
             //Realiasasi Murabahah Debit pada Aset Murabahaha total Plafond
-            @mysql_query("insert into simpanan(BUSS_DATE,NOREK,UNIT,CIF,CODE_KEL,DEBIT,TYPE,KREDIT,USERID,KET,REFF,CAO,kode_transaksi)
-            values('$tgl_system','$norek','$unit','$cif','$code_kel','$simpanan','01','0','$userid','Realisasi Restrukturisasi','','$cao','$kode_trans')");
+            db_jalankan("insert into simpanan(BUSS_DATE,NOREK,UNIT,CIF,CODE_KEL,DEBIT,TYPE,KREDIT,USERID,KET,REFF,CAO,kode_transaksi)
+            values(?,?,?,?,?,?,'01','0',?,'Realisasi Restrukturisasi','',?,?)", 'sssssssss', (string) $tgl_system, (string) $norek, (string) $unit, (string) $cif, (string) $code_kel, (string) $simpanan, (string) $userid, (string) $cao, (string) $kode_trans);
             
-            @mysql_query("insert  into tabel_transaksi(unit,kode_transaksi,kode_rekening,tanggal_transaksi, jenis_transaksi, keterangan_transaksi,debet,id_admin)
-                        values('$unit','$kode_trans','2101000','$tgl_system','Bukti SYSTEM','$ket','$simpanan','$userid')");
+            db_jalankan("insert  into tabel_transaksi(unit,kode_transaksi,kode_rekening,tanggal_transaksi, jenis_transaksi, keterangan_transaksi,debet,id_admin)
+                        values(?,?,'2101000',?,'Bukti SYSTEM',?,?,?)", 'ssssss', (string) $unit, (string) $kode_trans, (string) $tgl_system, (string) $ket, (string) $simpanan, (string) $userid);
                        
             //Realiasasi Murabahah Debit pada Piutang Murabahaha total jumlah Pokok dan margin
-            @mysql_query("insert  into tabel_transaksi(unit,kode_transaksi,kode_rekening,tanggal_transaksi, jenis_transaksi, keterangan_transaksi,kredit,id_admin)
-                    values('$unit','$kode_trans','1413000','$tgl_system','Bukti SYSTEM','$ket','$simpanan','$userid')");
+            db_jalankan("insert  into tabel_transaksi(unit,kode_transaksi,kode_rekening,tanggal_transaksi, jenis_transaksi, keterangan_transaksi,kredit,id_admin)
+                    values(?,?,'1413000',?,'Bukti SYSTEM',?,?,?)", 'ssssss', (string) $unit, (string) $kode_trans, (string) $tgl_system, (string) $ket, (string) $simpanan, (string) $userid);
                       
             //Realisasi PMYD   
-            @mysql_query("insert  into tabel_transaksi(unit,kode_transaksi,kode_rekening,tanggal_transaksi, jenis_transaksi, keterangan_transaksi,debet,id_admin)
-            values('$unit','$kode_trans','1423000','$tgl_system','Bukti SYSTEM','$ket','$saldo_margin','$userid')");
+            db_jalankan("insert  into tabel_transaksi(unit,kode_transaksi,kode_rekening,tanggal_transaksi, jenis_transaksi, keterangan_transaksi,debet,id_admin)
+            values(?,?,'1423000',?,'Bukti SYSTEM',?,?,?)", 'ssssss', (string) $unit, (string) $kode_trans, (string) $tgl_system, (string) $ket, (string) $saldo_margin, (string) $userid);
 			
 			//Piutang murabahah
-			@mysql_query("insert  into tabel_transaksi(unit,kode_transaksi,kode_rekening,tanggal_transaksi, jenis_transaksi, keterangan_transaksi,kredit,id_admin)
-                    values('$unit','$kode_trans','1413000','$tgl_system','Bukti SYSTEM','$ket','$saldo_margin','$userid')");
+			db_jalankan("insert  into tabel_transaksi(unit,kode_transaksi,kode_rekening,tanggal_transaksi, jenis_transaksi, keterangan_transaksi,kredit,id_admin)
+                    values(?,?,'1413000',?,'Bukti SYSTEM',?,?,?)", 'ssssss', (string) $unit, (string) $kode_trans, (string) $tgl_system, (string) $ket, (string) $saldo_margin, (string) $userid);
 			
 			
 			//Restrukrisasi
-			@mysql_query("insert  into tabel_transaksi(unit,kode_transaksi,kode_rekening,tanggal_transaksi, jenis_transaksi, keterangan_transaksi,debet,id_admin)
-                    values('$unit','$kode_trans','1411000','$tgl_system','Bukti SYSTEM','$ket','$os_res','$userid')");
+			db_jalankan("insert  into tabel_transaksi(unit,kode_transaksi,kode_rekening,tanggal_transaksi, jenis_transaksi, keterangan_transaksi,debet,id_admin)
+                    values(?,?,'1411000',?,'Bukti SYSTEM',?,?,?)", 'ssssss', (string) $unit, (string) $kode_trans, (string) $tgl_system, (string) $ket, (string) $os_res, (string) $userid);
 			
-			@mysql_query("insert  into tabel_transaksi(unit,kode_transaksi,kode_rekening,tanggal_transaksi, jenis_transaksi, keterangan_transaksi,kredit,id_admin)
-                    values('$unit','$kode_trans','1413000','$tgl_system','Bukti SYSTEM','$ket','$os_res','$userid')");
+			db_jalankan("insert  into tabel_transaksi(unit,kode_transaksi,kode_rekening,tanggal_transaksi, jenis_transaksi, keterangan_transaksi,kredit,id_admin)
+                    values(?,?,'1413000',?,'Bukti SYSTEM',?,?,?)", 'ssssss', (string) $unit, (string) $kode_trans, (string) $tgl_system, (string) $ket, (string) $os_res, (string) $userid);
 					
                     
            
             //@mysql_query("Update calon_loan set next_schedule = (select DATE_ADD(tgl_murab,INTERVAL 7 DAY) from calon_loan where no_anggota  ='" . $value . "') where no_anggota  ='" . $value . "'") or die(mysql_error("GAGAL INPUT"));
-            @mysql_query ("update loan  set os ='$os_res', saldo_margin='0',angsuran='$angsuran',pokok='$angsuran',bulat='$bulat',tenor='$tenor',maturity_date ='$maturity_date',run_tenor='0', ke ='1',ijaroh='0',gol='1',status_app='REST',tgl_murab='$tgl_system', deal_produk ='1' WHERE cif ='$cif'")or die(mysql_error());
-           @mysql_query ("delete from tunggakan WHERE cif ='$cif'")or die(mysql_error());
-@mysql_query ("delete from temp_eod where cif ='$cif'")or die(mysql_error());
-@mysql_query ("delete from  rest_covid where cif ='$cif'")or die(mysql_error());	
-@mysql_query ("insert into rest_covid values('','$tgl_system','$cif','$angsur','$pokok','$ijaroh','$bulat_lama','$tenor_lama','$matur','$angsuran','$angsuran_pokok','$angsuran_margin','$bulat','$tenor','$maturity_date','$kelompok')")or die(mysql_error());
+            db_jalankan("update loan  set os =?, saldo_margin='0',angsuran=?,pokok=?,bulat=?,tenor=?,maturity_date =?,run_tenor='0', ke ='1',ijaroh='0',gol='1',status_app='REST',tgl_murab=?, deal_produk ='1' WHERE cif =?", 'ssssssss', (string) $os_res, (string) $angsuran, (string) $angsuran, (string) $bulat, (string) $tenor, (string) $maturity_date, (string) $tgl_system, (string) $cif) or die(mysql_error());
+           db_jalankan("delete from tunggakan WHERE cif =?", 's', (string) $cif) or die(mysql_error());
+db_jalankan("delete from temp_eod where cif =?", 's', (string) $cif) or die(mysql_error());
+db_jalankan("delete from  rest_covid where cif =?", 's', (string) $cif) or die(mysql_error());	
+db_jalankan("insert into rest_covid values('',?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)", 'sssssssssssssss', (string) $tgl_system, (string) $cif, (string) $angsur, (string) $pokok, (string) $ijaroh, (string) $bulat_lama, (string) $tenor_lama, (string) $matur, (string) $angsuran, (string) $angsuran_pokok, (string) $angsuran_margin, (string) $bulat, (string) $tenor, (string) $maturity_date, (string) $kelompok) or die(mysql_error());
 
 
-            mysql_query("insert into rek_loan(ref,tgl_realisasi,unit,no_anggota,saldo_kredit,debet,tipe,ket,USERID,STATUS,cif)VALUES('','$tgl_system','$unit','$no_anggota','0','$saldo_margin','03','$ket','$userid','REALISASI BAGHAS','$cif')") or die(mysql_error("GAGAL INPUT"));
+            db_jalankan("insert into rek_loan(ref,tgl_realisasi,unit,no_anggota,saldo_kredit,debet,tipe,ket,USERID,STATUS,cif)VALUES('',?,?,?,'0',?,'03',?,?,'REALISASI BAGHAS',?)", 'sssssss', (string) $tgl_system, (string) $unit, (string) $no_anggota, (string) $saldo_margin, (string) $ket, (string) $userid, (string) $cif) or die(mysql_error());
            
 
 
                    
                
 
-				@mysql_query ("update  loan  set tgl_murab='$tgl_system',tgl_akad='$tgl_system',maturity_date='$maturity_date' cif='$cif'"); 
+				db_jalankan("update  loan  set tgl_murab=?,tgl_akad=?,maturity_date=? cif=?", 'ssss', (string) $tgl_system, (string) $tgl_system, (string) $maturity_date, (string) $cif); 
 
             
    
@@ -171,12 +169,12 @@ if ($pilih=='01') {
 			//Hitung Restruturisasai
 			$os_res=$pembiayaan-$simpanan;
 			
-			$pokok=$os_res/$tenor;
+			$pokok=compat_bagi($os_res, $tenor); // PHP 5: pembagi 0/kosong -> false, bukan error
 			$angsuran=$pokok;
             $os_pokok=$os_res - $saldo_margin;
-            $angsuran_pokok = $os_pokok/$tenor;
+            $angsuran_pokok = compat_bagi($os_pokok, $tenor); // PHP 5: pembagi 0/kosong -> false, bukan error
             
-            $angsuran_margin =$saldo_margin/$tenor;
+            $angsuran_margin =compat_bagi($saldo_margin, $tenor); // PHP 5: pembagi 0/kosong -> false, bukan error
 
 			
            $totalharga = $angsuran;
@@ -194,45 +192,45 @@ if ($pilih=='01') {
             
             $kode_transaksi="BU/".$kode_tr;
             //pencatatan du jurnal realasisi Piutang Murabahaha total jumlah Pokok dan margin
-            @mysql_query("insert into jurnal_umum(nomor_jurnal,kode_transaksi,tanggal_selesai) values('$nomor_jurnal','$kode_trans','$tgl_system')");
+            db_jalankan("insert into jurnal_umum(nomor_jurnal,kode_transaksi,tanggal_selesai) values(?,?,?)", 'sss', (string) $nomor_jurnal, (string) $kode_trans, (string) $tgl_system);
            
             //Realiasasi Murabahah Debit pada Aset Murabahaha total Plafond
-            @mysql_query("insert into simpanan(BUSS_DATE,NOREK,UNIT,CIF,CODE_KEL,DEBIT,TYPE,KREDIT,USERID,KET,REFF,CAO,kode_transaksi)
-values('$tgl_system','$norek','$unit','$cif','$code_kel','$simpanan','01','0','$userid','Realisasi Restrukturisasi','','$cao','$kode_trans')");
+            db_jalankan("insert into simpanan(BUSS_DATE,NOREK,UNIT,CIF,CODE_KEL,DEBIT,TYPE,KREDIT,USERID,KET,REFF,CAO,kode_transaksi)
+values(?,?,?,?,?,?,'01','0',?,'Realisasi Restrukturisasi','',?,?)", 'sssssssss', (string) $tgl_system, (string) $norek, (string) $unit, (string) $cif, (string) $code_kel, (string) $simpanan, (string) $userid, (string) $cao, (string) $kode_trans);
 
-@mysql_query("insert  into tabel_transaksi(unit,kode_transaksi,kode_rekening,tanggal_transaksi, jenis_transaksi, keterangan_transaksi,debet,id_admin)
-            values('$unit','$kode_trans','2101000','$tgl_system','Bukti SYSTEM','$ket','$simpanan','$userid')");
+db_jalankan("insert  into tabel_transaksi(unit,kode_transaksi,kode_rekening,tanggal_transaksi, jenis_transaksi, keterangan_transaksi,debet,id_admin)
+            values(?,?,'2101000',?,'Bukti SYSTEM',?,?,?)", 'ssssss', (string) $unit, (string) $kode_trans, (string) $tgl_system, (string) $ket, (string) $simpanan, (string) $userid);
            
             //Realiasasi Murabahah Debit pada Piutang Murabahaha total jumlah Pokok dan margin
-            @mysql_query("insert  into tabel_transaksi(unit,kode_transaksi,kode_rekening,tanggal_transaksi, jenis_transaksi, keterangan_transaksi,kredit,id_admin)
-                    values('$unit','$kode_trans','1413000','$tgl_system','Bukti SYSTEM','$ket','$simpanan','$userid')");
+            db_jalankan("insert  into tabel_transaksi(unit,kode_transaksi,kode_rekening,tanggal_transaksi, jenis_transaksi, keterangan_transaksi,kredit,id_admin)
+                    values(?,?,'1413000',?,'Bukti SYSTEM',?,?,?)", 'ssssss', (string) $unit, (string) $kode_trans, (string) $tgl_system, (string) $ket, (string) $simpanan, (string) $userid);
                       
              
-			@mysql_query("insert  into tabel_transaksi(unit,kode_transaksi,kode_rekening,tanggal_transaksi, jenis_transaksi, keterangan_transaksi,debet,id_admin)
-            values('$unit','$kode_trans','1411000','$tgl_system','Bukti SYSTEM','$ket','$os_res','$userid')");
+			db_jalankan("insert  into tabel_transaksi(unit,kode_transaksi,kode_rekening,tanggal_transaksi, jenis_transaksi, keterangan_transaksi,debet,id_admin)
+            values(?,?,'1411000',?,'Bukti SYSTEM',?,?,?)", 'ssssss', (string) $unit, (string) $kode_trans, (string) $tgl_system, (string) $ket, (string) $os_res, (string) $userid);
 
-            @mysql_query("insert  into tabel_transaksi(unit,kode_transaksi,kode_rekening,tanggal_transaksi, jenis_transaksi, keterangan_transaksi,debet,id_admin)
-            values('$unit','$kode_trans','1423000','$tgl_system','Bukti SYSTEM','$ket','$saldo_margin','$userid')");
+            db_jalankan("insert  into tabel_transaksi(unit,kode_transaksi,kode_rekening,tanggal_transaksi, jenis_transaksi, keterangan_transaksi,debet,id_admin)
+            values(?,?,'1423000',?,'Bukti SYSTEM',?,?,?)", 'ssssss', (string) $unit, (string) $kode_trans, (string) $tgl_system, (string) $ket, (string) $saldo_margin, (string) $userid);
 			
 			
-            @mysql_query("insert  into tabel_transaksi(unit,kode_transaksi,kode_rekening,tanggal_transaksi, jenis_transaksi, keterangan_transaksi,kredit,id_admin)
-            values('$unit','$kode_trans','1413000','$tgl_system','Bukti SYSTEM','$ket','$os_res','$userid')");
+            db_jalankan("insert  into tabel_transaksi(unit,kode_transaksi,kode_rekening,tanggal_transaksi, jenis_transaksi, keterangan_transaksi,kredit,id_admin)
+            values(?,?,'1413000',?,'Bukti SYSTEM',?,?,?)", 'ssssss', (string) $unit, (string) $kode_trans, (string) $tgl_system, (string) $ket, (string) $os_res, (string) $userid);
 					
-			@mysql_query("insert  into tabel_transaksi(unit,kode_transaksi,kode_rekening,tanggal_transaksi, jenis_transaksi, keterangan_transaksi,kredit,id_admin)
-                    values('$unit','$kode_trans','1421000','$tgl_system','Bukti SYSTEM','$ket','$saldo_margin','$userid')");
+			db_jalankan("insert  into tabel_transaksi(unit,kode_transaksi,kode_rekening,tanggal_transaksi, jenis_transaksi, keterangan_transaksi,kredit,id_admin)
+                    values(?,?,'1421000',?,'Bukti SYSTEM',?,?,?)", 'ssssss', (string) $unit, (string) $kode_trans, (string) $tgl_system, (string) $ket, (string) $saldo_margin, (string) $userid);
 					
                     
            
             //@mysql_query("Update calon_loan set next_schedule = (select DATE_ADD(tgl_murab,INTERVAL 7 DAY) from calon_loan where no_anggota  ='" . $value . "') where no_anggota  ='" . $value . "'") or die(mysql_error("GAGAL INPUT"));
-@mysql_query ("update loan  set os ='$os_res', saldo_margin='$saldo_margin',angsuran='$angsuran',pokok='$angsuran_pokok',ijaroh ='$angsuran_margin',maturity_date ='$maturity_date',bulat='$bulat',tenor='$tenor',run_tenor='0',tgl_murab='$tgl_system' ,ke ='1',gol='1',status_app='REST_POKOK_MARGIN', deal_produk ='1' WHERE cif ='$cif'")or die(mysql_error());
+db_jalankan("update loan  set os =?, saldo_margin=?,angsuran=?,pokok=?,ijaroh =?,maturity_date =?,bulat=?,tenor=?,run_tenor='0',tgl_murab=? ,ke ='1',gol='1',status_app='REST_POKOK_MARGIN', deal_produk ='1' WHERE cif =?", 'ssssssssss', (string) $os_res, (string) $saldo_margin, (string) $angsuran, (string) $angsuran_pokok, (string) $angsuran_margin, (string) $maturity_date, (string) $bulat, (string) $tenor, (string) $tgl_system, (string) $cif) or die(mysql_error());
 
 
-@mysql_query ("delete from  rest_covid where cif ='$cif'")or die(mysql_error());	
-@mysql_query ("insert into rest_covid values('','$tgl_system','$cif','$angsur','$pokok','$ijaroh','$bulat_lama','$tenor_lama','$matur','$angsuran','$angsuran_pokok','$angsuran_margin','$bulat','$tenor','$maturity_date','$kelompok')")or die(mysql_error());
+db_jalankan("delete from  rest_covid where cif =?", 's', (string) $cif) or die(mysql_error());	
+db_jalankan("insert into rest_covid values('',?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)", 'sssssssssssssss', (string) $tgl_system, (string) $cif, (string) $angsur, (string) $pokok, (string) $ijaroh, (string) $bulat_lama, (string) $tenor_lama, (string) $matur, (string) $angsuran, (string) $angsuran_pokok, (string) $angsuran_margin, (string) $bulat, (string) $tenor, (string) $maturity_date, (string) $kelompok) or die(mysql_error());
 
 
-           @mysql_query ("delete from tunggakan WHERE cif ='$cif'")or die(mysql_error());
-@mysql_query ("delete from temp_eod where cif ='$cif'")or die(mysql_error());
+           db_jalankan("delete from tunggakan WHERE cif =?", 's', (string) $cif) or die(mysql_error());
+db_jalankan("delete from temp_eod where cif =?", 's', (string) $cif) or die(mysql_error());
             //mysql_query("insert into rek_loan(ref,tgl_realisasi,unit,no_anggota,saldo_kredit,debet,tipe,ket,USERID,STATUS,cif)VALUES('','$tgl_system','$unit','$no_anggota','0','$saldo_margin','03','$ket','$userid','REALISASI BAGHAS','$cif')") or die(mysql_error("GAGAL INPUT"));
            
 
@@ -240,7 +238,7 @@ values('$tgl_system','$norek','$unit','$cif','$code_kel','$simpanan','01','0','$
                    
                
 
-				@mysql_query ("update  loan  set tgl_murab='$tgl_system',tgl_akad='$tgl_system',maturity_date='$maturity_date' cif='$cif'"); 
+				db_jalankan("update  loan  set tgl_murab=?,tgl_akad=?,maturity_date=? cif=?", 'ssss', (string) $tgl_system, (string) $tgl_system, (string) $maturity_date, (string) $cif); 
         echo '<script>alert("Restruturisasi Pokok Margin sudah direalisasi."); window.location="rest_kel_pokok.php"</script>';
 
 

@@ -1,4 +1,6 @@
 <?php require_once __DIR__ . '/koneksi_db.php';
+require_once __DIR__ . '/inc/cek_login.php';
+wajib_login('json');
 	/**
 		* Script:    DataTables server-side script for PHP 5.2+ and MySQL 4.1+
 		* Notes:     Based on a script by Allan Jardine that used the old PHP mysql_* functions.

@@ -1,98 +1,84 @@
-<?php require_once __DIR__ . '/php8_compat.php';
+<?php require_once __DIR__ . '/koneksi_db.php';
+/**
+ * Rest Kemampuan Bayar langkah 2: daftar anggota kelompok (OS > 0); isi Kemampuan Bayar lalu kirim ke
+ * realisasi_rest_kel_covid.php. Perilaku sama dengan versi lama.
+ * Isian Kemampuan Bayar dikirim sebagai bulat[CIF] agar proses memasangkannya dengan anggota yang benar
+ * (versi lama memasangkan menurut urutan centang).
+ */
+require_once __DIR__ . '/inc/tampilan.php';
 session_start();
 ob_start();
-$userid=$_SESSION['userid'];
-$code_kel=$_GET['code_kel'];
+$userid = $_SESSION['userid'];
+$code_kel = isset($_GET['code_kel']) ? (string) $_GET['code_kel'] : '';
 //cek apakah user sudah login
-if(!isset($_SESSION['userid'])){
-   header("location:index.html");
- exit; }
-
+if (!isset($_SESSION['userid'])) {
+    header('location:index.html');
+    exit;
+}
 //cek level user
-if($_SESSION['level']!="unit"){
-   header("location:index.html");
- exit; }  
+if ($_SESSION['level'] != 'unit') {
+    header('location:index.html');
+    exit;
+}
+include 'indo_tgl.php';
+
+$r = db_satu('SELECT kode_branch FROM user WHERE userid = ?', 's', (string) $userid);
+$unit = $r ? $r['kode_branch'] : null;
+
+$anggota = db_semua("SELECT loan.cif, unit, Plafond, ijaroh, angsuran, bulat, bagi_hasil, bulat, pokok, Cust_Short_name, kelompok.nama_kel, (os-saldo_margin) AS pokok, saldo_margin, os
+    FROM loan
+    INNER JOIN kelompok ON kelompok.code_kel = loan.code_kel
+    WHERE kelompok.code_kel = ? AND loan.unit = ? AND os > 0", 'ss', $code_kel, (string) $unit);
+
+halaman_awal('Restrukturisasi Kemampuan Bayar');
 ?>
-<link rel="stylesheet" href="css/bootstrap.min.css"/>
-<script>
-function cek(cekbox){
-    for(i=0; i < cekbox.length; i++){
-        cekbox[i].checked = true;
-    }
-}
-function uncek(cekbox){
-    for(i=0; i < cekbox.length; i++){
-        cekbox[i].checked = false;
-    }
-}
-</script>
-<?php  
-
-  
-include "conn2.php";
-include "indo_tgl.php";
-$koneksi=open_connection2(); 
-//ambil data dari database
-$result = mysql_query(" Select kode_branch from user where userid='$userid'");
-while($row = mysql_fetch_array($result)){
-$unit=$row['kode_branch'];
-}
-
-$date=date('Y-m-d');	
-$query = "Select loan.cif,unit,Plafond,ijaroh,angsuran,bulat, bagi_hasil,bulat,pokok,Cust_Short_name,kelompok.nama_kel,(os-saldo_margin) as pokok, saldo_margin, os from loan
-inner join kelompok on kelompok.code_kel = loan.code_kel
-Where kelompok.code_kel='$code_kel' and loan.unit='$unit' and os >0";
-$result = mysql_query($query);
-?>
-<form action="<?php echo "realisasi_rest_kel_covid.php?code_kel=".$code_kel?>" method="post">
-    <table border="1" style="margin: 10px 0px" class="table table-striped" >
-            <tr>
-               <th><span class="badge"> Pilih</th>
-               <th><span class="badge"> Cif</th>
-               <th><span class="badge">Nama</th>
-               <th><span class="badge">Kelompok</th>
-			   <th><span class="badge">Pembiayaan</th>
-			   <th><span class="badge">Angsuran</th>
-			   <th><span class="badge">Setoran</th>
-			   <th><span class="badge">Kemampuan Bayar</th>
-			   
-			  
-				
-			            </tr>
-    <?php 
-    while ($data = mysql_fetch_array($result)) {
-		$cif =$data['cif'];
-		$cek_saldo = mysql_query("SELECT SUM(KREDIT - DEBIT) AS saldo from simpanan where cif ='$cif' and TYPE not in ('04','05')");
-		$data_saldo= mysql_fetch_array($cek_saldo);
-		$saldo=$data_saldo['saldo'];
-    ?>
-            <tr>
-                <td><input type="checkbox" id="cekbox" name="cekbox[]" value="<?php echo $data['cif'] ?>"/></td>
-                <td><?php echo $data['cif'] ?></td>
-				<td><?php echo $data['Cust_Short_name'] ?></td>
-                <td><?php echo $data['nama_kel'] ?></td>
-				<td><?php echo number_format(compat_num($data['os']))?></td>
-				<td><?php echo number_format (compat_num($data['angsuran'])) ?></td>
-				<td><?php echo number_format (compat_num($data['bulat'])) ?></td>
-				 <td><input type="text" id="bulat" tabindex="1" name="bulat[]" /></td>
-				 
-				
-            
-
-            </tr>
-    
-    <?php
-    
-	}
-
-    ?>
+<form action="<?php echo h('realisasi_rest_kel_covid.php?code_kel=' . $code_kel); ?>" method="post" id="form-realisasi">
+  <div class="table-responsive">
+    <table class="table table-sm table-bordered table-ni table-hover align-middle">
+      <thead>
+        <tr>
+          <th class="text-center">Pilih</th>
+          <th>Cif</th>
+          <th>Nama</th>
+          <th>Kelompok</th>
+          <th class="text-end">Pembiayaan</th>
+          <th class="text-end">Angsuran</th>
+          <th class="text-end">Setoran</th>
+          <th>Kemampuan Bayar</th>
+        </tr>
+      </thead>
+      <tbody>
+      <?php foreach ($anggota as $data): ?>
+        <tr>
+          <td class="text-center"><input type="checkbox" class="form-check-input" name="cekbox[]" value="<?php echo h($data['cif']); ?>" aria-label="Pilih <?php echo h($data['Cust_Short_name']); ?>"></td>
+          <td><?php echo h($data['cif']); ?></td>
+          <td><?php echo h($data['Cust_Short_name']); ?></td>
+          <td><?php echo h($data['nama_kel']); ?></td>
+          <td class="text-end"><?php echo number_format(compat_num($data['os'])); ?></td>
+          <td class="text-end"><?php echo number_format(compat_num($data['angsuran'])); ?></td>
+          <td class="text-end"><?php echo number_format(compat_num($data['bulat'])); ?></td>
+          <td><input type="text" name="bulat[<?php echo h($data['cif']); ?>]" class="form-control form-control-sm" inputmode="numeric" aria-label="Kemampuan bayar <?php echo h($data['Cust_Short_name']); ?>"></td>
+        </tr>
+      <?php endforeach; ?>
+      </tbody>
     </table>
-    <br />
-    <input type="button" class="alert-success" onclick="cek(this.form.cekbox)" value="Select All" />
-    <input type="button" class="btn-danger" onclick="uncek(this.form.cekbox)" value="Clear All" />
-	<input type="hidden" name="kel" value="<?php echo $code_kel;?>"/>
-    <input name="submit" type="submit" class="btn-success" value="Realisasi" />
-		
-	    <br />
-		
+  </div>
+  <div class="d-flex flex-wrap gap-2">
+    <button type="button" class="btn btn-outline-secondary btn-sm" data-pilih-semua="1">Select All</button>
+    <button type="button" class="btn btn-outline-danger btn-sm" data-pilih-semua="0">Clear All</button>
+    <input type="hidden" name="kel" value="<?php echo h($code_kel); ?>">
+    <button name="submit" type="submit" value="Realisasi" class="btn btn-ni btn-sm ms-auto px-4">Realisasi</button>
+  </div>
 </form>
+<script>
+document.querySelectorAll('[data-pilih-semua]').forEach(function (b) {
+    b.addEventListener('click', function () {
+        var nilai = b.getAttribute('data-pilih-semua') === '1';
+        document.querySelectorAll('#form-realisasi input[name="cekbox[]"]').forEach(function (c) {
+            c.checked = nilai;
+        });
+    });
+});
+</script>
+<?php
+halaman_akhir();

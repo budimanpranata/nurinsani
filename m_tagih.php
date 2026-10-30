@@ -1,4 +1,6 @@
 <?php require_once __DIR__ . '/php8_compat.php';
+require_once __DIR__ . '/inc/cek_login.php';
+wajib_login();
 include "conn2.php";
  $koneksi=open_connection2();
 ?>

@@ -1,6 +1,8 @@
-<?php require_once __DIR__ . '/php8_compat.php';  
+<?php require_once __DIR__ . '/koneksi_db.php';  
 //error_reporting(0);
 session_start();  
+require_once __DIR__ . '/inc/cek_login.php';
+wajib_login();
 ob_start();  
 $userid=$_SESSION['userid'];
 //cek apakah user sudah login
@@ -18,9 +20,9 @@ $date=tgl_indo($today);
 
 
 
-$dataum= mysql_query(" Select Nama as um,jabatan from person  
-where unit='$userid'");
-$um= mysql_fetch_array($dataum);
+$dataum = db_semua(" Select Nama as um,jabatan from person  
+where unit=?", 's', (string) $userid);
+$um = $dataum ? $dataum[0] : false;
 $nama_um=$um['um'];
 $jabatan=$um['jabatan'];
 
@@ -28,15 +30,15 @@ require ('fpdf17/fpdf.php');
 $pdf=new FPDF ('P','mm','A4');
 $pdf->addPage();
 
-$pot = mysql_query("select loan.buss_date,loan.Cust_Short_name,Plafond,bagi_hasil,Tenor,angsuran,hari,HADDRESS1,HADDRESS2,HADDRESS3,HADDRESS4,WARIS,NOREK,tgl_murab,tgl_wakalah,tgl_akad,maturity_date,loan.nama_usaha,hari,
+$pot = db_semua("select loan.buss_date,loan.Cust_Short_name,Plafond,bagi_hasil,Tenor,angsuran,hari,HADDRESS1,HADDRESS2,HADDRESS3,HADDRESS4,WARIS,NOREK,tgl_murab,tgl_wakalah,tgl_akad,maturity_date,loan.nama_usaha,hari,
 saldo_margin,ijaroh,angsuran,pokok,os,angsuran,bulat,tgl_akad,(os-saldo_margin) as saldo_os,nama_kel,run_tenor,no_anggota,loan.cif,
 ID_NUMBER from loan 
 left join anggota on anggota.cif=loan.cif 
 left join kelompok on kelompok.code_kel = loan.code_kel
 left join bidang_usaha on bidang_usaha.code_bidang=loan.usaha 
-where loan.code_kel='$code_kel' order by loan.cif");
+where loan.code_kel=? order by loan.cif", 's', (string) $code_kel);
 $page=0;
-while($p = mysql_fetch_array($pot)){
+foreach ($pot as $p){
 $page++;
 $nama=$p['Cust_Short_name'];
 $plafond=$p['Plafond'];
@@ -74,11 +76,11 @@ $ter_piutang=ucwords (Terbilang($piutangg));
 $saldo_margin=$p['saldo_margin'];
 $pokok_os=$p['saldo_os'];
 $angsur=$p['angsuran'];
-$row_tunggak = mysql_fetch_array(mysql_query("select sum(KREDIT-DEBIT) as saldo_tunggak from tunggakan where cif ='$cif' ")) or die(mysql_error());
+$row_tunggak=db_satu("select sum(KREDIT-DEBIT) as saldo_tunggak from tunggakan where cif =? ", 's', (string) $cif) or die(mysql_error());
  $saldo_tunggak=$row_tunggak['saldo_tunggak'];     
 $tunggak=$saldo_tunggak;
 
-$ft =$tunggak/$angsur;
+$ft =compat_bagi($tunggak, $angsur); // PHP 5: pembagi 0/kosong -> false, bukan error
 
 $os_res=$os;
 
@@ -90,8 +92,8 @@ $os_res=$os;
         $maturity_date_ress =  date("Y-m-d", strtotime("+$ft WEEK", $tgl_m));
 
 
-$cek_tanggal= mysql_query ("SELECT COUNT(tgl_libur) as libur from param_libur where tgl_libur between '$mat' and '$maturity_date_ress' and Hari ='$harii'");
-        while($data_libur = mysql_fetch_array($cek_tanggal)){
+$cek_tanggal = db_semua("SELECT COUNT(tgl_libur) as libur from param_libur where tgl_libur between ? and ? and Hari =?", 'sss', (string) $mat, (string) $maturity_date_ress, (string) $harii);
+        foreach ($cek_tanggal as $data_libur){
             $libur =$data_libur['libur'];
            
            

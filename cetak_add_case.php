@@ -1,6 +1,8 @@
-<?php require_once __DIR__ . '/php8_compat.php';  
+<?php require_once __DIR__ . '/koneksi_db.php';  
 //error_reporting(0);
 session_start();  
+require_once __DIR__ . '/inc/cek_login.php';
+wajib_login();
 ob_start();  
 
 $userid=$_SESSION['userid'];
@@ -22,18 +24,18 @@ $buss_date1=getdate();
 $today=date("Y-m-d");
 $date=tgl_indo($today);
 
-$kel= mysql_query(" Select cao from loan 
- where cif='$cif'");
-$datakel= mysql_fetch_array($kel);
+$kel = db_semua(" Select cao from loan 
+ where cif=?", 's', (string) $cif);
+$datakel = $kel ? $kel[0] : false;
 $cao=$datakel['cao'];
 
-$dataao= mysql_query(" Select person.Nama as um,person.jabatan as jabatan,cao from ao 
-inner join person on ao.atasan = person.NIK where cao='$cao'");
-$ao= mysql_fetch_array($dataao);
+$dataao = db_semua(" Select person.Nama as um,person.jabatan as jabatan,cao from ao 
+inner join person on ao.atasan = person.NIK where cao=?", 's', (string) $cao);
+$ao = $dataao ? $dataao[0] : false;
 $nama_um=$ao['um'];
 $jabatan=$ao['jabatan'];
 
- $pbiaya = mysql_fetch_array(mysql_query("select margin,tab,pla,jw  FROM param_biaya where jw ='$tenor' and pla='$nominal'")) or die(mysql_error());
+ $pbiaya=db_satu("select margin,tab,pla,jw  FROM param_biaya where jw =? and pla=?", 'ss', (string) $tenor, (string) $nominal) or die(mysql_error());
 						
 						$param_margin=$pbiaya['margin'];
 						$param_tabung=$pbiaya['tab'];
@@ -48,15 +50,15 @@ $pdf=new FPDF ('P','mm','A4');
 
 $pdf->addPage();
 
-$pot = mysql_query("select loan.buss_date,loan.Cust_Short_name,Plafond,bagi_hasil,Tenor,angsuran,hari,HADDRESS1,HADDRESS2,HADDRESS3,HADDRESS4,WARIS,NOREK,tgl_murab,tgl_wakalah,tgl_akad,maturity_date,loan.nama_usaha,
+$pot = db_semua("select loan.buss_date,loan.Cust_Short_name,Plafond,bagi_hasil,Tenor,angsuran,hari,HADDRESS1,HADDRESS2,HADDRESS3,HADDRESS4,WARIS,NOREK,tgl_murab,tgl_wakalah,tgl_akad,maturity_date,loan.nama_usaha,
 saldo_margin,ijaroh,angsuran,pokok,os,angsuran,bulat,tgl_akad,(os-saldo_margin) as saldo_os,nama_kel,
 ID_NUMBER from loan 
 left join anggota on anggota.cif=loan.cif 
 left join kelompok on kelompok.code_kel = loan.code_kel
 left join bidang_usaha on bidang_usaha.code_bidang=loan.usaha 
-where loan.cao='$cao' and loan.cif='$cif' order by loan.cif");
+where loan.cao=? and loan.cif=? order by loan.cif", 'ss', (string) $cao, (string) $cif);
 
-$row_saldo = mysql_fetch_array(mysql_query("select sum(kredit-DEBIT) as saldo_simpanan from simpanan where cif ='$cif' and type not in('04','05') ")) or die(mysql_error());
+$row_saldo=db_satu("select sum(kredit-DEBIT) as saldo_simpanan from simpanan where cif =? and type not in('04','05') ", 's', (string) $cif) or die(mysql_error());
        $saldo_simpanan=$row_saldo['saldo_simpanan'];     
 $saldo_simpan=$saldo_simpanan;
 
@@ -64,7 +66,7 @@ $saldo_simpan=$saldo_simpanan;
 						
 
 $page=0;
-while($p = mysql_fetch_array($pot)){
+foreach ($pot as $p){
 $page++;
 $nama=$p['Cust_Short_name'];
 $plafond=$p['Plafond'];
@@ -120,9 +122,9 @@ $maturity_date_res=tgl_indo($maturity_date_res);
 
   $totalharga = $angsuran_res;
 
-$pokok=$nominal/$tenor;
+$pokok=compat_bagi($nominal, $tenor); // PHP 5: pembagi 0/kosong -> false, bukan error
 						$margin=$nominal * ($param_margin/100);
-						$ijaroh=$margin/$tenor;
+						$ijaroh=compat_bagi($margin, $tenor); // PHP 5: pembagi 0/kosong -> false, bukan error
 						$angsuran_res=$ijaroh+$pokok;
 						$bulat =$param_tabung+$angsuran_res;
 						$os_r =$nominal + $margin;

@@ -20,26 +20,24 @@ if(!isset($_SESSION['userid'])){
 if($_SESSION['level']!="unit"){
    header("location:index.html");
  exit; }
-db_ni();
-mysql_select_db('nur_insani');
 include "function.php";
 
 $tanggal=$tgl_system;
 $simpan=$_SESSION['simpans'];	
 $baki=$_SESSION['bakis'];	
-$nom=$_POST['bulat'];			
+$nom=isset($_POST['bulat']) ? $_POST['bulat'] : null;			
 			
-$checbox = $_POST['cekbox'];
+$checbox = isset($_POST['cekbox']) ? $_POST['cekbox'] : null;
 
 if (isset($_POST["realisasi"])){
   // "Save Changes" clicked
 
 if ($checbox) {
 	for ($i=0; $i <sizeof($checbox);$i++){
-		$kel = mysql_query ("select maturity_date,no_anggota,anggota.cif,loan.code_kel,loan.unit,angsuran,loan.Cust_Short_name,loan.cif,os,loan.cao,saldo_margin,status_app FROM loan 
+		$kel = db_semua("select maturity_date,no_anggota,anggota.cif,loan.code_kel,loan.unit,angsuran,loan.Cust_Short_name,loan.cif,os,loan.cao,saldo_margin,status_app FROM loan 
 		left join anggota on anggota.cif=loan.cif
-		where  loan.cif ='".$checbox[$i]."'");
-		$data = mysql_fetch_array($kel);
+		where  loan.cif =?", 's', (string) $checbox[$i]);
+		$data = $kel ? $kel[0] : false;
 
 		$mat=$data['maturity_date'];
 		$cif=$data['cif'];
@@ -47,17 +45,17 @@ if ($checbox) {
 		$hari=$data['hari'];
 		
 		
-		$row_tunggak = mysql_fetch_array(mysql_query("select sum(KREDIT-DEBIT) as saldo_tunggak from tunggakan where cif ='".$checbox[$i]."' ")) or die(mysql_error());
+		$row_tunggak=db_satu("select sum(KREDIT-DEBIT) as saldo_tunggak from tunggakan where cif =? ", 's', (string) $checbox[$i]) or die(mysql_error());
  $saldo_tunggak=$row_tunggak['saldo_tunggak'];     
 $tunggak=$saldo_tunggak;
 
-$ft =$tunggak/$angsur;
+$ft =compat_bagi($tunggak, $angsur); // PHP 5: pembagi 0/kosong -> false, bukan error
 		
 		$tgl_m    = strtotime($tgl_system);
         $maturity_date_res =  date("Y-m-d", strtotime("+$ft WEEK", $tgl_m));
 		
-$cek_tanggal= mysql_query ("SELECT COUNT(tgl_libur) as libur from param_libur where tgl_libur between '$mat' and '$maturity_date_res' and Hari ='$hari'");
-        while($data_libur = mysql_fetch_array($cek_tanggal)){
+$cek_tanggal = db_semua("SELECT COUNT(tgl_libur) as libur from param_libur where tgl_libur between ? and ? and Hari =?", 'sss', (string) $mat, (string) $maturity_date_res, (string) $hari);
+        foreach ($cek_tanggal as $data_libur){
             $libur =$data_libur['libur'];
            
            
@@ -76,9 +74,9 @@ $ft =$ft+$libur;
 $maturity_date_res=$maturity_date_res;
 }
 
-@mysql_query ("update loan set maturity_date ='$maturity_date_res', gol='1', deal_produk ='1' where cif ='$cif'");
-@mysql_query ("delete from tunggakan where cif ='$cif'");
-@mysql_query ("delete from temp_eod where cif ='$cif'")or die(mysql_error());
+db_jalankan("update loan set maturity_date =?, gol='1', deal_produk ='1' where cif =?", 'ss', (string) $maturity_date_res, (string) $cif);
+db_jalankan("delete from tunggakan where cif =?", 's', (string) $cif);
+db_jalankan("delete from temp_eod where cif =?", 's', (string) $cif) or die(mysql_error());
 
 
 

@@ -1,28 +1,29 @@
 <?php require_once __DIR__ . '/koneksi_db.php'; 
 date_default_timezone_set('Asia/Jakarta');
 session_start();
+require_once __DIR__ . '/inc/cek_login.php';
+wajib_login();
 ob_start();
 	$userid=$_SESSION['userid'];
 	$tanggal=date("y-m-d");
 
-db_ni();
-mysql_select_db('nur_insani');
 include "function.php";
 
  
 			
-$cekbox = $_POST['cekbox'];
+$cekbox = isset($_POST['cekbox']) ? $_POST['cekbox'] : null;
 if ($cekbox) {
        foreach ($cekbox as $value) {
 	
 		
 			$kode_tr=5;
 			$kode_tr=acakangkahuruf($kode_tr);	   
-		     $row = mysql_fetch_array(mysql_query("select DATE_ADD(tgl_wakalah,INTERVAL 7 DAY) as tgl_murab,maturity_date,calon_loan.buss_date,calon_loan.code_kel,calon_loan.no_anggota,calon_loan.Cust_Short_name,
+		     $row = db_satu("select DATE_ADD(tgl_wakalah,INTERVAL 7 DAY) as tgl_murab,maturity_date,calon_loan.buss_date,calon_loan.code_kel,calon_loan.no_anggota,calon_loan.Cust_Short_name,
 			calon_loan.Deal_type,suffix,bagi_hasil,Tenor,Plafond,os,angsuran,pokok,ijaroh,bulat,ke,usaha,calon_loan.unit,tgl_wakalah,hari,calon_loan.cao,calon_loan.USERID,calon_loan.status,calon_loan.cif
 			 from calon_loan  
 			 left join anggota on anggota.cif = calon_loan.cif
-			 WHERE calon_loan.cif ='" . $value . "' ")) or die(mysql_error());
+			 WHERE calon_loan.cif =? ", 's', (string) $value);
+			if (!$row) die(); // versi lama berhenti (or die) bila data tidak ada
         //$row = mysql_fetch_array(mysql_query("select * from calon_loan  WHERE no_anggota ='" . $value . "'")) or die(mysql_error());
 			$no_anggota=$row['no_anggota'];
 			$tgl_wakalah= $row['tgl_wakalah'];
@@ -68,16 +69,20 @@ if ($cekbox) {
 			//}
 			$kode_transaksi="BU/".$unit .$cif;					
 			$keterangan_transaksi="Realisasi Wakalah Unit $unit $cif";					
-			@mysql_query("insert into jurnal_umum(nomor_jurnal,kode_transaksi,tanggal_selesai,unit) values('$nomor_jurnal','$kode_transaksi','$tgl_wakalah','$unit')");
+			// $nomor_jurnal tidak pernah diisi (versi lama), tersimpan sebagai string kosong
+			db_jalankan("insert into jurnal_umum(nomor_jurnal,kode_transaksi,tanggal_selesai,unit) values(?,?,?,?)", 'ssss',
+				(string) (isset($nomor_jurnal) ? $nomor_jurnal : ''), (string) $kode_transaksi, (string) $tgl_wakalah, (string) $unit);
 
 			//Dr aseet Murabahah		
-			@mysql_query("insert  into tabel_transaksi(unit,kode_transaksi,kode_rekening,tanggal_transaksi, jenis_transaksi, keterangan_transaksi,debet,id_admin)
-			values('$unit','$kode_transaksi','1431000','$tgl_wakalah','Bukti SYSTEM','$keterangan_transaksi','$Plafond','$userid')");
+			db_jalankan("insert  into tabel_transaksi(unit,kode_transaksi,kode_rekening,tanggal_transaksi, jenis_transaksi, keterangan_transaksi,debet,id_admin)
+			values(?,?,'1431000',?,'Bukti SYSTEM',?,?,?)", 'ssssss',
+				(string) $unit, (string) $kode_transaksi, (string) $tgl_wakalah, (string) $keterangan_transaksi, (string) $Plafond, (string) $userid);
 					
 			//cr aseet kas
-			@mysql_query("insert into tabel_transaksi(unit,kode_transaksi,kode_rekening,tanggal_transaksi, jenis_transaksi, keterangan_transaksi,kredit,id_admin)
-			values('$unit','$kode_transaksi','1120000','$tgl_wakalah','Bukti SYSTEM','$keterangan_transaksi','$Plafond','$userid')");
-			@mysql_query("update calon_loan set status_app='MURAB' where no_anggota ='$no_anggota'");
+			db_jalankan("insert into tabel_transaksi(unit,kode_transaksi,kode_rekening,tanggal_transaksi, jenis_transaksi, keterangan_transaksi,kredit,id_admin)
+			values(?,?,'1120000',?,'Bukti SYSTEM',?,?,?)", 'ssssss',
+				(string) $unit, (string) $kode_transaksi, (string) $tgl_wakalah, (string) $keterangan_transaksi, (string) $Plafond, (string) $userid);
+			db_jalankan("update calon_loan set status_app='MURAB' where no_anggota =?", 's', (string) $no_anggota);
 
 		}
 				echo '<script>alert("Wakalah sudah direalisasikan."); window.location="realisasi.php"</script>';

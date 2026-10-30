@@ -969,3 +969,17 @@ function compat_num($value)
     if (is_string($value) && !is_numeric($value)) return (float) $value;
     return $value;
 }
+
+/**
+ * Pembagian dengan aturan PHP 5: pembagi 0 / kosong / bukan angka memberi Warning dan hasil false.
+ * (PHP 8: DivisionByZeroError atau TypeError sehingga halaman berhenti.)
+ */
+function compat_bagi($pembilang, $pembagi)
+{
+    $pembagi = compat_num($pembagi);
+    if ($pembagi == 0) {
+        trigger_error('Division by zero', E_USER_WARNING);
+        return false;
+    }
+    return compat_num($pembilang) / $pembagi;
+}

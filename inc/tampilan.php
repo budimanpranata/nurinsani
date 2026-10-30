@@ -28,7 +28,8 @@ if (!function_exists('h')) {
     }
 }
 
-function halaman_awal($judul)
+/** $css: stylesheet tambahan khusus halaman, mis. array('assets/app/datatables-ni.css'). */
+function halaman_awal($judul, $css = array())
 {
     ?>
 <!DOCTYPE html>
@@ -39,6 +40,9 @@ function halaman_awal($judul)
 <title><?php echo h($judul); ?></title>
 <link rel="stylesheet" href="<?php echo h(url_app('assets/vendor/bootstrap-5.3.3/css/bootstrap.min.css')); ?>">
 <link rel="stylesheet" href="<?php echo h(url_app('assets/app/app.css')); ?>">
+<?php foreach ($css as $berkas): ?>
+<link rel="stylesheet" href="<?php echo h(url_app($berkas)); ?>">
+<?php endforeach; ?>
 </head>
 <body>
 <div class="judul-halaman"><?php echo h($judul); ?></div>

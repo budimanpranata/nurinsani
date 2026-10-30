@@ -1,4 +1,6 @@
 <?php require_once __DIR__ . '/koneksi_db.php';
+require_once __DIR__ . '/inc/cek_login.php';
+wajib_login('json');
 	//Connection Database
 	$con = db_ni();
 	if (mysqli_connect_errno())
