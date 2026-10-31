@@ -1,8 +1,20 @@
-<?php require_once __DIR__ . '/koneksi_db.php'; 
+<?php require_once __DIR__ . '/koneksi_db.php';
+/**
+ * Setoran Beda hari langkah 3: proses setoran anggota yang dipilih di setoran_list_beda.php, dalam satu transaksi DB.
+ * Varian Setoran PerKelompok (realisasi_setoran_kel.php) untuk setoran yang tunggakan harinya sudah tercatat:
+ * kode transaksi BH/, cabang nunggak & setoran kurang tidak mencatat tunggakan/temp_eod baru,
+ * tunggakan dihapus bila tunggakan == os, dan pelunasan tunggakan dicatat dengan KET 'BH'.
+ * Logika dan urutan query sama dengan versi lama; hanya query (prepared statement) yang berubah.
+ * Perbaikan 2026-10-31 (perintah user), sama dengan Setoran PerKelompok; lihat PEKERJAAN_TERTUNDA.md bagian 16:
+ *   - nominal diambil per CIF (bulat[CIF]); versi lama memakai isian ke-i untuk anggota tercentang ke-i
+ *   - loan.ke = ke + 1 (versi lama selalu 1 karena $ke_tenor tidak pernah diisi)
+ *   - $cif dan $no_anggota diisi dari data loan (versi lama kosong di keterangan dan rek_loan)
+ *   - pesan gagal / belum memilih data kembali ke setor_kelompok_beda.php (versi lama ke stor_kelompok_beda.php dan form.php, keduanya tidak ada)
+ */
 session_start();
 ob_start();
-$userid=$_SESSION['userid'];
-$tgl_system=$_SESSION['stgl_system'];
+$userid=isset($_SESSION['userid']) ? $_SESSION['userid'] : null;
+$tgl_system=isset($_SESSION['stgl_system']) ? $_SESSION['stgl_system'] : null;
 $tgl_input=date("Y-m-d");
 $buss_date=$tgl_system;
 //cek apakah user sudah login
@@ -21,467 +33,273 @@ if($_SESSION['level']!="unit"){
    header("location:index.html");
  exit; }
 
-
-
 $con = db_ni();
-if (mysqli_connect_errno()) {
-	echo "Failed to connect to MySQL: " . mysqli_connect_error();
-	exit;
-  }
-
 // Turn autocommit off
 mysqli_autocommit($con,FALSE);
 
-
-
 include "function.php";
 
+/** Jalankan query tulis; semua parameter dikirim sebagai teks (seperti nilai '$var' di query versi lama). */
+function qs($sql, ...$nilai)
+{
+    return db_jalankan($sql, str_repeat('s', count($nilai)), ...array_map(function ($v) {
+        return $v === null ? '' : (string) $v;
+    }, $nilai));
+}
+
+/** Baris hasil query dengan semua nilai sebagai teks (seperti mysql_fetch_array versi lama). */
+function baris_teks($baris)
+{
+    if (!$baris) {
+        return $baris;
+    }
+    foreach ($baris as $k => $v) {
+        $baris[$k] = $v === null ? null : (string) $v;
+    }
+    return $baris;
+}
+
+/** Nomor jurnal berikutnya per unit (query sama dengan versi lama). */
+function nomor_jurnal_kel($unit)
+{
+    $j = db_satu("SELECT max(nomor_jurnal) AS n FROM jurnal_umum where unit =? ORDER BY tanggal_selesai DESC", 's', (string) $unit);
+    return compat_num($j ? $j['n'] : null) + 1;
+}
+
 $tanggal=$tgl_system;
-$simpan=$_SESSION['simpans'];	
-$baki=$_SESSION['bakis'];	
-$nom=$_POST['bulat'];			
-			
-$checbox = $_POST['cekbox'];
+$nom=isset($_POST['bulat']) ? $_POST['bulat'] : null;
+$checbox = isset($_POST['cekbox']) ? $_POST['cekbox'] : null;
+
+// versi lama mencetak var_dump($checbox) (sisa debug) di sini; tidak ditampilkan lagi
 if ($checbox) {
 	for ($i=0; $i <sizeof($checbox);$i++){
-		
-		$kel =db_query ($con,"select anggota.cif,no_anggota as norek,run_tenor,last_payment,loan.code_kel,loan.unit,angsuran,status_app,loan.Cust_Short_name,loan.cao,bulat,tgl_murab,pokok,os,ijaroh,deal_produk FROM loan 
+		$c = (string) $checbox[$i];
+		// nominal milik anggota ini (form mengirim bulat[CIF])
+		$nom_i = isset($nom[$c]) ? (string) $nom[$c] : null;
+
+		$data = baris_teks(db_satu("select anggota.cif,no_anggota as norek,run_tenor,last_payment,loan.code_kel,loan.unit,angsuran,status_app,loan.Cust_Short_name,loan.cao,bulat,tgl_murab,pokok,os,ijaroh,deal_produk FROM loan
 		left join anggota on anggota.cif=loan.cif
-		where  loan.cif ='".$checbox[$i]."'");
-		$data = db_fetch_array($kel);
+		where  loan.cif =?", 's', $c));
+		$kol = function ($k) use ($data) {
+			return $data && isset($data[$k]) ? $data[$k] : null;
+		};
 
-		$norek=$data['norek'];
-		$saldo_margin=$data['saldo_margin'];
-		$pokok=$os-$saldo_margin;
-		$unit=$data ['unit'];
-		$angsuran=$data ['angsuran'];
-		$angsuran_pokok=$data ['pokok'];
-		$ijaroh=$data ['ijaroh'];
-		$code_kel=$data['code_kel'];
-		$ke = $data['run_tenor'];
-		$cao=$data['cao'];
-		$ciff=$data['cif'];
-$last_payment=$data['last_payment'];
-		$deal_produk=$data['deal_produk'];
-$tgl_murab=$data['tgl_murab'];
-		$os=$data['os'];
-		$status_app=$data['status_app'];
-		$run_tenor=$data['run_tenor'];
-		$pb=$run_tenor + 1;
-		$next_tenor=$run_tenor + 2;
+		$norek=$kol('norek');
+		$unit=$kol('unit');
+		$angsuran=$kol('angsuran');
+		$angsuran_pokok=$kol('pokok');
+		$ijaroh=$kol('ijaroh');
+		$code_kel=$kol('code_kel');
+		$cao=$kol('cao');
+		$deal_produk=$kol('deal_produk');
+		$tgl_murab=$kol('tgl_murab');
+		$os=$kol('os');
+		$status_app=$kol('status_app');
+		$run_tenor=$kol('run_tenor');
+		$pb=compat_num($run_tenor) + 1;
+		$next_tenor=compat_num($run_tenor) + 2;
+		$bulat=$kol('bulat');
 
-		$angsuran=$data['angsuran'];
-		$bulat=$data['bulat'];
-		$cek_next= db_fetch_array(db_query($con,"select cicilan,tgl_jatuh_tempo from pinjaman_detail WHERE cicilan='$next_tenor' AND cif ='".$checbox[$i]."'"));
-		$next_schedule=$cek_next['tgl_jatuh_tempo'];
-		$next_cicilan=$cek_next['cicilan'];
+		$cek_next= baris_teks(db_satu("select cicilan,tgl_jatuh_tempo from pinjaman_detail WHERE cicilan=? AND cif =?", 'ss', (string) $next_tenor, $c));
+		$next_schedule=$cek_next ? $cek_next['tgl_jatuh_tempo'] : null;
 
+		$cek_tunggak= baris_teks(db_satu("select sum(KREDIT)- sum(DEBIT) as tunggak from tunggakan WHERE cif =?", 's', $c));
+        $ada_tunggak=$cek_tunggak ? $cek_tunggak['tunggak'] : null;
+		// (versi lama juga menghitung $ft, tetapi tidak pernah dipakai di versi beda hari)
 
-		$cek_tunggak= db_fetch_array(db_query($con,"select sum(KREDIT)- sum(DEBIT) as tunggak from tunggakan WHERE cif ='".$checbox[$i]."'"));
-        $ada_tunggak=$cek_tunggak['tunggak']; 
-		$ft=round(compat_num($ada_tunggak/$angsuran));  
-		
-		
 		if($deal_produk=='2'){
-			$simpanan_minggon_asli=$bulat - $angsuran;
-			$simpanan_minggon=$bulat - $angsuran - 2500;
-			$simpan_duaribu = '2500';		
-			$angsuran=$angsuran + 2500;
-			$ijaroh = $ijaroh + 2500;
-
-
-	$setoran=$nom[$i] - $simpanan_minggon_asli;
-
+			$simpanan_minggon_asli=compat_num($bulat) - compat_num($angsuran);
+			$simpanan_minggon=compat_num($bulat) - compat_num($angsuran) - 2500;
+			$simpan_duaribu = '2500';
+			$angsuran=compat_num($angsuran) + 2500;
+			$ijaroh = compat_num($ijaroh) + 2500;
+			$setoran=compat_num($nom_i) - $simpanan_minggon_asli;
 		}else{
-			
-				$simpanan_minggon=$bulat - $angsuran;
-				$simpan_duaribu = '0';		
-
-		$setoran=$nom[$i] - $simpanan_minggon;
-		$angsuran=$angsuran ;
-			$ijaroh = $ijaroh;
-
-
+			$simpanan_minggon=compat_num($bulat) - compat_num($angsuran);
+			$simpan_duaribu = '0';
+			$setoran=compat_num($nom_i) - $simpanan_minggon;
 		}
-$tgl1=new DateTime($tgl_murab);
-$tgl2=new DateTime($tanggal);
-$jarak = $tgl2->diff($tgl1); 
-$jarak =$jarak->d;
 
+		$tgl1=new DateTime((string) $tgl_murab);
+		$tgl2=new DateTime((string) $tanggal);
+		$jarak = $tgl2->diff($tgl1);
+		// versi lama: hanya komponen hari dari selisih tanggal (bukan total hari)
+		$jarak =$jarak->d;
 
-
-
-		
-
-
-
-
-
-		$nama=mysqli_real_escape_string($con,($data['Cust_Short_name']));
+		$nama=$kol('Cust_Short_name');
+		// versi lama: $cif dan $no_anggota tidak pernah diisi (kosong di keterangan & rek_loan)
+		$cif = $c;
+		$no_anggota = $norek;
 		$ket ="Setoran an $nama $cif";
 		$ket2 ="Angsuran  an $nama $cif";
-		$status_app=$data['status_app'];
-		
-	
-		
 
- 			$kodetr=8;
-            $kodetr=acakangkahuruf($kodetr);
-            $kode_trans="BH/".$unit.$kodetr;
+		$kodetr=8;
+		$kodetr=acakangkahuruf($kodetr);
+		$kode_trans="BH/".$unit.$kodetr;
 
-			$kodetrs=8;
-            $kodetrs=acakangkahuruf($kodetrs);
-            $kode_tran="BH/".$unit.$kodetrs;
-		
-		if ($nom[$i] =='0'){
-			db_query ($con,"Update  tagihan_cs set status_realisasi ='NUNGGAK'  where cif  ='".$checbox[$i]."' and tgl_tagih='$tanggal'");
-
-		if ($ada_tunggak==$os){
-
-			db_query ($con,"delete from tunggakan where cif ='".$checbox[$i]."' and tgl_tunggak ='$tanggal' ");
-
-		}
-if ($jarak<2){
-
-			db_query ($con,"delete from tunggakan where cif ='".$checbox[$i]."' and tgl_tunggak ='$tanggal' ");
-db_query ($con,"delete from temp_eod where cif ='".$checbox[$i]."' and tgl_eod ='$tanggal' ");
+		$kodetrs=8;
+		$kodetrs=acakangkahuruf($kodetrs);
+		$kode_tran="BH/".$unit.$kodetrs;
 
 
-		}
-	
-
-
-		}elseif($nom[$i] < $bulat){
-
-			
-			if ($nom[$i] =='0'){
-				$data =0;
-							db_query ($con,"Update  tagihan_cs set status_realisasi ='BAYAR'  where cif  ='".$checbox[$i]."' and tgl_tagih='$tanggal'");
-
-if ($jarak < 2){
-
-			db_query ($con,"delete from tunggakan where cif ='".$checbox[$i]."' and tgl_tunggak ='$tanggal' ");
-db_query ($con,"delete from temp_eod where cif ='".$checbox[$i]."' and tgl_eod ='$tanggal' ");
-
-
-		}
-
-
-			}else{
-		
-				
-
-		$input ="Insert into simpanan (BUSS_DATE,NOREK,UNIT,CIF,CODE_KEL,DEBIT,TYPE,KREDIT,USERID,KET,REFF,CAO,blok,tgl_input,kode_transaksi)
-	 VALUES('$tgl_system','$norek','$unit','".$checbox[$i]."','$code_kel',0,'01','$setoran','$userid','$ket','','$cao','0','$tanggal','$kode_trans')";
-	  $inputtrnsk = db_query ($con,$input);
-	  $input ="Insert into simpanan (BUSS_DATE,NOREK,UNIT,CIF,CODE_KEL,DEBIT,TYPE,KREDIT,USERID,KET,REFF,CAO,blok,tgl_input,kode_transaksi)
-	 VALUES('$tgl_system','$norek','$unit','".$checbox[$i]."','$code_kel',0,'02','$simpanan_minggon','$userid','$ket','','$cao','1','$tanggal','$kode_trans')";
-	 $inputtrnsk = db_query ($con,$input);
- $input ="Insert into simpanan (BUSS_DATE,NOREK,UNIT,CIF,CODE_KEL,DEBIT,TYPE,KREDIT,USERID,KET,REFF,CAO,blok,tgl_input,kode_transaksi)
-	 VALUES('$tgl_system','$norek','$unit','".$checbox[$i]."','$code_kel',0,'01','$simpan_duaribu','$userid','$ket','','$cao','1','$tanggal','$kode_trans')";
-	 $inputtrnsk = db_query ($con,$input);
-
-
-
-	 $jurnal_umum=db_fetch_array(db_query ($con,"SELECT max(nomor_jurnal) FROM jurnal_umum where unit ='$unit' ORDER BY tanggal_selesai DESC"));
-	 $nomor_jurnal=$jurnal_umum[0]+1;
-	 //pencatatan du jurnal realasisi Piutang Murabahaha total jumlah Pokok dan margin
-	 db_query ($con,"insert into jurnal_masuk(nomor_jurnal,kode_transaksi,tanggal_selesai,unit) values('$nomor_jurnal','$kode_trans','$tgl_system','$unit')");
-	 db_query ($con,"insert  into tabel_transaksi(unit,kode_transaksi,kode_rekening,tanggal_transaksi, jenis_transaksi, keterangan_transaksi,debet,id_admin)
-	 values('$unit','$kode_trans','1120000','$tgl_system','Bukti SYSTEM','$ket','$nom[$i]','$userid')");
-	 
-	 db_query ($con,"insert  into tabel_transaksi(unit,kode_transaksi,kode_rekening,tanggal_transaksi, jenis_transaksi, keterangan_transaksi,kredit,id_admin)
-	 values('$unit','$kode_trans','2101000','$tgl_system','Bukti SYSTEM','$ket','$nom[$i]','$userid')");
-db_query ($con,"Update  tagihan_cs set status_realisasi ='NUNGGAK'  where cif  ='".$checbox[$i]."' and tgl_tagih='$tanggal'");
-	 if ($ada_tunggak==$os){
-
-		db_query ($con,"delete from tunggakan where cif ='".$checbox[$i]."' and tgl_tunggak ='$tanggal' ");
-//mysqli_query ($con,"Update  tagihan_cs set status_realisasi ='NUNGGAK'  where cif  ='".$checbox[$i]."' and tgl_tagih='$tanggal'");
-
-	}	
-
-
-	 
+		$tunggak_debet = function ($type, $debet, $reff, $ket_bh) use ($tanggal, $norek, $unit, $c, $code_kel, $userid, $cao) {
+			if ($ket_bh) {
+				qs("insert  into tunggakan (tgl_tunggak,NOREK,UNIT,CIF,CODE_KEL,DEBIT,TYPE,KREDIT,USERID,KET,REFF,CAO,blok)VALUES(?,?,?,?,?,?,?,'0',?,'BH',?,?,'') ",
+					$tanggal, $norek, $unit, $c, $code_kel, $debet, $type, $userid, $reff, $cao);
+			} else {
+				qs("insert  into tunggakan (tgl_tunggak,NOREK,UNIT,CIF,CODE_KEL,DEBIT,TYPE,KREDIT,USERID,REFF,CAO,blok)VALUES(?,?,?,?,?,?,?,'0',?,?,?,'') ",
+					$tanggal, $norek, $unit, $c, $code_kel, $debet, $type, $userid, $reff, $cao);
 			}
-	
+		};
+		$tagihan = function ($status) use ($c, $tanggal) {
+			qs("Update  tagihan_cs set status_realisasi =?  where cif  =? and tgl_tagih=?", $status, $c, $tanggal);
+		};
+		$hapus_tunggak_hari_ini = function () use ($c, $tanggal) {
+			qs("delete from tunggakan where cif =? and tgl_tunggak =? ", $c, $tanggal);
+		};
+		$simpanan_setor = function ($type, $kredit, $blok) use ($tgl_system, $norek, $unit, $c, $code_kel, $userid, $ket, $cao, $tanggal, $kode_trans) {
+			return qs("Insert into simpanan (BUSS_DATE,NOREK,UNIT,CIF,CODE_KEL,DEBIT,TYPE,KREDIT,USERID,KET,REFF,CAO,blok,tgl_input,kode_transaksi)
+				VALUES(?,?,?,?,?,0,?,?,?,?,'',?,?,?,?)", $tgl_system, $norek, $unit, $c, $code_kel, $type, $kredit, $userid, $ket, $cao, $blok, $tanggal, $kode_trans);
+		};
+		$jurnal_setoran = function () use ($unit, $kode_trans, $tgl_system, $ket, &$nom_i, $userid) {
+			$nomor_jurnal = nomor_jurnal_kel($unit);
+			qs("insert into jurnal_masuk(nomor_jurnal,kode_transaksi,tanggal_selesai,unit) values(?,?,?,?)", $nomor_jurnal, $kode_trans, $tgl_system, $unit);
+			qs("insert  into tabel_transaksi(unit,kode_transaksi,kode_rekening,tanggal_transaksi, jenis_transaksi, keterangan_transaksi,debet,id_admin)
+				values(?,?,'1120000',?,'Bukti SYSTEM',?,?,?)", $unit, $kode_trans, $tgl_system, $ket, $nom_i, $userid);
+			qs("insert  into tabel_transaksi(unit,kode_transaksi,kode_rekening,tanggal_transaksi, jenis_transaksi, keterangan_transaksi,kredit,id_admin)
+				values(?,?,'2101000',?,'Bukti SYSTEM',?,?,?)", $unit, $kode_trans, $tgl_system, $ket, $nom_i, $userid);
+		};
+		$tt = function ($rekening, $kolom, $nilai) use ($unit, $kode_tran, $tanggal, $ket2, $userid) {
+			$kolom = $kolom === 'debet' ? 'debet' : 'kredit';
+			qs("insert  into tabel_transaksi(unit,kode_transaksi,kode_rekening,tanggal_transaksi, jenis_transaksi, keterangan_transaksi,$kolom,id_admin)
+				values(?,?,?,?,'Bukti SYSTEM',?,?,?)", $unit, $kode_tran, $rekening, $tanggal, $ket2, $nilai, $userid);
+		};
+		$rek_loan = function ($nilai, $ket_rek, $status, $no_ang, $cif_rek) use ($tanggal, $unit, $userid) {
+			qs("insert into rek_loan(ref,tgl_realisasi,unit,no_anggota,saldo_kredit,debet,tipe,ket,USERID,STATUS,cif)VALUES('',?,?,?,'0',?,'03',?,?,?,?)",
+				$tanggal, $unit, $no_ang, $nilai, $ket_rek, $userid, $status, $cif_rek);
+		};
+		// ke = ke + 1 seperti Tagihan Kelompok (versi lama: '$ke_tenor'+1 dengan $ke_tenor kosong, selalu 1)
+		$update_loan = function () use (&$next_schedule, &$angsuran, &$ijaroh, $pb, $tanggal, $c) {
+			qs("Update  loan set next_schedule =?,os =os-?,saldo_margin=saldo_margin-?,run_tenor=?,ke=ke+1,last_payment=? where cif  =?",
+				$next_schedule, $angsuran, $ijaroh, $pb, $tanggal, $c);
+		};
+		// simpanan angsuran (TYPE 03): dengan KET+blok 2, atau tanpa KET dengan keterangan di REFF (seperti versi lama)
+		$simpanan_angsuran = function ($teks, $dengan_ket) use ($tanggal, $norek, $unit, $c, $code_kel, &$angsuran, $userid, $cao, $tgl_input, $kode_tran) {
+			if ($dengan_ket) {
+				qs("insert  into simpanan (BUSS_DATE,NOREK,UNIT,CIF,CODE_KEL,DEBIT,TYPE,KREDIT,USERID,KET,REFF,CAO,blok,tgl_input,kode_transaksi)VALUES(?,?,?,?,?,?,'03','0',?,?,'',?,'2',?,?) ",
+					$tanggal, $norek, $unit, $c, $code_kel, $angsuran, $userid, $teks, $cao, $tgl_input, $kode_tran);
+			} else {
+				qs("insert  into simpanan (BUSS_DATE,NOREK,UNIT,CIF,CODE_KEL,DEBIT,TYPE,KREDIT,USERID,REFF,CAO,tgl_input,kode_transaksi)VALUES(?,?,?,?,?,?,'03','0',?,?,?,?,?) ",
+					$tanggal, $norek, $unit, $c, $code_kel, $angsuran, $userid, $teks, $cao, $tgl_input, $kode_tran);
+			}
+		};
+		$jurnal_umum = function ($nomor_jurnal) use ($kode_tran, $tanggal, $unit) {
+			qs("insert into jurnal_umum(nomor_jurnal,kode_transaksi,tanggal_selesai,unit) values(?,?,?,?)", $nomor_jurnal, $kode_tran, $tanggal, $unit);
+		};
+
+		if ($nom_i =='0'){
+			$tagihan('NUNGGAK');
+			if ($ada_tunggak==$os){
+				$hapus_tunggak_hari_ini();
+			}
+			if ($jarak<2){
+				$hapus_tunggak_hari_ini();
+				qs("delete from temp_eod where cif =? and tgl_eod =? ", $c, $tanggal);
+			}
+
+		}elseif($nom_i < $bulat){
+			// (cabang "nominal == '0'" di dalam versi lama tidak pernah tercapai karena sudah tertangkap di atas)
+			$simpanan_setor('01', $setoran, '0');
+			$simpanan_setor('02', $simpanan_minggon, '1');
+			$simpanan_setor('01', $simpan_duaribu, '1');
+			$jurnal_setoran();
+			$tagihan('NUNGGAK');
+			if ($ada_tunggak==$os){
+				$hapus_tunggak_hari_ini();
+			}
+
 		}else{
-			
-
-		
-		
-     $input ="Insert into simpanan (BUSS_DATE,NOREK,UNIT,CIF,CODE_KEL,DEBIT,TYPE,KREDIT,USERID,KET,REFF,CAO,blok,tgl_input,kode_transaksi)
-	 VALUES('$tgl_system','$norek','$unit','".$checbox[$i]."','$code_kel',0,'01','$setoran','$userid','$ket','','$cao','0','$tanggal','$kode_trans')";
-	  $inputtrnsk = db_query ($con,$input);
-	  $input ="Insert into simpanan (BUSS_DATE,NOREK,UNIT,CIF,CODE_KEL,DEBIT,TYPE,KREDIT,USERID,KET,REFF,CAO,blok,tgl_input,kode_transaksi)
-	 VALUES('$tgl_system','$norek','$unit','".$checbox[$i]."','$code_kel',0,'02','$simpanan_minggon','$userid','$ket','','$cao','1','$tanggal','$kode_trans')";
- $inputtrnsk = db_query ($con,$input);
-
- $input ="Insert into simpanan (BUSS_DATE,NOREK,UNIT,CIF,CODE_KEL,DEBIT,TYPE,KREDIT,USERID,KET,REFF,CAO,blok,tgl_input,kode_transaksi)
-	 VALUES('$tgl_system','$norek','$unit','".$checbox[$i]."','$code_kel',0,'01','$simpan_duaribu','$userid','$ket','','$cao','1','$tanggal','$kode_trans')";
-	
-db_query ($con,"Update  tagihan_cs set status_realisasi ='NUNGGAK'  where cif  ='".$checbox[$i]."' and tgl_tagih='$tanggal'");
-     if($ada_tunggak >0 ){
-
-		
-db_query ($con,"Update  tagihan_cs set status_realisasi ='NUNGGAK'  where cif  ='".$checbox[$i]."' and tgl_tagih='$tanggal'");
-	
-
-	 }       
-	 
-	 
-	 
-	 $inputtrnsk = db_query ($con,$input);
+			$simpanan_setor('01', $setoran, '0');
+			$simpanan_setor('02', $simpanan_minggon, '1');
+			$tagihan('NUNGGAK');
+			if($ada_tunggak >0 ){
+				$tagihan('NUNGGAK');
+			}
+			$inputtrnsk = $simpanan_setor('01', $simpan_duaribu, '1');
             if($inputtrnsk){
-          
-                    
-
-                $jurnal_umum=db_fetch_array(db_query ($con,"SELECT max(nomor_jurnal) FROM jurnal_umum where unit ='$unit' ORDER BY tanggal_selesai DESC"));
-                $nomor_jurnal=$jurnal_umum[0]+1;
-                //pencatatan du jurnal realasisi Piutang Murabahaha total jumlah Pokok dan margin
-                db_query ($con,"insert into jurnal_masuk(nomor_jurnal,kode_transaksi,tanggal_selesai,unit) values('$nomor_jurnal','$kode_trans','$tgl_system','$unit')");
-                db_query ($con,"insert  into tabel_transaksi(unit,kode_transaksi,kode_rekening,tanggal_transaksi, jenis_transaksi, keterangan_transaksi,debet,id_admin)
-                values('$unit','$kode_trans','1120000','$tgl_system','Bukti SYSTEM','$ket','$nom[$i]','$userid')");
-                
-                db_query ($con,"insert  into tabel_transaksi(unit,kode_transaksi,kode_rekening,tanggal_transaksi, jenis_transaksi, keterangan_transaksi,kredit,id_admin)
-                values('$unit','$kode_trans','2101000','$tgl_system','Bukti SYSTEM','$ket','$nom[$i]','$userid')");
-
-
-
+				$jurnal_setoran();
 
 				switch ($status_app) {
 					case "REST":
-						$jurnal_umum=db_fetch_array(db_query($con,"SELECT max(nomor_jurnal) FROM jurnal_umum where unit ='$unit' ORDER BY tanggal_selesai DESC"));
-						$nomor_jurnal=$jurnal_umum[0]+1;
-
+						$nomor_jurnal = nomor_jurnal_kel($unit);
 						if($ada_tunggak>0){
-							db_query($con,"insert  into tunggakan (tgl_tunggak,NOREK,UNIT,CIF,CODE_KEL,DEBIT,TYPE,KREDIT,USERID,KET,REFF,CAO,blok)VALUES('$tanggal','$norek','$unit','".$checbox[$i]."','$code_kel','$angsuran_pokok','01','0','$userid','BH','$ket','$cao','') ") ;
-							db_query ($con,"insert into rek_loan(ref,tgl_realisasi,unit,no_anggota,saldo_kredit,debet,tipe,ket,USERID,STATUS,cif)VALUES('','$tanggal','$unit','$norek','0','$angsuran_pokok','03','$ket2','$userid','REALISASI POKOK','".$checbox[$i]."')");
-							db_query ($con,"Update  loan set next_schedule ='$next_schedule',os =os-'$angsuran',saldo_margin=saldo_margin-'$ijaroh',run_tenor='$pb',ke='$ke_tenor'+1 ,last_payment='$tanggal' where cif  ='".$checbox[$i]."'");
-							db_query ($con,"insert  into simpanan (BUSS_DATE,NOREK,UNIT,CIF,CODE_KEL,DEBIT,TYPE,KREDIT,USERID,REFF,CAO,tgl_input,kode_transaksi)VALUES('$tanggal','$norek','$unit','".$checbox[$i]."','$code_kel','$angsuran','03','0','$userid','$ket2','$cao','$tgl_input','$kode_tran') ");
-						
-							db_query ($con,"Update  pinjaman_detail set jumlah_bayar ='$angsuran',tgl_bayar='$tanggal' where id_pinjam  ='$norek' and cicilan='$pb'");
-							
-							db_query($con,"insert  into tabel_transaksi(unit,kode_transaksi,kode_rekening,tanggal_transaksi, jenis_transaksi, keterangan_transaksi,debet,id_admin)
-							values('$unit','$kode_tran','2101000','$tanggal','Bukti SYSTEM','$ket2','$angsuran','$userid')");
-							db_query($con,"insert  into tabel_transaksi(unit,kode_transaksi,kode_rekening,tanggal_transaksi, jenis_transaksi, keterangan_transaksi,kredit,id_admin)
-							values('$unit','$kode_tran','1411000','$tanggal','Bukti SYSTEM','$ket2','$angsuran','$userid')");
-							db_query ($con,"Update  tagihan_cs set status_realisasi ='BAYAR'  where cif  ='".$checbox[$i]."' and tgl_tagih='$tanggal'");
-
-						}else{
-						db_query ($con,"insert into rek_loan(ref,tgl_realisasi,unit,no_anggota,saldo_kredit,debet,tipe,ket,USERID,STATUS,cif)VALUES('','$tanggal','$unit','$norek','0','$angsuran_pokok','03','$ket2','$userid','REALISASI POKOK','".$checbox[$i]."')");
-						db_query ($con,"Update  loan set next_schedule ='$next_schedule',os =os-'$angsuran',saldo_margin=saldo_margin-'$ijaroh',run_tenor='$pb',ke='$ke_tenor'+1 ,last_payment='$tanggal' where cif  ='".$checbox[$i]."'");
-						db_query ($con,"insert  into simpanan (BUSS_DATE,NOREK,UNIT,CIF,CODE_KEL,DEBIT,TYPE,KREDIT,USERID,REFF,CAO,tgl_input,kode_transaksi)VALUES('$tanggal','$norek','$unit','".$checbox[$i]."','$code_kel','$angsuran','03','0','$userid','$ket2','$cao','$tgl_input','$kode_tran') ");
-					
-						db_query ($con,"Update  pinjaman_detail set jumlah_bayar ='$angsuran',tgl_bayar='$tanggal' where id_pinjam  ='$norek' and cicilan='$pb'");
-						
-												db_query($con,"insert  into tabel_transaksi(unit,kode_transaksi,kode_rekening,tanggal_transaksi, jenis_transaksi, keterangan_transaksi,debet,id_admin)
-						values('$unit','$kode_tran','2101000','$tanggal','Bukti SYSTEM','$ket2','$angsuran','$userid')");
-						db_query($con,"insert  into tabel_transaksi(unit,kode_transaksi,kode_rekening,tanggal_transaksi, jenis_transaksi, keterangan_transaksi,kredit,id_admin)
-						values('$unit','$kode_tran','1411000','$tanggal','Bukti SYSTEM','$ket2','$angsuran','$userid')");
-							db_query ($con,"Update  tagihan_cs set status_realisasi ='BAYAR'  where cif  ='".$checbox[$i]."' and tgl_tagih='$tanggal'");
-
-						
-
+							$tunggak_debet('01', $angsuran_pokok, $ket, true);
 						}
-				
+						$rek_loan($angsuran_pokok, $ket2, 'REALISASI POKOK', $norek, $c);
+						$update_loan();
+						$simpanan_angsuran($ket2, false);
+						qs("Update  pinjaman_detail set jumlah_bayar =?,tgl_bayar=? where id_pinjam  =? and cicilan=?", $angsuran, $tanggal, $norek, $pb);
+						$tt('2101000', 'debet', $angsuran);
+						$tt('1411000', 'kredit', $angsuran);
+						$tagihan('BAYAR');
 					  break;
+
 					case "REST_POKOK_MARGIN":
-
-					$jurnal_umum=db_fetch_array(db_query($con,"SELECT max(nomor_jurnal) FROM jurnal_umum where unit ='$unit' ORDER BY tanggal_selesai DESC"));
-					$nomor_jurnal=$jurnal_umum[0]+1;                 
-					
-					if($ada_tunggak > 0){
-					db_query($con,"insert  into tunggakan (tgl_tunggak,NOREK,UNIT,CIF,CODE_KEL,DEBIT,TYPE,KREDIT,USERID,KET,REFF,CAO,blok)VALUES('$tanggal','$norek','$unit','".$checbox[$i]."','$code_kel','$angsuran_pokok','01','0','$userid','BH','$ket','$cao','') ") ;
-					db_query($con,"insert  into tunggakan (tgl_tunggak,NOREK,UNIT,CIF,CODE_KEL,DEBIT,TYPE,KREDIT,USERID,KET,REFF,CAO,blok)VALUES('$tanggal','$norek','$unit','".$checbox[$i]."','$code_kel','$ijaroh','02','0','$userid','BH','$ket','$cao','') ");
-					db_query($con,"insert into rek_loan(ref,tgl_realisasi,unit,no_anggota,saldo_kredit,debet,tipe,ket,USERID,STATUS,cif)VALUES('','$tanggal','$unit','$norek','0','$angsuran_pokok','03','$ket','$userid','REALISASI POKOK','".$checbox[$i]."')") ;
-					db_query($con,"insert into rek_loan(ref,tgl_realisasi,unit,no_anggota,saldo_kredit,debet,tipe,ket,USERID,STATUS,cif)VALUES('','$tanggal','$unit','$norek','0','$ijaroh','03','$ket','$userid','REALISASI BAGHAS','".$checbox[$i]."')");
-					db_query($con,"Update  loan set next_schedule ='$next_schedule',os =os-'$angsuran',saldo_margin=saldo_margin-'$ijaroh',run_tenor='$pb',ke='$ke_tenor'+1,last_payment='$tanggal' where cif  ='".$checbox[$i]."'") ;
-											
-					db_query($con,"insert  into simpanan (BUSS_DATE,NOREK,UNIT,CIF,CODE_KEL,DEBIT,TYPE,KREDIT,USERID,KET,REFF,CAO,blok,tgl_input,kode_transaksi)VALUES('$tanggal','$norek','$unit','".$checbox[$i]."','$code_kel','$angsuran','03','0','$userid','$ket2','','$cao','2','$tgl_input','$kode_tran') ") ;
-					db_query($con,"insert  into tabel_transaksi(unit,kode_transaksi,kode_rekening,tanggal_transaksi, jenis_transaksi, keterangan_transaksi,debet,id_admin)
-						values('$unit','$kode_tran','2101000','$tanggal','Bukti SYSTEM','$ket2','$angsuran','$userid')");
-
-					db_query($con,"insert  into tabel_transaksi(unit,kode_transaksi,kode_rekening,tanggal_transaksi, jenis_transaksi, keterangan_transaksi,kredit,id_admin)
-						values('$unit','$kode_tran','1411000','$tanggal','Bukti SYSTEM','$ket2','$angsuran','$userid')");
-					db_query($con,"insert into jurnal_umum(nomor_jurnal,kode_transaksi,tanggal_selesai,unit) values('$nomor_jurnal','$kode_tran','$tanggal','$unit')");
-						//Realisasi Piutang Margin     
-					db_query($con,"insert  into tabel_transaksi(unit,kode_transaksi,kode_rekening,tanggal_transaksi, jenis_transaksi, keterangan_transaksi,debet,id_admin)
-						values('$unit','$kode_tran','1421000','$tanggal','Bukti SYSTEM','$ket2','$ijaroh','$userid')");
-						//Realiasasi Murabahah Debit pada Piutang Murabahah total jumlah Pokok dan margin 
-					db_query($con,"insert  into tabel_transaksi(unit,kode_transaksi,kode_rekening,tanggal_transaksi, jenis_transaksi, keterangan_transaksi,kredit,id_admin)
-						values('$unit','$kode_tran','41002','$tanggal','Bukti SYSTEM','$ket2','$ijaroh','$userid')");
-
-							db_query ($con,"Update  tagihan_cs set status_realisasi ='BAYAR'  where cif  ='".$checbox[$i]."' and tgl_tagih='$tanggal'");
-
-
-					}else{
-
-						db_query($con,"insert into rek_loan(ref,tgl_realisasi,unit,no_anggota,saldo_kredit,debet,tipe,ket,USERID,STATUS,cif)VALUES('','$tanggal','$unit','$norek','0','$angsuran_pokok','03','$ket2','$userid','REALISASI POKOK','".$checbox[$i]."')");
-						db_query($con,"insert into rek_loan(ref,tgl_realisasi,unit,no_anggota,saldo_kredit,debet,tipe,ket,USERID,STATUS,cif)VALUES('','$tanggal','$unit','$norek','0','$ijaroh','03','$ket2','$userid','REALISASI BAGHAS','".$checbox[$i]."')");
-
-						db_query($con,"Update  loan set next_schedule ='$next_schedule',os =os-'$angsuran',saldo_margin=saldo_margin-'$ijaroh',run_tenor='$pb',ke='$ke_tenor'+1,last_payment='$tanggal' where cif  ='".$checbox[$i]."'");
-						db_query($con,"insert  into simpanan (BUSS_DATE,NOREK,UNIT,CIF,CODE_KEL,DEBIT,TYPE,KREDIT,USERID,REFF,CAO,tgl_input,kode_transaksi)VALUES('$tanggal','$norek','$unit','".$checbox[$i]."','$code_kel','$angsuran','03','0','$userid','$ket2','$cao','$tgl_input','$kode_tran') ");
-						
-						db_query($con,"insert  into tabel_transaksi(unit,kode_transaksi,kode_rekening,tanggal_transaksi, jenis_transaksi, keterangan_transaksi,debet,id_admin)
-						values('$unit','$kode_tran','2101000','$tanggal','Bukti SYSTEM','$ket2','$angsuran','$userid')");
-
-						db_query($con,"insert  into tabel_transaksi(unit,kode_transaksi,kode_rekening,tanggal_transaksi, jenis_transaksi, keterangan_transaksi,kredit,id_admin)
-						values('$unit','$kode_tran','1411000','$tanggal','Bukti SYSTEM','$ket2','$angsuran','$userid')");
-						
-						db_query($con,"insert into jurnal_umum(nomor_jurnal,kode_transaksi,tanggal_selesai,unit) values('$nomor_jurnal','$kode_tran','$tanggal','$unit')");
-						//Realisasi Piutang Margin     
-						db_query($con,"insert  into tabel_transaksi(unit,kode_transaksi,kode_rekening,tanggal_transaksi, jenis_transaksi, keterangan_transaksi,debet,id_admin)
-									values('$unit','$kode_tran','1421000','$tanggal','Bukti SYSTEM','$ket2','$ijaroh','$userid')");
-						//Realiasasi Murabahah Debit pada Piutang Murabahah total jumlah Pokok dan margin 
-						db_query($con,"insert  into tabel_transaksi(unit,kode_transaksi,kode_rekening,tanggal_transaksi, jenis_transaksi, keterangan_transaksi,kredit,id_admin)
-						values('$unit','$kode_tran','41002','$tanggal','Bukti SYSTEM','$ket2','$ijaroh','$userid')");
-
-							db_query ($con,"Update  tagihan_cs set status_realisasi ='BAYAR'  where cif  ='".$checbox[$i]."' and tgl_tagih='$tanggal'");
-
-
-
-						}
-
-					  
-					  break;
-					case "MURAB":
-						$jurnal_umum=db_fetch_array(db_query($con,"SELECT max(nomor_jurnal) FROM jurnal_umum where unit ='$unit' ORDER BY tanggal_selesai DESC"));
-						$nomor_jurnal=$jurnal_umum[0]+1;                 
-						
-						if($ada_tunggak>0){
-							db_query($con,"insert  into tunggakan (tgl_tunggak,NOREK,UNIT,CIF,CODE_KEL,DEBIT,TYPE,KREDIT,USERID,KET,REFF,CAO,blok)VALUES('$tanggal','$norek','$unit','".$checbox[$i]."','$code_kel','$angsuran_pokok','01','0','$userid','BH','$ket','$cao','') ") ;
-							db_query($con,"insert  into tunggakan (tgl_tunggak,NOREK,UNIT,CIF,CODE_KEL,DEBIT,TYPE,KREDIT,USERID,KET,REFF,CAO,blok)VALUES('$tanggal','$norek','$unit','".$checbox[$i]."','$code_kel','$ijaroh','02','0','$userid','BH','$ket','$cao','') ");
-							db_query($con,"insert into rek_loan(ref,tgl_realisasi,unit,no_anggota,saldo_kredit,debet,tipe,ket,USERID,STATUS,cif)VALUES('','$tanggal','$unit','$norek','0','$angsuran_pokok','03','$ket2','$userid','REALISASI POKOK','$cif')") ;
-							db_query($con,"insert into rek_loan(ref,tgl_realisasi,unit,no_anggota,saldo_kredit,debet,tipe,ket,USERID,STATUS,cif)VALUES('','$tanggal','$unit','$norek','0','$ijaroh','03','$ket2','$userid','REALISASI BAGHAS','$cif')");
-							db_query($con,"Update  loan set next_schedule ='$next_schedule',os =os-'$angsuran',saldo_margin=saldo_margin-'$ijaroh',run_tenor='$pb',ke='$ke_tenor'+1,last_payment='$tanggal' where cif  ='".$checbox[$i]."'");
-											 
-					
-							db_query($con,"insert  into simpanan (BUSS_DATE,NOREK,UNIT,CIF,CODE_KEL,DEBIT,TYPE,KREDIT,USERID,KET,REFF,CAO,blok,tgl_input,kode_transaksi)VALUES('$tanggal','$norek','$unit','".$checbox[$i]."','$code_kel','$angsuran','03','0','$userid','$ket','','$cao','2','$tgl_input','$kode_tran') ");
-							
-											 
-							db_query($con,"insert into jurnal_umum(nomor_jurnal,kode_transaksi,tanggal_selesai,unit) values('$nomor_jurnal','$kode_tran','$tanggal','$unit')");
-							
-							db_query($con,"insert  into tabel_transaksi(unit,kode_transaksi,kode_rekening,tanggal_transaksi, jenis_transaksi, keterangan_transaksi,kredit,id_admin)
-								values('$unit','$kode_tran','1413000','$tanggal','Bukti SYSTEM','$ket2','$angsuran','$userid')");						
-							//Realisasi Piutang Margin     
-							db_query($con,"insert  into tabel_transaksi(unit,kode_transaksi,kode_rekening,tanggal_transaksi, jenis_transaksi, keterangan_transaksi,debet,id_admin)
-								values('$unit','$kode_tran','1423000','$tanggal','Bukti SYSTEM','$ket2','$ijaroh','$userid')");
-							//Realiasasi Murabahah Debit pada Piutang Murabahah total jumlah Pokok dan margin 
-							db_query($con,"insert  into tabel_transaksi(unit,kode_transaksi,kode_rekening,tanggal_transaksi, jenis_transaksi, keterangan_transaksi,kredit,id_admin)
-								values('$unit','$kode_tran','41002','$tanggal','Bukti SYSTEM','$ket2','$ijaroh','$userid')");
-							db_query($con,"insert  into tabel_transaksi(unit,kode_transaksi,kode_rekening,tanggal_transaksi, jenis_transaksi, keterangan_transaksi,debet,id_admin)
-								values('$unit','$kode_tran','2101000','$tanggal','Bukti SYSTEM','$ket2','$angsuran','$userid')");
-							db_query ($con,"Update  tagihan_cs set status_realisasi ='BAYAR'  where cif  ='".$checbox[$i]."' and tgl_tagih='$tanggal'");
-
-							 
-							}else{
-							 
-							db_query($con,"insert into rek_loan(ref,tgl_realisasi,unit,no_anggota,saldo_kredit,debet,tipe,ket,USERID,STATUS,cif)VALUES('','$tanggal','$unit','$no_anggota','0','$angsuran_pokok','03','$ket2','$userid','REALISASI POKOK','".$checbox[$i]."')");
-							db_query($con,"insert into rek_loan(ref,tgl_realisasi,unit,no_anggota,saldo_kredit,debet,tipe,ket,USERID,STATUS,cif)VALUES('','$tanggal','$unit','$no_anggota','0','$ijaroh','03','$ket2','$userid','REALISASI BAGHAS','".$checbox[$i]."')");
-							
-							db_query($con,"Update  loan set next_schedule ='$next_schedule',os =os-'$angsuran',saldo_margin=saldo_margin-'$ijaroh',run_tenor='$pb',ke='$ke_tenor'+1,last_payment='$tanggal' where cif  ='".$checbox[$i]."'");
-							db_query($con,"insert  into simpanan (BUSS_DATE,NOREK,UNIT,CIF,CODE_KEL,DEBIT,TYPE,KREDIT,USERID,REFF,CAO,tgl_input,kode_transaksi)VALUES('$tanggal','$norek','$unit','".$checbox[$i]."','$code_kel','$angsuran','03','0','$userid','$ket','$cao','$tgl_input','$kode_tran') ") ;
-							db_query($con,"insert into jurnal_umum(nomor_jurnal,kode_transaksi,tanggal_selesai,unit) values('$nomor_jurnal','$kode_tran','$tanggal','$unit')");
-			
-							db_query($con,"insert  into tabel_transaksi(unit,kode_transaksi,kode_rekening,tanggal_transaksi, jenis_transaksi, keterangan_transaksi,kredit,id_admin)
-								values('$unit','$kode_tran','1413000','$tanggal','Bukti SYSTEM','$ket2','$angsuran','$userid')");
-							//Realisasi Piutang Margin     
-							db_query($con,"insert  into tabel_transaksi(unit,kode_transaksi,kode_rekening,tanggal_transaksi, jenis_transaksi, keterangan_transaksi,debet,id_admin)
-								values('$unit','$kode_tran','1423000','$tanggal','Bukti SYSTEM','$ket2','$ijaroh','$userid')");
-							//Realiasasi Murabahah Debit pada Piutang Murabahah total jumlah Pokok dan margin 
-							db_query($con,"insert  into tabel_transaksi(unit,kode_transaksi,kode_rekening,tanggal_transaksi, jenis_transaksi, keterangan_transaksi,kredit,id_admin)
-								values('$unit','$kode_tran','41002','$tanggal','Bukti SYSTEM','$ket2','$ijaroh','$userid')");
-							db_query($con,"insert  into tabel_transaksi(unit,kode_transaksi,kode_rekening,tanggal_transaksi, jenis_transaksi, keterangan_transaksi,debet,id_admin)
-								values('$unit','$kode_tran','2101000','$tanggal','Bukti SYSTEM','$ket2','$angsuran','$userid')");
-
-							db_query ($con,"Update  tagihan_cs set status_realisasi ='BAYAR'  where cif  ='".$checbox[$i]."' and tgl_tagih='$tanggal'");
-
-							 
-							 
-							}
-					  
-					  break;
-					default:
-					$jurnal_umum=db_fetch_array(db_query($con,"SELECT max(nomor_jurnal) FROM jurnal_umum where unit ='$unit' ORDER BY tanggal_selesai DESC"));
-					$nomor_jurnal=$jurnal_umum[0]+1;                 
-					
-					if($ada_tunggak>0){
-						db_query($con,"insert  into tunggakan (tgl_tunggak,NOREK,UNIT,CIF,CODE_KEL,DEBIT,TYPE,KREDIT,USERID,REFF,CAO,blok)VALUES('$tanggal','$norek','$unit','".$checbox[$i]."','$code_kel','$angsuran_pokok','01','0','$userid','$ket2','$cao','') ") ;
-						db_query($con,"insert  into tunggakan (tgl_tunggak,NOREK,UNIT,CIF,CODE_KEL,DEBIT,TYPE,KREDIT,USERID,REFF,CAO,blok)VALUES('$tanggal','$norek','$unit','".$checbox[$i]."','$code_kel','$ijaroh','02','0','$userid','$ket2','$cao','') ");
-						db_query($con,"insert into rek_loan(ref,tgl_realisasi,unit,no_anggota,saldo_kredit,debet,tipe,ket,USERID,STATUS,cif)VALUES('','$tanggal','$unit','$norek','0','$angsuran_pokok','03','$ket2','$userid','REALISASI POKOK','$cif')") ;
-						db_query($con,"insert into rek_loan(ref,tgl_realisasi,unit,no_anggota,saldo_kredit,debet,tipe,ket,USERID,STATUS,cif)VALUES('','$tanggal','$unit','$norek','0','$ijaroh','03','$ket2','$userid','REALISASI BAGHAS','$cif')");
-						db_query($con,"Update  loan set next_schedule ='$next_schedule',os =os-'$angsuran',saldo_margin=saldo_margin-'$ijaroh',run_tenor='$pb',ke='$ke_tenor'+1,last_payment='$tanggal' where cif  ='".$checbox[$i]."'");
-										 
-				
-						db_query($con,"insert  into simpanan (BUSS_DATE,NOREK,UNIT,CIF,CODE_KEL,DEBIT,TYPE,KREDIT,USERID,KET,REFF,CAO,blok,tgl_input,kode_transaksi)VALUES('$tanggal','$norek','$unit','".$checbox[$i]."','$code_kel','$angsuran','03','0','$userid','$ket2','','$cao','2','$tgl_input','$kode_tran') ");
-						
-										 
-						db_query($con,"insert into jurnal_umum(nomor_jurnal,kode_transaksi,tanggal_selesai,unit) values('$nomor_jurnal','$kode_tran','$tanggal','$unit')");
-						
-						db_query($con,"insert  into tabel_transaksi(unit,kode_transaksi,kode_rekening,tanggal_transaksi, jenis_transaksi, keterangan_transaksi,kredit,id_admin)
-							values('$unit','$kode_tran','1413000','$tanggal','Bukti SYSTEM','$ket2','$angsuran','$userid')");						
-						//Realisasi Piutang Margin     
-						db_query($con,"insert  into tabel_transaksi(unit,kode_transaksi,kode_rekening,tanggal_transaksi, jenis_transaksi, keterangan_transaksi,debet,id_admin)
-							values('$unit','$kode_tran','1423000','$tanggal','Bukti SYSTEM','$ket2','$ijaroh','$userid')");
-						//Realiasasi Murabahah Debit pada Piutang Murabahah total jumlah Pokok dan margin 
-						db_query($con,"insert  into tabel_transaksi(unit,kode_transaksi,kode_rekening,tanggal_transaksi, jenis_transaksi, keterangan_transaksi,kredit,id_admin)
-							values('$unit','$kode_tran','41002','$tanggal','Bukti SYSTEM','$ket2','$ijaroh','$userid')");
-						db_query($con,"insert  into tabel_transaksi(unit,kode_transaksi,kode_rekening,tanggal_transaksi, jenis_transaksi, keterangan_transaksi,debet,id_admin)
-							values('$unit','$kode_tran','2101000','$tanggal','Bukti SYSTEM','$ket2','$angsuran','$userid')");
-
-							db_query ($con,"Update  tagihan_cs set status_realisasi ='BAYAR'  where cif  ='".$checbox[$i]."' and tgl_tagih='$tanggal'");
-
-						 
+						$nomor_jurnal = nomor_jurnal_kel($unit);
+						if($ada_tunggak > 0){
+							$tunggak_debet('01', $angsuran_pokok, $ket, true);
+							$tunggak_debet('02', $ijaroh, $ket, true);
+							$rek_loan($angsuran_pokok, $ket, 'REALISASI POKOK', $norek, $c);
+							$rek_loan($ijaroh, $ket, 'REALISASI BAGHAS', $norek, $c);
+							$update_loan();
+							$simpanan_angsuran($ket2, true);
 						}else{
-						 
-						db_query($con,"insert into rek_loan(ref,tgl_realisasi,unit,no_anggota,saldo_kredit,debet,tipe,ket,USERID,STATUS,cif)VALUES('','$tanggal','$unit','$no_anggota','0','$angsuran_pokok','03','$ket2','$userid','REALISASI POKOK','".$checbox[$i]."')");
-						db_query($con,"insert into rek_loan(ref,tgl_realisasi,unit,no_anggota,saldo_kredit,debet,tipe,ket,USERID,STATUS,cif)VALUES('','$tanggal','$unit','$no_anggota','0','$ijaroh','03','$ket2','$userid','REALISASI BAGHAS','".$checbox[$i]."')");
-						
-						db_query($con,"Update  loan set next_schedule ='$next_schedule',os =os-'$angsuran',saldo_margin=saldo_margin-'$ijaroh',run_tenor='$pb',ke='$ke_tenor'+1,last_payment='$tanggal' where cif  ='".$checbox[$i]."'");
-						db_query($con,"insert  into simpanan (BUSS_DATE,NOREK,UNIT,CIF,CODE_KEL,DEBIT,TYPE,KREDIT,USERID,REFF,CAO,tgl_input,kode_transaksi)VALUES('$tanggal','$norek','$unit','".$checbox[$i]."','$code_kel','$angsuran','03','0','$userid','$ket2','$cao','$tgl_input','$kode_tran') ") ;
-						db_query($con,"insert into jurnal_umum(nomor_jurnal,kode_transaksi,tanggal_selesai,unit) values('$nomor_jurnal','$kode_tran','$tanggal','$unit')");
-		
-						db_query($con,"insert  into tabel_transaksi(unit,kode_transaksi,kode_rekening,tanggal_transaksi, jenis_transaksi, keterangan_transaksi,kredit,id_admin)
-							values('$unit','$kode_tran','1413000','$tanggal','Bukti SYSTEM','$ket2','$angsuran','$userid')");
-						//Realisasi Piutang Margin     
-						db_query($con,"insert  into tabel_transaksi(unit,kode_transaksi,kode_rekening,tanggal_transaksi, jenis_transaksi, keterangan_transaksi,debet,id_admin)
-							values('$unit','$kode_tran','1423000','$tanggal','Bukti SYSTEM','$ket2','$ijaroh','$userid')");
-						//Realiasasi Murabahah Debit pada Piutang Murabahah total jumlah Pokok dan margin 
-						db_query($con,"insert  into tabel_transaksi(unit,kode_transaksi,kode_rekening,tanggal_transaksi, jenis_transaksi, keterangan_transaksi,kredit,id_admin)
-							values('$unit','$kode_tran','41002','$tanggal','Bukti SYSTEM','$ket2','$ijaroh','$userid')");
-						db_query($con,"insert  into tabel_transaksi(unit,kode_transaksi,kode_rekening,tanggal_transaksi, jenis_transaksi, keterangan_transaksi,debet,id_admin)
-							values('$unit','$kode_tran','2101000','$tanggal','Bukti SYSTEM','$ket2','$angsuran','$userid')");
-							db_query ($con,"Update  tagihan_cs set status_realisasi ='BAYAR'  where cif  ='".$checbox[$i]."' and tgl_tagih='$tanggal'");
-
-						 
-						 
+							$rek_loan($angsuran_pokok, $ket2, 'REALISASI POKOK', $norek, $c);
+							$rek_loan($ijaroh, $ket2, 'REALISASI BAGHAS', $norek, $c);
+							$update_loan();
+							$simpanan_angsuran($ket2, false);
 						}
+						$tt('2101000', 'debet', $angsuran);
+						$tt('1411000', 'kredit', $angsuran);
+						$jurnal_umum($nomor_jurnal);
+						//Realisasi Piutang Margin
+						$tt('1421000', 'debet', $ijaroh);
+						$tt('41002', 'kredit', $ijaroh);
+						$tagihan('BAYAR');
+					  break;
+
+					case "MURAB":
+					default:
+						// MURAB dan status lain memakai jurnal yang sama; perbedaan versi lama ada di REFF/KET dan no_anggota/cif rek_loan
+						$murab = $status_app === "MURAB";
+						$nomor_jurnal = nomor_jurnal_kel($unit);
+						if($ada_tunggak>0){
+							$tunggak_debet('01', $angsuran_pokok, $murab ? $ket : $ket2, $murab);
+							$tunggak_debet('02', $ijaroh, $murab ? $ket : $ket2, $murab);
+							$rek_loan($angsuran_pokok, $ket2, 'REALISASI POKOK', $norek, $cif);
+							$rek_loan($ijaroh, $ket2, 'REALISASI BAGHAS', $norek, $cif);
+							$update_loan();
+							$simpanan_angsuran($murab ? $ket : $ket2, true);
+						}else{
+							$rek_loan($angsuran_pokok, $ket2, 'REALISASI POKOK', $no_anggota, $c);
+							$rek_loan($ijaroh, $ket2, 'REALISASI BAGHAS', $no_anggota, $c);
+							$update_loan();
+							$simpanan_angsuran($murab ? $ket : $ket2, false);
+						}
+						$jurnal_umum($nomor_jurnal);
+						$tt('1413000', 'kredit', $angsuran);
+						//Realisasi Piutang Margin
+						$tt('1423000', 'debet', $ijaroh);
+						//Realiasasi Murabahah Debit pada Piutang Murabahah total jumlah Pokok dan margin
+						$tt('41002', 'kredit', $ijaroh);
+						$tt('2101000', 'debet', $angsuran);
+						$tagihan('BAYAR');
 				  }
-              
-                
-
-
-
-
-
-
-
-
-
-
-
-                
             }else{
             echo "<script>alert('Maaf,.Proses Input Gagal');</script>";
-            echo "<script language='javascript'>document.location.href='stor_kelompok_beda.php'</script>";
+            echo "<script language='javascript'>document.location.href='setor_kelompok_beda.php'</script>";
             }
-			
-		
-		
-		
-	}
-		
-		
+		}
 	}
 
 	if (!mysqli_commit($con)) {
@@ -490,9 +308,9 @@ db_query ($con,"Update  tagihan_cs set status_realisasi ='NUNGGAK'  where cif  =
 	  }
 echo "<script>alert('Setoran Kelompok sukses di simpan');</script>";
 echo "<script language='javascript'>document.location.href='setor_kelompok_beda.php'</script>";
-	
+
 }else {
-			echo '<script>alert("anda belum memilih data."); window.location="form.php"</script>';
+			echo '<script>alert("anda belum memilih data."); window.location="setor_kelompok_beda.php"</script>';
 	}
 
 ?>

@@ -1,419 +1,165 @@
-<?php require_once __DIR__ . '/../php8_compat.php';
+<?php require_once __DIR__ . '/../koneksi_db.php';
+/**
+ * Menu Report > Buku Besar.
+ *   Cari     : simpan pilihan (rekening, bulan, tahun, jenis report, All data) di sesi, tampilkan saldo awal/akhir
+ *              rekening dari tabel_master_konsol untuk bulan/tahun itu.
+ *   Download : export .xlsx bertahap dengan indikator progres (laporan/buku_besar_export.php, assets/app/export_xlsx.js),
+ *              pengganti excel_buku_besar.php (tabel HTML yang dinamai .xls).
+ * Isian sesi dan tampilan saldo sama dengan versi lama; hanya tampilan, query (prepared statement), dan cara export yang berubah.
+ */
+require_once __DIR__ . '/../inc/tampilan.php';
 session_start();
-ob_start();
-$userid=$_SESSION['userid'];
-$tgl_system=$_SESSION['stgl_system'];
+$userid = isset($_SESSION['userid']) ? $_SESSION['userid'] : null;
+$tgl_system = isset($_SESSION['stgl_system']) ? $_SESSION['stgl_system'] : null;
 //cek apakah user sudah login
-if(!isset($_SESSION['stgl_system'])){
-echo "<script>alert('Maaf,.tanggal system belum di setup');</script>";
+if (!isset($_SESSION['stgl_system'])) {
+    echo "<script>alert('Maaf,.tanggal system belum di setup');</script>";
+    header("location:param_tgl.php");
+    exit;
+}
+if (!isset($_SESSION['userid'])) {
+    header("location:index.html");
+    exit;
+}
+if ($_SESSION['level'] != "unit") {
+    header("location:index.html");
+    exit;
+}
 
-   header("location:param_tgl.php");
- exit; }
-if(!isset($_SESSION['userid'])){
-   header("location:index.html");
- exit; }
-if($_SESSION['level']!="unit"){
-   header("location:index.html");
- exit; }
- include "../conn2.php";
-  include "../function.php";
-  $koneksi=open_connection2();
-  
-$kel = mysql_query ("select kode_branch from user where userid='$userid'");
-$kkel = mysql_fetch_array($kel);
-$unit=$kkel['kode_branch'];
+$kkel = db_satu("select kode_branch from user where userid=?", 's', (string) $userid);
+$unit = $kkel ? $kkel['kode_branch'] : null;
 
+$norek = isset($_POST['kode_rekening']) ? trim((string) $_POST['kode_rekening']) : '';
+$bulan = isset($_POST['bulan']) ? (string) $_POST['bulan'] : '';
+$tahun = isset($_POST['tahun']) ? (string) $_POST['tahun'] : '';
+$checkbox = isset($_POST['all']) ? (string) $_POST['all'] : null;
+$report = isset($_POST['j']) ? (string) $_POST['j'] : '';
 
+$pesan = array();
+$hasil = array();
+$cari = isset($_POST['search']);
+if ($cari) {
+    // (versi lama juga membaca coa.normal di sini dan mencetaknya dengan var_dump; tidak dipakai di halaman ini)
+    if (empty($norek)) {
+        $pesan[] = "<script>alert('Maaf, Bulan,tahun atau Nomor Perkiraan belum di isi');</script>";
+        $pesan[] = "<script language='javascript'>document.location.href='buku_besar.php'</script>";
+    } else {
+        $_SESSION['noreks'] = $norek;
+        $_SESSION['bulans'] = $bulan;
+        $_SESSION['tahuns'] = $tahun;
+        $_SESSION['js'] = $report;
+        $_SESSION['checkboxs'] = $checkbox;
+        // versi lama: query sama untuk dicentang maupun tidak
+        $hasil = db_semua("select saldo_awal, saldo_akhir ,kode_rekening,nama_rekening from tabel_master_konsol WHERE kode_rekening =? and unit =? and month(tanggal_awal) = ? and Year(tanggal_awal)=?",
+            'ssss', $norek, (string) $unit, $bulan, $tahun);
+    }
+}
 
-$select = mysql_query("select min(tanggal_awal) as awal,max(tanggal_awal) as akhir from tabel_master_konsol");
-            while($row = mysql_fetch_array($select)){
-               
-				$awal=$row['awal'];
-				$akhir=$row['akhir'];
-				
-                 }	  
+$nama_bulan = array(1 => 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Des');
+halaman_awal('Buku Besar');
 ?>
-<script type="text/javascript">
- function wajibAngka(evt) {
- var charCode = (evt.which) ? evt.which : event.keyCode
- if (charCode > 31 && (charCode < 48 || charCode > 57))
- return false;
- }
-</script>
-    <script type="text/javascript" src="../jquery.js"></script>
-    <script>
-    function suggest(inputString){
-        if(inputString.length == 0) {
-            $('#suggestions').fadeOut();
-        } else {
-        $('#country').addClass('load');
-            $.post("../autosuggesst.php", {queryString: ""+inputString+""}, function(data){
-                if(data.length >0) {
-                    $('#suggestions').fadeIn();
-                    $('#suggestionsList').html(data);
-                    $('#country').removeClass('load');
-                }
-            });
-        }
-    }
-   
-    function fill(thisValue) {
-        $('#country').val(thisValue);
-        setTimeout("$('#suggestions').fadeOut();", 100);
-    }
-   
-    function fill2(thisValue) {
-        $('#kode').val(thisValue);
-        setTimeout("$('#suggestions').fadeOut();", 100);
-    }
-   
-    </script>
-<script>
-    function formatCurrency(num) {
-    num = num.toString().replace(/\$|\,/g,'');
-    num = num.toString().replace(/[^0-9]/g,'');
-    if(isNaN(num))
-    num = "0";
-    sign = (num == (num = Math.abs(num)));
-    num = Math.floor(num*100+0.50000000001);
-    cents = num%100;
-    num = Math.floor(num/100).toString();
-    if(cents<10)
-    cents = "0" + cents;
-    for (var i = 0; i < Math.floor((num.length-(1+i))/3); i++)
-    num = num.substring(0,num.length-(4*i+3))+'.'+
-    num.substring(num.length-(4*i+3));
-    return (((sign)?'':'-') + 'Rp. ' + num + '');
-    }
-    </script>
-   
-</script>
+<div class="card card-ni">
+  <div class="card-header">Input Data</div>
+  <div class="card-body">
+    <form method="post" action="buku_besar.php" name="postform" class="form-ni" autocomplete="off">
+      <div class="row g-2 mb-2">
+        <label for="bulan" class="col-sm-4 col-form-label">Bulan dan Tahun</label>
+        <div class="col-sm-4">
+          <select name="bulan" id="bulan" class="form-select form-select-sm">
+            <option value="">- Select Month -</option>
+            <?php foreach ($nama_bulan as $no => $nm): ?>
+            <option value="<?php echo $no; ?>"<?php echo $bulan === (string) $no ? ' selected' : ''; ?>><?php echo $nm; ?></option>
+            <?php endforeach; ?>
+          </select>
+        </div>
+        <div class="col-sm-4">
+          <select name="tahun" id="tahun" class="form-select form-select-sm">
+            <option>Tahun</option>
+            <?php for ($th = (int) date('Y'); $th >= 2020; $th--): ?>
+            <option value="<?php echo $th; ?>"<?php echo $tahun === (string) $th ? ' selected' : ''; ?>><?php echo $th; ?></option>
+            <?php endfor; ?>
+          </select>
+        </div>
+      </div>
+      <div class="row g-2 mb-2">
+        <label for="j" class="col-sm-4 col-form-label">Report</label>
+        <div class="col-sm-8">
+          <select name="j" id="j" class="form-select form-select-sm">
+            <option value="">- Select Report -</option>
+            <option value="eom"<?php echo $report === 'eom' ? ' selected' : ''; ?>>eom</option>
+            <option value="current"<?php echo $report === 'current' ? ' selected' : ''; ?>>current</option>
+          </select>
+        </div>
+      </div>
+      <div class="row g-2 mb-3">
+        <label for="kode" class="col-sm-4 col-form-label">No Perkiraan</label>
+        <div class="col-sm-3 autocomplete">
+          <input type="text" name="kode_rekening" id="kode" class="form-control form-control-sm" placeholder="kode / nama rekening" value="<?php echo h($norek); ?>"
+                 data-autocomplete="../ajax/cari_coa.php" data-isi-nilai="kode_rek" data-isi-label="kode_rek,nama_rek"
+                 data-isi-target='{"#country":"nama_rek"}'>
+        </div>
+        <div class="col-sm-5"><input type="text" id="country" class="form-control form-control-sm" disabled></div>
+        <div class="col-sm-8 offset-sm-4">
+          <div class="form-check">
+            <input type="checkbox" name="all" value="checkbox" id="all" class="form-check-input"<?php echo $checkbox === 'checkbox' ? ' checked' : ''; ?>>
+            <label for="all" class="form-check-label">All data</label>
+          </div>
+        </div>
+      </div>
+      <div class="text-end">
+        <button name="search" type="submit" id="submit2" value="Cari" class="btn btn-ni btn-sm px-4">Cari</button>
+      </div>
+    </form>
+  </div>
+</div>
 
+<?php echo implode("\n", $pesan); ?>
 
-<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
-"http://www.w3.org/TR/html4/loose.dtd">
-<html>
-<head>
-<title>Transaksi NI</title>
-<link rel="stylesheet" href="../tabel.css" />
-<meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
-<style type="text/css">
-<script type="text/javascript" src="../jquery.js"></script>
-        <link href="../style.css" rel="stylesheet" type="text/css" media="screen" />
-        <link rel="stylesheet" href="../css/bootstrap.min.css"/>
-<script>
+<div class="table-responsive mt-3">
+  <table class="table table-sm table-bordered table-ni align-middle">
+    <thead>
+      <tr>
+        <th>Nomor Perkiraan</th>
+        <th>Nama Perkiraan</th>
+        <th class="text-end">Saldo Awal</th>
+        <th class="text-end">Saldo Akhir</th>
+        <th class="text-center">Download</th>
+      </tr>
+    </thead>
+    <tbody>
+    <?php foreach ($hasil as $data): ?>
+      <tr>
+        <td><?php echo h($data['kode_rekening']); ?></td>
+        <td><?php echo h($data['nama_rekening']); ?></td>
+        <td class="text-end"><?php echo number_format(compat_num($data['saldo_awal'])); ?></td>
+        <td class="text-end"><?php echo number_format(compat_num($data['saldo_akhir'])); ?></td>
+        <td class="text-center">
+          <button type="button" class="btn btn-outline-success btn-sm" data-export-xlsx data-export-url="buku_besar_export.php" data-export-satuan="transaksi">Download (.xlsx)</button>
+        </td>
+      </tr>
+    <?php endforeach; ?>
+    </tbody>
+  </table>
+</div>
 
-<!--
-.style3 {    color: #FFFFFF;
-    font-size: 13px;
-    font-weight: bold;
-}
-.header1 {color: #ffffff; background: #4682B4; font-weight: bold; font-family: Tahoma, Verdana; font-size: 13px; margin: 0px;}
-body {
-    background-image: url();
-}
-a:link {
-    text-decoration: none;
-}
-a:visited {
-    text-decoration: none;
-}
-a:hover {
-    text-decoration: none;
-}
-a:active {
-    text-decoration: none;
-}
-.style5 {font-family: Verdana, Arial, Helvetica, sans-serif}
-.style6 {font-size: 12px}
-a {
-    font-size: 12px;
-}
-.style9 {
-    font-size: 16px;
-    font-family: Verdana, Arial, Helvetica, sans-serif;
-}
--->
-
-    #result {
-        height:20px;
-        font-size:12px;
-        font-family:Arial, Helvetica, sans-serif;
-        color:#333;
-        padding:5px;
-        margin-bottom:10px;
-        background-color:#FFFF99;
-    }
-    #country{
-        padding:3px;
-        border:1px #CCC solid;
-        font-size:12px;
-    }
-    .suggestionsBox {
-        position: absolute;
-        left: 0px;
-        top:40px;
-        margin: 26px 0px 0px 0px;
-        width: 200px;
-        padding:0px;
-        background-color:#999999;
-        border-top: 3px solid #999999;
-        color: #fff;
-    }
-    .suggestionList {
-        margin: 0px;
-        padding: 0px;
-    }
-    .suggestionList ul li {
-        list-style:none;
-        margin: 0px;
-        padding: 6px;
-        border-bottom:1px dotted #666;
-        cursor: pointer;
-    }
-    .suggestionList ul li:hover {
-        background-color: #FC3;
-        color:#000;
-    }
-    ul {
-        font-family:Arial, Helvetica, sans-serif;
-        font-size:11px;
-        color:#FFF;
-        padding:0;
-        margin:0;
-    }
-   
-    .load{
-    background-image:url(loader.gif);
-    background-position:right;
-    background-repeat:no-repeat;
-    }
-   
-    #suggest {
-        position:relative;
-    }
-    .style9 {
-    font-size: 16px;
-    font-family: Verdana, Arial, Helvetica, sans-serif;
-}
-.style3 {    color: #FFFFFF;
-    font-size: 13px;
-    font-weight: bold;
-}
-.header1 {color: #ffffff; background: #4682B4; font-weight: bold; font-family: Tahoma, Verdana; font-size: 13px; margin: 0px;}
-body {
-    background-image: url();
-}
-a:link {
-    text-decoration: none;
-}
-a:visited {
-    text-decoration: none;
-}
-a:hover {
-    text-decoration: none;
-}
-a:active {
-    text-decoration: none;
-}
-.style12 {font-family: sans-serif}
-.style14 {
-	font-family: Arial, Helvetica, sans-serif;
-	font-size: 12px;
-}
-.style15 {font-family: Verdana, Arial, Helvetica, sans-serif; font-size: 12px; }
-</style>
-</head>
-
-<table width="100%" cellpadding="1">
-  <tr>
-    <td height="20" bordercolor="#FFFFFF" bgcolor="#2F6B4F" class="style3 style9">Buku Besar
-    <div align="right"></div></td>
-  </tr>
-</table>
-
-<table width="428" border="1" align="center">
-</table>
-<form method="post" action="<?php echo $_SERVER['PHP_SELF']; ?>" name="postform">  <table width="543" border="0" align="center">
-<tr bgcolor="#2F6B4F">
-  <td height="10" colspan="4" nowrap><div align="center" class="style3 style9">Input Data </div></td>
-  </tr>
-  <tr>
-  <td width="206" height="10" nowrap bgcolor="#B3B3FF"><span class="style15">Bulan dan Tahun Pencarian</span></td>
-    <td width="16" nowrap>        <div align="center"><strong>:</strong></div></td>
-    <td width="335" colspan="2" nowrap><span class="style5 style6">Bulan</span>
-      <select name="bulan" id="bulan">
-        <option value="">- Select Month -</option>
-        <option value="1">Jan</option>
-        <option value="2">Feb</option>
-        <option value="3">Mar</option>
-        <option value="4">Apr</option>
-        <option value="5">May</option>
-        <option value="6">Jun</option>
-        <option value="7">Jul</option>
-        <option value="8">Aug</option>
-        <option value="9">Sep</option>
-        <option value="10">Oct</option>
-        <option value="11">Nov</option>
-        <option value="12">Des</option>
-      </select>      
-	  <span class="style5 style6">Tahun</span>     
-       <select name="tahun" id="tahun">
-		<option selected="selected">Tahun</option>
-<option value="2026">2026</option>
-        
-
-		
-</select></td>
-
-</tr>
-
-<tr>
-    <td width="203" height="10" nowrap bgcolor="#B3B3FF"><div align="left" class="style5 style6">Report</div></td>
-    <td width="16" nowrap>        <div align="center"><strong>:</strong></div></td>
-
-<td width="335" colspan="2" nowrap><span class="style5 style6"></span>
-      <select name="j" id="j">
-        <option value="">- Select Report -</option>
-        <option value="eom">eom</option>
-        <option value="current">curret</option>
-
-      </select>      </td>
-
-    
-</tr>
-<tr>
-    <td width="203" height="10" nowrap bgcolor="#B3B3FF"><div align="left" class="style5 style6">No Perkiraan</div></td>
-    <td width="16" nowrap>        <div align="center"><strong>:</strong></div></td>
-    <td width="310" colspan="2" nowrap>
-     <div id="suggest">
-                       <input type="text" onKeyUp="suggest(this.value);" name="kode_rekening" autocomplete="off" onBlur="fill2();" id="kode" size="15"/>
-                       <div class="suggestionsBox" id="suggestions" style="display: none;"> <img src="arrow.png" style="position: relative; top: -12px; left: 30px;" alt="upArrow" />
-                       <div class="suggestionList" id="suggestionsList"> &nbsp; </div>
-                       </div>
-       
-      <input type="text" disabled="disabled" name="nama_rekening" onBlur="fill();" id="country" />
-      <label>
-      <input type="checkbox" name="all" value="checkbox">
-      <span class="style14">All data</span> </label>
-</div></tr>
-
-<tr>
-  <td height="10" colspan="4">&nbsp;</td>
-  </tr>
-<tr bgcolor="#B3B3FF">
-  <td height="10">&nbsp; </td>
-  <td><div align="center"></div></td>
-  <td colspan="2"><input name="search" type="submit" id="submit2" value="Cari" size="40"></td>
-</tr>
-</table>
-</form>
-<iframe width=174 height=189 name="gToday:normal:../calender/normal.js" id="gToday:normal:../calender/normal.js" src="../calender/ipopeng.htm" scrolling="no" frameborder="0" style="visibility:visible; z-index:999; position:absolute; top:-500px; left:-500px;">
-</iframe>
-<table class="table1"
-<tr class="table1">
-
-</tr>
-<table border="2" bgcolor="" width="100%" class="table1">
-
-
-  <tr class="table1">
- 
-    
-    <th>Nomor Perkiraan </th>
-    <th>Nama Perkiraan </th>
-	<th>Saldo Awal </th>
-    <th>Saldo Akhir </th>
-    <th>Download</th>
-	
-  </tr>
-  <?php
- 
-  //$buss_date=date("Y-m-d H:i:s");
-$buss_date=$tgl_system;
- 
-                            
-           
-  If (isset($_POST ['search'])){
-$norek=$_POST['kode_rekening'];
-$bulan =$_POST['bulan'];
-$tahun =$_POST['tahun'];
-$checkbox =$_POST['all'];
-$report =$_POST['j'];
-
-
-		$bulan_lalu=$bulan-1;
-	
-        $select = mysql_query("select normal from coa WHERE kode_rek ='$norek'");
-            while($row = mysql_fetch_array($select)){
-                //$next_schedule=$row['next_schedule'];
-                $normal=$row['normal'];
-				var_dump($normal);
-			}
-			
-	
-if (empty($norek)){
-//if (empty($norek)||empty($bulan)||empty($tahun)){
-
-    echo "<script>alert('Maaf, Bulan,tahun atau Nomor Perkiraan belum di isi');</script>";
-         echo "<script language='javascript'>document.location.href='buku_besar.php'</script>";}
-   
-    else{
-$_SESSION['noreks']=$norek;
-$_SESSION['bulans']=$bulan ;
-$_SESSION['tahuns']=$tahun;
-$_SESSION['js']=$report;
-$_SESSION['checkboxs']=$checkbox;
-//var_dump($_SESSION['checkboxs']);
-
-                   if($checkbox=='checkbox'){
-					   
-			$select = mysql_query("select saldo_awal, saldo_akhir ,kode_rekening,nama_rekening from tabel_master_konsol WHERE kode_rekening ='$norek' and unit ='$unit' and month(tanggal_awal) = '$bulan' and Year(tanggal_awal)='$tahun'");
-            
-				                 
-				   
-				   }else{
-					 $select = mysql_query("select saldo_awal as saldo_awal,saldo_akhir ,kode_rekening,nama_rekening from tabel_master_konsol WHERE kode_rekening ='$norek' and unit ='$unit' and month(tanggal_awal)='$bulan' and Year(tanggal_awal)='$tahun'");
-          
-				                 
-				   
-				   }   
-			
-            	  
-				   
-      
-    }
-
-      
-    while($data = mysql_fetch_array($select)){
-	
-//menghitung hitung
-//$birthdate = $data['Birth_date'];
-//$age = ((time() - strtotime($birthdate))/(60*60*24*365.2425));
-
-        ?>
-  <tr>
-    <td class="style6"><?php echo $data['kode_rekening']; ?></td>
-    <td class="style6"><?php echo $data['nama_rekening'];  ?></td>
-	    <td class="style6"><?php echo number_format(compat_num($data['saldo_awal']));  ?></td>
-		<td class="style6"><?php echo number_format(compat_num($data['saldo_akhir']));  ?></td>
-	<td><div align="center"><a href="excel_buku_besar.php?unit=<?php echo $unit;?>" class="style6" onClick="return confirm('Apakah adan Yakin ?')"><strong>Download</strong></a></div></td>
-   
-  </tr>
-  <?php
-       
-    }
-    }
-
-    ?>
- 
-</table>
-<p>&nbsp;</p>
-
- <iframe width=174 height=189 name="gToday:normal:calender/normal.js" id="gToday:normal:calender/normal.js" src="calender/ipopeng.htm" scrolling="no" frameborder="0" style="visibility:visible; z-index:999; position:absolute; top:-500px; left:-500px;">
-</iframe>
-
-
-</body>
-
-</html>
+<div class="modal fade" id="modal-export" tabindex="-1" aria-labelledby="judul-export" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2 class="modal-title fs-6" id="judul-export">Export Buku Besar</h2>
+      </div>
+      <div class="modal-body">
+        <div class="progress" role="progressbar" aria-label="Progres export" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" style="height: 1.25rem;">
+          <div class="progress-bar progress-bar-striped progress-bar-animated" style="width: 0%">0%</div>
+        </div>
+        <div class="small text-muted mt-2" data-export-teks aria-live="polite">Menyiapkan data…</div>
+        <div data-export-ringkasan></div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary btn-sm d-none" data-bs-dismiss="modal" data-export-tutup>Tutup</button>
+      </div>
+    </div>
+  </div>
+</div>
+<?php
+halaman_akhir(array('assets/app/export_xlsx.js'));

@@ -16,8 +16,15 @@ if($_SESSION['level']!="unit"){
  exit; }
 
 ?>
-    <script type="text/javascript" src="jquery.js"></script>
-    <script>
+<?php
+// Tampilan Bootstrap 5 (2026-10-31, permintaan user): hanya HTML/CSS yang diganti.
+// Kode PHP proses Pull Data (query, mobcol, alert) sengaja dibiarkan sama dengan versi lama.
+require_once __DIR__ . '/inc/tampilan.php';
+halaman_awal('Pull Data');
+?>
+<script type="text/javascript" src="jquery.js"></script>
+<script>
+    // saran kelompok/CIF (versi lama, autosuggesst_rek_mob.php)
     function suggest(inputString){
         if(inputString.length == 0) {
             $('#suggestions').fadeOut();
@@ -32,12 +39,10 @@ if($_SESSION['level']!="unit"){
             });
         }
     }
-    
     function fill(thisValue) {
         $('#country').val(thisValue);
         setTimeout("$('#suggestions').fadeOut();", 100);
     }
-    
     function fill2(thisValue) {
         $('#kode').val(thisValue);
         setTimeout("$('#suggestions').fadeOut();", 100);
@@ -46,9 +51,6 @@ if($_SESSION['level']!="unit"){
         $('#code_kel').val(thisValue);
         setTimeout("$('#suggestions').fadeOut();", 100);
     }
-    
-    </script>
-<script>
     function formatCurrency(num) {
     num = num.toString().replace(/\$|\,/g,'');
     num = num.toString().replace(/[^0-9]/g,'');
@@ -65,242 +67,92 @@ if($_SESSION['level']!="unit"){
     num.substring(num.length-(4*i+3));
     return (((sign)?'':'-') + 'Rp. ' + num + '');
     }
-    </script>
-    
+    function wajibAngka(evt) {
+    var charCode = (evt.which) ? evt.which : event.keyCode
+    if (charCode > 31 && (charCode < 48 || charCode > 57))
+    return false;
+    }
 </script>
-<script type="text/javascript">
- function wajibAngka(evt) {
- var charCode = (evt.which) ? evt.which : event.keyCode
- if (charCode > 31 && (charCode < 48 || charCode > 57))
- return false;
- }
-</script>
+<style>
+  /* daftar saran versi lama (HTML <ul><li> dari autosuggesst_rek_mob.php) */
+  .saran-lama { position: relative; }
+  .saran-lama .suggestionsBox { position: absolute; left: 0; right: 0; top: 100%; z-index: 1050; margin-top: 2px;
+    background: var(--bs-body-bg, #fff); border: 1px solid var(--bs-border-color, #dee2e6); border-radius: .375rem;
+    box-shadow: 0 .5rem 1rem rgba(0,0,0,.15); max-height: 260px; overflow-y: auto; }
+  .saran-lama .suggestionList ul { list-style: none; margin: 0; padding: 0; }
+  .saran-lama .suggestionList li { padding: .4rem .75rem; cursor: pointer; font-size: .875rem; border-bottom: 1px solid var(--bs-border-color, #eee); }
+  .saran-lama .suggestionList li:hover { background: #e8f2ec; }
+</style>
 
+<div class="card card-ni">
+  <div class="card-header">Input Data</div>
+  <div class="card-body">
+    <form method="post" action="<?php echo h($_SERVER['PHP_SELF']); ?>" name="postform" class="form-ni" autocomplete="off">
+      <div class="row g-2 mb-2">
+        <label for="select" class="col-sm-4 col-form-label">Jenis Pull Data</label>
+        <div class="col-sm-8">
+          <select name="select" id="select" class="form-select form-select-sm">
+            <option>Pilih Salah satu</option>
+            <option value="01">Kelompok</option>
+            <option value="02">Perorangan</option>
+          </select>
+        </div>
+      </div>
+      <div class="row g-2 mb-2">
+        <label for="kode" class="col-sm-4 col-form-label">Kode Kelompok/CIF</label>
+        <div class="col-sm-3 saran-lama">
+          <input type="text" onKeyUp="suggest(this.value);" name="kode_rekening" onBlur="fill2();" id="kode" class="form-control form-control-sm" autocomplete="off">
+          <div class="suggestionsBox" id="suggestions" style="display: none;">
+            <div class="suggestionList" id="suggestionsList"></div>
+          </div>
+        </div>
+        <div class="col-sm-5"><input type="text" disabled="disabled" name="nama_rekening" onBlur="fill();" id="country" class="form-control form-control-sm"></div>
+      </div>
+      <div class="row g-2 mb-2">
+        <label for="transaksi" class="col-sm-4 col-form-label">Jenis Transaksi</label>
+        <div class="col-sm-8">
+          <select name="transaksi" id="transaksi" class="form-select form-select-sm">
+            <option>Pilih Salah satu</option>
+            <option value="lima">5%</option>
+            <option value="lebaran">Lebaran</option>
+            <option value="pelunasan">Pelunsan</option>
+            <option value="pelunasan19">Pelunasan Ke 19</option>
+            <option value="pelunasanDO">Pelunasan DO</option>
+            <option value="pelunasanRestMargin">Pelunasan Rest Pokok Margin</option>
+            <option value="penarikan">Penarikan</option>
+            <option value="MeninggalDunia">Meninggal Dunia</option>
+          </select>
+        </div>
+      </div>
+      <div class="row g-2 mb-2 nilai">
+        <label for="nominal" class="col-sm-4 col-form-label">Nominal</label>
+        <div class="col-sm-4"><input name="nominal" type="text" id="nominal" value="" onKeyPress="return wajibAngka(event)" autocomplete="off" onKeyUp="document.getElementById('format').innerHTML = formatCurrency(this.value);" class="form-control form-control-sm text-end" inputmode="numeric"></div>
+        <div class="col-sm-4 col-form-label text-muted" id="format"></div>
+      </div>
+      <div class="row g-2 mb-3">
+        <label for="tanggal" class="col-sm-4 col-form-label">Tanggal Tagih</label>
+        <div class="col-sm-8"><input name="tgl_tagih" type="date" id="tanggal" value="" class="form-control form-control-sm"></div>
+      </div>
+      <div class="text-end">
+        <button name="search" type="submit" id="submit2" value="Proses" class="btn btn-ni btn-sm px-4">Proses</button>
+      </div>
+    </form>
+  </div>
+</div>
 
-<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
-"http://www.w3.org/TR/html4/loose.dtd">
-<html>
-<head>
-<title>Pull Data</title>
-<link rel="stylesheet" href="tabel.css" />
-<meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
-<style type="text/css">
-<script type="text/javascript" src="jquery.js"></script>
-        <link href="style.css" rel="stylesheet" type="text/css" media="screen" />
-        <link rel="stylesheet" href="css/bootstrap.min.css"/>
-<script>
-
-<!--
-.style3 {    color: #FFFFFF;
-    font-size: 13px;
-    font-weight: bold;
-}
-.header1 {color: #ffffff; background: #4682B4; font-weight: bold; font-family: Tahoma, Verdana; font-size: 13px; margin: 0px;}
-body {
-    background-image: url();
-}
-a:link {
-    text-decoration: none;
-}
-a:visited {
-    text-decoration: none;
-}
-a:hover {
-    text-decoration: none;
-}
-a:active {
-    text-decoration: none;
-}
-.style5 {font-family: Verdana, Arial, Helvetica, sans-serif}
-.style6 {font-size: 12px}
-.style7 {font-family: Verdana, Arial, Helvetica, sans-serif; font-size: 12px; }
-.style8 {font-size: 14px}
-a {
-    font-size: 12px;
-}
-.style9 {
-    font-size: 16px;
-    font-family: Verdana, Arial, Helvetica, sans-serif;
-}
--->
-
-    #result {
-        height:20px;
-        font-size:12px;
-        font-family:Arial, Helvetica, sans-serif;
-        color:#333;
-        padding:5px;
-        margin-bottom:10px;
-        background-color:#FFFF99;
-    }
-    #country{
-        padding:3px;
-        border:1px #CCC solid;
-        font-size:12px;
-    }
-    .suggestionsBox {
-        position: absolute;
-        left: 0px;
-        top:40px;
-        margin: 26px 0px 0px 0px;
-        width: 200px;
-        padding:0px;
-        background-color:#999999;
-        border-top: 3px solid #999999;
-        color: #fff;
-    }
-    .suggestionList {
-        margin: 0px;
-        padding: 0px;
-    }
-    .suggestionList ul li {
-        list-style:none;
-        margin: 0px;
-        padding: 6px;
-        border-bottom:1px dotted #666;
-        cursor: pointer;
-    }
-    .suggestionList ul li:hover {
-        background-color: #FC3;
-        color:#000;
-    }
-    ul {
-        font-family:Arial, Helvetica, sans-serif;
-        font-size:11px;
-        color:#FFF;
-        padding:0;
-        margin:0;
-    }
-    
-    .load{
-    background-image:url(loader.gif);
-    background-position:right;
-    background-repeat:no-repeat;
-    }
-    
-    #suggest {
-        position:relative;
-    }
-    .style9 {
-    font-size: 16px;
-    font-family: Verdana, Arial, Helvetica, sans-serif;
-}
-.style3 {    color: #FFFFFF;
-    font-size: 13px;
-    font-weight: bold;
-}
-.header1 {color: #ffffff; background: #4682B4; font-weight: bold; font-family: Tahoma, Verdana; font-size: 13px; margin: 0px;}
-body {
-    background-image: url();
-}
-a:link {
-    text-decoration: none;
-}
-a:visited {
-    text-decoration: none;
-}
-a:hover {
-    text-decoration: none;
-}
-a:active {
-    text-decoration: none;
-}
-    .style10 {
-    font-family: Verdana, Arial, Helvetica, sans-serif;
-    font-size: 12px;
-}
-
-    .style11 {font-size: small}
-    </style>
-</head>
-
-<table width="100%" cellpadding="1" bordercolor="#CCCCCC" bgcolor="#2F6B4F">
+<div class="table-responsive mt-3">
+<table class="table table-sm table-bordered table-ni align-middle">
+  <thead>
   <tr>
-    <td height="20" bordercolor="#FFFFFF" bgcolor="#2F6B4F" class="style3 style9">Pull Data
-    <div align="right"></div></td>
-  </tr>
-</table>
-
-<table width="428" border="1" align="center">
-</table>
-  <form method="post" action="<?php echo $_SERVER['PHP_SELF']; ?>" name="postform">  <table width="543" border="0" align="center">
-<tr bgcolor="#2F6B4F">
-  <td height="10" colspan="4" nowrap><div align="center" class="style3 style9">Input Data </div></td>
-  </tr>
-<tr>
-  <td height="10" nowrap bgcolor="#B3B3FF"><span class="style7">Jenis Pull Data </span></td>
-  <td nowrap><div align="center"><strong>:</strong></div></td>
-  <td colspan="2" nowrap><select name="select" id="select" size="1">
-    <option>Pilih Salah satu</option>
-    <option value="01">Kelompok</option>
-    <option value="02">Perorangan </option>
-    </select></td>
-</tr>
-<tr>
-    <td width="203" height="10" nowrap bgcolor="#B3B3FF"><div align="left" class="style5 style6">Kode Kelompok/CIF </div></td>
-    <td width="16" nowrap>        <div align="center"><strong>:</strong></div></td>
-    <td width="310" colspan="2" nowrap>
-     <div id="suggest">
-                       <input type="text" onKeyUp="suggest(this.value);" name="kode_rekening"  onBlur="fill2();" id="kode" size="15"/>
-                       <div class="suggestionsBox" id="suggestions" style="display: none;"> <img src="arrow.png" style="position: relative; top: -12px; left: 30px;" alt="upArrow" />
-                       <div class="suggestionList" id="suggestionsList"> &nbsp; </div>
-                       </div>
-        
-      <input type="text" disabled="disabled" name="nama_rekening" onBlur="fill();" id="country" />
-</div></tr>
-<tr>
-  <td height="10" nowrap bgcolor="#B3B3FF"><span class="style7">Jenis Transaksi </span></td>
-  <td nowrap><div align="center"><strong>:</strong></div></td>
-  <td colspan="2" nowrap><select name="transaksi" id="transaksi" size="1">
-    <option>Pilih Salah satu</option>
-    <option value="lima">5%</option>
-    <option value="lebaran">Lebaran </option>
-    <option value="pelunasan">Pelunsan </option>
-<option value="pelunasan19">Pelunasan Ke 19 </option>
-<option value="pelunasanDO">Pelunasan DO </option>
-<option value="pelunasanRestMargin">Pelunasan Rest Pokok Margin </option>
-    <option value="penarikan">Penarikan </option>
-<option value="MeninggalDunia">Meninggal Dunia </option>
-
-    </select></td>
-</tr>
-
-<tr class="nilai">
-  <td height="10" nowrap bgcolor="#B3B3FF"><div align="left" class="style7">Nominal</div></td>
-  <td nowrap>
-   <div align="center"><strong>:      </strong></div></td>
-  <td colspan="2" nowrap><input name="nominal" type="text" id="nominal" value="" onKeyPress="return wajibAngka(event)" autocomplete="off" onKeyUp="document.getElementById('format').innerHTML = formatCurrency(this.value);" size="20"/>                     <span id="format"></span></td>
-</tr>
-</tr>
-
-  <td height="10" nowrap bgcolor="#B3B3FF"><span class="style7">Tanggal Tagih </span></td>
-  <td nowrap><div align="center"><strong>:</strong></div></td>
-  <td colspan="2" nowrap><input name="tgl_tagih" type="text" id="tanggal" value="" size="20"/>
-    <a href="javascript:void(0)" onClick="if(self.gfPop)gfPop.fPopCalendar(document.postform.tanggal);return true;" ><img src="images/calendarIcon.jpg" alt="" name="popcal" width="17" height="17" border="0" align="absmiddle" id="popcal" /></a></td>
-</tr>
-<tr>
-  <td height="10" colspan="4"><label></label></td>
-  </tr>
-<tr bgcolor="#B3B3FF">
-  <td height="10">&nbsp; </td>
-  <td><div align="center"></div></td>
-  <td colspan="2"><input name="search" type="submit" id="submit2" value="Proses" size="40"></td>
-</tr>
-</table>
-</form>
-<iframe width=174 height=189 name="gToday:normal:calender/normal.js" id="gToday:normal:calender/normal.js" src="calender/ipopeng.htm" scrolling="no" frameborder="0" style="visibility:visible; z-index:999; position:absolute; top:-500px; left:-500px;">
-</iframe>
-
-<table border="4" bgcolor="" width="100%" class="table1">
-  <tr class="table1">
     <th>Norek</th>
     <th>Nama</th>
-    <th>TGL Transaksi </th>
+    <th>TGL Transaksi</th>
     <th>Jenis Pull Data</th>
-    <th>Nominal</th>
-    <th>aksi</th>
-
+    <th class="text-end">Nominal</th>
+    <th class="text-center">Aksi</th>
   </tr>
+  </thead>
+  <tbody>
   <?php
   include "conn2.php";
   include "function.php";
@@ -1404,12 +1256,12 @@ $saldo = $nominal;
 
         ?>
   <tr>
-    <td class="style6"><?php echo $data['norek']; ?></td>
-    <td class="style6"><?php echo $data['nama'];  ?></td>
-    <td class="style6"><?php echo tgl_indo ($data['tgl_tagih']);?></td>
-    <td class="style6"><?php echo $data['jenis_pull']; ?></td>
-    <td class="style6"><?php echo number_format (compat_num($data['bayar'])); ?></td>
-    <td><div align="center"><a href="delete.php?cif=<?php echo $data['cif'];?>&jenis=<?php echo $data['jenis_pull'];?>" class="style6" onClick="return confirm('Apakah Anda yakin?')"><strong><img src="Image/delete.png" width="26" height="22" border="0" longdesc="cetak"></strong></a></div></td>
+    <td><?php echo $data['norek']; ?></td>
+    <td><?php echo $data['nama'];  ?></td>
+    <td><?php echo tgl_indo ($data['tgl_tagih']);?></td>
+    <td><?php echo $data['jenis_pull']; ?></td>
+    <td class="text-end"><?php echo number_format (compat_num($data['bayar'])); ?></td>
+    <td class="text-center"><a href="delete.php?cif=<?php echo $data['cif'];?>&jenis=<?php echo $data['jenis_pull'];?>" class="btn btn-outline-danger btn-sm" onClick="return confirm('Apakah Anda yakin?')">Hapus</a></td>
   </tr>
     
   </tr>
@@ -1424,12 +1276,12 @@ $saldo = $nominal;
 
         ?>
   <tr>
-    <td class="style6"><?php echo $data['norek']; ?></td>
-    <td class="style6"><?php echo $data['nama'];  ?></td>
-    <td class="style6"><?php echo tgl_indo ($data['tgl_tagih']);?></td>
-    <td class="style6"><?php echo $data['jenis_pull']; ?></td>
-    <td class="style6"><?php echo number_format (compat_num($data['bayar'])); ?></td>
-    <td><div align="center"><a href="delete.php?cif=<?php echo $data['cif'];?>&jenis=<?php echo $data['jenis_pull'];?>" class="style6" onClick="return confirm('Apakah Anda yakin?')"><strong><img src="Image/delete.png" width="26" height="22" border="0" longdesc="cetak"></strong></a></div></td>
+    <td><?php echo $data['norek']; ?></td>
+    <td><?php echo $data['nama'];  ?></td>
+    <td><?php echo tgl_indo ($data['tgl_tagih']);?></td>
+    <td><?php echo $data['jenis_pull']; ?></td>
+    <td class="text-end"><?php echo number_format (compat_num($data['bayar'])); ?></td>
+    <td class="text-center"><a href="delete.php?cif=<?php echo $data['cif'];?>&jenis=<?php echo $data['jenis_pull'];?>" class="btn btn-outline-danger btn-sm" onClick="return confirm('Apakah Anda yakin?')">Hapus</a></td>
   </tr>
 
   <?php
@@ -1438,12 +1290,11 @@ $saldo = $nominal;
 }
     ?>
  
+  </tbody>
 </table>
-<p>&nbsp;</p>
-
- <iframe width=174 height=189 name="gToday:normal:calender/normal.js" id="gToday:normal:calender/normal.js" src="calender/ipopeng.htm" scrolling="no" frameborder="0" style="visibility:visible; z-index:999; position:absolute; top:-500px; left:-500px;">
-</iframe>
+</div>
 <script>
+// isian Nominal hanya untuk transaksi Penarikan (sama dengan versi lama)
 $(document).ready(function(){
 $('.nilai').hide();
 $('#nominal').hide();
@@ -1456,9 +1307,5 @@ $('#nominal').show();
 });
 });
 </script>
-
-</body>
-
-</html>
-
-
+<?php
+halaman_akhir();

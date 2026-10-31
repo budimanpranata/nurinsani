@@ -8,129 +8,56 @@ if(!isset($_SESSION['userid'])){
  exit; }
 
 ?>
-<script>
-    function formatCurrency(num) {
-    num = num.toString().replace(/\$|\,/g,'');
-    num = num.toString().replace(/[^0-9]/g,'');
-    if(isNaN(num))
-    num = "0";
-    sign = (num == (num = Math.abs(num)));
-    num = Math.floor(num*100+0.50000000001);
-    cents = num%100;
-    num = Math.floor(num/100).toString();
-    if(cents<10)
-    cents = "0" + cents;
-    for (var i = 0; i < Math.floor((num.length-(1+i))/3); i++)
-    num = num.substring(0,num.length-(4*i+3))+'.'+
-    num.substring(num.length-(4*i+3));
-    return (((sign)?'':'-') + 'Rp. ' + num + '');
-    }
-    </script>
-   
-</script>
-<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
-"http://www.w3.org/TR/html4/loose.dtd">
-<html>
-<head>
-<title>Database Pensiun</title>
-<link rel="stylesheet" href="../tabel.css" />
-<meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
-<style type="text/css">
-<!--
-.style3 {    color: #FFFFFF;
-    font-size: 13px;
-    font-weight: bold;
-}
-.header1 {color: #ffffff; background: #4682B4; font-weight: bold; font-family: Tahoma, Verdana; font-size: 13px; margin: 0px;}
-body {
-    background-image: url();
-}
-a:link {
-    text-decoration: none;
-}
-a:visited {
-    text-decoration: none;
-}
-a:hover {
-    text-decoration: none;
-}
-a:active {
-    text-decoration: none;
-}
-.style5 {font-family: Verdana, Arial, Helvetica, sans-serif}
-.style6 {font-size: 12px}
-.style7 {font-family: Verdana, Arial, Helvetica, sans-serif; font-size: 12px; }
-.style8 {font-size: 14px}
-a {
-    font-size: 12px;
-}
-.style9 {
-    font-size: 16px;
-    font-family: Verdana, Arial, Helvetica, sans-serif;
-}
--->
-</style>
-</head>
+<?php
+// Tampilan Bootstrap 5 (2026-10-31, permintaan user): hanya HTML/CSS yang diganti.
+// Kode PHP report (query ke database mobcol, sesi stgl_npl/jenis_npl) sengaja dibiarkan sama dengan versi lama.
+require_once __DIR__ . '/../inc/tampilan.php';
+halaman_awal('Report Mobcol');
+?>
+<div class="card card-ni">
+  <div class="card-header">Kriteria Pencarian</div>
+  <div class="card-body">
+    <form method="post" action="<?php echo h($_SERVER['PHP_SELF']); ?>" name="postform" class="form-ni" autocomplete="off">
+      <div class="row g-2 mb-2">
+        <label for="tgl" class="col-sm-4 col-form-label">Tanggal Pencarian</label>
+        <div class="col-sm-8"><input name="tgl" type="date" id="tgl" value="" class="form-control form-control-sm"></div>
+      </div>
+      <div class="row g-2 mb-3">
+        <label for="select" class="col-sm-4 col-form-label">Jenis Report</label>
+        <div class="col-sm-8">
+          <select name="select" id="select" class="form-select form-select-sm">
+            <option>Pilih Salah satu</option>
+            <option value="01">CS</option>
+            <option value="02">Non Cs Lima Persen</option>
+            <option value="03">Non Cs Lebaran</option>
+            <option value="04">Non Cs Penarikan</option>
+            <option value="05">Non Cs Tunggakan</option>
+            <option value="06">Non Cs Pelunasan</option>
+            <option value="07">Non Cs WO</option>
+            <option value="08">Omzet</option>
+          </select>
+        </div>
+      </div>
+      <div class="text-end">
+        <button name="search" type="submit" id="submit2" value="Cari" class="btn btn-ni btn-sm px-4">Cari</button>
+      </div>
+    </form>
+  </div>
+</div>
 
-<table width="100%" cellpadding="1" bordercolor="#CCCCCC" bgcolor="#2F6B4F">
+<div class="table-responsive mt-3">
+<table class="table table-sm table-bordered table-ni align-middle">
+  <thead>
   <tr>
-    <td height="20" bordercolor="#FFFFFF" bgcolor="#2F6B4F" class="style3 style8">Report Mobcol
-    <div align="right"></div></td>
+    <th>Unit</th>
+    <th>Jenis Report</th>
+    <th class="text-end">NoA</th>
+    <th class="text-end">Tagihan</th>
+    <th class="text-end">Tertagih</th>
+    <th class="text-center">Excel</th>
   </tr>
-</table>
-
-<table width="428" border="1" align="center">
-</table>
-  <form method="post" action="<?php echo $_SERVER['PHP_SELF']; ?>" name="postform">  <table width="502" border="0" align="center">
-<tr bgcolor="#2F6B4F">
-  <td height="10" colspan="4" nowrap><div align="center" class="style3 style9">Kriteria Pencarian </div></td>
-  </tr>
-<tr>
-  <td height="10" nowrap bgcolor="#B3B3FF"><span class="style7">Tanggal Pencarian </span></td>
-  <td nowrap><div align="center"><strong>:</strong></div></td>
-  <td colspan="2" nowrap><input name="tgl" type="text" id="tgl" value="" size="20"/>
-    <a href="javascript:void(0)" onClick="if(self.gfPop)gfPop.fPopCalendar(document.postform.tgl);return true;" ><img src="../images/calendarIcon.jpg" alt="" name="popcal" width="17" height="17" border="0" align="absmiddle" id="popcal" /></a></td>
-</tr>
-<tr>
-  <td height="10" nowrap bgcolor="#B3B3FF"><span class="style7">Jenis Report </span></td>
-  <td nowrap><div align="center"><strong>:</strong></div></td>
-  <td colspan="2" nowrap><select name="select" size="1">
-    <option>Pilih Salah satu</option>
-    <option value="01">CS </option>
-    <option value="02">Non Cs Lima Persen </option>
-    <option value="03">Non Cs Lebaran</option>
-    <option value="04">Non Cs Penarikan</option>
-    <option value="05">Non Cs Tunggakan</option>
-    <option value="06">Non Cs Pelunasan</option>
-<option value="07">Non Cs WO</option>
-<option value="08">Omzet</option>
-
-  </select></td>
-</tr>
-
-<tr>
-  <td height="10" colspan="4">&nbsp;</td>
-  </tr>
-<tr bgcolor="#B3B3FF">
-  <td height="10">&nbsp; </td>
-  <td><div align="center"></div></td>
-  <td colspan="2"><input name="search" type="submit" id="submit2" value="Cari" size="40"></td>
-</tr>
-</table>
-</form>
-<iframe width=174 height=189 name="gToday:normal:../calender/normal.js" id="gToday:normal:../calender/normal.js" src="../calender/ipopeng.htm" scrolling="no" frameborder="0" style="visibility:visible; z-index:999; position:absolute; top:-500px; left:-500px;">
-</iframe>
-
-<table width="100%" class="table1">
-  <tr class="header1">
-    <th width="48">Unit</th>
-    <th width="48">Jenis Report</th>
-    <th width="47">NoA</th>
-    <th width="100">Tagihan</th>
-    <th width="100">Tertagih</th>
-    <th width="7">Excel</th>
-
-  </tr>
+  </thead>
+  <tbody>
   <?php
   db_mobcol();
   mysql_select_db('mobcol');
@@ -241,12 +168,12 @@ if (empty($tgl)||empty($select)){
 
         ?>
   <tr>
-    <td class="style6"><?php echo $userid; ?></td>
-    <td class="style6"><?php echo $jenis; ?></td>
-    <td class="style6"><?php echo $noa;  ?></td>
-    <td class="style6"><?php echo number_format (compat_num($tagihan));?></td>
-    <td class="style6"><?php echo number_format (compat_num($tertagih)); ?></td>
-    <td><div align="center"><a href="export_mobcol.php?unit=<?php echo $userid;?>&tgl=<?php echo $tgl;?>&jenis=<?php echo $select;?>" class="style6" onClick="return confirm('Apakah Anda yakin ?')"><strong>Download</strong></a></div></td>
+    <td><?php echo $userid; ?></td>
+    <td><?php echo $jenis; ?></td>
+    <td class="text-end"><?php echo $noa;  ?></td>
+    <td class="text-end"><?php echo number_format (compat_num($tagihan));?></td>
+    <td class="text-end"><?php echo number_format (compat_num($tertagih)); ?></td>
+    <td class="text-center"><a href="export_mobcol.php?unit=<?php echo $userid;?>&tgl=<?php echo $tgl;?>&jenis=<?php echo $select;?>" class="btn btn-outline-success btn-sm" onClick="return confirm('Apakah Anda yakin ?')">Download</a></td>
  
    
   </tr>
@@ -256,10 +183,8 @@ if (empty($tgl)||empty($select)){
     }
     ?>
  
+  </tbody>
 </table>
-<p>&nbsp;</p>
-
- <iframe width=174 height=189 name="gToday:normal:calender/normal.js" id="gToday:normal:calender/normal.js" src="calender/ipopeng.htm" scrolling="no" frameborder="0" style="visibility:visible; z-index:999; position:absolute; top:-500px; left:-500px;">
-</iframe>
-</body>
-</html>
+</div>
+<?php
+halaman_akhir();

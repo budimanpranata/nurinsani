@@ -10,6 +10,7 @@ session_start();
 ob_start();
 error_reporting(0);
 require_once __DIR__ . '/../inc/cek_login.php';
+require_once __DIR__ . '/../inc/datatables_server.php';
 wajib_login('json');
 $userid=$_SESSION['userid'];
 header('Content-Type: application/json; charset=utf-8');
@@ -20,48 +21,21 @@ $data = array();
 if ($type == 'omzet' && isset($_GET['draw'])) {
     // Perbaikan 2026-10-30 (perintah user): mode server-side DataTables, hanya satu halaman yang dikirim.
     // Kolom, filter unit, dan format angka sama dengan mode lengkap di bawah.
-    $dari = "FROM omzet
-        INNER JOIN anggota ON anggota.cif = omzet.cif
-        LEFT JOIN kelompok ON kelompok.code_kel = anggota.CODE_KEL
-        LEFT JOIN ao ON ao.cao = anggota.CAO
-        WHERE anggota.UNIT = ?";
-    $kolom = array('omzet.id', 'omzet.tanggal', 'kelompok.nama_kel', 'ao.nama_ao', 'omzet.cif', 'anggota.CUST_SHORT_NAME', 'omzet.nominal');
-
-    // pencarian: setiap kata harus cocok di salah satu kolom (seperti pencarian DataTables di sisi browser)
-    $cari = isset($_GET['search']['value']) ? trim((string) $_GET['search']['value']) : '';
-    $syarat = '';
-    $tipe = 's';
-    $nilai = array((string) $userid);
-    foreach (preg_split('/\s+/', $cari, -1, PREG_SPLIT_NO_EMPTY) as $kata) {
-        $atau = array();
-        foreach ($kolom as $k) {
-            // omzet dicari dalam bentuk tampilannya (1.500.000), sama seperti pencarian di browser dulu
-            $atau[] = ($k === 'omzet.nominal' ? "REPLACE(FORMAT(omzet.nominal, 0), ',', '.')" : $k) . ' LIKE ?';
-            $tipe .= 's';
-            $nilai[] = '%' . addcslashes($kata, '%_\\') . '%';
-        }
-        $syarat .= ' AND (' . implode(' OR ', $atau) . ')';
-    }
-
-    $urut = array();
-    if (isset($_GET['order']) && is_array($_GET['order'])) {
-        foreach ($_GET['order'] as $o) {
-            $i = isset($o['column']) ? (int) $o['column'] : -1;
-            if (isset($kolom[$i])) {
-                $urut[] = $kolom[$i] . (isset($o['dir']) && $o['dir'] === 'desc' ? ' DESC' : ' ASC');
-            }
-        }
-    }
-    $urut[] = 'omzet.id ASC';
-    $mulai = max(0, isset($_GET['start']) ? (int) $_GET['start'] : 0);
-    $jumlah = isset($_GET['length']) ? (int) $_GET['length'] : 10;
-    $jumlah = $jumlah < 1 ? 10 : min($jumlah, 1000);
-
-    $total = db_satu("SELECT COUNT(*) AS n $dari", 's', (string) $userid);
-    $tersaring = $syarat === '' ? $total : call_user_func_array('db_satu', array_merge(array("SELECT COUNT(*) AS n $dari$syarat", $tipe), $nilai));
-    $rows = call_user_func_array('db_semua', array_merge(array(
-        "SELECT omzet.id, omzet.tanggal, kelompok.nama_kel, ao.nama_ao, omzet.cif, anggota.CUST_SHORT_NAME AS nama, omzet.nominal AS omzet
-        $dari$syarat ORDER BY " . implode(', ', $urut) . " LIMIT $mulai, $jumlah", $tipe), $nilai));
+    $hasil = dt_halaman(array(
+        'pilih' => 'omzet.id, omzet.tanggal, kelompok.nama_kel, ao.nama_ao, omzet.cif, anggota.CUST_SHORT_NAME AS nama, omzet.nominal AS omzet',
+        'dari' => "FROM omzet
+            INNER JOIN anggota ON anggota.cif = omzet.cif
+            LEFT JOIN kelompok ON kelompok.code_kel = anggota.CODE_KEL
+            LEFT JOIN ao ON ao.cao = anggota.CAO
+            WHERE anggota.UNIT = ?",
+        'tipe' => 's',
+        'nilai' => array((string) $userid),
+        // omzet dicari dalam bentuk tampilannya (1.500.000), sama seperti pencarian di browser dulu
+        'cari' => array('omzet.id', 'omzet.tanggal', 'kelompok.nama_kel', 'ao.nama_ao', 'omzet.cif', 'anggota.CUST_SHORT_NAME', dt_format_angka('omzet.nominal')),
+        'urut' => array('omzet.id', 'omzet.tanggal', 'kelompok.nama_kel', 'ao.nama_ao', 'omzet.cif', 'anggota.CUST_SHORT_NAME', 'omzet.nominal'),
+        'urut_akhir' => 'omzet.id ASC',
+    ));
+    $rows = $hasil['rows'];
 
     foreach ($rows as $row) {
         $data[] = array(
@@ -76,9 +50,9 @@ if ($type == 'omzet' && isset($_GET['draw'])) {
     }
 
     echo json_encode(array(
-        'draw' => (int) $_GET['draw'],
-        'recordsTotal' => $total ? (int) $total['n'] : 0,
-        'recordsFiltered' => $tersaring ? (int) $tersaring['n'] : 0,
+        'draw' => $hasil['draw'],
+        'recordsTotal' => $hasil['recordsTotal'],
+        'recordsFiltered' => $hasil['recordsFiltered'],
         'data' => $data,
     ));
     exit;

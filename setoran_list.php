@@ -1,148 +1,101 @@
-<?php require_once __DIR__ . '/php8_compat.php';
+<?php require_once __DIR__ . '/koneksi_db.php';
+/**
+ * Setoran PerKelompok langkah 2: daftar anggota kelompok (loan os > 0, unit user) dengan isian nyata setoran,
+ * lalu yang dipilih diproses di realisasi_setoran_kel.php. Perilaku sama dengan versi lama.
+ * Perbaikan 2026-10-31 (perintah user): isian nyata setoran dikirim sebagai bulat[CIF] agar proses memasangkannya dengan
+ * anggota yang benar (versi lama memasangkan isian ke-i dengan anggota tercentang ke-i).
+ */
+require_once __DIR__ . '/inc/tampilan.php';
 session_start();
 ob_start();
-$userid=$_SESSION['userid'];
-$code_kel=$_GET['code_kel'];
+$userid = isset($_SESSION['userid']) ? $_SESSION['userid'] : null;
+$code_kel = isset($_GET['code_kel']) ? (string) $_GET['code_kel'] : '';
 //cek apakah user sudah login
-if(!isset($_SESSION['userid'])){
-   header("location:index.html");
- exit; }
-
+if (!isset($_SESSION['userid'])) {
+    header("location:index.html");
+    exit;
+}
 //cek level user
-if($_SESSION['level']!="unit"){
-   header("location:index.html");
- exit; }  
-?>
-<script>
-function getTotal()
-{
-var numText = document.myform.num.length;
-var total=0;
-for(var i = 0; i < numText; i++)
-{
-total+=parseFloat(document.myform.num[i].value);
-
+if ($_SESSION['level'] != "unit") {
+    header("location:index.html");
+    exit;
 }
-document.getElementById("total").value = total;
-} 
-</script>
 
-<link rel="stylesheet" href="css/bootstrap.min.css"/>
-<script>
-function cek(cekbox){
-    for(i=0; i < cekbox.length; i++){
-        cekbox[i].checked = true;
-    }
+$unit = null;
+foreach (db_semua("Select kode_branch from user where userid=?", 's', (string) $userid) as $row) {
+    $unit = $row['kode_branch'];
 }
-function uncek(cekbox){
-    for(i=0; i < cekbox.length; i++){
-        cekbox[i].checked = false;
-    }
-}
-</script>
-<?php  
-
-  
-include "conn2.php";
-include "indo_tgl.php";
-$koneksi=open_connection2(); 
-//ambil data dari database
-$result = mysql_query(" Select kode_branch from user where userid='$userid'");
-while($row = mysql_fetch_array($result)){
-$unit=$row['kode_branch'];
-}
-//if(empty($ds)||empty($limit)||empty($sd)||empty($lurah)){
-        
-        //echo "<script>alert('Maaf data Anda belum lengkap');</script>";
-         //echo "<script language='javascript'>document.location.href='view.php'</script>";}
-        //else {
-		
-				//$query = mysql_query("SELECT COUNT(NOPEN) as counter FROM feed_back WHERE FEEB_BACK= 'P' AND KODE_SALES='$ds'");
-				//$check = mysql_fetch_array($query);
-				//$feed=$check['counter'];
-				//}
-//if ($feed>=10) {
-
-// jika data ditemukan
-//echo "<script> alert ('Maaf anda tidak bisa membuka menu ini, silahkan Update SALES FEEDBACK terlebih dahulu')</script>";
-
-   //echo "<script language='javascript'>document.location.href='view_feed.php'</script>";
-		 //}
-
-        //else {
-
-//$query = "SELECT NOPEN,NAMA,ALAMAT,KOTA,KELURAHAN,TGL_LAHIR,USIA,PLAFOND,GBAYAR FROM potensi WHERE NOT EXISTS (Select NOPEN From feed_back WHERE feed_back.NOPEN=tempfeed.NOPEN) AND KOTA like '%$kota%' AND KELURAHAN like '%$lurah%' AND GBAYAR='$gb' ORDER By ALAMAT LIMIT $limit, $sd  ";
-
-$date=date('Y-m-d');	
-$query = "Select loan.cif,unit,Plafond,ijaroh,angsuran,bulat, bagi_hasil,bulat,pokok,Cust_Short_name,kelompok.nama_kel,(os-saldo_margin) as pokok, saldo_margin, os from loan
+// (versi lama juga menghitung saldo simpanan tiap anggota, tetapi tidak pernah ditampilkan)
+$data_anggota = db_semua("Select loan.cif,unit,Plafond,ijaroh,angsuran,bulat, bagi_hasil,bulat,pokok,Cust_Short_name,kelompok.nama_kel,(os-saldo_margin) as pokok, saldo_margin, os from loan
 inner join kelompok on kelompok.code_kel = loan.code_kel
-Where kelompok.code_kel='$code_kel' and loan.unit='$unit' and os > 0";
-$result = mysql_query($query);
+Where kelompok.code_kel=? and loan.unit=? and os > 0", 'ss', $code_kel, (string) $unit);
+
+halaman_awal('Setoran Kelompok');
 ?>
-<div class="main">
-<form action="realisasi_setoran_kel.php" method="post" name="myform">
-    <table border="1" style="margin: 10px 0px" class="table table-striped" >
-            <tr>
-               <th><span class="badge"> Pilih</th>
-               <th><span class="badge"> Cif</th>
-               <th><span class="badge">Nama</th>
-               <th><span class="badge">Kelompok</th>
-			   <th><span class="badge">Pembiayaan</th>
-			   <th><span class="badge">Angsuran</th>
-			   <th><span class="badge">Setoran</th>
-			   <th><span class="badge">Nyata Setoran</th>
-			   
-			  
-				
-			            </tr>
-    <?php 
-    while ($data = mysql_fetch_array($result)) {
-		$cif =$data['cif'];
-		$cek_saldo = mysql_query("SELECT SUM(KREDIT - DEBIT) AS saldo from simpanan where cif ='$cif' and TYPE not in ('04','05')");
-		$data_saldo= mysql_fetch_array($cek_saldo);
-		$saldo=$data_saldo['saldo'];
-    ?>
-            <tr>
-                <td><input type="checkbox" id="cekbox" name="cekbox[]" value="<?php echo $data['cif'] ?>"/></td>
-                <td><?php echo $data['cif'] ?></td>
-				<td><?php echo $data['Cust_Short_name'] ?></td>
-                <td><?php echo $data['nama_kel'] ?></td>
-				<td><?php echo number_format(compat_num($data['os']))?></td>
-				<td><?php echo number_format (compat_num($data['angsuran'])) ?></td>
-				<td><?php echo number_format (compat_num($data['bulat'])) ?></td>
-				 <td><input type="text" id="num" tabindex="1" name="bulat[]" value="<?php echo $data['bulat'] ?>" onkeyup="getTotal();"/></td>
-				 
-				
-            
-
-            </tr>
-    
-    <?php
-    
-	}
-
-    ?>
-<tr>
-	<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td>Total</td>
-<td><input name="total" type="text" id="total" value="0" />
-
-</tr>
+<form action="realisasi_setoran_kel.php" method="post" name="myform" id="form-setoran">
+  <div class="table-responsive">
+    <table class="table table-sm table-bordered table-ni table-hover align-middle">
+      <thead>
+        <tr>
+          <th class="text-center">Pilih</th>
+          <th>Cif</th>
+          <th>Nama</th>
+          <th>Kelompok</th>
+          <th class="text-end">Pembiayaan</th>
+          <th class="text-end">Angsuran</th>
+          <th class="text-end">Setoran</th>
+          <th>Nyata Setoran</th>
+        </tr>
+      </thead>
+      <tbody>
+      <?php foreach ($data_anggota as $data): ?>
+        <tr>
+          <td class="text-center"><input type="checkbox" class="form-check-input" name="cekbox[]" value="<?php echo h($data['cif']); ?>" aria-label="Pilih <?php echo h($data['Cust_Short_name']); ?>"></td>
+          <td><?php echo h($data['cif']); ?></td>
+          <td><?php echo h($data['Cust_Short_name']); ?></td>
+          <td><?php echo h($data['nama_kel']); ?></td>
+          <td class="text-end"><?php echo number_format(compat_num($data['os'])); ?></td>
+          <td class="text-end"><?php echo number_format(compat_num($data['angsuran'])); ?></td>
+          <td class="text-end"><?php echo number_format(compat_num($data['bulat'])); ?></td>
+          <td><input type="text" class="form-control form-control-sm text-end nyata-setoran" name="bulat[<?php echo h($data['cif']); ?>]" value="<?php echo h($data['bulat']); ?>" inputmode="numeric" aria-label="Nyata setoran <?php echo h($data['Cust_Short_name']); ?>"></td>
+        </tr>
+      <?php endforeach; ?>
+      </tbody>
+      <tfoot>
+        <tr class="fw-bold">
+          <td colspan="7" class="text-end">Total</td>
+          <td><input name="total" type="text" id="total" class="form-control form-control-sm text-end" value="0" readonly></td>
+        </tr>
+      </tfoot>
     </table>
-    <br />
-    <input type="button" class="alert-success" onclick="cek(this.form.cekbox)" value="Select All" />
-    <input type="button" class="btn-danger" onclick="uncek(this.form.cekbox)" value="Clear All" />
-    <input name="submit" type="submit" class="btn-success" value="Setorkan" />
-		
-	    <br />
-		
+  </div>
+  <div class="d-flex flex-wrap gap-2">
+    <button type="button" class="btn btn-outline-secondary btn-sm" data-pilih-semua="1">Select All</button>
+    <button type="button" class="btn btn-outline-danger btn-sm" data-pilih-semua="0">Clear All</button>
+    <button name="submit" type="submit" value="Setorkan" class="btn btn-ni btn-sm ms-auto px-4">Setorkan</button>
+  </div>
 </form>
-</div>
-<script type="text/javascript">
+<script>
+// total semua isian nyata setoran (seperti getTotal() versi lama)
+function getTotal() {
+    var total = 0;
+    document.querySelectorAll('.nyata-setoran').forEach(function (el) {
+        total += parseFloat(el.value);
+    });
+    document.getElementById('total').value = total;
+}
+document.querySelectorAll('.nyata-setoran').forEach(function (el) {
+    el.addEventListener('keyup', getTotal);
+});
 getTotal();
+document.querySelectorAll('[data-pilih-semua]').forEach(function (b) {
+    b.addEventListener('click', function () {
+        var nilai = b.getAttribute('data-pilih-semua') === '1';
+        document.querySelectorAll('#form-setoran input[name="cekbox[]"]').forEach(function (c) {
+            c.checked = nilai;
+        });
+    });
+});
 </script>
+<?php
+halaman_akhir();

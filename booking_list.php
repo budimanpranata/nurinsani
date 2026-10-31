@@ -13,22 +13,11 @@ if(!isset($_SESSION['userid'])){
 if($_SESSION['level']!="unit"){
    header("location:index.html");
  exit; }  
+// Tampilan Bootstrap 5 (2026-10-31, permintaan user): hanya HTML/CSS yang diganti.
+// Kode PHP daftar tunggakan dan proses (booking_debet_kel.php) sengaja dibiarkan sama dengan versi lama.
+require_once __DIR__ . '/inc/tampilan.php';
+halaman_awal('Booking Debet');
 ?>
-
-
-<link rel="stylesheet" href="css/bootstrap.min.css"/>
-<script>
-function cek(cekbox){
-    for(i=0; i < cekbox.length; i++){
-        cekbox[i].checked = true;
-    }
-}
-function uncek(cekbox){
-    for(i=0; i < cekbox.length; i++){
-        cekbox[i].checked = false;
-    }
-}
-</script>
 <?php  
 
   
@@ -70,25 +59,25 @@ HAVING sum(KREDIT-DEBIT) > 0
 ";
 $result = mysql_query($query);
 ?>
-<div class="main">
-<form action="booking_debet_kel.php" method="post" name="myform">
-    <table border="1" style="margin: 10px 0px" class="table table-striped" >
-            <tr>
-               <th><span class="badge"> Pilih</th>
-               <th><span class="badge"> Cif</th>
-               <th><span class="badge">Nama</th>
-               <th><span class="badge">Kelompok</th>
-			   <th><span class="badge">Pembiayaan</th>
-			   <th><span class="badge">Angsuran</th>
-			   <th><span class="badge">Setoran</th>
-               <th><span class="badge">Tunggakan</th>
-			   <th><span class="badge">TWM</th>
-                <th><span class="badge">Total Simpanan</th>
-               <th><span class="badge">Sisa</th>
-			   
-			  
-				
-			            </tr>
+<form action="booking_debet_kel.php" method="post" name="myform" id="form-booking">
+  <div class="table-responsive">
+    <table class="table table-sm table-bordered table-ni table-hover align-middle">
+      <thead>
+        <tr>
+          <th class="text-center">Pilih</th>
+          <th>Cif</th>
+          <th>Nama</th>
+          <th>Kelompok</th>
+          <th class="text-end">Pembiayaan</th>
+          <th class="text-end">Angsuran</th>
+          <th class="text-end">Setoran</th>
+          <th class="text-end">Tunggakan</th>
+          <th class="text-end">TWM</th>
+          <th class="text-end">Total Simpanan</th>
+          <th class="text-end">Sisa</th>
+        </tr>
+      </thead>
+      <tbody>
     <?php 
     while ($data = mysql_fetch_array($result)) {
 		$cif =$data['cif'];
@@ -128,17 +117,17 @@ $result = mysql_query($query);
 
     ?>
             <tr>
-                <td><input type="checkbox" id="cekbox" name="cekbox[]" value="<?php echo $data['cif'] ?>"/></td>
+                <td class="text-center"><input type="checkbox" class="form-check-input" name="cekbox[]" value="<?php echo $data['cif'] ?>"/></td>
                 <td><?php echo $data['cif'] ?></td>
 				<td><?php echo $data['Cust_Short_name'] ?></td>
                 <td><?php echo $data['nama_kel'] ?></td>
-				<td><?php echo number_format(compat_num($data['os']))?></td>
-				<td><?php echo number_format (compat_num($data['angsuran'])) ?></td>
-				<td><?php echo number_format (compat_num($data['bulat'])) ?></td>
-                <td><?php echo number_format (compat_num($tunggakan)) ?></td>
-                <td><?php echo number_format (compat_num($total_twm)) ?></td>
-                <td><?php echo number_format (compat_num($saldo)) ?></td>
-                <td><?php echo number_format (compat_num($saldo-$total_twm)) ?></td>
+				<td class="text-end"><?php echo number_format(compat_num($data['os']))?></td>
+				<td class="text-end"><?php echo number_format (compat_num($data['angsuran'])) ?></td>
+				<td class="text-end"><?php echo number_format (compat_num($data['bulat'])) ?></td>
+                <td class="text-end"><?php echo number_format (compat_num($tunggakan)) ?></td>
+                <td class="text-end"><?php echo number_format (compat_num($total_twm)) ?></td>
+                <td class="text-end"><?php echo number_format (compat_num($saldo)) ?></td>
+                <td class="text-end"><?php echo number_format (compat_num($saldo-$total_twm)) ?></td>
 				 
 				
             
@@ -150,25 +139,25 @@ $result = mysql_query($query);
 	}
 
     ?>
-<tr>
-	<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-
-</tr>
+      </tbody>
     </table>
-    <br />
-    <input type="button" class="alert-success" onclick="cek(this.form.cekbox)" value="Select All" />
-    <input type="button" class="btn-danger" onclick="uncek(this.form.cekbox)" value="Clear All" />
-    <input name="submit" type="submit" class="btn-success" value="Booking Debet" />
-		
-	    <br />
-		
+  </div>
+  <div class="d-flex flex-wrap gap-2">
+    <button type="button" class="btn btn-outline-secondary btn-sm" data-pilih-semua="1">Select All</button>
+    <button type="button" class="btn btn-outline-danger btn-sm" data-pilih-semua="0">Clear All</button>
+    <button name="submit" type="submit" value="Booking Debet" class="btn btn-ni btn-sm ms-auto px-4">Booking Debet</button>
+  </div>
 </form>
-</div>
-<script type="text/javascript">
-getTotal();
+<script>
+// pilih / hapus semua centang (pengganti cek()/uncek() versi lama)
+document.querySelectorAll('[data-pilih-semua]').forEach(function (b) {
+    b.addEventListener('click', function () {
+        var nilai = b.getAttribute('data-pilih-semua') === '1';
+        document.querySelectorAll('#form-booking input[name="cekbox[]"]').forEach(function (c) {
+            c.checked = nilai;
+        });
+    });
+});
 </script>
+<?php
+halaman_akhir();

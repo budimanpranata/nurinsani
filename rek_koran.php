@@ -1,663 +1,431 @@
-<?php require_once __DIR__ . '/php8_compat.php';
+<?php require_once __DIR__ . '/koneksi_db.php';
+/**
+ * Menu Report > Mutasi (rekening koran anggota) dalam bentuk PDF (FPDF):
+ *   01 Simpanan (mutasi simpanan + saldo berjalan), 03 Kartu Angsuran (rek_loan + saldo berjalan),
+ *   04 Rencana Angsuran (pinjaman_detail + tunggakan). 02 Pembiayaan tidak punya isi (sama dengan versi lama).
+ * Tata letak PDF disalin apa adanya dari versi lama; query diubah ke prepared statement dan saldo berjalan (@bal)
+ * dihitung di PHP dengan urutan yang sama.
+ * Perbaikan: versi lama mencetak HTML form sebelum PDF (±7 KB sebelum %PDF) dan sesudahnya, sehingga file PDF rusak;
+ * kini keluaran dibersihkan sebelum PDF dikirim. Form dikirim ke tab baru agar halaman form tetap terbuka.
+ */
+require_once __DIR__ . '/inc/tampilan.php';
 session_start();
 ob_start();
 unset($_SESSION['pilih']);
-$userid=$_SESSION['userid'];
+$userid = isset($_SESSION['userid']) ? $_SESSION['userid'] : null;
 //cek apakah user sudah login
-if(!isset($_SESSION['userid'])){
-   header("location:index.html");
- exit; }
-?>
-<script type="text/javascript" src="jquery.js"></script>
-	<script>
-	function suggest(inputString){
-		if(inputString.length == 0) {
-			$('#suggestions').fadeOut();
-		} else {
-		$('#country').addClass('load');
-			$.post("autosuggesst_rek.php", {queryString: ""+inputString+""}, function(data){
-				if(data.length >0) {
-					$('#suggestions').fadeIn();
-					$('#suggestionsList').html(data);
-					$('#country').removeClass('load');
-				}
-			});
-		}
-	}
-	
-	function fill(thisValue) {
-		$('#country').val(thisValue);
-		setTimeout("$('#suggestions').fadeOut();", 100);
-	}
-	
-	function fill2(thisValue) {
-		$('#kode').val(thisValue);
-		setTimeout("$('#suggestions').fadeOut();", 100);
-	}
-	
-	</script>
-<script>
-	function formatCurrency(num) {
-    num = num.toString().replace(/\$|\,/g,'');
-	num = num.toString().replace(/[^0-9]/g,'');
-    if(isNaN(num))
-    num = "0";
-    sign = (num == (num = Math.abs(num)));
-    num = Math.floor(num*100+0.50000000001);
-    cents = num%100;
-    num = Math.floor(num/100).toString();
-    if(cents<10)
-    cents = "0" + cents;
-    for (var i = 0; i < Math.floor((num.length-(1+i))/3); i++)
-    num = num.substring(0,num.length-(4*i+3))+'.'+
-    num.substring(num.length-(4*i+3));
-    return (((sign)?'':'-') + 'Rp. ' + num + '');
-    }
-	</script>
-	
-
-
-<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
-"http://www.w3.org/TR/html4/loose.dtd">
-<html>
-<head>
-<title>Transaksi NI</title>
-<link rel="stylesheet" href="tabel.css" />
-<meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
-<style type="text/css">
-<script type="text/javascript" src="jquery.js"></script>
-		<link href="../style.css" rel="stylesheet" type="text/css" media="screen" />
-		<link rel="stylesheet" href="../css/bootstrap.min.css"/>
-<script>
-
-<!--
-.style3 {	color: #FFFFFF;
-	font-size: 13px;
-	font-weight: bold;
+if (!isset($_SESSION['userid'])) {
+    header("location:index.html");
+    exit;
 }
-.header1 {color: #ffffff; background: #4682B4; font-weight: bold; font-family: Tahoma, Verdana; font-size: 13px; margin: 0px;}
-body {
-	background-image: url();
-}
-a:link {
-	text-decoration: none;
-}
-a:visited {
-	text-decoration: none;
-}
-a:hover {
-	text-decoration: none;
-}
-a:active {
-	text-decoration: none;
-}
-.style5 {font-family: Verdana, Arial, Helvetica, sans-serif}
-.style6 {font-size: 12px}
-.style7 {font-family: Verdana, Arial, Helvetica, sans-serif; font-size: 12px; }
-.style8 {font-size: 14px}
-a {
-	font-size: 12px;
-}
-.style9 {
-	font-size: 16px;
-	font-family: Verdana, Arial, Helvetica, sans-serif;
-}
--->
-
-	#result {
-		height:20px;
-		font-size:12px;
-		font-family:Arial, Helvetica, sans-serif;
-		color:#333;
-		padding:5px;
-		margin-bottom:10px;
-		background-color:#FFFF99;
-	}
-	#country{
-		padding:3px;
-		border:1px #CCC solid;
-		font-size:12px;
-	}
-	.suggestionsBox {
-		position: absolute;
-		left: 0px;
-		top:40px;
-		margin: 26px 0px 0px 0px;
-		width: 200px;
-		padding:0px;
-		background-color:#999999;
-		border-top: 3px solid #999999;
-		color: #fff;
-	}
-	.suggestionList {
-		margin: 0px;
-		padding: 0px;
-	}
-	.suggestionList ul li {
-		list-style:none;
-		margin: 0px;
-		padding: 6px;
-		border-bottom:1px dotted #666;
-		cursor: pointer;
-	}
-	.suggestionList ul li:hover {
-		background-color: #FC3;
-		color:#000;
-	}
-	ul {
-		font-family:Arial, Helvetica, sans-serif;
-		font-size:11px;
-		color:#FFF;
-		padding:0;
-		margin:0;
-	}
-	
-	.load{
-	background-image:url(loader.gif);
-	background-position:right;
-	background-repeat:no-repeat;
-	}
-	
-	#suggest {
-		position:relative;
-	}
-	.style9 {
-	font-size: 16px;
-	font-family: Verdana, Arial, Helvetica, sans-serif;
-}
-.style3 {	color: #FFFFFF;
-	font-size: 13px;
-	font-weight: bold;
-}
-.header1 {color: #ffffff; background: #4682B4; font-weight: bold; font-family: Tahoma, Verdana; font-size: 13px; margin: 0px;}
-body {
-	background-image: url();
-}
-a:link {
-	text-decoration: none;
-}
-a:visited {
-	text-decoration: none;
-}
-a:hover {
-	text-decoration: none;
-}
-a:active {
-	text-decoration: none;
-}
-</style>
-<style type="text/css">
-	
-.header1 {color: #ffffff; background: #4682B4; font-weight: bold; font-family: Tahoma, Verdana; font-size: 13px; margin: 0px;}
-.style1 {
-	color: #FFFFFF;
-	font-weight: bold;
-}
-.select-editable {
-     position:relative;
-     background-color:white;
-     border:solid grey 1px;
-     width:120px;
-     height:18px;
- }
- .select-editable select {
-     position:absolute;
-     top:0px;
-     left:0px;
-     font-size:14px;
-     border:none;
-     width:120px;
-     margin:0;
- }
- .select-editable input {
-     position:absolute;
-     top:0px;
-     left:0px;
-     width:100px;
-     padding:1px;
-     font-size:12px;
-     border:none;
- }
- .select-editable select:focus, .select-editable input:focus {
-     outline:none;
- }
-
-       </style>
-</head>
-
-<table width="100%" >
-  <tr>
-    <td height="20" bordercolor="#FFFFFF" bgcolor="#2F6B4F" class="style3 style8"><span class="style8">Rekap Mutasi
-      </span>
-    <div align="right"></div></td>
-  </tr>
-</table>
-
-<table width="428" border="1" align="center">
-</table>
-  <form method="post" action="<?php echo $_SERVER['PHP_SELF'];?>" name="postform">  <table width="543" border="0" align="center">
-<tr bgcolor="#2F6B4F">
-  <td height="10" colspan="4" nowrap><div align="center" class="style3 style9">Input Data </div></td>
-  </tr>
-<tr>
-    <td width="203" height="10" nowrap bgcolor="#B3B3FF"><div align="left" class="style5 style6">NOREK </div></td>
-    <td width="16" nowrap>        <div align="center"><strong>:</strong></div></td>
-    <td width="310" colspan="2" nowrap>
-	 <div id="suggest">
-					   <input type="text" onKeyUp="suggest(this.value);" name="kode_rekening"  onBlur="fill2();" id="kode" size="15"/> 
-					   <div class="suggestionsBox" id="suggestions" style="display: none;"> <img src="arrow.png" style="position: relative; top: -12px; left: 30px;" alt="upArrow" />
-					   <div class="suggestionList" id="suggestionsList"> &nbsp; </div>
-					   </div>
-	    
-      <input type="text" disabled="disabled" name="nama_rekening" onBlur="fill();" id="country" />
-</div>
-</tr>
-
-<tr>
-  <td height="10" nowrap bgcolor="#B3B3FF"><span class="style7">Jenis Transaksi </span></td>
-  <td nowrap><div align="center"><strong>:</strong></div></td>
-  
-  <td colspan="2" nowrap>
-  <div class="select-editable">
-  <select onchange="this.nextElementSibling.value=this.value">
-    <option>Pilih Salah satu</option>
-    <option value="01">Simpanan</option>
-    <option value="02">Pembiayaan</option>
-	<option value="03">Kartu Angsuran</option>
-	<option value="04">Rencana Angsuran</option>
-  </select>
-  <input type="text" name="select" value=""/> 
-  </td>
-</tr>
-
-<tr>
-  <td height="10" colspan="4">&nbsp;</td>
-  </tr>
-<tr bgcolor="#B3B3FF">
-  <td height="10">&nbsp; </td>
-  <td><div align="center"></div></td>
-  
-  <td colspan="2"><input name="search" type="submit" id="submit2" value="Cari" size="40"></td>
-</tr>
-</table>
-</form>
-<iframe width=174 height=189 name="gToday:normal:calender/normal.js" id="gToday:normal:calender/normal.js" src="calender/ipopeng.htm" scrolling="no" frameborder="0" style="visibility:visible; z-index:999; position:absolute; top:-500px; left:-500px;">
-</iframe>
-<?php
-session_start();
-ob_start();
-include "conn2.php";
 include "function.php";
 
-
-$koneksi=open_connection2();
-$norek=$_POST ['kode_rekening'];
-$nominal=$_POST['nama'];
-$tanggl=$_POST ['tanggal'];
-$pilih=$_POST['select'];
-$buss_date=date("Y-m-d H:i:s");
-$keterangan=$_POST['ket'];
-$data = mysql_query ("select kode_branch from user where userid ='$userid'");
-$r = mysql_fetch_array($data);
-$branch=$r['kode_branch'];
-$nama_brnach = mysql_query ("select unit,alamat from branch where kode_branch ='$branch'");
-$r = mysql_fetch_array($nama_brnach);
-$nama_unit=$r['unit'];
-$alamat=$r['alamat'];
-
-$datacif = mysql_query ("select cif from anggota where norek ='$norek'");
-$d = mysql_fetch_array($datacif);
-$cif=$d['cif'];
-$data_loan = mysql_query ("select * from loan where cif ='$cif'");
-while($data_l= mysql_fetch_array($data_loan)){
-$os=number_format(compat_num($data_l['os']));
-$plafond=number_format(compat_num($data_l['Plafond']));
-$angsuran=$data_l['angsuran'];
-$status_app=$data_l['status_app'];
-$pokok=number_format(compat_num($data_l['pokok']));
-$margin=number_format(compat_num($data_l['ijaroh']));
-if($status_app =='MYSAROKAH'){
-$tgl_akad=tgl_indo($data_l['tgl_wakalah']);
-}else{
-$tgl_akad=tgl_indo($data_l['tgl_akad']);
-}
-$tgl_akad=tgl_indo($data_l['tgl_akad']);
-$tenor=$data_l['Tenor'];
-$CUST_SHORT_NAME=$data_l['Cust_Short_name'];
-$maturity_date=tgl_indo($data_l['maturity_date']);
-}
-
-
-$datapokok = mysql_query ("select SUM(KREDIT - DEBIT) as spokok from simpanan_pokok where cif='$cif'");
-$sp = mysql_fetch_array($datapokok);
-$spokok=number_format(compat_num($sp['spokok']));
-
-$datawajib = mysql_query ("select SUM(KREDIT - DEBIT) as swajib from simpanan_wajib where cif='$cif'");
-$sw = mysql_fetch_array($datawajib);
-$swajib=number_format(compat_num($sw['swajib']));
-
-
-If (isset($_POST ['search']))
+/** Baris hasil query dengan nilai teks (seperti mysql_fetch_array versi lama). */
+function baris_teks_rk($baris)
 {
-require ('fpdf17/fpdf.php');
-if (empty($norek)||empty($pilih)){
-echo "<script>alert('Maaf,.isi Nomor REKENING dan Jenis Transaksi yang benar  !!!');</script>";
-echo "<script language='javascript'>document.location.href='rek_koran.php'</script>";}
-else{
-switch($pilih)
-{
-case "01":
-$query1 = mysql_query("SET @bal = 0;");
-$sql =mysql_query ("SELECT simpanan.KET,type,kode_transaksi, simpanan.NOREK,simpanan.BUSS_DATE,anggota.CUST_SHORT_NAME,DEBIT,KREDIT,@bal:=@bal+KREDIT-DEBIT as balance FROM simpanan 
-join anggota on anggota.cif = simpanan.cif
-where simpanan.cif='$cif' and TYPE not in ('04','05') order by simpanan.REFF");
-$pdf=new FPDF('P','mm', array(216, 275));
-$pdf->AddPage();
-//$pdf=new FPDF('L','mm', array(216, 330));
-$pdf->setX(11);
-$pdf->setFillColor(255,255,255);
-$pdf->cell(74,5,' ',0,'L',1);
-$pdf->Image('Image/nii.png');
-//$pdf-> Write (12,'User ID: ');
-$pdf->Ln(3);
-$pdf->SetFont('Arial','B',9);
-$pdf->SetFont('Arial','B',8);
-$pdf->multicell(0,5,'KOPERASI JASA KEUANGAN SYARIAH NUR INSANI UNIT '.$nama_unit.'',0,'C',1);
-$pdf->multicell(0,5,''.$alamat.'',0,'C',1);
-$pdf->SetFont('Arial','BU',8);
-$pdf->multicell(0,5,'DAFTAR MUTASI SIMPANAN',0,'C',1);
-$pdf->Ln();
-$pdf->SetFont('Arial','',8);
-$pdf->cell(70,5,'Nomor Rekenig',0,'R',1);
-$pdf->cell(1,5,':',0,'L',1);
-$pdf->cell(9,5,'',0,'L',1);
-$pdf->cell(15,5,''.$norek,0,'J',1);
-$pdf->Ln(5);
-$pdf->cell(70,5,'Nama ',0,'L',1);
-$pdf->cell(1,5,':',0,'L',1);
-$pdf->cell(9,5,'',0,'L',1);
-$pdf->cell(15,5,''.$CUST_SHORT_NAME,0,'L',1);
-$pdf->Ln(5);
-$pdf->cell(70,5,'Plafond Pembiayaan',0,'R',1);
-$pdf->cell(1,5,':',0,'R',1);
-$pdf->cell(9,5,'',0,'R',1);
-$pdf->cell(15,5,''.$plafond,0,'R',1);
-$pdf->Ln(5);
-$pdf->cell(70,5,'Tanggal Realisasi ',0,'R',1);
-$pdf->cell(1,5,':',0,'R',1);
-$pdf->cell(9,5,'',0,'R',1);
-$pdf->cell(15,5,''.$tgl_akad,0,'R',1);
-$pdf->Ln(5);
-$pdf->cell(70,5,'Janga Waktu ',0,'R',1);
-$pdf->cell(1,5,':',0,'R',1);
-$pdf->cell(9,5,'',0,'R',1);
-$minggu=' Minggu';
-$pdf->cell(15,5,''.$tenor .$minggu,0,'R',1);
-$pdf->Ln(5);
-$pdf->cell(70,5,'Tanggal Jatuh Tempo ',0,'R',1);
-$pdf->cell(1,5,':',0,'R',1);
-$pdf->cell(9,5,'',0,'R',1);
-$pdf->cell(15,5,''.$maturity_date,0,'R',1);
-$pdf->Ln(5);
-$pdf->cell(70,5,'Sisa Pembiayaan ',0,'R',1);
-$pdf->cell(1,5,':',0,'R',1);
-$pdf->cell(9,5,'',0,'R',1);
-$pdf->cell(15,5,''.$os,0,'R',1);
-$pdf->Ln(5);
-$pdf->cell(70,5,'Simpanan Pokok ',0,'R',1);
-$pdf->cell(1,5,':',0,'R',1);
-$pdf->cell(9,5,'',0,'R',1);
-$pdf->cell(15,5,''.$spokok,0,'R',1);
-$pdf->Ln(5);
-$pdf->cell(70,5,'Simpanan Wajib ',0,'R',1);
-$pdf->cell(1,5,':',0,'R',1);
-$pdf->cell(9,5,'',0,'R',1);
-$pdf->cell(15,5,''.$swajib,0,'R',1);
-$pdf->Ln(5);
-
-$pdf->Ln(5);
-$pdf->SetFont('ARIAL','B',7);
-$pdf->Cell(8,3,'No',1,0,'C');
-$pdf->Cell(25,3,'Tanggal',1,0,'C');
-$pdf->Cell(25,3,'kode transaksi',1,0,'C');
-$pdf->Cell(60,3,'Keterangan',1,0,'C');
-$pdf->Cell(9,3,'Tipe',1,0,'C');
-$pdf->Cell(15,3,'Debet',1,0,'C');
-$pdf->Cell(15,3,'Kredit',1,0,'C');
-$pdf->Cell(15,3,'Saldo',1,0,'C');
-
-$pdf->Ln();
-$no =0;
-while($result= mysql_fetch_array($sql)){
-$no ++;
-$norek = $result['NOREK'];
-$CUST_SHORT_NAME = $result['CUST_SHORT_NAME'];
-$BUSS_DATE = $result['BUSS_DATE'];
-$KET = $result['KET'];
-$tipe = $result['type'];
-$DEBIT = $result['DEBIT'];
-$KREDIT = $result['KREDIT'];
-$Balance = $result['balance'];
-$kode_transaksi = $result['kode_transaksi'];
-
-//query dan arraying
-$pdf->SetFont('Arial','',7);
-$pdf->Cell(8,3,''.$no,1,'L',1);
-$pdf->Cell(25,3,''.tgl_indo ($BUSS_DATE),1,'L',1);
-$pdf->Cell(25,3,''.$kode_transaksi,1,'L',1);
-$pdf->Cell(60,3,''.$KET,1,'L',1);
-$pdf->Cell(9,3,''.$tipe,1,'L',1);
-$pdf->Cell(15,3,''.number_format (compat_num($DEBIT)),1,'LR',0,'R');
-$pdf->Cell(15,3,''.number_format (compat_num($KREDIT)),1,'LR',0,'R');
-$pdf->Cell(15,3,''.number_format (compat_num($Balance)),1,'LR',0,'R');
-
-$pdf->Ln();
+    if (!$baris) {
+        return $baris;
+    }
+    foreach ($baris as $k => $v) {
+        $baris[$k] = $v === null ? null : (string) $v;
+    }
+    return $baris;
 }
-$pdf->Ln(9);
-$pdf->SetFont('ARIAL','B',8);
-$pdf->Cell(40,5,'Bisnis Manager',0,0,'L');
 
-$pdf->Ln(28,1);
-$pdf->Cell(60,5,'(_______________)',0,0,'L');
+$norek = isset($_POST['kode_rekening']) ? trim((string) $_POST['kode_rekening']) : '';
+$pilih = isset($_POST['select']) ? (string) $_POST['select'] : '';
+
+$pesan = array();
+if (isset($_POST['search'])) {
+    if (empty($norek) || empty($pilih)) {
+        $pesan[] = "<script>alert('Maaf,.isi Nomor REKENING dan Jenis Transaksi yang benar  !!!');</script>";
+        $pesan[] = "<script language='javascript'>document.location.href='rek_koran.php'</script>";
+    } elseif (in_array($pilih, array('01', '03', '04'), true)) {
+        // data kepala laporan (sama dengan versi lama: bila ada beberapa loan, yang terakhir dipakai)
+        $r = baris_teks_rk(db_satu("select kode_branch from user where userid =?", 's', (string) $userid));
+        $branch = $r ? $r['kode_branch'] : null;
+        $r = baris_teks_rk(db_satu("select unit,alamat from branch where kode_branch =?", 's', (string) $branch));
+        $nama_unit = $r ? $r['unit'] : null;
+        $alamat = $r ? $r['alamat'] : null;
+        $d = baris_teks_rk(db_satu("select cif from anggota where norek =?", 's', $norek));
+        $cif = $d ? $d['cif'] : null;
+        $os = $plafond = $tgl_akad = $tenor = $CUST_SHORT_NAME = $maturity_date = null;
+        foreach (db_semua("select * from loan where cif =?", 's', (string) $cif) as $data_l) {
+            $data_l = baris_teks_rk($data_l);
+            $os = number_format(compat_num($data_l['os']));
+            $plafond = number_format(compat_num($data_l['Plafond']));
+            $tgl_akad = tgl_indo((string) $data_l['tgl_akad']);
+            $tenor = $data_l['Tenor'];
+            $CUST_SHORT_NAME = $data_l['Cust_Short_name'];
+            $maturity_date = tgl_indo((string) $data_l['maturity_date']);
+        }
+        $sp = baris_teks_rk(db_satu("select SUM(KREDIT - DEBIT) as spokok from simpanan_pokok where cif=?", 's', (string) $cif));
+        $spokok = number_format(compat_num($sp ? $sp['spokok'] : null));
+        $sw = baris_teks_rk(db_satu("select SUM(KREDIT - DEBIT) as swajib from simpanan_wajib where cif=?", 's', (string) $cif));
+        $swajib = number_format(compat_num($sw ? $sw['swajib'] : null));
+
+        require('fpdf17/fpdf.php');
+        // buang HTML yang mungkin sudah tertampung; yang dikirim hanya PDF
+        while (ob_get_level() > 0) {
+            ob_end_clean();
+        }
+        switch ($pilih) {
+        case "01":
+            // saldo berjalan = @bal + KREDIT - DEBIT, urut REFF (sama dengan versi lama)
+            $sql = array();
+            $bal = 0;
+            foreach (db_semua("SELECT simpanan.KET,type,kode_transaksi, simpanan.NOREK,simpanan.BUSS_DATE,anggota.CUST_SHORT_NAME,DEBIT,KREDIT FROM simpanan
+                join anggota on anggota.cif = simpanan.cif
+                where simpanan.cif=? and TYPE not in ('04','05') order by simpanan.REFF", 's', (string) $cif) as $row) {
+                $row = baris_teks_rk($row);
+                $bal = $bal + compat_num($row['KREDIT']) - compat_num($row['DEBIT']);
+                $row['balance'] = $bal;
+                $sql[] = $row;
+            }
+            $pdf=new FPDF('P','mm', array(216, 275));
+            $pdf->AddPage();
+            //$pdf=new FPDF('L','mm', array(216, 330));
+            $pdf->setX(11);
+            $pdf->setFillColor(255,255,255);
+            $pdf->cell(74,5,' ',0,'L',1);
+            $pdf->Image('Image/nii.png');
+            //$pdf-> Write (12,'User ID: ');
+            $pdf->Ln(3);
+            $pdf->SetFont('Arial','B',9);
+            $pdf->SetFont('Arial','B',8);
+            $pdf->multicell(0,5,'KOPERASI JASA KEUANGAN SYARIAH NUR INSANI UNIT '.$nama_unit.'',0,'C',1);
+            $pdf->multicell(0,5,''.$alamat.'',0,'C',1);
+            $pdf->SetFont('Arial','BU',8);
+            $pdf->multicell(0,5,'DAFTAR MUTASI SIMPANAN',0,'C',1);
+            $pdf->Ln();
+            $pdf->SetFont('Arial','',8);
+            $pdf->cell(70,5,'Nomor Rekenig',0,'R',1);
+            $pdf->cell(1,5,':',0,'L',1);
+            $pdf->cell(9,5,'',0,'L',1);
+            $pdf->cell(15,5,''.$norek,0,'J',1);
+            $pdf->Ln(5);
+            $pdf->cell(70,5,'Nama ',0,'L',1);
+            $pdf->cell(1,5,':',0,'L',1);
+            $pdf->cell(9,5,'',0,'L',1);
+            $pdf->cell(15,5,''.$CUST_SHORT_NAME,0,'L',1);
+            $pdf->Ln(5);
+            $pdf->cell(70,5,'Plafond Pembiayaan',0,'R',1);
+            $pdf->cell(1,5,':',0,'R',1);
+            $pdf->cell(9,5,'',0,'R',1);
+            $pdf->cell(15,5,''.$plafond,0,'R',1);
+            $pdf->Ln(5);
+            $pdf->cell(70,5,'Tanggal Realisasi ',0,'R',1);
+            $pdf->cell(1,5,':',0,'R',1);
+            $pdf->cell(9,5,'',0,'R',1);
+            $pdf->cell(15,5,''.$tgl_akad,0,'R',1);
+            $pdf->Ln(5);
+            $pdf->cell(70,5,'Janga Waktu ',0,'R',1);
+            $pdf->cell(1,5,':',0,'R',1);
+            $pdf->cell(9,5,'',0,'R',1);
+            $minggu=' Minggu';
+            $pdf->cell(15,5,''.$tenor .$minggu,0,'R',1);
+            $pdf->Ln(5);
+            $pdf->cell(70,5,'Tanggal Jatuh Tempo ',0,'R',1);
+            $pdf->cell(1,5,':',0,'R',1);
+            $pdf->cell(9,5,'',0,'R',1);
+            $pdf->cell(15,5,''.$maturity_date,0,'R',1);
+            $pdf->Ln(5);
+            $pdf->cell(70,5,'Sisa Pembiayaan ',0,'R',1);
+            $pdf->cell(1,5,':',0,'R',1);
+            $pdf->cell(9,5,'',0,'R',1);
+            $pdf->cell(15,5,''.$os,0,'R',1);
+            $pdf->Ln(5);
+            $pdf->cell(70,5,'Simpanan Pokok ',0,'R',1);
+            $pdf->cell(1,5,':',0,'R',1);
+            $pdf->cell(9,5,'',0,'R',1);
+            $pdf->cell(15,5,''.$spokok,0,'R',1);
+            $pdf->Ln(5);
+            $pdf->cell(70,5,'Simpanan Wajib ',0,'R',1);
+            $pdf->cell(1,5,':',0,'R',1);
+            $pdf->cell(9,5,'',0,'R',1);
+            $pdf->cell(15,5,''.$swajib,0,'R',1);
+            $pdf->Ln(5);
+
+            $pdf->Ln(5);
+            $pdf->SetFont('ARIAL','B',7);
+            $pdf->Cell(8,3,'No',1,0,'C');
+            $pdf->Cell(25,3,'Tanggal',1,0,'C');
+            $pdf->Cell(25,3,'kode transaksi',1,0,'C');
+            $pdf->Cell(60,3,'Keterangan',1,0,'C');
+            $pdf->Cell(9,3,'Tipe',1,0,'C');
+            $pdf->Cell(15,3,'Debet',1,0,'C');
+            $pdf->Cell(15,3,'Kredit',1,0,'C');
+            $pdf->Cell(15,3,'Saldo',1,0,'C');
+
+            $pdf->Ln();
+            $no =0;
+            foreach ($sql as $result) {
+            $no ++;
+            $norek = $result['NOREK'];
+            $CUST_SHORT_NAME = $result['CUST_SHORT_NAME'];
+            $BUSS_DATE = $result['BUSS_DATE'];
+            $KET = $result['KET'];
+            $tipe = $result['type'];
+            $DEBIT = $result['DEBIT'];
+            $KREDIT = $result['KREDIT'];
+            $Balance = $result['balance'];
+            $kode_transaksi = $result['kode_transaksi'];
+
+            //query dan arraying
+            $pdf->SetFont('Arial','',7);
+            $pdf->Cell(8,3,''.$no,1,'L',1);
+            $pdf->Cell(25,3,''.tgl_indo ($BUSS_DATE),1,'L',1);
+            $pdf->Cell(25,3,''.$kode_transaksi,1,'L',1);
+            $pdf->Cell(60,3,''.$KET,1,'L',1);
+            $pdf->Cell(9,3,''.$tipe,1,'L',1);
+            $pdf->Cell(15,3,''.number_format (compat_num($DEBIT)),1,'LR',0,'R');
+            $pdf->Cell(15,3,''.number_format (compat_num($KREDIT)),1,'LR',0,'R');
+            $pdf->Cell(15,3,''.number_format (compat_num($Balance)),1,'LR',0,'R');
+
+            $pdf->Ln();
+            }
+            $pdf->Ln(9);
+            $pdf->SetFont('ARIAL','B',8);
+            $pdf->Cell(40,5,'Bisnis Manager',0,0,'L');
+
+            $pdf->Ln(28,1);
+            $pdf->Cell(60,5,'(_______________)',0,0,'L');
 
 
-$pdf->Output();
-break;
-case "03":
+            $pdf->Output();
+            exit;
+        case "03":
+            // saldo berjalan = @bal + saldo_kredit - debet, urut ref (sama dengan versi lama)
+            $sql5 = array();
+            $bal = 0;
+            foreach (db_semua("SELECT rek_loan.KET,rek_loan.STATUS, rek_loan.no_anggota,rek_loan.tgl_realisasi,anggota.CUST_SHORT_NAME,debet,saldo_kredit FROM rek_loan
+                join anggota on anggota.cif = rek_loan.cif
+                where rek_loan.cif=? order by rek_loan.ref", 's', (string) $cif) as $row) {
+                $row = baris_teks_rk($row);
+                $bal = $bal + compat_num($row['saldo_kredit']) - compat_num($row['debet']);
+                $row['balance'] = $bal;
+                $sql5[] = $row;
+            }
+            $pdf=new FPDF('P','mm', array(216, 275));
+            $pdf->AddPage();
+            //$pdf=new FPDF('L','mm', array(216, 330));
+            $pdf->setX(11);
+            $pdf->setFillColor(255,255,255);
+            $pdf->SetFont('Arial','B',9);
+            $pdf->SetFont('Arial','B',8);
+            $pdf->multicell(0,5,'KOPERASI JASA KEUANGAN SYARIAH NUR INSANI UNIT '.$nama_unit.'',0,'J',1);
+            $pdf->multicell(0,5,'ALAMAT '.$alamat.'',0,'J',1);
+            $pdf->SetFont('Arial','BU',8);
+            $pdf->multicell(0,5,'DAFTAR MUTASI KARTU ANGSURAN',0,'J',1);
+            $pdf->Ln();
 
-$query5 = mysql_query("SET @bal = 0;");
-$sql5 =mysql_query ("SELECT rek_loan.KET,rek_loan.STATUS, rek_loan.no_anggota,rek_loan.tgl_realisasi,anggota.CUST_SHORT_NAME,debet,saldo_kredit,@bal:=@bal+saldo_kredit-debet as balance FROM rek_loan 
-join anggota on anggota.cif = rek_loan.cif
-where rek_loan.cif='$cif' order by rek_loan.ref");
-$pdf=new FPDF('P','mm', array(216, 275));
-$pdf->AddPage();
-//$pdf=new FPDF('L','mm', array(216, 330));
-$pdf->setX(11);
-$pdf->setFillColor(255,255,255);
-$pdf->SetFont('Arial','B',9);
-$pdf->SetFont('Arial','B',8);
-$pdf->multicell(0,5,'KOPERASI JASA KEUANGAN SYARIAH NUR INSANI UNIT '.$nama_unit.'',0,'J',1);
-$pdf->multicell(0,5,'ALAMAT '.$alamat.'',0,'J',1);
-$pdf->SetFont('Arial','BU',8);
-$pdf->multicell(0,5,'DAFTAR MUTASI KARTU ANGSURAN',0,'J',1);
-$pdf->Ln();
-
-$pdf->SetFont('Arial','',8);
-$pdf->cell(70,5,'Nomor Rekenig',0,'R',1);
-$pdf->cell(1,5,':',0,'L',1);
-$pdf->cell(9,5,'',0,'L',1);
-$pdf->cell(15,5,''.$norek,0,'J',1);
-$pdf->Ln(5);
-$pdf->cell(70,5,'Nama ',0,'L',1);
-$pdf->cell(1,5,':',0,'L',1);
-$pdf->cell(9,5,'',0,'L',1);
-$pdf->cell(15,5,''.$CUST_SHORT_NAME,0,'L',1);
-$pdf->Ln(5);
-$pdf->cell(70,5,'Plafond Pembiayaan',0,'R',1);
-$pdf->cell(1,5,':',0,'R',1);
-$pdf->cell(9,5,'',0,'R',1);
-$pdf->cell(15,5,''.$plafond,0,'R',1);
-$pdf->Ln(5);
-$pdf->cell(70,5,'Tanggal Realisasi ',0,'R',1);
-$pdf->cell(1,5,':',0,'R',1);
-$pdf->cell(9,5,'',0,'R',1);
-$pdf->cell(15,5,''.$tgl_akad,0,'R',1);
-$pdf->Ln(5);
-$pdf->cell(70,5,'Janga Waktu ',0,'R',1);
-$pdf->cell(1,5,':',0,'R',1);
-$pdf->cell(9,5,'',0,'R',1);
-$minggu=' Minggu';
-$pdf->cell(15,5,''.$tenor .$minggu,0,'R',1);
-$pdf->Ln(5);
-$pdf->cell(70,5,'Tanggal Jatuh Tempo ',0,'R',1);
-$pdf->cell(1,5,':',0,'R',1);
-$pdf->cell(9,5,'',0,'R',1);
-$pdf->cell(15,5,''.$maturity_date,0,'R',1);
-$pdf->Ln(5);
-$pdf->cell(70,5,'Sisa Pembiayaan ',0,'R',1);
-$pdf->cell(1,5,':',0,'R',1);
-$pdf->cell(9,5,'',0,'R',1);
-$pdf->cell(15,5,''.$os,0,'R',1);
-$pdf->Ln(5);
-$pdf->Ln(5);
-$pdf->SetFont('ARIAL','B',7);
-$pdf->Cell(8,3,'No',1,0,'C');
-$pdf->Cell(25,3,'Tanggal',1,0,'C');
-$pdf->Cell(60,3,'Keterangan',1,0,'C');
-$pdf->Cell(40,3,'Jenis Transaksi',1,0,'C');
-$pdf->Cell(15,3,'Debet',1,0,'C');
-$pdf->Cell(15,3,'Kredit',1,0,'C');
-$pdf->Cell(15,3,'Saldo',1,0,'C');
-$pdf->Ln();
-$no =0;
-while($result5= mysql_fetch_array($sql5)){
-$no ++;
-$norek = $result5['no_anggota'];
-$CUST_SHORT_NAME = $result5['CUST_SHORT_NAME'];
-$BUSS_DATE = $result5['tgl_realisasi'];
-$KET = $result5['KET'];
-$tipe = $result5['STATUS'];
-$DEBIT = $result5['debet'];
-$KREDIT = $result5['saldo_kredit'];
-$Balance = $result5['balance'];
-//query dan arraying
-$pdf->SetFont('Arial','',7);
-$pdf->Cell(8,3,''.$no,1,'L',1);
-$pdf->Cell(25,3,''.tgl_indo ($BUSS_DATE),1,'L',1);
-$pdf->Cell(60,3,''.$KET,1,'L',1);
-$pdf->Cell(40,3,''.$tipe,1,'L',1);
-$pdf->Cell(15,3,''.number_format (compat_num($DEBIT)),1,'LR',0,'R');
-$pdf->Cell(15,3,''.number_format (compat_num($KREDIT)),1,'LR',0,'R');
-$pdf->Cell(15,3,''.number_format (compat_num($Balance)),1,'LR',0,'R');
-$pdf->Ln();
-}	
-$pdf->Output();
-break;
-case "04":
-
-$sql3 =mysql_query ("select CUST_SHORT_NAME,id_pinjam,angsuran_pokok,bunga,tgl_jatuh_tempo,tgl_bayar,jumlah_bayar from pinjaman_detail
-inner join loan on loan.cif=pinjaman_detail.cif
-where loan.cif='$cif' and tenor <=tenor");
-$pdf=new FPDF('P','mm', array(216, 275));
-$pdf->AddPage();
-//$pdf=new FPDF('L','mm', array(216, 330));
-$pdf->setX(11);
-$pdf->setFillColor(255,255,255);
-$pdf->SetFont('Arial','B',9);
-$pdf->SetFont('Arial','B',8);
-$pdf->multicell(0,5,'KOPERASI JASA KEUANGAN SYARIAH NUR INSANI UNIT '.$nama_unit.'',0,'J',1);
-$pdf->multicell(0,5,'ALAMAT '.$alamat.'',0,'J',1);
-$pdf->SetFont('Arial','BU',8);
-$pdf->multicell(0,5,'DAFTAR KARTU ANGSURAN PEMBIAYAAN',0,'J',1);
-$pdf->Ln();
-$pdf->SetFont('Arial','',8);
-$pdf->cell(70,5,'Nomor Rekenig',0,'R',1);
-$pdf->cell(1,5,':',0,'L',1);
-$pdf->cell(9,5,'',0,'L',1);
-$pdf->cell(15,5,''.$norek,0,'J',1);
-$pdf->Ln(5);
-$pdf->cell(70,5,'Nama ',0,'L',1);
-$pdf->cell(1,5,':',0,'L',1);
-$pdf->cell(9,5,'',0,'L',1);
-$pdf->cell(15,5,''.$CUST_SHORT_NAME,0,'L',1);
-$pdf->Ln(5);
-$pdf->cell(70,5,'Plafond Pembiayaan',0,'R',1);
-$pdf->cell(1,5,':',0,'R',1);
-$pdf->cell(9,5,'',0,'R',1);
-$pdf->cell(15,5,''.$plafond,0,'R',1);
-$pdf->Ln(5);
-$pdf->cell(70,5,'Tanggal Realisasi ',0,'R',1);
-$pdf->cell(1,5,':',0,'R',1);
-$pdf->cell(9,5,'',0,'R',1);
-$pdf->cell(15,5,''.$tgl_akad,0,'R',1);
-$pdf->Ln(5);
-$pdf->cell(70,5,'Janga Waktu ',0,'R',1);
-$pdf->cell(1,5,':',0,'R',1);
-$pdf->cell(9,5,'',0,'R',1);
-$minggu=' Minggu';
-$pdf->cell(15,5,''.$tenor .$minggu,0,'R',1);
-$pdf->Ln(5);
-$pdf->cell(70,5,'Tanggal Jatuh Tempo ',0,'R',1);
-$pdf->cell(1,5,':',0,'R',1);
-$pdf->cell(9,5,'',0,'R',1);
-$pdf->cell(15,5,''.$maturity_date,0,'R',1);
-$pdf->Ln(5);
-$pdf->cell(70,5,'Sisa Pembiayaan ',0,'R',1);
-$pdf->cell(1,5,':',0,'R',1);
-$pdf->cell(9,5,'',0,'R',1);
-$pdf->cell(15,5,''.$os,0,'R',1);
-$pdf->Ln(5);
-$pdf->Ln(5);
-$pdf->SetFont('ARIAL','B',7);
+            $pdf->SetFont('Arial','',8);
+            $pdf->cell(70,5,'Nomor Rekenig',0,'R',1);
+            $pdf->cell(1,5,':',0,'L',1);
+            $pdf->cell(9,5,'',0,'L',1);
+            $pdf->cell(15,5,''.$norek,0,'J',1);
+            $pdf->Ln(5);
+            $pdf->cell(70,5,'Nama ',0,'L',1);
+            $pdf->cell(1,5,':',0,'L',1);
+            $pdf->cell(9,5,'',0,'L',1);
+            $pdf->cell(15,5,''.$CUST_SHORT_NAME,0,'L',1);
+            $pdf->Ln(5);
+            $pdf->cell(70,5,'Plafond Pembiayaan',0,'R',1);
+            $pdf->cell(1,5,':',0,'R',1);
+            $pdf->cell(9,5,'',0,'R',1);
+            $pdf->cell(15,5,''.$plafond,0,'R',1);
+            $pdf->Ln(5);
+            $pdf->cell(70,5,'Tanggal Realisasi ',0,'R',1);
+            $pdf->cell(1,5,':',0,'R',1);
+            $pdf->cell(9,5,'',0,'R',1);
+            $pdf->cell(15,5,''.$tgl_akad,0,'R',1);
+            $pdf->Ln(5);
+            $pdf->cell(70,5,'Janga Waktu ',0,'R',1);
+            $pdf->cell(1,5,':',0,'R',1);
+            $pdf->cell(9,5,'',0,'R',1);
+            $minggu=' Minggu';
+            $pdf->cell(15,5,''.$tenor .$minggu,0,'R',1);
+            $pdf->Ln(5);
+            $pdf->cell(70,5,'Tanggal Jatuh Tempo ',0,'R',1);
+            $pdf->cell(1,5,':',0,'R',1);
+            $pdf->cell(9,5,'',0,'R',1);
+            $pdf->cell(15,5,''.$maturity_date,0,'R',1);
+            $pdf->Ln(5);
+            $pdf->cell(70,5,'Sisa Pembiayaan ',0,'R',1);
+            $pdf->cell(1,5,':',0,'R',1);
+            $pdf->cell(9,5,'',0,'R',1);
+            $pdf->cell(15,5,''.$os,0,'R',1);
+            $pdf->Ln(5);
+            $pdf->Ln(5);
+            $pdf->SetFont('ARIAL','B',7);
+            $pdf->Cell(8,3,'No',1,0,'C');
+            $pdf->Cell(25,3,'Tanggal',1,0,'C');
+            $pdf->Cell(60,3,'Keterangan',1,0,'C');
+            $pdf->Cell(40,3,'Jenis Transaksi',1,0,'C');
+            $pdf->Cell(15,3,'Debet',1,0,'C');
+            $pdf->Cell(15,3,'Kredit',1,0,'C');
+            $pdf->Cell(15,3,'Saldo',1,0,'C');
+            $pdf->Ln();
+            $no =0;
+            foreach ($sql5 as $result5) {
+            $no ++;
+            $norek = $result5['no_anggota'];
+            $CUST_SHORT_NAME = $result5['CUST_SHORT_NAME'];
+            $BUSS_DATE = $result5['tgl_realisasi'];
+            $KET = $result5['KET'];
+            $tipe = $result5['STATUS'];
+            $DEBIT = $result5['debet'];
+            $KREDIT = $result5['saldo_kredit'];
+            $Balance = $result5['balance'];
+            //query dan arraying
+            $pdf->SetFont('Arial','',7);
+            $pdf->Cell(8,3,''.$no,1,'L',1);
+            $pdf->Cell(25,3,''.tgl_indo ($BUSS_DATE),1,'L',1);
+            $pdf->Cell(60,3,''.$KET,1,'L',1);
+            $pdf->Cell(40,3,''.$tipe,1,'L',1);
+            $pdf->Cell(15,3,''.number_format (compat_num($DEBIT)),1,'LR',0,'R');
+            $pdf->Cell(15,3,''.number_format (compat_num($KREDIT)),1,'LR',0,'R');
+            $pdf->Cell(15,3,''.number_format (compat_num($Balance)),1,'LR',0,'R');
+            $pdf->Ln();
+            }	
+            $pdf->Output();
+            exit;
+        case "04":
+            // (versi lama: "tenor <= tenor" selalu benar, tanpa ORDER BY)
+            $sql3 = array_map('baris_teks_rk', db_semua("select CUST_SHORT_NAME,id_pinjam,angsuran_pokok,bunga,tgl_jatuh_tempo,tgl_bayar,jumlah_bayar from pinjaman_detail
+                inner join loan on loan.cif=pinjaman_detail.cif
+                where loan.cif=? and tenor <=tenor", 's', (string) $cif));
+            $pdf=new FPDF('P','mm', array(216, 275));
+            $pdf->AddPage();
+            //$pdf=new FPDF('L','mm', array(216, 330));
+            $pdf->setX(11);
+            $pdf->setFillColor(255,255,255);
+            $pdf->SetFont('Arial','B',9);
+            $pdf->SetFont('Arial','B',8);
+            $pdf->multicell(0,5,'KOPERASI JASA KEUANGAN SYARIAH NUR INSANI UNIT '.$nama_unit.'',0,'J',1);
+            $pdf->multicell(0,5,'ALAMAT '.$alamat.'',0,'J',1);
+            $pdf->SetFont('Arial','BU',8);
+            $pdf->multicell(0,5,'DAFTAR KARTU ANGSURAN PEMBIAYAAN',0,'J',1);
+            $pdf->Ln();
+            $pdf->SetFont('Arial','',8);
+            $pdf->cell(70,5,'Nomor Rekenig',0,'R',1);
+            $pdf->cell(1,5,':',0,'L',1);
+            $pdf->cell(9,5,'',0,'L',1);
+            $pdf->cell(15,5,''.$norek,0,'J',1);
+            $pdf->Ln(5);
+            $pdf->cell(70,5,'Nama ',0,'L',1);
+            $pdf->cell(1,5,':',0,'L',1);
+            $pdf->cell(9,5,'',0,'L',1);
+            $pdf->cell(15,5,''.$CUST_SHORT_NAME,0,'L',1);
+            $pdf->Ln(5);
+            $pdf->cell(70,5,'Plafond Pembiayaan',0,'R',1);
+            $pdf->cell(1,5,':',0,'R',1);
+            $pdf->cell(9,5,'',0,'R',1);
+            $pdf->cell(15,5,''.$plafond,0,'R',1);
+            $pdf->Ln(5);
+            $pdf->cell(70,5,'Tanggal Realisasi ',0,'R',1);
+            $pdf->cell(1,5,':',0,'R',1);
+            $pdf->cell(9,5,'',0,'R',1);
+            $pdf->cell(15,5,''.$tgl_akad,0,'R',1);
+            $pdf->Ln(5);
+            $pdf->cell(70,5,'Janga Waktu ',0,'R',1);
+            $pdf->cell(1,5,':',0,'R',1);
+            $pdf->cell(9,5,'',0,'R',1);
+            $minggu=' Minggu';
+            $pdf->cell(15,5,''.$tenor .$minggu,0,'R',1);
+            $pdf->Ln(5);
+            $pdf->cell(70,5,'Tanggal Jatuh Tempo ',0,'R',1);
+            $pdf->cell(1,5,':',0,'R',1);
+            $pdf->cell(9,5,'',0,'R',1);
+            $pdf->cell(15,5,''.$maturity_date,0,'R',1);
+            $pdf->Ln(5);
+            $pdf->cell(70,5,'Sisa Pembiayaan ',0,'R',1);
+            $pdf->cell(1,5,':',0,'R',1);
+            $pdf->cell(9,5,'',0,'R',1);
+            $pdf->cell(15,5,''.$os,0,'R',1);
+            $pdf->Ln(5);
+            $pdf->Ln(5);
+            $pdf->SetFont('ARIAL','B',7);
 
 
-$pdf->Cell(8,3,'No',1,0,'C');
-$pdf->Cell(25,3,'Tgl Jatuh Tempo',1,0,'C');
-$pdf->Cell(18,3,'Pokok',1,0,'C');
-$pdf->Cell(18,3,'Margin',1,0,'C');
-$pdf->Cell(15,3,'Jmlh Bayar',1,0,'C');
-$pdf->Cell(25,3,'Tgl Bayar',1,0,'C');
-$pdf->Cell(25,3,'Tunggakan Pokok',1,0,'C');
-$pdf->Cell(25,3,'Tunggakan Margin',1,0,'C');
+            $pdf->Cell(8,3,'No',1,0,'C');
+            $pdf->Cell(25,3,'Tgl Jatuh Tempo',1,0,'C');
+            $pdf->Cell(18,3,'Pokok',1,0,'C');
+            $pdf->Cell(18,3,'Margin',1,0,'C');
+            $pdf->Cell(15,3,'Jmlh Bayar',1,0,'C');
+            $pdf->Cell(25,3,'Tgl Bayar',1,0,'C');
+            $pdf->Cell(25,3,'Tunggakan Pokok',1,0,'C');
+            $pdf->Cell(25,3,'Tunggakan Margin',1,0,'C');
 
-$pdf->Ln();
-$no3 =0;
-while($result3= mysql_fetch_array($sql3)){
-$no3 ++;
-$id_pinjam = $result3['id_pinjam'];
-$CUST_SHORT_NAME = $result3['CUST_SHORT_NAME'];
-$tgl_jatuh_tempo = $result3['tgl_jatuh_tempo'];
-$angsuran_pokok = $result3['angsuran_pokok'];
-$bunga = $result3['bunga'];
-$jumlah_bayar=$result3['jumlah_bayar'];
-$tgl_bayar = $result3['tgl_bayar'];
-$ket = $result['jumlah_bayar'];
-$data_tunggak = mysql_query ("select kredit as pokok from tunggakan where norek ='$norek' and TYPE='01' and tgl_tunggak='$tgl_jatuh_tempo'");
-$tg = mysql_fetch_array($data_tunggak);
-$pokok=$tg['pokok'];
-$data_tunggak_margin = mysql_query ("select kredit as margin from tunggakan where norek ='$norek' and TYPE='02' and tgl_tunggak='$tgl_jatuh_tempo'");
-$tg = mysql_fetch_array($data_tunggak_margin);
-$margin=$tg['margin'];
-//query dan arraying
-$pdf->SetFont('Arial','',7);
-$pdf->Cell(8,3,''.$no3,1,'L',1);
-$pdf->Cell(25,3,''.tgl_indo ($tgl_jatuh_tempo),1,'L',1);
-$pdf->Cell(18,3,''.number_format (compat_num($angsuran_pokok)),1,'LR',0,'R');
-$pdf->Cell(18,3,''.number_format (compat_num($bunga)),1,'LR',0,'R');
-$pdf->Cell(15,3,''.number_format (compat_num($jumlah_bayar)),1,'R',0,'R');
-$pdf->Cell(25,3,''.tgl_indo ($tgl_bayar),1,'LR',0,'R');
-$pdf->Cell(25,3,''.number_format (compat_num($pokok)),1,'R',0,'R');
-$pdf->Cell(25,3,''.number_format (compat_num($margin)),1,'R',0,'R');
-$pdf->Ln();
-}   
-$pdf->Output();
-
-default: 
+            $pdf->Ln();
+            $no3 =0;
+            foreach ($sql3 as $result3) {
+            $no3 ++;
+            $id_pinjam = $result3['id_pinjam'];
+            $CUST_SHORT_NAME = $result3['CUST_SHORT_NAME'];
+            $tgl_jatuh_tempo = $result3['tgl_jatuh_tempo'];
+            $angsuran_pokok = $result3['angsuran_pokok'];
+            $bunga = $result3['bunga'];
+            $jumlah_bayar=$result3['jumlah_bayar'];
+            $tgl_bayar = $result3['tgl_bayar'];
+            $ket = null; // versi lama: $result['jumlah_bayar'] (variabel tidak ada, tidak dipakai)
+            $tg = baris_teks_rk(db_satu("select kredit as pokok from tunggakan where norek =? and TYPE='01' and tgl_tunggak=?", 'ss', (string) $norek, (string) $tgl_jatuh_tempo));
+            $pokok=$tg['pokok'];
+            $tg = baris_teks_rk(db_satu("select kredit as margin from tunggakan where norek =? and TYPE='02' and tgl_tunggak=?", 'ss', (string) $norek, (string) $tgl_jatuh_tempo));
+            $margin=$tg['margin'];
+            //query dan arraying
+            $pdf->SetFont('Arial','',7);
+            $pdf->Cell(8,3,''.$no3,1,'L',1);
+            $pdf->Cell(25,3,''.tgl_indo ($tgl_jatuh_tempo),1,'L',1);
+            $pdf->Cell(18,3,''.number_format (compat_num($angsuran_pokok)),1,'LR',0,'R');
+            $pdf->Cell(18,3,''.number_format (compat_num($bunga)),1,'LR',0,'R');
+            $pdf->Cell(15,3,''.number_format (compat_num($jumlah_bayar)),1,'R',0,'R');
+            $pdf->Cell(25,3,''.tgl_indo ($tgl_bayar),1,'LR',0,'R');
+            $pdf->Cell(25,3,''.number_format (compat_num($pokok)),1,'R',0,'R');
+            $pdf->Cell(25,3,''.number_format (compat_num($margin)),1,'R',0,'R');
+            $pdf->Ln();
+            }   
+            $pdf->Output();
+            exit;
+        }
+    }
+    // versi lama: jenis 02 (Pembiayaan) dan nilai lain tidak menghasilkan apa-apa selain halaman form
 }
-}
-}
+
+halaman_awal('Rekap Mutasi');
 ?>
-<iframe width=174 height=189 name="gToday:normal:calender/normal.js" id="gToday:normal:calender/normal.js" src="calender/ipopeng.htm" scrolling="no" frameborder="0" style="visibility:visible; z-index:999; position:absolute; top:-500px; left:-500px;">
-</iframe>
-</body>
-</html>
+<div class="card card-ni">
+  <div class="card-header">Input Data</div>
+  <div class="card-body">
+    <form method="post" action="rek_koran.php" name="postform" class="form-ni" target="_blank" autocomplete="off">
+      <div class="row g-2 mb-2">
+        <label for="kode" class="col-sm-4 col-form-label">NOREK</label>
+        <div class="col-sm-3 autocomplete">
+          <input type="text" name="kode_rekening" id="kode" class="form-control form-control-sm" placeholder="CIF / nama" required
+                 data-autocomplete="ajax/cari_rekening.php" data-isi-nilai="norek" data-isi-label="norek,nama,nama_kel"
+                 data-isi-target='{"#country":"nama"}'>
+        </div>
+        <div class="col-sm-5"><input type="text" id="country" class="form-control form-control-sm" disabled></div>
+      </div>
+      <div class="row g-2 mb-3">
+        <label for="select" class="col-sm-4 col-form-label">Jenis Transaksi</label>
+        <div class="col-sm-8">
+          <select name="select" id="select" class="form-select form-select-sm" required>
+            <option value="">Pilih Salah satu</option>
+            <option value="01">Simpanan</option>
+            <option value="02">Pembiayaan</option>
+            <option value="03">Kartu Angsuran</option>
+            <option value="04">Rencana Angsuran</option>
+          </select>
+        </div>
+      </div>
+      <div class="d-flex justify-content-between align-items-center">
+        <span class="small text-muted">PDF dibuka di tab baru.</span>
+        <button name="search" type="submit" id="submit2" value="Cari" class="btn btn-ni btn-sm px-4">Cari</button>
+      </div>
+    </form>
+  </div>
+</div>
+<?php echo implode("\n", $pesan); ?>
+<?php
+halaman_akhir();
