@@ -1,167 +1,98 @@
 <?php require_once __DIR__ . '/../koneksi_db.php';
+/**
+ * Export Rugi Laba ke .xlsx (versi lama: tabel HTML yang dinamai laba-rugi.xls). Data kecil, jadi dibuat dalam satu request.
+ * Logika sama dengan versi lama (keputusan user: hanya migrasi kode). Perhatikan perbedaan versi lama dengan layar
+ * (new_laba.php) yang dipertahankan:
+ *   - daftar rekening ditambah filter gr_neraca='rugi-laba'
+ *   - pendapatan/beban non operasional (57000/58000) selalu diambil dari unit '001'
+ *   - SHU sebelum pajak = SHU operasional + nilai mutlak SHU non operasional
+ * Saldo akhir negatif ditulis sebagai nilai mutlak; estimasi pajak 0 (tidak pernah diisi di versi lama).
+ */
+require_once __DIR__ . '/../inc/xlsx_writer.php';
 session_start();
 ob_start();
-$userid=$_SESSION['userid'];
-
+$userid = isset($_SESSION['userid']) ? $_SESSION['userid'] : null;
 //cek apakah user sudah login
-if(!isset($_SESSION['userid'])){
-   header("location:../index.html");
- exit; }
-
+if (!isset($_SESSION['userid'])) {
+    header("location:../index.html");
+    exit;
+}
 //cek level user
-if($_SESSION['level']!="unit"){
-   header("location:../index.html");
- exit; }
-function open_connection2(){
-
-	//konfigurasi
-	$host="localhost";
-	$user="root";
-	$pass="anaskorti";
-	$db="nur_insani";
-	
-	
-	//koneksi database
-	$koneksi2=db_ni();
-	mysql_select_db($db,$koneksi2);
-	
-	return $koneksi2;
+if ($_SESSION['level'] != "unit") {
+    header("location:../index.html");
+    exit;
 }
-header("Content-type: application/vnd-ms-excel");
-header("Content-Disposition: attachment; filename=laba-rugi.xls");
 
-$koneksi=open_connection2();
-			$user=mysql_query("select kode_branch from user where userid='$userid'");
-			
-			while($id_user=mysql_fetch_array($user)){
-			
-				$unit=$id_user['kode_branch'];
-			}
-						
-$sql = mysql_query("SELECT kode_rekening,nama_rekening,saldo_awal,saldo_akhir,saldo_jalan,LINE_BALANCE
-FROM `tabel_rugi_laba` 
-where unit ='$unit' and posisi='rugi-laba' and gr_neraca='rugi-laba' and kode_rekening not in ('59999')
-GROUP BY gr_neraca,kode_rekening ");
+$unit = null;
+foreach (db_semua("select kode_branch from user where userid=?", 's', (string) $userid) as $id_user) {
+    $unit = $id_user['kode_branch'];
+}
+$unit = (string) $unit;
 
-$total_pendapan=mysql_fetch_array(mysql_query("select saldo_jalan,saldo_awal,saldo_akhir from tabel_rugi_laba where unit ='$unit' and kode_rekening='40000'"));
-$total_biaya=mysql_fetch_array(mysql_query("select saldo_jalan,saldo_awal,saldo_akhir from tabel_rugi_laba where unit ='$unit' and kode_rekening='50000'"));
+$rekening = db_semua("SELECT kode_rekening,nama_rekening,saldo_awal,saldo_akhir,saldo_jalan,LINE_BALANCE
+    FROM `tabel_rugi_laba`
+    where unit =? and posisi='rugi-laba' and gr_neraca='rugi-laba' and kode_rekening not in ('59999')
+    GROUP BY gr_neraca,kode_rekening ", 's', $unit);
 
-
-$shu_ops_awal=$total_pendapan['saldo_awal'] - $total_biaya['saldo_awal'];
-$shu_ops_jalan=$total_pendapan['saldo_jalan'] - $total_biaya['saldo_jalan'];
-$shu_ops_akhir=$total_pendapan['saldo_akhir'] - $total_biaya['saldo_akhir'];
-
-$total_pendapan_n=mysql_fetch_array(mysql_query("select saldo_jalan,saldo_awal,saldo_akhir from tabel_rugi_laba where unit ='001' and kode_rekening='57000'"));
-$total_beban=mysql_fetch_array(mysql_query("select saldo_jalan,saldo_awal,saldo_akhir from tabel_rugi_laba where unit ='001' and kode_rekening='58000'"));
-
-
-$shu_non_ops_awal=$total_pendapan_n['saldo_awal'] - $total_beban['saldo_awal'];
-$shu_non_ops_jalan=$total_pendapan_n['saldo_jalan'] - $total_beban['saldo_jalan'];
-$shu_ops_non_akhir=$total_pendapan_n['saldo_akhir'] - $total_beban['saldo_akhir'];
-
-$shu_sb_pajak_awal=$shu_ops_awal + abs(compat_num($shu_non_ops_awal));
-$shu_sb_pajak_jalan=$shu_ops_jalan + abs(compat_num($shu_non_ops_jalan));
-$shu_sb_pajak_akhir=$shu_ops_akhir + abs(compat_num($shu_ops_non_akhir));
-
-//estimasi
-
-$shu_after_pajak_awal=$shu_sb_pajak_awal - $estimasi_awal;
-$shu_after_pajak_jalan=$shu_sb_pajak_jalan - $estimasi_jalan;
-$shu_after_pajak_akhir=$shu_sb_pajak_akhir - $estimasi_jalan;
-
-echo '<html>
-		<head>
-			<title>LABA RUGI</title>
-			<style>
-				body {font-family:tahoma, arial}
-				table {border-collapse: collapse}
-				th, td {font-size: 17px; border: 1px solid #DEDEDE; padding: 5px 7px; color: #303030}
-				th {background: #EAEAEA; font-size: 13px; border-color:#B0B0B0}
-				.subtotal td{background: #F5F5F5}
-				.total td{background: #ECECEC}
-				.right{text-align: right}
-			</style>
-		</head>
-		<body>';
-
-echo '<table class="grey">
-		<thead>
-			<tr>
-				<th colspan="">TYPE COA</th>
-				<th colspan="">COA</th>
-				<th colspan="">Deskripsi</th>
-				<th colspan="">Saldo Akhir</th>
-			</tr>
-			
-		</thead>
-		<tbody>';
-while($row=mysql_fetch_array($sql))
+function saldo_rl($unit, $kode)
 {
-	$class = '';
-	$akhir =$row['saldo_akhir'];
-	$awal =$row['saldo_awal'];
-	
-	
-	
-	if ($akhir < 0){
-		
-		$akhir = "".number_format (compat_num(abs(compat_num($akhir))), '0', ',', '.')."";
-		
-	}else{
-		$akhir =number_format (compat_num($row['saldo_akhir']), '0', ',', '.');
-	}
-
-	
-
-	// jika ada total atau sub total
-		if ($row['LINE_BALANCE'] == 'HEADING') {
-		$class = ' class="subtotal"';
-	} else if ($row['kode_rekening'] == 'SUB TOTAL' || $row['nama_rekening'] == 'SUB TOTAL') {
-		//$class = ' class="subtotal"';
-	}
-	
-	echo 
-	'<tr'.$class.'>
-		<td>' . $row['LINE_BALANCE'] . '</td>
-		<td>' . $row['kode_rekening'] . '</td>
-		<td>' . $row['nama_rekening'] . '</td>
-		
-		<td>' . $akhir. '</td>
-		</tr>';
-		$total += $row['total'];
+    return db_satu("select saldo_jalan,saldo_awal,saldo_akhir from tabel_rugi_laba where unit =? and kode_rekening=?", 'ss', $unit, $kode);
 }
-	
-	echo '<tr class="grey">
-		<td colspan="3"><b>SHU OPERASIONAL</td>
-	
-		<td><b>' . number_format(compat_num($shu_ops_akhir), 0, ',', '.') . '</td>
-	 </tr>';
+$nilai = function ($baris, $kolom) {
+    return compat_num($baris ? $baris[$kolom] : null);
+};
+$total_pendapan = saldo_rl($unit, '40000');
+$total_biaya = saldo_rl($unit, '50000');
+// versi lama: unit '001' tetap (bukan unit user)
+$total_pendapan_n = saldo_rl('001', '57000');
+$total_beban = saldo_rl('001', '58000');
+$shu_ops_akhir = $nilai($total_pendapan, 'saldo_akhir') - $nilai($total_biaya, 'saldo_akhir');
+$shu_ops_non_akhir = $nilai($total_pendapan_n, 'saldo_akhir') - $nilai($total_beban, 'saldo_akhir');
+$shu_sb_pajak_akhir = $shu_ops_akhir + abs($shu_ops_non_akhir);
+$estimasi_pajak = 0;
+$shu_after_pajak_akhir = $shu_sb_pajak_akhir - $estimasi_pajak;
 
-echo '<tr class="grey">
-		<td colspan="3"><b>SHU NON OPERASIONAL</td>
-			<td><b>' . number_format(compat_num(abs(compat_num($shu_ops_non_akhir))), 0, ',', '.') . '</td>
-	 </tr>';
-	 
-echo '<tr class="grey">
-		<td colspan="3"><b>SHU TAHUN BERJALAN SEBELUM PAJAK</td>
-				<td><b>' . number_format(compat_num($shu_sb_pajak_akhir), 0, ',', '.') . '</td>
-	 </tr>';	 
-	 
-	 echo '<tr class="grey">
-		<td colspan="3"><b>ESTIMASI TAKSIRAN PAJAK PENGHASILAN</td>
-		
-		<td><b>' . number_format(compat_num($shu_ops_akhir1), 0, ',', '.') . '</td>
-	 </tr>';
-echo '<tr class="grey">
-		<td colspan="3"><b>SHU TAHUN BERJALAN SETELAH PAJAK</td>
-		
-		<td><b>' . number_format(compat_num($shu_after_pajak_akhir), 0, ',', '.') . '</td>
-	 </tr>	 	 
-	 
-
-
-
-	</tbody>
-</table>
-</body>
-</html>';
+$dir = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'nurinsani_export' . DIRECTORY_SEPARATOR . bin2hex(random_bytes(12));
+if (!@mkdir($dir, 0700, true)) {
+    die('Folder sementara export tidak bisa dibuat.');
+}
+$xml = '';
+$baris = 1;
+foreach ($rekening as $row) {
+    $akhir = compat_num($row['saldo_akhir']);
+    $baris++;
+    $xml .= xlsx_baris_xml($baris, array(
+        array('s', $row['LINE_BALANCE']),
+        array('s', $row['kode_rekening']),
+        array('s', $row['nama_rekening']),
+        array('n', $akhir < 0 ? abs($akhir) : $akhir),
+    ), $row['LINE_BALANCE'] == 'HEADING' ? 2 : 0);
+}
+foreach (array(
+    array('SHU OPERASIONAL', $shu_ops_akhir),
+    array('SHU NON OPERASIONAL', abs($shu_ops_non_akhir)),
+    array('SHU TAHUN BERJALAN SEBELUM PAJAK', $shu_sb_pajak_akhir),
+    array('ESTIMASI TAKSIRAN PAJAK PENGHASILAN', $estimasi_pajak),
+    array('SHU TAHUN BERJALAN SETELAH PAJAK', $shu_after_pajak_akhir),
+) as $shu) {
+    $baris++;
+    $xml .= xlsx_baris_xml($baris, array(array('s', $shu[0]), array('s', ''), array('s', ''), array('n', $shu[1])), 2);
+}
+xlsx_tulis_baris($dir . '/data.part', $xml);
+$berkas = $dir . '/laba-rugi.xlsx';
+$ok = xlsx_rakit($berkas, 'Laba Rugi', array('TYPE COA', 'COA', 'Deskripsi', 'Saldo Akhir'), array(12, 12, 48, 18), $dir . '/data.part');
+while (ob_get_level() > 0) {
+    ob_end_clean();
+}
+if (!$ok) {
+    die('Gagal membuat file xlsx.');
+}
+header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+header('Content-Disposition: attachment; filename="laba-rugi.xlsx"');
+header('Content-Length: ' . filesize($berkas));
+header('Cache-Control: no-store');
+readfile($berkas);
+foreach (glob($dir . '/*') ?: array() as $f) {
+    @unlink($f);
+}
+@rmdir($dir);

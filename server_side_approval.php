@@ -1,168 +1,95 @@
 <?php require_once __DIR__ . '/koneksi_db.php';
+/**
+ * Sumber data DataTables (protokol lama: sEcho/iDisplayStart/sSearch, POST) untuk Approval Pengajuan
+ * (data_approval.php, level lead). Daftar calon_loan dengan gol='0'.
+ * Logika sama dengan versi lama; query kini prepared statement dan isi sel di-escape HTML. Perilaku lama yang
+ * dipertahankan (PEKERJAAN_TERTUNDA.md bagian 38): daftar tidak disaring per area lead, sedangkan iTotalRecords
+ * dihitung dari calon_loan di area lead (tanpa syarat gol).
+ * Perubahan: wajib login (versi lama tanpa cek login); tautan "delete" dihapus karena tidak pernah berfungsi
+ * (memanggil deleteUser dengan id kosong ke crud.php milik menu Tagihan).
+ */
+require_once __DIR__ . '/inc/tampilan.php';
 session_start();
 ob_start();
-$userid=$_SESSION['userid'];
-	/**
-		* Script:    DataTables server-side script for PHP 5.2+ and MySQL 4.1+
-		* Notes:     Based on a script by Allan Jardine that used the old PHP mysql_* functions.
-		*            Rewritten to use the newer object oriented mysqli extension.
-		* Copyright: 2010 - Allan Jardine (original script)
-		*            2012 - Kari Söderholm, aka Haprog (updates)
-		* License:   GPL v2 or BSD (3-point)
-	*/
-	mb_internal_encoding('UTF-8');
-	
-	/**
-		* Array of database columns which should be read and sent back to DataTables. Use a space where
-		* you want to insert a non-database field (for example a counter or static image)
-	*/
-	$aColumns = array( 'code_kel','no_anggota','cif','Cust_Short_name', 'Plafond','os','saldo_margin'); //Kolom Pada Tabel
-	
-	// Indexed column (used for fast and accurate table cardinality)
-	$sIndexColumn = 'no_anggota';
-	
-	// DB table to use
-	$sTable = 'calon_loan'; // Nama Tabel
-	
-	// Database connection information
-	$gaSql['user']     = 'root';
-	$gaSql['password'] = 'anaskorti';   
-	$gaSql['db']       = 'nur_insani';  //Database
-	$gaSql['server']   = 'localhost';   
-	$gaSql['port']     = 3306; // 3306 is the default MySQL port
-	
-	// Input method (use $_GET, $_POST or $_REQUEST)
-	$input =& $_POST;
+require_once __DIR__ . '/inc/cek_login.php';
+wajib_login('json');
+$userid = (string) $_SESSION['userid'];
+mb_internal_encoding('UTF-8');
 
-	$gaSql['charset']  = 'utf8';
-	
-	/**
-		* MySQL connection
-	*/
-	$db = db_ni();
-	if (mysqli_connect_error()) {
-		die( 'Error connecting to MySQL server (' . mysqli_connect_errno() .') '. mysqli_connect_error() );
-	}
-	
-	if (!$db->set_charset($gaSql['charset'])) {
-		die( 'Error loading character set "'.$gaSql['charset'].'": '.$db->error );
-	}
-	
-	
-	/**
-		* Paging
-	*/
-	$sLimit = "";
-	if ( isset( $input['iDisplayStart'] ) && $input['iDisplayLength'] != '-1' ) {
-		$sLimit = " LIMIT ".intval( $input['iDisplayStart'] ).", ".intval( $input['iDisplayLength'] );
-	}
-	
-	
-	/**
-		* Ordering
-	*/
-	$aOrderingRules = array();
-	if ( isset( $input['iSortCol_0'] ) ) {
-		$iSortingCols = intval( $input['iSortingCols'] );
-		for ( $i=0 ; $i<$iSortingCols ; $i++ ) {
-			if ( $input[ 'bSortable_'.intval($input['iSortCol_'.$i]) ] == 'true' ) {
-				$aOrderingRules[] =
-                "`".$aColumns[ intval( $input['iSortCol_'.$i] ) ]."` "
-                .($input['sSortDir_'.$i]==='asc' ? 'asc' : 'desc');
-			}
-		}
-	}
-	
-	if (!empty($aOrderingRules)) {
-		$sOrder = " ORDER BY ".implode(", ", $aOrderingRules);
-		} else {
-		$sOrder = "";
-	}
-	
-	
-	/**
-		* Filtering
-		* NOTE this does not match the built-in DataTables filtering which does it
-		* word by word on any field. It's possible to do here, but concerned about efficiency
-		* on very large tables, and MySQL's regex functionality is very limited
-	*/
-	$iColumnCount = count($aColumns);
-	
-	if ( isset($input['sSearch']) && $input['sSearch'] != "" ) {
-		$aFilteringRules = array();
-		for ( $i=0 ; $i<$iColumnCount ; $i++ ) {
-			if ( isset($input['bSearchable_'.$i]) && $input['bSearchable_'.$i] == 'true' ) {
-				$aFilteringRules[] = "`".$aColumns[$i]."` LIKE '%".$db->real_escape_string( $input['sSearch'] )."%'";
-			}
-		}
-		if (!empty($aFilteringRules)) {
-			$aFilteringRules = array('('.implode(" OR ", $aFilteringRules).')');
-		}
-	}
-	
-	// Individual column filtering
-	for ( $i=0 ; $i<$iColumnCount ; $i++ ) {
-		if ( isset($input['bSearchable_'.$i]) && $input['bSearchable_'.$i] == 'true' && $input['sSearch_'.$i] != '' ) {
-			$aFilteringRules[] = "`".$aColumns[$i]."` LIKE '%".$db->real_escape_string($input['sSearch_'.$i])."%'";
-		}
-	}
-	
-	if (!empty($aFilteringRules)) {
-		$sWhere = " WHERE gol ='0' AND  ".implode(" AND ", $aFilteringRules);
-		} else {
-		$sWhere = "WHERE gol ='0'";
-	}
-	
-	
-	/**
-		* SQL queries
-		* Get data to display
-	*/
-	$aQueryColumns = array();
-	foreach ($aColumns as $col) {
-		if ($col != ' ') {
-			$aQueryColumns[] = $col;
-		}
-	}
-	
-	$sQuery = "
-   SELECT SQL_CALC_FOUND_ROWS `".implode("`, `", $aQueryColumns)."`
-   FROM  calon_loan ".$sWhere.$sOrder.$sLimit;
-	
-	$rResult = $db->query( $sQuery ) or die($db->error);
-	
-	// Data set length after filtering
-	$sQuery = "SELECT FOUND_ROWS()";
-	$rResultFilterTotal = $db->query( $sQuery ) or die($db->error);
-	list($iFilteredTotal) = $rResultFilterTotal->fetch_row();
-	
-	// Total data set length
-	$sQuery = "SELECT COUNT(`".$sIndexColumn."`) FROM  calon_loan inner join branch on branch.kode_branch = calon_loan.unit where code_area ='$userid'";
-	$rResultTotal = $db->query( $sQuery ) or die($db->error);
-	list($iTotal) = $rResultTotal->fetch_row();
-	
-	
-	/**
-		* Output
-	*/
-	$output = array(
-    "sEcho"                => intval($input['sEcho']),
-    "iTotalRecords"        => $iTotal,
-    "iTotalDisplayRecords" => $iFilteredTotal,
-    "aaData"               => array(),
-	);
-	
-	// Looping Data
-	while ( $aRow = $rResult->fetch_assoc() ) {
-		$row = array();
-		$btn = '<a href="new4.php?cif='.$aRow['cif'].'">View Data</a> | <a href="#" onClick="deleteUser(\''.$aRow['nono'].'\')">delete</a>';
-		for ( $i=0 ; $i<$iColumnCount ; $i++ ) {
-			$row[] = $aRow[ $aColumns[$i] ];
-		}
-		$row = array( $aRow['code_kel'],$aRow['no_anggota'], $aRow['cif'], $aRow['Cust_Short_name'],number_format (compat_num($aRow['Plafond'])), number_format(compat_num($aRow['os'])),number_format (compat_num($aRow['saldo_margin'])),$btn );
-		$output['aaData'][] = $row;
-	}
-	
-	echo json_encode( $output );
-	
-?>
+// kolom tabel (urutan sama dengan kolom tampilan, kecuali Action)
+$aColumns = array('code_kel', 'no_anggota', 'cif', 'Cust_Short_name', 'Plafond', 'os', 'saldo_margin');
+$iColumnCount = count($aColumns);
+$input = $_POST;
+$ambil = function ($k) use ($input) {
+    return isset($input[$k]) ? (string) $input[$k] : '';
+};
+
+// Paging
+$sLimit = "";
+if (isset($input['iDisplayStart']) && $ambil('iDisplayLength') != '-1') {
+    $sLimit = " LIMIT " . intval($input['iDisplayStart']) . ", " . intval($ambil('iDisplayLength'));
+}
+
+// Ordering (kolom di luar daftar, mis. Action, diabaikan)
+$aOrderingRules = array();
+if (isset($input['iSortCol_0'])) {
+    $iSortingCols = intval($ambil('iSortingCols'));
+    for ($i = 0; $i < $iSortingCols; $i++) {
+        $kol = intval($ambil('iSortCol_' . $i));
+        if ($ambil('bSortable_' . $kol) == 'true' && isset($aColumns[$kol])) {
+            $aOrderingRules[] = "`" . $aColumns[$kol] . "` " . ($ambil('sSortDir_' . $i) === 'asc' ? 'asc' : 'desc');
+        }
+    }
+}
+$sOrder = $aOrderingRules ? " ORDER BY " . implode(", ", $aOrderingRules) : "";
+
+// Filtering: pencarian umum (OR antar kolom) lalu pencarian per kolom (AND)
+$aFilteringRules = array();
+$tipe = '';
+$nilai = array();
+if ($ambil('sSearch') != "") {
+    $atau = array();
+    for ($i = 0; $i < $iColumnCount; $i++) {
+        if ($ambil('bSearchable_' . $i) == 'true') {
+            $atau[] = "`" . $aColumns[$i] . "` LIKE ?";
+            $tipe .= 's';
+            $nilai[] = '%' . $ambil('sSearch') . '%';
+        }
+    }
+    if ($atau) {
+        $aFilteringRules[] = '(' . implode(" OR ", $atau) . ')';
+    }
+}
+for ($i = 0; $i < $iColumnCount; $i++) {
+    if ($ambil('bSearchable_' . $i) == 'true' && $ambil('sSearch_' . $i) != '') {
+        $aFilteringRules[] = "`" . $aColumns[$i] . "` LIKE ?";
+        $tipe .= 's';
+        $nilai[] = '%' . $ambil('sSearch_' . $i) . '%';
+    }
+}
+$sWhere = $aFilteringRules ? " WHERE gol ='0' AND  " . implode(" AND ", $aFilteringRules) : " WHERE gol ='0'";
+
+$rResult = db_semua("SELECT `" . implode("`, `", $aColumns) . "` FROM calon_loan" . $sWhere . $sOrder . $sLimit, $tipe, ...$nilai);
+$hitung = db_satu("SELECT COUNT(*) as n FROM calon_loan" . $sWhere, $tipe, ...$nilai);
+$iFilteredTotal = $hitung ? (int) $hitung['n'] : 0;
+$total = db_satu("SELECT COUNT(`no_anggota`) as n FROM  calon_loan inner join branch on branch.kode_branch = calon_loan.unit where code_area =?", 's', $userid);
+$iTotal = $total ? (int) $total['n'] : 0;
+
+$output = array(
+    "sEcho" => intval($ambil('sEcho')),
+    // dikirim sebagai teks seperti versi lama (hasil fetch_row)
+    "iTotalRecords" => (string) $iTotal,
+    "iTotalDisplayRecords" => (string) $iFilteredTotal,
+    "aaData" => array(),
+);
+foreach ($rResult as $aRow) {
+    $btn = '<a href="new4.php?cif=' . h(rawurlencode((string) $aRow['cif'])) . '" class="btn btn-sm btn-ni">View Data</a>';
+    $output['aaData'][] = array(
+        h($aRow['code_kel']), h($aRow['no_anggota']), h($aRow['cif']), h($aRow['Cust_Short_name']),
+        number_format(compat_num($aRow['Plafond'])), number_format(compat_num($aRow['os'])), number_format(compat_num($aRow['saldo_margin'])),
+        $btn,
+    );
+}
+
+header('Content-Type: application/json; charset=utf-8');
+echo json_encode($output);

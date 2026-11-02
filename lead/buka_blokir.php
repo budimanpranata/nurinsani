@@ -1,430 +1,142 @@
-<?php require_once __DIR__ . '/../php8_compat.php';
+<?php require_once __DIR__ . '/../koneksi_db.php';
+/**
+ * Menu Approve > Buka Blokir (level lead): buka / tutup blokir simpanan per kelompok (01) atau perorangan/CIF (02),
+ * lalu tampilkan mutasi simpanan kelompok/CIF itu dengan saldo berjalan.
+ *   tutup : TYPE semua baris simpanan (blok='1') jadi '02'
+ *   buka  : TYPE baris yang '02' (blok='1') jadi '01'
+ * Logika sama dengan versi lama; hanya tampilan dan query (prepared statement) yang berubah. Saran CIF/kelompok dari
+ * ajax/cari_blokir.php (query sama dengan lead/autosuggesst_rek.php). var_dump($jenis_blokir) sisa debug dihapus.
+ * Perilaku lama yang dipertahankan dicatat di PEKERJAAN_TERTUNDA.md bagian 39.
+ */
+require_once __DIR__ . '/../inc/tampilan.php';
 session_start();
 ob_start();
-error_reporting(0);
-$userid=$_SESSION['userid'];
-$tgl_system=$_SESSION['stgl_system'];
+$userid = isset($_SESSION['userid']) ? $_SESSION['userid'] : null;
 //cek apakah user sudah login
+if (!isset($_SESSION['userid'])) {
+    header("location:index.html");
+    exit;
+}
+if ($_SESSION['level'] != "lead") {
+    header("location:../index.html");
+    exit;
+}
+include "../indo_tgl.php";
 
-if(!isset($_SESSION['userid'])){
-   header("location:index.html");
- exit; }
-if($_SESSION['level']!="lead"){
-   header("location:../index.html");
- exit; }
+$cif_kel = isset($_POST['kode_rekening']) ? (string) $_POST['kode_rekening'] : '';
+$pilih = isset($_POST['select']) ? (string) $_POST['select'] : '';
+$jenis_blokir = isset($_POST['jenis']) ? (string) $_POST['jenis'] : '';
 
+$skrip = array();
+$select = array();
+if (isset($_POST['search'])) {
+    if (empty($cif_kel) || empty($pilih) || empty($jenis_blokir)) {
+        $skrip[] = "alert('Maaf,.isi Nomor kode kelompok dan Jenis Transaksi yang benar  !!!');";
+        // versi lama mengarah ke buka_bokir.php (salah ketik, halaman tidak ada) - dipertahankan
+        $skrip[] = "document.location.href='buka_bokir.php';";
+    } else {
+        // 01 = per kelompok (code_kel), 02 = perorangan (cif); pilihan lain tidak memproses apa pun
+        $kolom = $pilih == '01' ? 'code_kel' : ($pilih == '02' ? 'cif' : null);
+        if ($kolom !== null) {
+            $teks = addslashes($cif_kel);
+            if ($jenis_blokir == 'buka') {
+                db_jalankan("update simpanan set type ='01', blok ='1' where $kolom =? and type ='02' and blok ='1' ", 's', $cif_kel);
+                $cek = db_satu("SELECT count(*) as n FROM simpanan WHERE type='01' AND $kolom =? AND blok='1'", 's', $cif_kel);
+                $berhasil = $cek && (int) $cek['n'] >= 1;
+                $skrip[] = $berhasil ? "alert('Blokir Rekening $teks" . ($pilih == '01' ? '  ' : ' ') . "Sudah di buka !!!');" : "alert('Gagal Buka Blokir !!!');";
+            } else {
+                db_jalankan("update simpanan set type ='02', blok ='1' where $kolom =? and blok ='1'", 's', $cif_kel);
+                $cek = db_satu("SELECT count(*) as n FROM simpanan WHERE type='02' AND $kolom =? and blok ='1'", 's', $cif_kel);
+                $berhasil = $cek && (int) $cek['n'] >= 1;
+                $skrip[] = $berhasil ? "alert('Rekening $teks  Sudah di Blokir !!!');" : "alert('Gagal TUTUP Blokir !!!');";
+            }
+            if ($berhasil) {
+                // saldo berjalan @bal dihitung MySQL seperti versi lama (koneksi yang sama)
+                db_jalankan("SET @bal = 0;");
+                $select = db_semua("SELECT simpanan.NOREK,simpanan.BUSS_DATE,anggota.CUST_SHORT_NAME,TYPE,DEBIT,KREDIT,@bal:=(@bal+KREDIT)-DEBIT as balance FROM simpanan
+                    join anggota on anggota.cif = simpanan.cif
+                    where simpanan.$kolom=? order by simpanan.REFF", 's', $cif_kel);
+            }
+        }
+    }
+}
+
+halaman_awal('Buka Blokir Simpanan');
+foreach ($skrip as $s) {
+    echo "<script>$s</script>";
+}
 ?>
-    <script type="text/javascript" src="../jquery.js"></script>
-    <script>
-    function suggest(inputString){
-        if(inputString.length == 0) {
-            $('#suggestions').fadeOut();
-        } else {
-        $('#country').addClass('load');
-            $.post("autosuggesst_rek.php", {queryString: ""+inputString+""}, function(data){
-                if(data.length >0) {
-                    $('#suggestions').fadeIn();
-                    $('#suggestionsList').html(data);
-                    $('#country').removeClass('load');
-                }
-            });
-        }
-    }
-    
-    function fill(thisValue) {
-        $('#country').val(thisValue);
-        setTimeout("$('#suggestions').fadeOut();", 100);
-    }
-    
-    function fill2(thisValue) {
-        $('#kode').val(thisValue);
-        setTimeout("$('#suggestions').fadeOut();", 100);
-    }
-    function fill3(thisValue) {
-        $('#code_kel').val(thisValue);
-        setTimeout("$('#suggestions').fadeOut();", 100);
-    }
-    
-    </script>
-<script>
-    function formatCurrency(num) {
-    num = num.toString().replace(/\$|\,/g,'');
-    num = num.toString().replace(/[^0-9]/g,'');
-    if(isNaN(num))
-    num = "0";
-    sign = (num == (num = Math.abs(num)));
-    num = Math.floor(num*100+0.50000000001);
-    cents = num%100;
-    num = Math.floor(num/100).toString();
-    if(cents<10)
-    cents = "0" + cents;
-    for (var i = 0; i < Math.floor((num.length-(1+i))/3); i++)
-    num = num.substring(0,num.length-(4*i+3))+'.'+
-    num.substring(num.length-(4*i+3));
-    return (((sign)?'':'-') + 'Rp. ' + num + '');
-    }
-    </script>
-    
-</script>
+<div class="card card-ni mb-3">
+  <div class="card-header">Input Data</div>
+  <div class="card-body">
+    <form method="post" action="buka_blokir.php" name="postform" class="row g-3" autocomplete="off">
+      <div class="col-sm-6">
+        <label class="form-label" for="select">Group Blokir</label>
+        <select name="select" id="select" class="form-select">
+          <option>Pilih Salah satu</option>
+          <option value="01">Kelompok</option>
+          <option value="02">Perorangan </option>
+        </select>
+      </div>
+      <div class="col-sm-6">
+        <label class="form-label" for="kode">Kode Kelompok/CIF</label>
+        <div class="autocomplete position-relative">
+          <input type="text" name="kode_rekening" id="kode" class="form-control"
+                 data-autocomplete="../ajax/cari_blokir.php" data-isi-nilai="cif" data-isi-label="label"
+                 data-isi-target='{"#country":"nama"}'>
+        </div>
+      </div>
+      <div class="col-sm-6">
+        <label class="form-label" for="country">Nama</label>
+        <input type="text" disabled="disabled" name="nama_rekening" id="country" class="form-control">
+      </div>
+      <div class="col-sm-6">
+        <span class="form-label d-block">Jenis Blokir</span>
+        <div class="form-check form-check-inline mt-1">
+          <input class="form-check-input" name="jenis" type="radio" value="buka" id="jenis-buka">
+          <label class="form-check-label" for="jenis-buka">Buka</label>
+        </div>
+        <div class="form-check form-check-inline">
+          <input class="form-check-input" name="jenis" type="radio" value="tutup" id="jenis-tutup">
+          <label class="form-check-label" for="jenis-tutup">Tutup</label>
+        </div>
+      </div>
+      <div class="col-12">
+        <button name="search" type="submit" id="submit2" value="Input" class="btn btn-ni">Input</button>
+      </div>
+    </form>
+  </div>
+</div>
 
-
-<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
-"http://www.w3.org/TR/html4/loose.dtd">
-<html>
-<head>
-<title>Transaksi NI</title>
-<link rel="stylesheet" href="../tabel.css" />
-<meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
-<style type="text/css">
-<script type="text/javascript" src="../jquery.js"></script>
-        <link href="../../style.css" rel="stylesheet" type="text/css" media="screen" />
-        <link rel="stylesheet" href="../css/bootstrap.min.css"/>
-<script>
-
-<!--
-.style3 {    color: #FFFFFF;
-    font-size: 13px;
-    font-weight: bold;
-}
-.header1 {color: #ffffff; background: #4682B4; font-weight: bold; font-family: Tahoma, Verdana; font-size: 13px; margin: 0px;}
-body {
-    background-image: url();
-}
-a:link {
-    text-decoration: none;
-}
-a:visited {
-    text-decoration: none;
-}
-a:hover {
-    text-decoration: none;
-}
-a:active {
-    text-decoration: none;
-}
-.style5 {font-family: Verdana, Arial, Helvetica, sans-serif}
-.style6 {font-size: 12px}
-.style7 {font-family: Verdana, Arial, Helvetica, sans-serif; font-size: 12px; }
-.style8 {font-size: 14px}
-a {
-    font-size: 12px;
-}
-.style9 {
-    font-size: 16px;
-    font-family: Verdana, Arial, Helvetica, sans-serif;
-}
--->
-
-    #result {
-        height:20px;
-        font-size:12px;
-        font-family:Arial, Helvetica, sans-serif;
-        color:#333;
-        padding:5px;
-        margin-bottom:10px;
-        background-color:#FFFF99;
-    }
-    #country{
-        padding:3px;
-        border:1px #CCC solid;
-        font-size:12px;
-    }
-    .suggestionsBox {
-        position: absolute;
-        left: 0px;
-        top:40px;
-        margin: 26px 0px 0px 0px;
-        width: 200px;
-        padding:0px;
-        background-color:#999999;
-        border-top: 3px solid #999999;
-        color: #fff;
-    }
-    .suggestionList {
-        margin: 0px;
-        padding: 0px;
-    }
-    .suggestionList ul li {
-        list-style:none;
-        margin: 0px;
-        padding: 6px;
-        border-bottom:1px dotted #666;
-        cursor: pointer;
-    }
-    .suggestionList ul li:hover {
-        background-color: #FC3;
-        color:#000;
-    }
-    ul {
-        font-family:Arial, Helvetica, sans-serif;
-        font-size:11px;
-        color:#FFF;
-        padding:0;
-        margin:0;
-    }
-    
-    .load{
-    background-image:url(loader.gif);
-    background-position:right;
-    background-repeat:no-repeat;
-    }
-    
-    #suggest {
-        position:relative;
-    }
-    .style9 {
-    font-size: 16px;
-    font-family: Verdana, Arial, Helvetica, sans-serif;
-}
-.style3 {    color: #FFFFFF;
-    font-size: 13px;
-    font-weight: bold;
-}
-.header1 {color: #ffffff; background: #4682B4; font-weight: bold; font-family: Tahoma, Verdana; font-size: 13px; margin: 0px;}
-body {
-    background-image: url();
-}
-a:link {
-    text-decoration: none;
-}
-a:visited {
-    text-decoration: none;
-}
-a:hover {
-    text-decoration: none;
-}
-a:active {
-    text-decoration: none;
-}
-    .style10 {
-    font-family: Verdana, Arial, Helvetica, sans-serif;
-    font-size: 12px;
-}
-
-    .style11 {font-size: small}
-    </style>
-</head>
-
-<table width="100%" cellpadding="1" bordercolor="#CCCCCC" bgcolor="#2F6B4F">
-  <tr>
-    <td height="20" bordercolor="#FFFFFF" bgcolor="#2F6B4F" class="style3 style9">Buka Blokir Simpanan
-    <div align="right"></div></td>
-  </tr>
-</table>
-
-<table width="428" border="1" align="center">
-</table>
-  <form method="post" action="<?php echo $_SERVER['PHP_SELF']; ?>" name="postform">  <table width="543" border="0" align="center">
-<tr bgcolor="#2F6B4F">
-  <td height="10" colspan="4" nowrap><div align="center" class="style3 style9">Input Data </div></td>
-  </tr>
-<tr>
-  <td height="10" nowrap bgcolor="#B3B3FF"><span class="style7">Group Blokir </span></td>
-  <td nowrap><div align="center"><strong>:</strong></div></td>
-  <td colspan="2" nowrap><select name="select" id="select" size="1">
-    <option>Pilih Salah satu</option>
-    <option value="01">Kelompok</option>
-    <option value="02">Perorangan </option>
-    </select></td>
-</tr>
-<tr>
-    <td width="203" height="10" nowrap bgcolor="#B3B3FF"><div align="left" class="style5 style6">Kode Kelompok/CIF </div></td>
-    <td width="16" nowrap>        <div align="center"><strong>:</strong></div></td>
-    <td width="310" colspan="2" nowrap>
-     <div id="suggest">
-                       <input type="text" onKeyUp="suggest(this.value);" name="kode_rekening"  onBlur="fill2();" id="kode" size="15"/>
-                       <div class="suggestionsBox" id="suggestions" style="display: none;"> <img src="arrow.png" style="position: relative; top: -12px; left: 30px;" alt="upArrow" />
-                       <div class="suggestionList" id="suggestionsList"> &nbsp; </div>
-                       </div>
-        
-      <input type="text" disabled="disabled" name="nama_rekening" onBlur="fill();" id="country" />
-</div></tr>
-<tr>
-  <td height="10" nowrap bgcolor="#B3B3FF"><span class="style7">Jenis  Blokir </span></td>
-  <td nowrap><div align="center"><strong>:</strong></div></td>
-  <td colspan="2" nowrap><label>
-    <input name="jenis" type="radio" value="buka">
-    <span class="style7">Buka</span>
-    <input name="jenis" type="radio" value="tutup">
-    <span class="style7">Tutup</span></label></td>
-</tr>
-<tr>
-  <td height="10" colspan="4"><label></label></td>
-  </tr>
-<tr bgcolor="#B3B3FF">
-  <td height="10">&nbsp; </td>
-  <td><div align="center"></div></td>
-  <td colspan="2"><input name="search" type="submit" id="submit2" value="Input" size="40"></td>
-</tr>
-</table>
-</form>
-<iframe width=174 height=189 name="gToday:normal:calender/normal.js" id="gToday:normal:calender/normal.js" src="calender/ipopeng.htm" scrolling="no" frameborder="0" style="visibility:visible; z-index:999; position:absolute; top:-500px; left:-500px;">
-</iframe>
-
-<table border="4" bgcolor="" width="100%" class="table1">
-  <tr class="table1">
-    <th>NOREK</th>
-    <th>NAMA</th>
-    <th>TGL TRANSAKSI </th>
-    <th>JENIS BLOKIR</th>
-    <th>DEBIT</th>
-    <th>KREDIT</th>
-    <th>SALDO</th>
-  </tr>
-  <?php
-  include "../conn2.php";
-  include "../function.php";
-  $koneksi=open_connection2();
-  $cif_kel=$_POST['kode_rekening'];
-  $pilih=$_POST['select'];
-  $tanggal=date("Y-m-d");
-  $jenis_blokir=$_POST['jenis'];
- 
-            
-  If (isset($_POST ['search']))
-{
-if (empty($cif_kel)||empty($pilih)||empty($jenis_blokir)){
-    echo "<script>alert('Maaf,.isi Nomor kode kelompok dan Jenis Transaksi yang benar  !!!');</script>";
-         echo "<script language='javascript'>document.location.href='buka_bokir.php'</script>";}
-    
-    else{
-        var_dump($jenis_blokir);
-    switch($pilih)
-    {
-     case "01":
-     if($jenis_blokir == 'buka'){
-        @mysql_query("update simpanan set type ='01', blok ='1' where code_kel ='$cif_kel' and type ='02' and blok ='1' ");
-         $cek = mysql_query("SELECT * FROM simpanan WHERE type='01' AND code_kel ='$cif_kel' AND blok='1'");
-        if(mysql_num_rows($cek)>=1){                
-                
-        echo "<script>alert('Blokir Rekening $cif_kel  Sudah di buka !!!');</script>";
-        $select1 = mysql_query("SET @bal = 0;");
-        $select = mysql_query("SELECT simpanan.NOREK,simpanan.BUSS_DATE,anggota.CUST_SHORT_NAME,TYPE,DEBIT,KREDIT,@bal:=(@bal+KREDIT)-DEBIT as balance FROM simpanan
-        join anggota on anggota.cif = simpanan.cif
-        where simpanan.code_kel='$cif_kel' order by simpanan.REFF");
-            }else{
-                echo "<script>alert('Gagal Buka Blokir !!!');</script>";
-            }
-        }else{
-            
-        @mysql_query("update simpanan set type ='02', blok ='1' where code_kel='$cif_kel' and blok ='1'");
-        
-         $cek = mysql_query("SELECT * FROM simpanan WHERE type='02' AND code_kel='$cif_kel' and blok ='1'");
-    if(mysql_num_rows($cek)>=1){                
-                
-    echo "<script>alert('Rekening $cif_kel  Sudah di Blokir !!!');</script>";
-    $select1 = mysql_query("SET @bal = 0;");
-    $select = mysql_query("SELECT simpanan.NOREK,simpanan.BUSS_DATE,anggota.CUST_SHORT_NAME,TYPE,DEBIT,KREDIT,@bal:=(@bal+KREDIT)-DEBIT as balance FROM simpanan
-    join anggota on anggota.cif = simpanan.cif
-    where simpanan.code_kel='$cif_kel' order by simpanan.REFF");
-            }else{
-                echo "<script>alert('Gagal TUTUP Blokir !!!');</script>";
-            }    
-        }
-     break;
-           case "02":
-            if($jenis_blokir == 'buka'){
-   @mysql_query("update simpanan set type ='01', blok ='1' where cif='$cif_kel' and type ='02' and blok ='1'");
-        
-         $cek = mysql_query("SELECT * FROM simpanan WHERE type='01' AND cif='$cif_kel' and blok='1'");
-    if(mysql_num_rows($cek)>=1){                 
-                
-            echo "<script>alert('Blokir Rekening $cif_kel Sudah di buka !!!');</script>";
-            $select1 = mysql_query("SET @bal = 0;");
-            $select = mysql_query("SELECT simpanan.NOREK,simpanan.BUSS_DATE,anggota.CUST_SHORT_NAME,TYPE,DEBIT,KREDIT,@bal:=(@bal+KREDIT)-DEBIT as balance FROM simpanan
-            join anggota on anggota.cif = simpanan.cif
-            where simpanan.cif='$cif_kel' order by simpanan.REFF");
-            }else{
-                echo "<script>alert('Gagal Buka Blokir !!!');</script>";
-            }
-    }else{
-    @mysql_query("update simpanan set type ='02', blok ='1' where cif='$cif_kel' and blok ='1'");
-     $cek = mysql_query("SELECT * FROM simpanan WHERE type='02' AND cif='$cif_kel' and blok='1'");
-        if(mysql_num_rows($cek)>=1){                 
-                
-            echo "<script>alert('Rekening $cif_kel  Sudah di Blokir !!!');</script>";
-            $select1 = mysql_query("SET @bal = 0;");
-            $select = mysql_query("SELECT simpanan.NOREK,simpanan.BUSS_DATE,anggota.CUST_SHORT_NAME,TYPE,DEBIT,KREDIT,@bal:=(@bal+KREDIT)-DEBIT as balance FROM simpanan
-            join anggota on anggota.cif = simpanan.cif
-            where simpanan.cif='$cif_kel' order by simpanan.REFF");
-            }else{
-                echo "<script>alert('Gagal TUTUP Blokir !!!');</script>";
-            }    
-                
-            }
-     break;
-      default:
-    }
-        }
-
-    
-  ?>
- 
-  <?php
-    
-    //menampilkan data
-    while($data = mysql_fetch_array($select)){
-
-//menghitung hitung
-//$birthdate = $data['Birth_date'];
-//$age = ((time() - strtotime($birthdate))/(60*60*24*365.2425));
-
-        ?>
-  <tr>
-    <td class="style6"><?php echo $data['NOREK']; ?></td>
-    <td class="style6"><?php echo $data['CUST_SHORT_NAME'];  ?></td>
-    <td class="style6"><?php echo tgl_indo ($data['BUSS_DATE']);?></td>
-    <td class="style6"><?php echo $data['TYPE']; ?></td>
-    <td class="style6"><?php echo number_format (compat_num($data['DEBIT'])); ?></td>
-    <td class="style6"><?php echo number_format (compat_num($data['KREDIT'])); ?></td>
-    <td class="style6"><?php echo number_format (compat_num($data['balance'])); ?></td>
-    
-  </tr>
-  <?php
-        
-    }
-    }
-    ?>
- 
-</table>
-<p>&nbsp;</p>
-
- <iframe width=174 height=189 name="gToday:normal:calender/normal.js" id="gToday:normal:calender/normal.js" src="calender/ipopeng.htm" scrolling="no" frameborder="0" style="visibility:visible; z-index:999; position:absolute; top:-500px; left:-500px;">
-</iframe>
-<script>
-$(document).ready(function(){
-$('.hasil').hide();
-$('#tombol').hide();
-$('#baki').hide();
-$('#simpan').hide();
-$('#select').change(function(){
-if($('#select').val()=='01'){
-$('.hasil').hide();    
-$('#tombol').hide();
-$('#baki').hide();
-$('#simpan').hide();
-}else if($('#select').val()=='02'){
-$('.hasil').hide();
-$('#tombol').hide();
-$('#baki').hide();
-$('#simpan').hide();
-}else if($('#select').val()=='03'){
-$('.hasil').hide();
-$('#tombol').hide();
-$('#baki').hide();
-$('#simpan').hide();
-}else if($('#select').val()=='04'){
-$('.hasil').show();
-$('#tombol').show();
-$('#baki').show();
-$('#simpan').show();
-}
-});
-});
-</script>
-
-</body>
-
-</html>
-
-
+<div class="card card-ni mw-100">
+  <div class="table-responsive">
+    <table class="table table-sm table-bordered table-ni align-middle mb-0">
+      <thead>
+        <tr>
+          <th>NOREK</th>
+          <th>NAMA</th>
+          <th>TGL TRANSAKSI</th>
+          <th>JENIS BLOKIR</th>
+          <th class="text-end">DEBIT</th>
+          <th class="text-end">KREDIT</th>
+          <th class="text-end">SALDO</th>
+        </tr>
+      </thead>
+      <tbody>
+      <?php foreach ($select as $data): ?>
+        <tr>
+          <td><?php echo h($data['NOREK']); ?></td>
+          <td><?php echo h($data['CUST_SHORT_NAME']); ?></td>
+          <td><?php echo h(tgl_indo($data['BUSS_DATE'])); ?></td>
+          <td><?php echo h($data['TYPE']); ?></td>
+          <td class="text-end"><?php echo number_format(compat_num($data['DEBIT'])); ?></td>
+          <td class="text-end"><?php echo number_format(compat_num($data['KREDIT'])); ?></td>
+          <td class="text-end"><?php echo number_format(compat_num($data['balance'])); ?></td>
+        </tr>
+      <?php endforeach; ?>
+      </tbody>
+    </table>
+  </div>
+</div>
+<?php
+halaman_akhir();

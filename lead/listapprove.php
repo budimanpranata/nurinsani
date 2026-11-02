@@ -1,195 +1,170 @@
-<?php require_once __DIR__ . '/../php8_compat.php';
-session_start();  
+<?php require_once __DIR__ . '/../koneksi_db.php';
+/**
+ * Menu Approve > View Data Deviasi (level lead), hasil cari dari viewapprove.php.
+ *   tanpa ?a / Cancel : daftar pembiayaan deviasi (calon_loan status_usia YA) area lead per tanggal wakalah atau CIF;
+ *                       bila kosong, daftar penarikan deviasi (temp_tarik) per tanggal atau CIF.
+ *   ?a=process        : konfirmasi CIF yang dicentang (Lanjut = approve, Reject = reject).
+ *   ?a=approve        : status_usia calon_loan jadi DEVIASI, lalu temp_tarik CIF disalin ke simpanan dan dihapus.
+ *   ?a=reject         : hapus calon_loan CIF, lalu hapus temp_tarik dengan norek = CIF.
+ * Logika sama dengan versi lama; hanya tampilan dan query (prepared statement) yang berubah. Perilaku lama yang
+ * dipertahankan (PEKERJAAN_TERTUNDA.md bagian 37): cabang penarikan selalu dijalankan saat approve, reject temp_tarik
+ * memakai norek = CIF. Perubahan atas perintah user 2026-11-02: update tabel_transaksi keterangan_posting=<CIF>
+ * dihapus (selalu 0 baris; memicu error MySQL 8 untuk CIF pembiayaan).
+ */
+require_once __DIR__ . '/../inc/tampilan.php';
+session_start();
 ob_start();
-$iduser=$_SESSION['userid'];
-if(!isset($_SESSION['userid'])){
-   header("location:../index.html");
- exit; }
-
+$iduser = isset($_SESSION['userid']) ? $_SESSION['userid'] : null;
+if (!isset($_SESSION['userid'])) {
+    header("location:../index.html");
+    exit;
+}
 //cek level user
-if($_SESSION['level']!="lead"){
-   header("location:../index.html");
- exit; }
-
-
-?>
-<style type="text/css">
-<!--
-.header1 {color: #ffffff; background: #2F6B4F; font-weight: bold; font-family: Tahoma, Verdana; font-size: 13px; margin: 0px;}
-.style1 {color: #CCCCCC}
-.style5 {color: #FF0000}
-.style9 {color: #FF0000; font-size: 14px; }
-.style13 {font-family: Verdana, Arial, Helvetica, sans-serif; font-size: 14px; }
-.style14 {	color: #FFFFFF;
-	font-weight: bold;
+if ($_SESSION['level'] != "lead") {
+    header("location:../index.html");
+    exit;
 }
--->
-</style>
-<title>List approve</title>
-  <table width="100%" border="0" cellpadding="3" cellspacing="0" bgcolor="#2F6B4F">
-    <tr>
-      <td width="100%" bgcolor="#2F6B4F"><span class="style14">Approve Dokumen </span></td>
-    </tr>
-  </table>
-  </p>
-  <?php
-include "../conn2.php";
 include "../indo_tgl.php";
-$koneksi=open_connection2();
 
-$area = mysql_query ("select kode_branch FROM user where userid ='$iduser'");
-$c_area = mysql_fetch_array($area);
-$code_area=$c_area['kode_branch'];
+$c_area = db_satu("select kode_branch FROM user where userid =?", 's', (string) $iduser);
+$code_area = $c_area ? (string) $c_area['kode_branch'] : '';
 
-$tgl_trn = $_POST ['tgl_trn'];
-$nopen= $_POST ['nopen'];
-	if($_GET['a'] == 'process' && $_POST['approve']){
-		$idlist = $_POST['approve'];
-	if($_POST['approve_sub']){
-		$action = 'approve';
-			}elseif($_POST['reject']){
-				$action = 'reject';
-	}
+$tgl_trn = isset($_POST['tgl_trn']) ? (string) $_POST['tgl_trn'] : '';
+$nopen = isset($_POST['nopen']) ? (string) $_POST['nopen'] : '';
+$a = isset($_GET['a']) ? $_GET['a'] : '';
+$idlist = isset($_POST['approve']) && is_array($_POST['approve']) ? $_POST['approve'] : array();
+$cancel = false;
 
-?>
-  <form action="<?php echo $_SERVER['PHP_SELF'] ?>?a=<?php echo $action; ?>" method="post">
-<table style="font-size:11px;font-family:'arial';text-align:center;" border='1' width="80%" align='center' >
-    <tr class="header1">
-    <th>No Transaksi </th>
-    <th class="header1">Unit </th>
-    <th class="header1">Cif</th>
-<th class="header1">Nama</th>
-    <th class="header1">Tanggal Transaksi</th>
-    <th class="header1">No Anggota</th>
-	<th class="header1"><span class="header1">Nominal</span></th>
-	<th class="header1"><span class="header1">Usia</span></th>
-  </tr>
-
-
-  <?php
-
-foreach( $idlist as $key => $value){
-	$data = mysql_query("SELECT calon_loan.unit as unit,cif,buss_date,no_anggota,plafond,Cust_Short_name as nama FROM calon_loan inner join branch on branch.kode_branch = calon_loan.unit WHERE  status_usia ='YA' and branch.code_area ='$code_area' AND calon_loan.cif='" . $value . "'") or die(mysql_error());
-	if(mysql_num_rows($data) == 0){
-		$data =mysql_query("SELECT temp_tarik.unit as unit ,temp_tarik.cif,temp_tarik.buss_date,temp_tarik.norek as no_anggota, sum(debit) as plafond, type as Usia,CUST_SHORT_NAME as nama FROM temp_tarik inner join anggota on anggota.cif=temp_tarik.cif inner join branch on branch.kode_branch = temp_tarik.unit WHERE branch.code_area ='$code_area' and temp_tarik.cif ='" . $value . "' group by temp_tarik.norek") or die(mysql_error());
-	}
-while($row = mysql_fetch_array($data)){
-echo " <tr>";
-echo " <td align=center><input type=\"hidden\" value=\"" . $row['cif'] . "\" name=\"approve[]\" />" . $row['cif'] . "</td>";
-echo " <td align=center>" . $row['unit'] . "</td>";
-echo " <td align=center>" . $row['cif'] . "</td>";
-echo " <td align=left>" . $row['nama'] . "</td>";
-echo " <td align=center>" . tgl_indo($row['buss_date']) . "</td>";
-echo " <td align=center>" . $row['no_anggota'] . "</td>";
-echo " <td align=center>" . number_format (compat_num($row['plafond'])) . "</td>";
-echo " <td align=center>" . $row['Usia'] . "</td>";
-echo " </tr>";
-}
-}
-?>
-
-  <tr class="style1">
-    <td colspan='8' align=center bgcolor="#2F6B4F"><input type="submit" value="Approve" name="confirm" />
-    <input type="submit" value="Cancel" name="cancel" /></td>
-  </tr>
-</table>
-<center>
-</center>
-<?php
-}elseif($_GET['a'] == 'approve' && $_POST['approve']){
-$idlist = $_POST['approve'];
-	if($_POST['cancel']){
-	$cancel = 'true';
-}elseif($_POST['confirm']){
-foreach( $idlist as $key => $value){
-
-$data_tgl = mysql_query("SELECT unit,cif,buss_date,norek as no_anggota FROM temp_tarik WHERE cif='" . $value . "' ") or die(mysql_error());
-	
-while($tgl_transaksi = mysql_fetch_array($data_tgl)){
-	$tanggal_transaksi=$tgl_transaksi['buss_date'];
-}
-// ^^ COPY THE DATA ^^
-//CHANGE 'approved' INTO THE NAME OF THE TABLE CONTAINING THE APPROVED APPLICATIONS
-//ADD ANY OTHER FIELDS THAT ARE NECESSARY TO THE LISTS
-$hasil=mysql_query("Update calon_loan SET status_usia ='DEVIASI' WHERE cif='" . $value . "'") or die(mysql_error());
-if(mysql_num_rows($hasil) == 0){
-mysql_query("insert into simpanan select * from temp_tarik WHERE cif='" . $value . "'") or die(mysql_error());	
-mysql_query("delete from temp_tarik WHERE cif='" . $value . "'") or die(mysql_error());
-mysql_query("update tabel_transaksi set keterangan_posting=' ' WHERE keterangan_posting='" . $value . "' and tanggal_transaksi ='$tanggal_transaksi'") or die(mysql_error());
-
+/** Jalankan query tulis; bila gagal halaman berhenti (versi lama: or die(mysql_error())). */
+function jalankan_deviasi($sql, $tipe, ...$param)
+{
+    if (!db_jalankan($sql, $tipe, ...$param)) {
+        echo '<div class="alert alert-danger">Gagal memproses data. Proses dihentikan.</div>';
+        halaman_akhir();
+        exit;
+    }
 }
 
-
-// ^^ DELETE THE OLD DATA ^^
-}
-echo "Aplikasi Sudah di Setujui.";
-}
-
-}elseif($_GET['a'] == 'reject' && $_POST['approve']){
-
-$idlist = $_POST['approve'];
-
-if($_POST['cancel']){
-$cancel = 'true';
-}elseif($_POST['confirm']){
-foreach( $idlist as $key => $value){
-$suskes=mysql_query("DELETE FROM calon_loan WHERE cif='" . $value . "'") or die(mysql_error());
-if(mysql_num_rows($result) == 0){
-mysql_query("delete from temp_tarik WHERE norek='" . $value . "'") or die(mysql_error());
-}	
-// ^^ DELETE THE REJECTED APPLICATION DATA ^^
-}
-echo "Applications successfully rejected.";
+/** Satu baris tabel data deviasi (sel pertama berbeda antara daftar dan konfirmasi). */
+function baris_deviasi($row, $sel_pertama)
+{
+    ?>
+      <tr>
+        <td class="text-center"><?php echo $sel_pertama; ?></td>
+        <td class="text-center"><?php echo h($row['unit']); ?></td>
+        <td class="text-center"><?php echo h($row['cif']); ?></td>
+        <td><?php echo h($row['nama']); ?></td>
+        <td class="text-center"><?php echo h(tgl_indo($row['buss_date'])); ?></td>
+        <td class="text-center"><?php echo h($row['no_anggota']); ?></td>
+        <td class="text-end"><?php echo number_format(compat_num($row['plafond'])); ?></td>
+        <td class="text-center"><?php echo h(isset($row['Usia']) ? $row['Usia'] : ''); ?></td>
+      </tr>
+    <?php
 }
 
-}
-if(!$_GET['a'] || $cancel || !$_POST['approve']){
-?>
-<form action="<?php echo $_SERVER['PHP_SELF'] ?>?a=process" method="post"><center>
-  <table style="font-size:11px;font-family:'arial';text-align:center;" border='1' width="80%" align='center' >
-    <tr class="header1">
-    <th class="header1"><span class="header1">Approve / Reject </span></th>
-    <th class="header1">Kode Cabang </th>
-    <th class="header1"><span class="header1">Cif</span></th>
-<th class="header1"><span class="header1">Nama</span></th>
-  	<th class="header1"><span class="header1">Tanggal Transaksi</span></th>
-  	<th class="header1"><span class="header1">Norek</span></th>
-	<th class="header1"><span class="header1">Nominal</span></th>
-	<th class="header1"><span class="header1">Status</span></th>
-  </tr>
+halaman_awal('Approve Dokumen');
 
-<?php
-
-$result = mysql_query("SELECT calon_loan.unit as unit ,cif,buss_date,no_anggota,plafond,Cust_Short_name as nama FROM calon_loan inner join branch on branch.kode_branch = calon_loan.unit WHERE tgl_wakalah='$tgl_trn' AND status_usia='YA' and code_area ='$code_area' OR cif='$nopen' AND status_usia='YA' and code_area='$code_area'") or die(mysql_error());
-if(mysql_num_rows($result) == 0){
-$result = mysql_query("SELECT temp_tarik.unit,temp_tarik.cif,temp_tarik.buss_date,temp_tarik.norek as no_anggota, sum(debit) as plafond, type as Usia,CUST_SHORT_NAME as nama FROM temp_tarik left join anggota on anggota.cif=temp_tarik.cif WHERE temp_tarik.buss_date='$tgl_trn' and blok='$code_area' OR temp_tarik.cif='$nopen' and blok='$code_area' group by temp_tarik.cif") or die(mysql_error());
-	}
-
-
-while($row = mysql_fetch_array($result)){
-echo " <tr>";
-echo " <td align=center><input type=\"checkbox\" value=\"" . $row['cif'] . "\" name=\"approve[]\" /></td>";
-echo " <td align=center>" . $row['unit'] . "</td>";
-echo " <td align=center>" . $row['cif'] . "</td>";
-echo " <td align=left>" . $row['nama'] . "</td>";
-echo " <td align=center>" . tgl_indo($row['buss_date']) . "</td>";
-echo " <td align=center>" . $row['no_anggota'] . "</td>";
-echo " <td align=center>" . number_format(compat_num($row['plafond'])) . "</td>";
-echo " <td align=center>" . $row['Usia'] . "</td>";
-
-echo " </tr>";
-}
-
-
-?>
-
-<tr>
-<td colspan='8' align=center bgcolor="#FFFFCC" class="header1"><input type="submit" value="Lanjut" name="approve_sub" /> 
-<input type="submit" value="Reject" name="reject" /></td>
-</tr>
-</table>
-</center>
+if ($a == 'process' && $idlist) {
+    $action = '';
+    if (!empty($_POST['approve_sub'])) {
+        $action = 'approve';
+    } elseif (!empty($_POST['reject'])) {
+        $action = 'reject';
+    }
+    ?>
+<form action="listapprove.php?a=<?php echo h($action); ?>" method="post">
+  <div class="card card-ni mw-100">
+    <div class="table-responsive">
+      <table class="table table-sm table-bordered table-ni align-middle mb-0">
+        <thead>
+          <tr>
+            <th>No Transaksi</th><th>Unit</th><th>Cif</th><th>Nama</th><th>Tanggal Transaksi</th>
+            <th>No Anggota</th><th class="text-end">Nominal</th><th>Usia</th>
+          </tr>
+        </thead>
+        <tbody>
+    <?php
+    foreach ($idlist as $value) {
+        $value = (string) $value;
+        $data = db_semua("SELECT calon_loan.unit as unit,cif,buss_date,no_anggota,plafond,Cust_Short_name as nama FROM calon_loan inner join branch on branch.kode_branch = calon_loan.unit WHERE  status_usia ='YA' and branch.code_area =? AND calon_loan.cif=?",
+            'ss', $code_area, $value);
+        if (count($data) == 0) {
+            $data = db_semua("SELECT temp_tarik.unit as unit ,temp_tarik.cif,temp_tarik.buss_date,temp_tarik.norek as no_anggota, sum(debit) as plafond, type as Usia,CUST_SHORT_NAME as nama FROM temp_tarik inner join anggota on anggota.cif=temp_tarik.cif inner join branch on branch.kode_branch = temp_tarik.unit WHERE branch.code_area =? and temp_tarik.cif =? group by temp_tarik.norek",
+                'ss', $code_area, $value);
+        }
+        foreach ($data as $row) {
+            baris_deviasi($row, '<input type="hidden" value="' . h($row['cif']) . '" name="approve[]">' . h($row['cif']));
+        }
+    }
+    ?>
+        </tbody>
+      </table>
+    </div>
+    <div class="card-body d-flex gap-2 justify-content-center">
+      <button type="submit" value="Approve" name="confirm" class="btn btn-ni">Approve</button>
+      <button type="submit" value="Cancel" name="cancel" class="btn btn-outline-secondary">Cancel</button>
+    </div>
+  </div>
 </form>
-<?php
+    <?php
+} elseif ($a == 'approve' && $idlist) {
+    if (!empty($_POST['cancel'])) {
+        $cancel = true;
+    } elseif (!empty($_POST['confirm'])) {
+        foreach ($idlist as $value) {
+            $value = (string) $value;
+            jalankan_deviasi("Update calon_loan SET status_usia ='DEVIASI' WHERE cif=?", 's', $value);
+            // versi lama: mysql_num_rows() pada hasil UPDATE selalu false, jadi bagian penarikan selalu dijalankan
+            jalankan_deviasi("insert into simpanan select * from temp_tarik WHERE cif=?", 's', $value);
+            jalankan_deviasi("delete from temp_tarik WHERE cif=?", 's', $value);
+        }
+        echo '<div class="alert alert-success">Aplikasi Sudah di Setujui.</div>';
+    }
+} elseif ($a == 'reject' && $idlist) {
+    if (!empty($_POST['cancel'])) {
+        $cancel = true;
+    } elseif (!empty($_POST['confirm'])) {
+        foreach ($idlist as $value) {
+            $value = (string) $value;
+            jalankan_deviasi("DELETE FROM calon_loan WHERE cif=?", 's', $value);
+            // versi lama: hapus temp_tarik berdasarkan norek = CIF (lihat PEKERJAAN_TERTUNDA.md bagian 37)
+            jalankan_deviasi("delete from temp_tarik WHERE norek=?", 's', $value);
+        }
+        echo '<div class="alert alert-success">Applications successfully rejected.</div>';
+    }
 }
-?>
+
+if (!$a || $cancel || !$idlist) {
+    $result = db_semua("SELECT calon_loan.unit as unit ,cif,buss_date,no_anggota,plafond,Cust_Short_name as nama FROM calon_loan inner join branch on branch.kode_branch = calon_loan.unit WHERE tgl_wakalah=? AND status_usia='YA' and code_area =? OR cif=? AND status_usia='YA' and code_area=?",
+        'ssss', $tgl_trn, $code_area, $nopen, $code_area);
+    if (count($result) == 0) {
+        $result = db_semua("SELECT temp_tarik.unit,temp_tarik.cif,temp_tarik.buss_date,temp_tarik.norek as no_anggota, sum(debit) as plafond, type as Usia,CUST_SHORT_NAME as nama FROM temp_tarik left join anggota on anggota.cif=temp_tarik.cif WHERE temp_tarik.buss_date=? and blok=? OR temp_tarik.cif=? and blok=? group by temp_tarik.cif",
+            'ssss', $tgl_trn, $code_area, $nopen, $code_area);
+    }
+    ?>
+<form action="listapprove.php?a=process" method="post">
+  <div class="card card-ni mw-100">
+    <div class="table-responsive">
+      <table class="table table-sm table-bordered table-ni align-middle mb-0">
+        <thead>
+          <tr>
+            <th>Approve / Reject</th><th>Kode Cabang</th><th>Cif</th><th>Nama</th><th>Tanggal Transaksi</th>
+            <th>Norek</th><th class="text-end">Nominal</th><th>Status</th>
+          </tr>
+        </thead>
+        <tbody>
+    <?php foreach ($result as $row) {
+        baris_deviasi($row, '<input type="checkbox" class="form-check-input" value="' . h($row['cif']) . '" name="approve[]">');
+    } ?>
+        </tbody>
+      </table>
+    </div>
+    <div class="card-body d-flex gap-2 justify-content-center">
+      <button type="submit" value="Lanjut" name="approve_sub" class="btn btn-ni">Lanjut</button>
+      <button type="submit" value="Reject" name="reject" class="btn btn-outline-danger">Reject</button>
+    </div>
+  </div>
+</form>
+    <?php
+}
+halaman_akhir();

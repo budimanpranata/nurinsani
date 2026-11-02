@@ -1,100 +1,49 @@
-<?php require_once __DIR__ . '/php8_compat.php';
+<?php require_once __DIR__ . '/koneksi_db.php';
+/**
+ * Proses Approve dari form new4.php (level lead): perbarui data anggota, tandai calon_loan gol='1' (sudah di-approve,
+ * hilang dari daftar Approval Pengajuan), perbarui kelompok/AO di tunggakan, lalu kembali ke data_approval.php.
+ * Logika sama dengan versi lama; query kini prepared statement. var_dump($cif) sisa debug dihapus.
+ */
 date_default_timezone_set('Asia/Jakarta');
 session_start();
 ob_start();
-		$kel=$_SESSION['code_kel'];
-		$userid=$_SESSION['userid'];
-		//cek apakah user sudah login
-if(!isset($_SESSION['userid'])){
-   header("location:index.html");
-	 exit; }
-	
+$userid = isset($_SESSION['userid']) ? $_SESSION['userid'] : null;
+//cek apakah user sudah login
+if (!isset($_SESSION['userid'])) {
+    header("location:index.html");
+    exit;
+}
 //cek level user
-if($_SESSION['level']!="lead"){
-   header("location:index.html");
- exit; }
-include "function.php";
-include "conn2.php";
-		$koneksi	=open_connection2();
-		$code_kel	= $_POST['code_kel'];
-		$cao		= $_POST['code_ao'];
-		$branch 	= $_POST['branch'];
-		$cif 		= $_POST ['cif'];
-		var_dump($cif);
-		$nama 		= mysql_real_escape_string($_POST['nama']);
-		$nama1 		= mysql_real_escape_string($_POST['wali']);
-		$alamat 	= $_POST['alamat'];
-		$rt 		= $_POST['rt'];
-		$notlp 		= $_POST['no_tlp'];
-		$home_tlp 	= $_POST['tlp_penjamin'];
-		$tgl_lahir	= $_POST['tgl_lahir'];
-		$tgl_wa= $_POST['tgl_skep'];
-		$tgl_akad	= $_POST['tgl_akad'];
-		$ibu 		= $_POST['ibu'];
-		$buss_date	= date("Y-m-d H:m:s");
-		$usaha		= $_POST['usaha'];
-		$agama 		= $_POST['agama'];
-		$negara 	= $_POST['negara'];
-		$pendidikan = $_POST['pendidikan'];
-		$kerja = $_POST['pekerjaan'];
-		$npwp 		= $_POST['npwp'];
-		$jenis_kel	= $_POST['jenis_kel'];
-		$kode_pos 	= $_POST['kd_pos'];
-		$lurah 		= $_POST['lurah'];
-		$kec 		= $_POST['kec'];
-		$rekomen 	= $_POST['num'];
-		$kota 		= $_POST['kota'];
-		$status_kawin=$_POST['status_kawin'];
-		$id_expire	= $_POST['id_expire'];
-		$ktp		=$_POST['id'];
-		$pendapatan	= $_POST['sumber'];
-		$pendidikan	= $_POST['pendidikan'];
-		$tempat_lahir=$_POST['tempat_lahir'];
-		$norek		= $_POST['norek'];
-		$no_anggota	= $_POST['no_anggota'];
-		$nama_usaha = $_POST['nama_usaha'];
-$ke = $_POST['ke'];
+if ($_SESSION['level'] != "lead") {
+    header("location:index.html");
+    exit;
+}
 
-		
-							
-					$calon_anggota= "update anggota set 
-					CODE_KEL='$code_kel',
-					CAO='$cao',
-					CUST_SHORT_NAME='$nama',
-					HADDRESS1='$alamat',
-					HADDRESS2='$lurah',
-					HADDRESS3= '$kec',
-					HPOST_CODE='$kode_pos',
-					HADDRESS4='$kota',
-					HADDRESS5='$rt',
-					MOBILE_PHONE='$notlp',
-					HOME_PHONE='$home_tlp',
-					BIRTH_DATE='$tgl_lahir',
-					ID_NUMBER='$ktp',
-					MOTHER_NAME='$ibu',
-					NPWP='$npwp',
-					CITIZENSHIP='$tempat_lahir',
-					ID_EXPIRED='$id_expire',
-					WARIS='$nama1'														
-					where CIF='$cif' ";
-					$i = mysql_query($calon_anggota);
-					
-					$update_loan= "update calon_loan set gol='1' where cif ='$cif'";
-					$b = mysql_query($update_loan);
-					
-$update_tunggak= "update tunggakan set CODE_KEL='$code_kel',CAO='$cao' where CIF ='$cif'";
-					$c = mysql_query($update_tunggak);
-											
-								if(($i)||($b)){ 
-	
-							echo "<script> alert ('data Anggota $nama $cif sudah di Apporve ')</script>";
+$pos = function ($k) {
+    return isset($_POST[$k]) ? (string) $_POST[$k] : '';
+};
+$code_kel = $pos('code_kel');
+$cao = $pos('code_ao');
+$cif = $pos('cif');
+$nama = $pos('nama');
+$nama1 = $pos('wali');
 
-						echo "<script language='javascript'>document.location.href='data_approval.php'</script>";
+$i = db_jalankan("update anggota set
+    CODE_KEL=?, CAO=?, CUST_SHORT_NAME=?, HADDRESS1=?, HADDRESS2=?, HADDRESS3=?, HPOST_CODE=?, HADDRESS4=?, HADDRESS5=?,
+    MOBILE_PHONE=?, HOME_PHONE=?, BIRTH_DATE=?, ID_NUMBER=?, MOTHER_NAME=?, NPWP=?, CITIZENSHIP=?, ID_EXPIRED=?, WARIS=?
+    where CIF=? ", str_repeat('s', 19),
+    $code_kel, $cao, $nama, $pos('alamat'), $pos('lurah'), $pos('kec'), $pos('kd_pos'), $pos('kota'), $pos('rt'),
+    $pos('no_tlp'), $pos('tlp_penjamin'), $pos('tgl_lahir'), $pos('id'), $pos('ibu'), $pos('npwp'), $pos('tempat_lahir'),
+    $pos('id_expire'), $nama1, $cif);
 
-				} else {
-					echo "gagal input <a href=\"javascript:history.back()\">kembali</a>";
-			} 
-	
-		
-	
-?>
+$b = db_jalankan("update calon_loan set gol='1' where cif =?", 's', $cif);
+
+db_jalankan("update tunggakan set CODE_KEL=?,CAO=? where CIF =?", 'sss', $code_kel, $cao, $cif);
+
+if ($i || $b) {
+    // versi lama memakai nama yang sudah di-escape untuk SQL; addslashes menjaga alert tetap benar bila nama berisi tanda kutip
+    echo "<script> alert ('data Anggota " . addslashes($nama) . " " . addslashes($cif) . " sudah di Apporve ')</script>";
+    echo "<script language='javascript'>document.location.href='data_approval.php'</script>";
+} else {
+    echo "gagal input <a href=\"javascript:history.back()\">kembali</a>";
+}
