@@ -91,17 +91,11 @@ echo "<script>alert('Parameter tanggal libur masih aktif');</script>";
 		 header("location:afh/homeao.php");
 		 }else if($c['level']=="kp"){
 		 header("location:kp/kp.php");
-}else if($c['level']=="audit"){
-		 header("location:audit/fin.php");
-}else if($c['level']=="pengurus"){
-		 header("location:pengurus/pengurus.php");
 
 		 }else if($c['level']=="admin"){
 		 header("location:admin/admin.php");
         	 }else if($c['level']=="ho"){
 		 header("location:ho/ho.php");
-        	 }else if($c['level']=="dwh"){
-		 header("location:dwh/dwh.php");
 	 	 }else if($c['level']=="toko"){
 		 header("location:toko/toko.php");
         }else if($c['level']=="unit"){

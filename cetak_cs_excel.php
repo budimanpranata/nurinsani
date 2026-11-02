@@ -18,7 +18,7 @@ function open_connection2(){
 	//konfigurasi
 	$host="localhost";
 	$user="root";
-	$pass="anaskorti";
+	$pass="";
 	$db="nur_insani";
 	
 	

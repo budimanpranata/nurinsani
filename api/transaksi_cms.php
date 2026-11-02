@@ -2,7 +2,7 @@
 $hostname = "localhost";
 $database = "nur_insani";
 $username = "root";
-$password = "anaskorti";
+$password = "";
 $connect = db_ni();
 // script cek koneksi   
 if (!$connect) {

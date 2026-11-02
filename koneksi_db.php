@@ -37,6 +37,22 @@ $GLOBALS['DB_CONFIG'] = array(
     ),
 );
 
+// Kredensial server (user/password asli) ditulis di koneksi_db.lokal.php yang TIDAK ikut git (lihat contoh di
+// koneksi_db.lokal.contoh.php). File itu mengembalikan array berstruktur sama dengan $DB_CONFIG di atas; nilai yang
+// diisi menimpa nilai bawaan. Tanpa file itu dipakai nilai bawaan di atas (Laragon lokal).
+if (is_file(__DIR__ . '/koneksi_db.lokal.php')) {
+    $__db_lokal = require __DIR__ . '/koneksi_db.lokal.php';
+    if (is_array($__db_lokal)) {
+        foreach ($__db_lokal as $__db_kunci => $__db_cfg) {
+            $GLOBALS['DB_CONFIG'][$__db_kunci] = array_merge(
+                isset($GLOBALS['DB_CONFIG'][$__db_kunci]) ? $GLOBALS['DB_CONFIG'][$__db_kunci] : array(),
+                (array) $__db_cfg
+            );
+        }
+    }
+    unset($__db_lokal, $__db_kunci, $__db_cfg);
+}
+
 // Charset koneksi. null = default mysqli (utf8mb4). Ganti ke 'latin1' bila huruf non-ASCII tampil rusak.
 if (!defined('DB_CHARSET')) {
     define('DB_CHARSET', null);

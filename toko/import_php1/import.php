@@ -16,7 +16,7 @@
 // Load file koneksi.php
 $db_host = "localhost";
 $db_user = "root";
-$db_pass = "anaskorti";
+$db_pass = "";
 $db_name = "nur_insani";
 
 

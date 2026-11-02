@@ -1,7 +1,7 @@
 <?php require_once __DIR__ . '/../koneksi_db.php';
 $host="localhost";
 	$user="root";
-	$pass="anaskorti";
+	$pass="";
 	$db="nur_insani";
 	
 	$kelompok=$_GET['code_kel'];

@@ -2,5 +2,6 @@
 [SQL]
 host = 127.0.0.1
 user = root
-password = anaskorti
+; tidak dipakai lagi: kredensial dari koneksi_db.php
+password =
 dbname = nur_insani

@@ -3,3 +3,13 @@
 <FilesMatch "(~|\.bak|\.old|\.orig|\.save|\.swp|\.sql|\.md)$">
     Require all denied
 </FilesMatch>
+
+# Arsip (.zip/.rar/.7z/.tar/.gz) berisi kode sumber atau data, tidak untuk diunduh lewat web.
+<FilesMatch "\.(zip|rar|7z|tar|gz|tgz)$">
+    Require all denied
+</FilesMatch>
+
+# Kredensial database server (lihat koneksi_db.php); tidak boleh dibuka langsung.
+<Files "koneksi_db.lokal.php">
+    Require all denied
+</Files>

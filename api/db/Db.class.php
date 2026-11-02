@@ -52,8 +52,11 @@ class DB
      */
     private function Connect()
     {
-        $this->settings = parse_ini_file("settings.ini.php");
-        $dsn            = 'mysql:dbname=' . $this->settings["dbname"] . ';host=' . $this->settings["host"] . '';
+        // kredensial dari koneksi_db.php (satu tempat konfigurasi); dulu dari settings.ini.php berisi password tertulis
+        require_once __DIR__ . '/../../koneksi_db.php';
+        $cfg            = $GLOBALS['DB_CONFIG']['nur_insani'];
+        $this->settings = array('host' => $cfg['host'], 'user' => $cfg['user'], 'password' => $cfg['pass'], 'dbname' => $cfg['name']);
+        $dsn            = 'mysql:dbname=' . $this->settings["dbname"] . ';host=' . $this->settings["host"] . ';port=' . $cfg['port'];
         try {
             # Read settings from INI file, set UTF8
             $this->pdo = new PDO($dsn, $this->settings["user"], $this->settings["password"], array(

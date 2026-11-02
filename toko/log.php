@@ -43,8 +43,6 @@ if(mysql_num_rows($cek)==1){//jika berhasil akan bernilai 1
 		 header("location:account/account.php");	 		 
          }else if($c['level']=="ho"){
 		 header("location:ho/ho.php");		 
-        }else if($c['level']=="dwh"){
-		 header("location:dwh/dwh.php");
 		}else if($c['level']=="toko"){
 		 header("location:toko/toko.php");		 
         

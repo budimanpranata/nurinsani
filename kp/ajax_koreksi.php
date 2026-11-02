@@ -12,7 +12,7 @@ if(!isset($_SESSION['userid'])){
 header('Content-Type: application/json; charset=utf-8');
 $host = "localhost";
 $user = "root";       // isi user database kamu
-$pass = "anaskorti";  // isi password DB kamu
+$pass = "";  // isi password DB kamu
 $db   = "nur_insani"; // nama database kamu
 
 $conn = db_ni();

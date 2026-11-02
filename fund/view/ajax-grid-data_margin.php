@@ -2,7 +2,7 @@
 /* Database connection start */
 $servername = "localhost";
 $username = "root";
-$password = "anaskorti";
+$password = "";
 $dbname = "nur_insani";
 
 $conn = db_ni() or die("Connection failed: " . mysqli_connect_error());

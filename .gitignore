@@ -3,3 +3,6 @@
 
 # Dump database (ukuran besar & berisi data)
 *.sql
+
+# Kredensial database server (salin dari koneksi_db.lokal.contoh.php)
+koneksi_db.lokal.php

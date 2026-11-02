@@ -2,7 +2,7 @@
 /* Database connection start */
 $servername = "localhost";
 $username = "root";
-$password = "anaskorti";
+$password = "";
 $dbname = "nur_insani";
 include "../../indo_tgl.php";
 

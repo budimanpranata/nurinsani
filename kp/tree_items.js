@@ -46,8 +46,6 @@ var TREE_ITEMS = [
 
          ],
                 ['Konsolidasi ',0,
-		['Upload Jateng', 'upload_jateng.php'],
-['Upload Gajip', 'upload_gaji.php'],
                 ['Konsolidasi', './laporan/konsolidasi.php'],
 
 
