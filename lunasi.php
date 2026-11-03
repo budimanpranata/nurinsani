@@ -209,7 +209,7 @@ db_jalankan("insert into rek_loan(ref,tgl_realisasi,unit,no_anggota,saldo_kredit
 
 					if (db_jumlah_gagal() > $gagal_awal) {
 						mysqli_rollback($koneksi_transaksi);
-						echo '<script>alert(' . json_encode("GAGAL Pelunasan Nomor Anggota $anggota, data tidak disimpan") . ');</script>';
+						echo '<script>alert(' . json_encode("GAGAL Pelunasan Nomor Anggota $anggota, data tidak disimpan. Error: " . db_error_terakhir()) . ');</script>';
 						echo "<script language='javascript'>document.location.href='$tujuan_kembali'</script>";
 						exit;
 					}
