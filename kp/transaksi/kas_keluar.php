@@ -1,367 +1,266 @@
-<?php require_once __DIR__ . '/../../php8_compat.php'; 
+<?php require_once __DIR__ . '/../../koneksi_db.php';
+/**
+ * Menu Transaksi > Jurnal Keluar (level kp, kas keluar kantor pusat).
+ *   Simpan  : catat sisi debet rekening yang dipilih (saran dari tabel_master unit 1010).
+ *   Selesai : catat sisi kredit kas 1010-1130000 sebesar total debet dan nomor jurnal_keluar.
+ *   Batal   : hapus satu baris transaksi (link terenkripsi).
+ * Alur sama dengan versi lama; tampilan dan query (prepared statement) diperbarui. Versi lama tidak punya cek login;
+ * sekarang wajib login. Saran rekening dari ajax/cari_gl_kp.php?kolom=rekening_gl (query sama dengan kp/autosuggesst.php).
+ * Perbaikan 2026-11-03 (perintah user, PEKERJAAN_TERTUNDA.md bagian 45 dan 46, sama dengan Jurnal Masuk kp):
+ *   - kode bukti KK/<unit><userid><nomor> (seperti versi lama) dan daftar per user; nomor bukti milik user yang belum
+ *     diselesaikan dilanjutkan, bukan diganti nomor baru
+ *   - kredit kas saat Selesai = total debet - kredit baris user pada nomor bukti ini di DB (dulu isian tersembunyi)
+ *   - Selesai ditolak bila kosong atau sudah selesai, dikunci dari kirim ganda; jurnal_keluar ditulis dulu sebagai
+ *     penanda (nomor otomatis) dan dihapus lagi bila kredit kas gagal
+ *   - Batal hanya baris milik user pada nomor bukti yang sedang dibuka dan belum selesai
+ *   - Simpan memeriksa rekening (DETAIL unit 1010), tanggal, dan jumlah; Simpan/Selesai selalu memakai nomor bukti
+ *     berjalan milik user yang dihitung server (bukan isian form), sehingga tidak bisa menyentuh nomor user lain
+ */
+require_once __DIR__ . '/../../inc/tampilan.php';
 session_start();
-$userid=$_SESSION['userid'];
+require_once __DIR__ . '/../../inc/cek_login.php';
+wajib_login();
+$userid = (string) $_SESSION['userid'];
+include "../encryption/function.php";
+//untuk waktu (versi lama date("y-m-d"), tanggal yang sama)
+$tanggal = date("Y-m-d");
 
-	include "../encryption/function.php";
-	
-	//untuk waktu
-	$tanggal=date("y-m-d");
-	
-	//untuk koneksi database
-	include "../conn2.php";
-	$koneksi=open_connection2();
-$user=mysql_query("select kode_branch from user where userid='$userid'");
-			
-			while($id_user=mysql_fetch_array($user)){
-			
-				$unit=$id_user['kode_branch'];
-			}
-	
+$unitt = '';
+foreach (db_semua("select kode_branch from user where userid=?", 's', $userid) as $id_user) {
+    $unitt = (string) $id_user['kode_branch'];
+}
+$awalan_kode = 'KK/' . $unitt . $userid;
 
-?>
-	<script type="text/javascript" src="../jquery.js"></script>
-		<link href="../style.css" rel="stylesheet" type="text/css" media="screen" />
-	<link rel="stylesheet" href="../css/bootstrap.min.css"/>
-	<script>
-	function suggest(inputString){
-		if(inputString.length == 0) {
-			$('#suggestions').fadeOut();
-		} else {
-		$('#country').addClass('load');
-			$.post("../autosuggesst.php", {queryString: ""+inputString+""}, function(data){
-				if(data.length >0) {
-					$('#suggestions').fadeIn();
-					$('#suggestionsList').html(data);
-					$('#country').removeClass('load');
-				}
-			});
-		}
-	}
-	
-	function fill(thisValue) {
-		$('#country').val(thisValue);
-		setTimeout("$('#suggestions').fadeOut();", 100);
-	}
-	
-	function fill2(thisValue) {
-		$('#kode').val(thisValue);
-		setTimeout("$('#suggestions').fadeOut();", 100);
-	}
-	function formatCurrency(num) {
-    num = num.toString().replace(/\$|\,/g,'');
-    if(isNaN(num))
-    num = "0";
-    sign = (num == (num = Math.abs(num)));
-    num = Math.floor(num*100+0.50000000001);
-    cents = num%100;
-    num = Math.floor(num/100).toString();
-    if(cents<10)
-    cents = "0" + cents;
-    for (var i = 0; i < Math.floor((num.length-(1+i))/3); i++)
-    num = num.substring(0,num.length-(4*i+3))+'.'+
-    num.substring(num.length-(4*i+3));
-    return (((sign)?'':'-') + 'Rp. ' + num + '');
+/** true bila nomor bukti ini sudah diselesaikan (ada di jurnal_keluar). */
+function kas_keluar_kp_selesai($kode)
+{
+    $r = db_satu("select count(*) as n from jurnal_keluar where kode_transaksi=?", 's', (string) $kode);
+    return $r && (int) $r['n'] > 0;
+}
+/** Tanggal Y-m-d yang benar-benar ada. */
+function tanggal_valid_kk($t)
+{
+    $d = DateTime::createFromFormat('!Y-m-d', (string) $t);
+    return $d && $d->format('Y-m-d') === (string) $t;
+}
+/** Nomor bukti berjalan user: lanjutkan yang belum selesai, kalau tidak ada nomor baru (jurnal_keluar terakhir unit + 1). */
+function nomor_bukti_kk($unit, $userid, $awalan)
+{
+    $belum = db_satu("select t.kode_transaksi from tabel_transaksi t
+        where t.unit=? and t.id_admin=? and t.jenis_transaksi='Kas Keluar' and t.kode_transaksi like ?
+          and not exists (select 1 from jurnal_keluar j where j.kode_transaksi=t.kode_transaksi)
+        order by t.id_transaksi desc limit 1", 'sss', $unit, $userid, $awalan . '%');
+    if ($belum) {
+        return (string) $belum['kode_transaksi'];
     }
-	</script>
-	
-	<style>
-	#result {
-		height:20px;
-		font-size:12px;
-		font-family:Arial, Helvetica, sans-serif;
-		color:#333;
-		padding:5px;
-		margin-bottom:10px;
-		background-color:#FFFF99;
-	}
-	#country{
-		padding:3px;
-		border:1px #CCC solid;
-		font-size:12px;
-	}
-	.suggestionsBox {
-		position: absolute;
-		left: 140px;
-		top:0px;
-		margin: 26px 0px 0px 0px;
-		width: 200px;
-		padding:0px;
-		background-color:#2F6B4F;
-		border-top: 3px solid #2F6B4F;
-		color: #fff;
-	}
-	.suggestionList {
-		margin: 0px;
-		padding: 0px;
-	}
-	.suggestionList ul li {
-		list-style:none;
-		margin: 0px;
-		padding: 6px;
-		border-bottom:1px dotted #666;
-		cursor: pointer;
-	}
-	.suggestionList ul li:hover {
-		background-color: #FC3;
-		color:#000;
-	}
-	ul {
-		font-family:Arial, Helvetica, sans-serif;
-		font-size:11px;
-		color:#FFF;
-		padding:0;
-		margin:0;
-	}
-	
-	.load{
-	background-image:url(loader.gif);
-	background-position:right;
-	background-repeat:no-repeat;
-	}
-	
-	#suggest {
-		position:relative;
-	}
-	.style9 {
-	font-size: 16px;
-	font-family: Verdana, Arial, Helvetica, sans-serif;
-}
-.style3 {	color: #FFFFFF;
-	font-size: 13px;
-	font-weight: bold;
-}
-.header1 {color: #ffffff; background: #4682B4; font-weight: bold; font-family: Tahoma, Verdana; font-size: 13px; margin: 0px;}
-body {
-	background-image: url();
-}
-a:link {
-	text-decoration: none;
-}
-a:visited {
-	text-decoration: none;
-}
-a:hover {
-	text-decoration: none;
-}
-a:active {
-	text-decoration: none;
-}
-	.style10 {
-	font-family: Verdana, Arial, Helvetica, sans-serif;
-	font-size: 12px;
+    $j = db_satu("SELECT max(nomor_jurnal) AS n FROM jurnal_keluar where unit=?", 's', $unit);
+    return $awalan . (compat_num($j ? $j['n'] : null) + 1);
 }
 
-    .style11 {font-size: small}
-    </style>
-	
+/** Insert satu baris tabel_transaksi (sisi debet atau kredit). */
+function catat_kas_keluar_kp($unit, $kode_transaksi, $kode_rekening, $tanggal, $keterangan, $sisi, $jumlah, $userid)
+{
+    $kolom = $sisi === 'debet' ? 'debet' : 'kredit';
+    return db_jalankan("insert into tabel_transaksi(unit,kode_transaksi,kode_rekening,tanggal_transaksi, jenis_transaksi, keterangan_transaksi,$kolom,id_admin)
+                        values(?,?,?,?,'Kas Keluar',?,?,?)", 'sssssss', (string) $unit, (string) $kode_transaksi, (string) $kode_rekening,
+        (string) $tanggal, (string) $keterangan, (string) $jumlah, (string) $userid);
+}
 
-<div class="col-md-12 col">
-	<body onLoad="document.postform.elements['keterangan_jurnal'].focus();">
-	<table width="100%">
-  <tr bgcolor="#2F6B4F">
-  <td height="25" colspan="4" nowrap><div align="left" class="style3 style9">Jurnal Keluar</div></td>
-  </tr>
-</table>
-	<div class="post">
-				<div class="entry">
-				<?php 
-			
-			//jurnal baru. cari nomor paling besar yaitu nomor jurnal terakhir 
-			$jurnal_keluar=mysql_fetch_array(mysql_query("SELECT max(nomor_jurnal) FROM jurnal_keluar where unit='$unit' ORDER BY tanggal_selesai DESC"));
-			$nomor_jurnal=$jurnal_keluar[0]+1;
-			$kode_transaksi="KK/".$unit .$userid .$nomor_jurnal;
-			
-			?>
-			
-			 <table width="502" border="0" bordercolor="#FFFFFF" align="center">
-			 </table>
-			<form action="?<?php echo paramEncrypt('page=../transaksi/kas_keluar')?>" method="post" name="postform"> <table width="502" border="1" border bordercolor="#FFFFFF" align="center">
-			   <tr bgcolor="#2F6B4F">
-  				<td height="25" colspan="4" nowrap><div align="center" class="style3 style9">Kriteria Input</div></td>
-  				</tr>
-				  <tr>
-                  <td width="100" height="15"  nowrap bgcolor="#B3B3FF"><div align="left" class="style10">Nomor Kelompok</div></td>
-				  <td width="10" nowrap><div align="center"><strong>:</strong></div></td>
-                  <td colspan="2" nowrap>
-				  <input type="hidden" name="kode_bukti" value="<?php echo $kode_transaksi;?>">
-				  <input type="text" disabled="disabled" value="<?php echo $kode_transaksi;?>" size="15"/>
-				  </td>
-                </tr>
-                <tr>
-                  <td  nowrap bgcolor="#B3B3FF"><span class="style10">Tanggal</span></td>
-				  <td width="10" nowrap>   <div align="center"><strong>:</strong></div></td>
-                  <td colspan="2" nowrap><input type="text" name="tanggal_transaksi" size="15" value="<?php if(empty($_POST['tanggal_transaksi'])){ echo $tanggal;}else{ echo $_POST['tanggal_transaksi']; }?>"/>
-                    <a href="javascript:void(0)" onClick="if(self.gfPop)gfPop.fPopCalendar(document.postform.tanggal_transaksi);return false;" ><img src="../images/calendarIcon.jpg" alt="" name="popcal" width="20" height="20" border="0" align="absmiddle" id="popcal" /></a></td>
-                </tr>
-                <tr>
-                  <td height="31" nowrap bgcolor="#B3B3FF"><span class="style10">Keterangan Jurnal </span></td>
-				  <td width="10" nowrap>   <div align="center"><strong>:</strong></div></td>
-                  <td colspan="2" nowrap><input type="text" value="<?php echo $_POST['keterangan_jurnal'];?>" name="keterangan_jurnal" size="45"/></td>
-                </tr>
-				
-				<tr><td colspan="2" nowrap></td></tr>
-				
-                <tr>
-                  <td class="style10"  nowrap bgcolor="#B3B3FF">Rekening</td>
-				  <td width="10" nowrap><div align="center"><strong>:</strong></div></td>
-                  <td width="73">
-				  <div id="suggest">
-				  
-					   <input type="text" onKeyUp="suggest(this.value);" name="kode_rekening"  onBlur="fill2();" id="kode" size="15"/> 
-					   <div class="suggestionsBox" id="suggestions" style="display: none;"> <img src="arrow.png" style="position: relative; top: -12px; left: 30px;" alt="list Coa" />
-					   <div class="suggestionList" id="suggestionsList"> &nbsp; </div>
-					   </div>
-				  </div>
-				  </td>
-                  <td width="292" align="left"><input type="text" disabled="disabled" name="nama_rekening" onBlur="fill();" id="country"  size="30"/></td>
-                  <td width="292" align="left">&nbsp;</td>
-                </tr>
-				
-                <tr>
-                  <td height="25" class="style10"  nowrap bgcolor="#B3B3FF">Keterangn Transaksi </td>
-				  <td width="10" nowrap>   <div align="center"><strong>:</strong></div></td>
-                  <td colspan="2">
-				  <input type="keterangan_transaksi" value="<?php echo $_POST['keterangan_jurnal'];?>" name="keterangan_transaksi" size="45">
-				  </td>
-                </tr>
-				  <td></td> </td>
-				<tr>
-                  <td height="21" class="style10"  nowrap bgcolor="#B3B3FF">Jumlah (Rp)</td>
-				   <td width="10" nowrap><div align="center"><strong>:</strong></div></td>
-                  <td colspan="2"><input type="text" name="jumlah_dk" size="15" onKeyUp="document.getElementById('format').innerHTML = formatCurrency(this.value);"/>
-   				 <span id="format"></span></td>
-                </tr>
-<tr>
-  <td height="10" colspan="4">&nbsp;</td>
-  </tr>
-<tr bgcolor="#B3B3FF">
-  <td height="10">&nbsp; </td>
-  <td><div align="center"></div></td>
+$kode_transaksi = nomor_bukti_kk($unitt, $userid, $awalan_kode);
+$tanggal_form = empty($_POST['tanggal_transaksi']) ? $tanggal : $_POST['tanggal_transaksi'];
+$keterangan_form = isset($_POST['keterangan_jurnal']) ? $_POST['keterangan_jurnal'] : '';
+$keterangan_jurnal = '';
 
-                  <td><input type="submit" value="Simpan" name="simpan"></td>
-                  <td colspan="2">&nbsp;</td>
-                </tr>
-              </table>
-			</form>
-			<br />
-			
-			
-			<?php
-			//untuk menyimpan transaksi
-			if(isset($_POST['simpan'])){
-		
-				$kode_transaksi=$_POST['kode_bukti'];
-				$tanggal_transaksi=$_POST['tanggal_transaksi'];
-				$keterangan_transaksi=ucwords($_POST['keterangan_transaksi']);
-				$kode_rekening=$_POST['kode_rekening'];
-				$keterangan_jurnal=ucwords($_POST['keterangan_jurnal']);
-				
-				//untuk jurnal kas keluar, semua transaksi ada sisi DEBET
-				$jumlah_dk=ucwords($_POST['jumlah_dk']);
-				
-				
-				$query=mysql_query("insert into tabel_transaksi(unit,kode_transaksi,kode_rekening,tanggal_transaksi, jenis_transaksi, keterangan_transaksi,debet,id_admin)
-									values('$unit','$kode_transaksi','$kode_rekening','$tanggal_transaksi','Kas Keluar','$keterangan_transaksi','$jumlah_dk','$userid')");
-									
-				if($query){
-					//echo "berhasil";
-				}else{
-					echo mysql_error();
-				}
-				
-			
-			}else{
-				unset($_POST['simpan']);
-			}
-			
-			//untuk menyelesaikan transaksi
-			if(isset($_POST['selesai'])){
-			
-				$kode_transaksi=$_POST['kode_bukti'];
-				$nomor_jurnal=$_POST['nomor_jurnal'];
-				$tanggal_selesai=$_POST['tanggal_selesai'];
-				$tot_debet=$_POST['tot_debet'];
-				$keterangan_jurnal=$_POST['keterangan_jurnal'];
-				
-				//karena kas keluar lawan transaksinya adalah kas, maka kas adlah 1130000 yaitu kas unit umum yang ada di sisi KREDIT.
-				$kode_rekening="1010-1130000";
-				
-				$query_transaksi=mysql_query("insert into tabel_transaksi(unit,kode_transaksi,kode_rekening,tanggal_transaksi, jenis_transaksi, keterangan_transaksi,kredit,id_admin)
-									values('$unit','$kode_transaksi','$kode_rekening','$tanggal_selesai','Kas Keluar','$keterangan_jurnal','$tot_debet','$userid')");
-									
-				$query_jurnal=mysql_query("insert into jurnal_keluar(nomor_jurnal,kode_transaksi,tanggal_selesai,unit) values('$nomor_jurnal','$kode_transaksi','$tanggal_selesai','$unit')");
-									
-				if($query_transaksi){
-					?><script language="javascript">document.location.href="?<?php echo paramEncrypt('page=../transaksi/kas_keluar')?>"</script><?php
-				}else{
-					echo mysql_error();
-				}
-				
-				
-			}else{
-				unset($_POST['selesai']);
-			}
-			
-			//untuk mendecode url yang di enrypsi
-			$var=decode($_SERVER['REQUEST_URI']);
-	
-			//pecahkan nilai array
-			$mode=$var['mode'];
-			$id_transaksi=$var['id_transaksi'];
-			
-			if($mode=='delete'){
-				$query=mysql_query("delete from tabel_transaksi where id_transaksi='$id_transaksi'");
-			}else{
-				echo mysql_error();
-			}
-			
-			
-			//untuk menampilkan transaksi
-			?>
-			<div class = "panel panel-default">
-	  		<table width="100%" border="1" bordercolor="669900" style="margin: 7px 10px" class="table table-striped" >
-			<tr>
-				<th>Kode Rekening</th><th>Keterangan</th><th>Debet</th><th>Action</th>
-			</tr>
-			<?php
-			$query=mysql_query("select * from tabel_transaksi where kode_transaksi='$kode_transaksi' and id_admin='$userid'");
-			while($row=mysql_fetch_array($query)){
-				$debet=$row['debet'];
-				$id_transaksi=$row['id_transaksi'];
-				
-				$tot_debet=$tot_debet+$debet;
-				
-				?>
-				<tr>
-					<td><?php echo $row['kode_rekening'];?></td>
-					<td><?php echo $row['keterangan_transaksi'];?></td>
-					<td align="right"><?php if($debet!=="0"){echo number_format(compat_num($debet),2,'.',',');}; ?></td>
-					<td align="center"><a href="?<?php echo paramEncrypt('page=../transaksi/kas_keluar&mode=delete&id_transaksi='.$id_transaksi)?>" onClick="return confirm('Apakah Anda yakin?')">Batal</a></td>
-				</tr>
-				<?php
-			}
-			?>
-			<tr>
-				<td colspan="2" align="center"><b>TOTAL</b></td><td align="right"><b><?php echo number_format(compat_num($tot_debet),2,'.',','); ?></b></td><td align="center"></td>
-			</tr>
-			</table>
-			<br />			
-			<form action="?<?php echo paramEncrypt('page=../transaksi/kas_keluar')?>" method="post" name="form">
-				<input type="hidden" name="tanggal_selesai" size="15" value="<?php if(empty($_POST['tanggal_transaksi'])){ echo $tanggal;}else{ echo $_POST['tanggal_transaksi']; }?>"/>
-				<input type="hidden" name="kode_bukti" value="<?php echo $kode_transaksi;?>">
-				<input type="hidden" name="nomor_jurnal" value="<?php echo $nomor_jurnal;?>">
-				<input type="hidden" name="tot_debet" value="<?php echo $tot_debet;?>">
-				<input type="hidden" name="keterangan_jurnal" value="<?php echo $keterangan_jurnal;?>">
-				<input type="submit" onClick="return confirm('Apakah Anda Yakin?')" value="Selesai" name="selesai"/>
-			</form>
-			
+// pesan/script dari proses ditampilkan di bawah form, seperti versi lama
+ob_start();
 
+//untuk menyimpan transaksi
+if (isset($_POST['simpan'])) {
+    // nomor bukti selalu nomor berjalan milik user ini (dihitung server), bukan nilai kiriman form
+    $kode_kirim = $kode_transaksi;
+    $tanggal_transaksi = isset($_POST['tanggal_transaksi']) ? trim((string) $_POST['tanggal_transaksi']) : '';
+    $keterangan_transaksi = ucwords(isset($_POST['keterangan_transaksi']) ? (string) $_POST['keterangan_transaksi'] : '');
+    $kode_rekening = isset($_POST['kode_rekening']) ? trim((string) $_POST['kode_rekening']) : '';
+    $keterangan_jurnal = ucwords(isset($_POST['keterangan_jurnal']) ? (string) $_POST['keterangan_jurnal'] : '');
+    //untuk jurnal kas keluar, semua transaksi ada sisi DEBET
+    $jumlah_dk = trim(ucwords(isset($_POST['jumlah_dk']) ? (string) $_POST['jumlah_dk'] : ''));
+    $salah = array();
+    if ($kode_rekening === '' || !db_satu("select 1 as ada from tabel_master where unit='1010' and rekening_gl=? and LINE_BALANCE='DETAIL'", 's', $kode_rekening)) {
+        $salah[] = 'Rekening ' . $kode_rekening . ' tidak terdaftar sebagai rekening DETAIL unit 1010';
+    }
+    if (!tanggal_valid_kk($tanggal_transaksi)) {
+        $salah[] = 'Tanggal tidak valid';
+    }
+    if (!is_numeric($jumlah_dk) || $jumlah_dk <= 0) {
+        $salah[] = 'Jumlah harus angka lebih dari 0';
+    }
+    if (kas_keluar_kp_selesai($kode_kirim)) {
+        $salah[] = 'Nomor bukti ' . $kode_kirim . ' sudah diselesaikan';
+    }
+    if ($salah) {
+        echo "<script>alert(" . json_encode(implode("\n", $salah) . "\nTransaksi tidak disimpan.") . ");</script>";
+    } else {
+        catat_kas_keluar_kp($unitt, $kode_kirim, $kode_rekening, $tanggal_transaksi, $keterangan_transaksi, 'debet', $jumlah_dk, $userid);
+        $kode_transaksi = $kode_kirim;
+    }
+}
 
-			</p>
-		</div>
-	</div>
-	</div>
-	</body>
-	
-	<iframe width=174 height=189 name="gToday:normal:../calender/agenda.js" id="gToday:normal:../calender/agenda.js" src="../calender/ipopeng.htm" scrolling="no" frameborder="0" style="visibility:visible; z-index:999; position:absolute; top:-500px; left:-500px;"></iframe>
+//untuk menyelesaikan transaksi
+if (isset($_POST['selesai'])) {
+    // yang diselesaikan selalu nomor berjalan milik user ini (dihitung server)
+    $kode_kirim = $kode_transaksi;
+    $tanggal_selesai = isset($_POST['tanggal_selesai']) ? trim((string) $_POST['tanggal_selesai']) : '';
+    $keterangan_jurnal = isset($_POST['keterangan_jurnal']) ? (string) $_POST['keterangan_jurnal'] : '';
+    $kunci = db_satu("SELECT GET_LOCK('nurinsani_kp_kas_keluar', 15) as ok");
+    if (!$kunci || (int) $kunci['ok'] !== 1) {
+        echo "<script>alert('Sistem sedang memproses transaksi lain, coba lagi.');</script>";
+    } else {
+        $saldo = db_satu("select sum(debet)-sum(kredit) as saldo from tabel_transaksi where kode_transaksi=? and id_admin=? and unit=?", 'sss',
+            $kode_kirim, $userid, $unitt);
+        $kredit_kas = compat_num($saldo ? $saldo['saldo'] : null);
+        if (kas_keluar_kp_selesai($kode_kirim)) {
+            echo "<script>alert(" . json_encode('Nomor bukti ' . $kode_kirim . ' sudah diselesaikan.') . ");</script>";
+        } elseif ($kredit_kas <= 0) {
+            echo "<script>alert('Belum ada transaksi yang perlu diselesaikan.');</script>";
+        } elseif (!tanggal_valid_kk($tanggal_selesai)) {
+            echo "<script>alert('Tanggal tidak valid.');</script>";
+        } else {
+            if (trim($keterangan_jurnal) === '') {
+                // keterangan diambil dari baris terakhir bila isian tersembunyi kosong (mis. sesudah Batal)
+                $akhir = db_satu("select keterangan_transaksi from tabel_transaksi where kode_transaksi=? and id_admin=? and unit=? order by id_transaksi desc limit 1", 'sss',
+                    $kode_kirim, $userid, $unitt);
+                $keterangan_jurnal = $akhir ? (string) $akhir['keterangan_transaksi'] : $keterangan_jurnal;
+            }
+            // jurnal_keluar (MyISAM) ditulis dulu sebagai penanda selesai, nomor otomatis; dihapus lagi bila kredit kas gagal
+            if (!db_jalankan("insert into jurnal_keluar(nomor_jurnal,kode_transaksi,tanggal_selesai,unit) values(NULL,?,?,?)", 'sss',
+                $kode_kirim, $tanggal_selesai, $unitt)) {
+                echo "<script>alert('Pencatatan jurnal keluar gagal, transaksi belum diselesaikan.');</script>";
+            } elseif (!catat_kas_keluar_kp($unitt, $kode_kirim, '1010-1130000', $tanggal_selesai, $keterangan_jurnal, 'kredit', $kredit_kas, $userid)) {
+                //karena kas keluar lawan transaksinya adalah kas, maka kas 1010-1130000 ada di sisi KREDIT.
+                db_jalankan("delete from jurnal_keluar where kode_transaksi=?", 's', $kode_kirim);
+                echo "<script>alert('Penyimpanan kredit kas gagal, transaksi belum diselesaikan.');</script>";
+            } else {
+                ?><script language="javascript">document.location.href="?<?php echo paramEncrypt('page=../transaksi/kas_keluar')?>"</script><?php
+            }
+        }
+        db_satu("SELECT RELEASE_LOCK('nurinsani_kp_kas_keluar') as ok");
+    }
+}
 
+//untuk mendecode url yang di enrypsi
+$var = strpos($_SERVER['REQUEST_URI'], '?') !== false ? decode($_SERVER['REQUEST_URI']) : array();
+$mode = isset($var['mode']) ? $var['mode'] : null;
+$id_transaksi = isset($var['id_transaksi']) ? $var['id_transaksi'] : null;
+if ($mode == 'delete' && !kas_keluar_kp_selesai($kode_transaksi)) {
+    // hanya baris milik user ini pada nomor bukti yang sedang dibuka dan belum diselesaikan (versi lama: id apa pun)
+    db_jalankan("delete from tabel_transaksi where id_transaksi=? and id_admin=? and kode_transaksi=?", 'sss',
+        (string) $id_transaksi, $userid, $kode_transaksi);
+}
+
+$pesan_proses = ob_get_clean();
+
+// sesudah Selesai/Batal nomor bukti berjalan bisa berganti
+$kode_transaksi = nomor_bukti_kk($unitt, $userid, $awalan_kode);
+
+//untuk menampilkan transaksi milik user ini pada nomor bukti berjalan
+$baris_transaksi = array();
+$tot_debet = 0;
+foreach (db_semua("select * from tabel_transaksi where kode_transaksi=? and id_admin=? and unit=? order by id_transaksi", 'sss', $kode_transaksi, $userid, $unitt) as $row) {
+    $debet = $row['debet'] === null ? null : (string) $row['debet'];
+    $tot_debet += compat_num($debet) - compat_num($row['kredit']);
+    $baris_transaksi[] = array(
+        'kode_rekening' => $row['kode_rekening'],
+        'keterangan_transaksi' => $row['keterangan_transaksi'],
+        'debet' => $debet,
+        'id_transaksi' => $row['id_transaksi'],
+    );
+}
+
+$aksi_form = '?' . paramEncrypt('page=../transaksi/kas_keluar');
+halaman_awal('Jurnal Keluar');
+?>
+<div class="card card-ni">
+  <div class="card-header">Kriteria Input</div>
+  <div class="card-body">
+    <form action="<?php echo h($aksi_form); ?>" method="post" name="postform" class="form-ni" autocomplete="off">
+      <input type="hidden" name="kode_bukti" value="<?php echo h($kode_transaksi); ?>">
+      <div class="row g-2 mb-2">
+        <label class="col-sm-4 col-form-label">Nomor Bukti</label>
+        <div class="col-sm-8"><input type="text" class="form-control form-control-sm" disabled value="<?php echo h($kode_transaksi); ?>"></div>
+      </div>
+      <div class="row g-2 mb-2">
+        <label for="tanggal_transaksi" class="col-sm-4 col-form-label">Tanggal</label>
+        <div class="col-sm-8"><input type="date" name="tanggal_transaksi" id="tanggal_transaksi" class="form-control form-control-sm" value="<?php echo h($tanggal_form); ?>"></div>
+      </div>
+      <div class="row g-2 mb-2">
+        <label for="keterangan_jurnal" class="col-sm-4 col-form-label">Keterangan Jurnal</label>
+        <div class="col-sm-8"><input type="text" name="keterangan_jurnal" id="keterangan_jurnal" class="form-control form-control-sm" value="<?php echo h($keterangan_form); ?>" autofocus></div>
+      </div>
+      <div class="row g-2 mb-2">
+        <label for="kode" class="col-sm-4 col-form-label">Rekening</label>
+        <div class="col-sm-4">
+          <div class="autocomplete position-relative">
+            <input type="text" name="kode_rekening" id="kode" class="form-control form-control-sm"
+                   data-autocomplete="../../ajax/cari_gl_kp.php?kolom=rekening_gl" data-isi-nilai="rekening_gl" data-isi-label="label"
+                   data-isi-target='{"#country":"nama_rekening"}'>
+          </div>
+        </div>
+        <div class="col-sm-4"><input type="text" id="country" class="form-control form-control-sm" disabled></div>
+      </div>
+      <div class="row g-2 mb-2">
+        <label for="keterangan_transaksi" class="col-sm-4 col-form-label">Keterangan Transaksi</label>
+        <div class="col-sm-8"><input type="text" name="keterangan_transaksi" id="keterangan_transaksi" class="form-control form-control-sm" value="<?php echo h($keterangan_form); ?>"></div>
+      </div>
+      <div class="row g-2 mb-3">
+        <label for="jumlah_dk" class="col-sm-4 col-form-label">Jumlah (Rp)</label>
+        <div class="col-sm-4"><input type="text" name="jumlah_dk" id="jumlah_dk" class="form-control form-control-sm text-end" inputmode="numeric" autocomplete="off"></div>
+        <div class="col-sm-4 col-form-label text-muted" id="format"></div>
+      </div>
+      <div class="text-end">
+        <button type="submit" name="simpan" value="Simpan" class="btn btn-ni btn-sm px-4">Simpan</button>
+      </div>
+    </form>
+  </div>
+</div>
+<?php echo $pesan_proses; ?>
+
+<div class="table-responsive mt-3">
+  <table class="table table-sm table-bordered table-ni align-middle">
+    <thead>
+      <tr><th>Kode Rekening</th><th>Keterangan</th><th class="text-end">Debet</th><th class="text-center">Action</th></tr>
+    </thead>
+    <tbody>
+    <?php foreach ($baris_transaksi as $b): ?>
+      <tr>
+        <td><?php echo h($b['kode_rekening']); ?></td>
+        <td><?php echo h($b['keterangan_transaksi']); ?></td>
+        <td class="text-end"><?php if ($b['debet'] !== "0") { echo number_format(compat_num($b['debet']), 2, '.', ','); } ?></td>
+        <td class="text-center"><a href="?<?php echo h(paramEncrypt('page=../transaksi/kas_keluar&mode=delete&id_transaksi=' . $b['id_transaksi'])); ?>" class="btn btn-outline-danger btn-sm" data-konfirmasi="Apakah Anda yakin?">Batal</a></td>
+      </tr>
+    <?php endforeach; ?>
+    </tbody>
+    <tfoot>
+      <tr class="fw-bold">
+        <td colspan="2" class="text-center">TOTAL</td>
+        <td class="text-end"><?php echo number_format($tot_debet, 2, '.', ','); ?></td>
+        <td></td>
+      </tr>
+    </tfoot>
+  </table>
+</div>
+
+<form action="<?php echo h($aksi_form); ?>" method="post" name="form" class="text-end">
+  <input type="hidden" name="tanggal_selesai" value="<?php if (empty($_POST['tanggal_transaksi'])) { echo h($tanggal); } else { echo h($_POST['tanggal_transaksi']); } ?>">
+  <input type="hidden" name="kode_bukti" value="<?php echo h($kode_transaksi); ?>">
+  <input type="hidden" name="keterangan_jurnal" value="<?php echo h($keterangan_jurnal); ?>">
+  <button type="submit" name="selesai" value="Selesai" class="btn btn-ni btn-sm px-4" data-konfirmasi="Apakah Anda Yakin?">Selesai</button>
+</form>
+<script>
+// tampilan Rp. 1.234 di samping isian jumlah (seperti formatCurrency versi lama)
+document.getElementById('jumlah_dk').addEventListener('keyup', function () {
+    var angka = this.value.replace(/[^0-9]/g, '') || '0';
+    document.getElementById('format').textContent = 'Rp. ' + angka.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+});
+</script>
+<?php
+halaman_akhir();

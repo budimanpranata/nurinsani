@@ -60,6 +60,9 @@ if (PHP_SAPI !== 'cli' && session_status() === PHP_SESSION_NONE && !headers_sent
     }
 }
 
+// Wajib login, logout otomatis saat idle, dan satu sesi per user untuk semua halaman (lihat inc/penjaga_sesi.php)
+require_once __DIR__ . '/inc/penjaga_sesi.php';
+
 // Charset koneksi untuk mysql_connect(). null = biarkan default mysqli (utf8mb4 di PHP 8).
 // Jika data lama tampil aneh (karakter non-ASCII rusak), coba ganti menjadi 'latin1'.
 if (!defined('COMPAT_MYSQL_CHARSET')) {

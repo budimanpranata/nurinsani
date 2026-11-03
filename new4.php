@@ -4,8 +4,9 @@
  * Menampilkan data anggota dan calon_loan; tombol Approve mengirim ke update_cim_lead.php.
  * Nama isian dan nilai awal sama dengan versi lama, termasuk keanehannya (PEKERJAAN_TERTUNDA.md bagian 38):
  *   - NPWP selalu terisi "0" (atribut value ganda di versi lama, yang pertama "0"), sehingga approve menimpa NPWP jadi 0
- *   - Pekerjaan Pasangan terisi kode unit anggota; Tempat Lahir terisi kolom CITIZENSHIP
  *   - pilihan (jenis kelamin, pendidikan, agama, dll.) tidak mengikuti data tersimpan
+ * Perbaikan 2026-11-03 (laporan user): Tempat Lahir dari TEMPAT_LAHIR (dulu CITIZENSHIP = kode negara), Pekerjaan
+ * Pasangan dari pekerjaan_pasangan (dulu kode unit), Bidang Usaha memilih kode tersimpan di calon_loan.usaha.
  * Handler JS yang tidak ada (suggest, fill2, startCalc, stopCalc) dibuang; validasi isian wajib sama dengan versi lama.
  */
 require_once __DIR__ . '/inc/tampilan.php';
@@ -59,10 +60,18 @@ function pilihan_lead($label, $nama, $opsi)
 $besar = 'data-huruf-besar';
 $angka = 'data-wajib-angka';
 $urutan = array('satu', 'dua', 'tiga', 'empat', 'lima', 'enam', 'tujuh', 'delapan', 'sembilan', 'sepuluh');
-$opsi_usaha = array(array(null, 'Pilih Salah satu', true));
+// bidang usaha tersimpan di pengajuan terpilih; kode yang belum ada di tabel bidang_usaha tetap ditampilkan
+$usaha_tersimpan = $cl('usaha');
+$opsi_usaha = array(array(null, 'Pilih Salah satu', $usaha_tersimpan === ''));
+$ada_usaha = false;
 foreach ($bidang_usaha as $u) {
     $nilai_u = array_values($u);
-    $opsi_usaha[] = array((string) $nilai_u[0], (string) $nilai_u[1]);
+    $pilih_ini = $usaha_tersimpan !== '' && (string) $nilai_u[0] === $usaha_tersimpan;
+    $ada_usaha = $ada_usaha || $pilih_ini;
+    $opsi_usaha[] = array((string) $nilai_u[0], (string) $nilai_u[1], $pilih_ini);
+}
+if ($usaha_tersimpan !== '' && !$ada_usaha) {
+    $opsi_usaha[] = array($usaha_tersimpan, $usaha_tersimpan . ' (kode belum terdaftar)', true);
 }
 
 halaman_awal('Form Approve Calon Anggota');
@@ -81,8 +90,7 @@ halaman_awal('Form Approve Calon Anggota');
       <?php isian_lead('Nama', 'nama', $ag('CUST_SHORT_NAME'), $besar . ' maxlength="45"'); ?>
       <?php pilihan_lead('Pendidikan', 'pendidikan', array(array(null, 'Pilih Salah satu'), array('SMA', 'SMA', true), array('SMP', 'SMP'),
           array('SD', 'SD'), array('D1', 'D1'), array('D3', 'D3'), array('S1', 'S1'))); ?>
-      <?php // versi lama: Tempat Lahir diisi kolom CITIZENSHIP (dan disimpan kembali ke CITIZENSHIP) ?>
-      <?php isian_lead('Tempat Lahir', 'tempat_lahir', $ag('CITIZENSHIP'), $besar . ' maxlength="14"'); ?>
+      <?php isian_lead('Tempat Lahir', 'tempat_lahir', $ag('TEMPAT_LAHIR'), $besar . ' maxlength="14"'); ?>
       <?php isian_lead('Nama Pasangan/Penjamin', 'wali', $ag('WARIS'), $besar); ?>
       <?php isian_lead('Tgl Lahir Sesuai KTP', 'tgl_lahir', $ag('BIRTH_DATE'), 'placeholder="YYYY-MM-DD"'); ?>
       <?php isian_lead('No Tlp', 'no_tlp', $ag('MOBILE_PHONE')); ?>
@@ -105,8 +113,7 @@ halaman_awal('Form Approve Calon Anggota');
       <?php pilihan_lead('Status Perkawinan', 'status_kawin', array(array('kawin', 'KAWIN'), array('belum_kawin', 'BELUM KAWIN'), array('janda', 'JANDA'))); ?>
       <?php pilihan_lead('Sumber Dana', 'sumber', array(array('1', 'NI'), array('2', 'Pihak Ketiga'), array('3', 'Bank Victoria'), array('4', 'BSM'),
           array('5', 'BAV'), array('6', 'BJB'), array('7', 'BRI'), array('8', 'LPDB'))); ?>
-      <?php // versi lama: Pekerjaan Pasangan diisi kode unit anggota ($a['UNIT']) ?>
-      <?php isian_lead('Pekerjaan Pasangan', 'pekerjaan', $ag('UNIT'), $besar . ' maxlength="75"'); ?>
+      <?php isian_lead('Pekerjaan Pasangan', 'pekerjaan', $ag('pekerjaan_pasangan'), $besar . ' maxlength="75"'); ?>
       <?php isian_lead('Golongan Pemilik', 'gol_pe', '875', 'maxlength="20"'); ?>
       <?php pilihan_lead('Agama', 'agama', array(array('ISLAM', 'ISLAM'), array('BUDHA', 'BUDHA'))); ?>
       <?php isian_lead('Golongan Debitur', 'gol_deb', '874'); ?>

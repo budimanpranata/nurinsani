@@ -1,4 +1,4 @@
-<?php require_once __DIR__ . '/koneksi_db.php';
+<?php require __DIR__ . '/inc/hanya_cli.php'; require_once __DIR__ . '/koneksi_db.php';
 include "function.php";
 
 $con = db_ni();

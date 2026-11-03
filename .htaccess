@@ -9,6 +9,12 @@
     Require all denied
 </FilesMatch>
 
+# Proses EOD yang dijalankan cron lewat php CLI (crontab server, 2026-11-03); tidak boleh dipicu lewat web
+# karena menjalankan ulang di hari yang sama mencatat potongan/jurnal ganda.
+<FilesMatch "^(proses_eod_debet_rest|proses_eod_realisasi_wakal|proses_eod_realisasi_murab|proses_eod_ppap)\.php$">
+    Require all denied
+</FilesMatch>
+
 # Kredensial database server (lihat koneksi_db.php); tidak boleh dibuka langsung.
 <Files "koneksi_db.lokal.php">
     Require all denied

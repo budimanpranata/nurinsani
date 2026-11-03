@@ -1,4 +1,4 @@
-<?php require_once __DIR__ . '/koneksi_db.php';
+<?php require __DIR__ . '/inc/hanya_cli.php'; require_once __DIR__ . '/koneksi_db.php';
 error_reporting(E_ALL);
 date_default_timezone_set('Asia/Jakarta');
 $tanggal=date("y-m-d");

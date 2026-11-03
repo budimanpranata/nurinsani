@@ -1,107 +1,71 @@
 <?php require_once __DIR__ . '/../../koneksi_db.php';
-/* Database connection start */
-$servername = "localhost";
-$username = "root";
-$password = "";
-$dbname = "nur_insani";
+/**
+ * Sumber data DataTables (server-side, POST draw/start/length/search/order) untuk menu Transaksi > Simpanan level kp
+ * (kp/view/master_trans.php): saldo simpanan_kp per norek dan jenis.
+ * Query, urutan, dan isi sama dengan versi lama; kini prepared statement dan isi sel di-escape HTML.
+ * Perilaku lama yang dipertahankan (PEKERJAAN_TERTUNDA.md bagian 43): pada pencarian, GROUP BY berada di tengah
+ * rangkaian OR sehingga pengelompokan menjadi "SNOREK, (TYPE OR sunit LIKE ..) OR type LIKE .." (saldo jenis
+ * simpanan bisa tergabung) dan syarat unit/jenis tidak menyaring baris.
+ */
+require_once __DIR__ . '/../../inc/tampilan.php';
 include "../../indo_tgl.php";
+header('Content-Type: application/json; charset=utf-8');
 
-$conn = db_ni() or die("Connection failed: " . mysqli_connect_error());
-
-/* Database connection end */
-
-
-// storing  request (ie, get/post) global array to a variable  
-$requestData= $_REQUEST;
-$bussdate=$_REQUEST;
-
-
-$columns = array( 
-// datatable column index  => database column name
-	0 => 'sunit',
-    1 => 'snorek', 
-	2 => 'scif',
-	3 => 'CUST_SHORT_NAME',
-	4 => 'type',
+$req = $_REQUEST;
+$kolom = array(
+    // indeks kolom DataTables => kolom database
+    0 => 'sunit',
+    1 => 'snorek',
+    2 => 'scif',
+    3 => 'CUST_SHORT_NAME',
+    4 => 'type',
     5 => 'DEBIT',
-6 => 'KREDIT'
-	
-
+    6 => 'KREDIT',
 );
+$cari = isset($req['search']['value']) ? (string) $req['search']['value'] : '';
+$urut_kolom = isset($req['order'][0]['column']) ? (int) $req['order'][0]['column'] : 0;
+$urut_kolom = isset($kolom[$urut_kolom]) ? $kolom[$urut_kolom] : 'sunit';
+$urut_arah = isset($req['order'][0]['dir']) && strtolower($req['order'][0]['dir']) === 'desc' ? 'desc' : 'asc';
+$mulai = isset($req['start']) ? (int) $req['start'] : 0;
+$panjang = isset($req['length']) ? (int) $req['length'] : 10;
 
-// getting total number records without any search
-$sql = "SELECT snorek,scif,sunit, CUST_SHORT_NAME,type, sum(KREDIT - DEBIT) as SALDO";
-$sql.=" FROM simpanan_kp left join anggota on simpanan_kp.scif = anggota.CIF GROUP BY SNOREK,TYPE";
-$query=db_query($conn, $sql) or die("ajax-grid-data_trns.php: get InventoryItems");
-$totalData = db_num_rows($query);
-$totalFiltered = $totalData;  // when there is no search parameter then total number rows = total number filtered rows.
+$pilih = "SELECT snorek,scif,sunit, CUST_SHORT_NAME,type, sum(KREDIT - DEBIT) as SALDO
+    FROM simpanan_kp left join anggota on simpanan_kp.scif = anggota.CIF";
 
+// jumlah seluruh data tanpa pencarian (jumlah kelompok norek+jenis)
+$totalData = count(db_semua($pilih . " GROUP BY SNOREK,TYPE"));
+$totalFiltered = $totalData;
 
-if( !empty($requestData['search']['value']) ) {
-	// if there is a search parameter
-	$sql = "SELECT snorek,scif,sunit, CUST_SHORT_NAME,type, sum(KREDIT - DEBIT) as SALDO";
-$sql.=" FROM simpanan_kp left join anggota on simpanan_kp.scif = anggota.CIF ";
-
-	$sql.=" WHERE snorek LIKE '".$requestData['search']['value']."%'  ";    // $requestData['search']['value'] contains search parameter
-	$sql.=" OR scif LIKE '".$requestData['search']['value']."%'  ";
-	$sql.=" OR CUST_SHORT_NAME LIKE '".$requestData['search']['value']."%' GROUP BY SNOREK,TYPE ";
-	$sql.=" OR sunit LIKE '".$requestData['search']['value']."%' ";
-	$sql.=" OR type LIKE '".$requestData['search']['value']."%' ";
-  	$query=db_query($conn, $sql) or die("../view/ajax-grid-data_trns.php: get PO");
-	$totalFiltered = db_num_rows($query); // when there is a search parameter then we have to modify total number filtered rows as per search result without limit in the query 
-
-	$sql.=" ORDER BY ". $columns[$requestData['order'][0]['column']]."   ".$requestData['order'][0]['dir']."   LIMIT ".$requestData['start']." ,".$requestData['length']."   "; // $requestData['order'][0]['column'] contains colmun index, $requestData['order'][0]['dir'] contains order such as asc/desc , $requestData['start'] contains start row number ,$requestData['length'] contains limit length.
-	$query=db_query($conn, $sql) or die("../view/ajax-grid-data_trns.php: get PO"); // again run query with limit
-	
-} else {	
-
-	$sql = "SELECT snorek,scif,sunit, CUST_SHORT_NAME,type, sum(KREDIT - DEBIT) as SALDO";
-$sql.=" FROM simpanan_kp left join anggota on simpanan_kp.scif = anggota.CIF GROUP BY SNOREK,TYPE";
-
-	$sql.=" ORDER BY ". $columns[$requestData['order'][0]['column']]."   ".$requestData['order'][0]['dir']."   LIMIT ".$requestData['start']." ,".$requestData['length']."   ";
-	$query=db_query($conn, $sql) or die("ajax-grid-data_trns.php: get PO");
-	
+if ($cari !== '') {
+    // susunan WHERE / GROUP BY / OR sama persis dengan versi lama
+    $sql = $pilih . " WHERE snorek LIKE ? OR scif LIKE ? OR CUST_SHORT_NAME LIKE ? GROUP BY SNOREK,TYPE OR sunit LIKE ? OR type LIKE ? ";
+    $awalan = $cari . '%';
+    $param = array($awalan, $awalan, $awalan, $awalan, $awalan);
+    $totalFiltered = count(db_semua($sql, 'sssss', ...$param));
+    $baris = db_semua($sql . " ORDER BY $urut_kolom $urut_arah LIMIT ?, ?", 'sssssii', ...array_merge($param, array($mulai, $panjang)));
+} else {
+    $baris = db_semua($pilih . " GROUP BY SNOREK,TYPE ORDER BY $urut_kolom $urut_arah LIMIT ?, ?", 'ii', $mulai, $panjang);
 }
 
+$jenis = array('04' => 'POKOK', '05' => 'WAJIB', '06' => 'KHUSUS');
 $data = array();
-while( $row=db_fetch_array($query) ) {  // preparing an array
-	$nestedData=array(); 
-
-	$nestedData[] = $row["sunit"];
-    $nestedData[] = $row["snorek"];
-	$nestedData[] = $row["scif"];
-	$nestedData[] = $row["CUST_SHORT_NAME"];
-if ($row["type"] =='04'){
-                   $nestedData[] = "POKOK";
-                }elseif ($row["type"] =='05') {
-                   $nestedData[] = "WAJIB";
-                }elseif ($row["type"]=='06') {
-                   $nestedData[] = "KHUSUS";
-				}else {
-                 $nestedData[] = "UMUM";
-                }
-	
-	$nestedData[] = number_format (compat_num($row["SALDO"]));
-    
-	    $nestedData[] = '<td><center>
-                     <a href="../transaksi/input_trns.php?cif='.$row['scif'].'& type='.$row['type'].'"  data-toggle="tooltip" title="Edit" class="btn btn-sm btn-warning"> <i class="menu-icon icon-pencil"></i> </a>
-<a href="../transaksi/rek_koran.php?norek='.$row['snorek'].'"  data-toggle="tooltip" title="Cetak" class="btn btn-sm btn-success"> <i class="menu-icon icon-print"></i> </a>
-                     
-				     </center></td>';		
-	
-	$data[] = $nestedData;
-    
+foreach ($baris as $row) {
+    $data[] = array(
+        h($row['sunit']),
+        h($row['snorek']),
+        h($row['scif']),
+        h($row['CUST_SHORT_NAME']),
+        isset($jenis[(string) $row['type']]) ? $jenis[(string) $row['type']] : 'UMUM',
+        number_format(compat_num($row['SALDO'])),
+        // tautan sama dengan versi lama (termasuk "& type=")
+        '<a href="../transaksi/input_trns.php?cif=' . h($row['scif']) . '& type=' . h($row['type']) . '" title="Edit" class="btn btn-sm btn-outline-warning">Edit</a> '
+        . '<a href="../transaksi/rek_koran.php?norek=' . h($row['snorek']) . '" title="Cetak" class="btn btn-sm btn-outline-success">Cetak</a>',
+    );
 }
 
-
-
-$json_data = array(
-			"draw"            => intval( $requestData['draw'] ),   // for every request/draw by clientside , they send a number as a parameter, when they recieve a response/data they first check the draw number, so we are sending same number in draw. 
-			"recordsTotal"    => intval( $totalData ),  // total number of records
-			"recordsFiltered" => intval( $totalFiltered ), // total number of records after searching, if there is no searching then totalFiltered = totalData
-			"data"            => $data   // total data array
-			);
-
-echo json_encode($json_data);  // send data as json format
-
-?>
+echo json_encode(array(
+    "draw" => intval(isset($req['draw']) ? $req['draw'] : 0),
+    "recordsTotal" => intval($totalData),
+    "recordsFiltered" => intval($totalFiltered),
+    "data" => $data,
+));

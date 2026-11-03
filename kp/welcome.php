@@ -1,46 +1,35 @@
-<?php require_once __DIR__ . '/../php8_compat.php';
-session_start();  
-ob_start();  
+<?php require_once __DIR__ . '/../koneksi_db.php';
+/**
+ * Menu Home (level kp): sambutan untuk user yang login.
+ * Isi dan pemeriksaan login/level sama dengan versi lama; hanya tampilan dan query (prepared statement) yang berubah.
+ */
+require_once __DIR__ . '/../inc/tampilan.php';
+session_start();
+ob_start();
 
 //cek apakah user sudah login
-if(!isset($_SESSION['userid'])){
-   header("location:index.html");
- exit; }
-
+if (!isset($_SESSION['userid'])) {
+    header("location:index.html");
+    exit;
+}
 //cek level user
-if($_SESSION['level']!="kp"){
-   header("location:index.html");
- exit; }  
+if ($_SESSION['level'] != "kp") {
+    header("location:index.html");
+    exit;
+}
+$userid = $_SESSION['userid'];
 
-include "../conn2.php";
+$users = db_semua("SELECT * FROM user WHERE userid=?", 's', (string) $userid);
+
+halaman_awal('Home');
 ?>
-<html>
-<head>
-
-<style type="text/css">
-<!--
-.header1 {color: #ffffff; background: #4682B4; font-weight: bold; font-family: Tahoma, Verdana; font-size: 13px; margin: 0px;}
-.style1 {
-	color: #FFFFFF;
-	font-weight: bold;
-}
--->
-</style>
-<body>
-<table width="100%" border="0" cellpadding="3" cellspacing="0" bgcolor="#4682B4">
-  <tr>
-    <td width="100%" bgcolor="#2F6B4F"><span class="style1">Home</span></td>
-  </tr>
-</table>
-</body>
-</html>
+<?php foreach ($users as $row): ?>
+<div class="card card-ni mb-3">
+  <div class="card-body">
+    <h1 class="h5 mb-1">Selamat Datang <?php echo h($row['nama']); ?></h1>
+    <div class="text-muted small">Di Aplikasi Sales Manajement Tools</div>
+  </div>
+</div>
+<?php endforeach; ?>
 <?php
-$koneksi=open_connection2();
-$userid=$_SESSION['userid'];
-$result = mysql_query("SELECT * FROM user WHERE userid='$userid'");
-while($row = mysql_fetch_array($result)){
-echo "<h>Selamat Datang ".$row['nama']. " Di Aplikasi Sales Manajement Tools</h>";
-}
-//cek apakah user sudah login
-?>	
-
+halaman_akhir();

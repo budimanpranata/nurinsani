@@ -1,0 +1,4 @@
+# Proses yang dijalankan cron lewat php CLI (crontab server, 2026-11-03); tidak boleh dipicu lewat web.
+<FilesMatch "^(senin|selasa|rabu|kamis|pokok|wajib|tunggakan_eom|loan_mob)\.php$">
+    Require all denied
+</FilesMatch>

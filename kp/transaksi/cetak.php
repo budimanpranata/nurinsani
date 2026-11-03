@@ -1,42 +1,34 @@
-<?php require_once __DIR__ . '/../../php8_compat.php';
+<?php require_once __DIR__ . '/../../koneksi_db.php';
+/**
+ * Cetak bukti Jurnal Umum (level kp), dibuka dari kp/transaksi/umum.php: ?file=<nomor bukti>.
+ * Tata letak PDF sama dengan versi lama; query diubah ke prepared statement dan buffer dibersihkan sebelum PDF
+ * dikirim. Dibuang: loop kosong yang tidak dipakai dan teks "ks" sesudah penutup PHP (dulu ikut terkirim di
+ * belakang berkas PDF). Perbaikan 2026-11-03 (perintah user): jumlah = total debet nomor bukti di DB (dulu ?total).
+ */
 session_start();
 ob_start();
-$userid=$_SESSION['userid'];
-$tgl_jatuh_tempo=$_SESSION['jatuh'];
-$cao=$_SESSION['code_cao'];
+$userid = isset($_SESSION['userid']) ? $_SESSION['userid'] : null;
 
 //cek apakah user sudah login
-if(!isset($_SESSION['userid'])){
-   header("location:index.html");
- exit; }
-
+if (!isset($_SESSION['userid'])) {
+    header("location:index.html");
+    exit;
+}
 //cek level user
-if($_SESSION['level']!="kp"){
-   header("location:index.html");
- exit; }
- include "../conn2.php";
- include "../../indo_tgl.php";
- $koneksi=open_connection2();	
-$kode_kirim=$_GET['file'];
-$total=$_GET['total'];
-$tgl=($_GET['tgl']);
+if ($_SESSION['level'] != "kp") {
+    header("location:index.html");
+    exit;
+}
+include "../../indo_tgl.php";
+$kode_kirim = isset($_GET['file']) ? (string) $_GET['file'] : '';
+$jumlah = db_satu("select coalesce(sum(debet),0) as total from tabel_transaksi where kode_transaksi =?", 's', $kode_kirim);
+$total = $jumlah ? $jumlah['total'] : 0;
 
- $sal_simpan= mysql_fetch_array(mysql_query("select tanggal_transaksi from tabel_transaksi where kode_transaksi ='$kode_kirim'"));
-$tgl= $sal_simpan['tanggal_transaksi'];
+// tanggal dari baris transaksi pertama nomor bukti ini (menimpa ?tgl)
+$sal_simpan = db_satu("select tanggal_transaksi from tabel_transaksi where kode_transaksi =?", 's', $kode_kirim);
+$tgl = tgl_indo($sal_simpan ? (string) $sal_simpan['tanggal_transaksi'] : '');
 
-$tgl=tgl_indo($tgl);
-$buss_date=date("y-m-d");
-//cek apakah user sudah login
-if(!isset($_SESSION['userid'])){
-   header("location:../index.html");//jika belum login jangan lanjut..
- exit; }
-
-//cek level user
-if($_SESSION['level']!="kp"){
-     header("location:../../index.html");//jika bukan user jangan lanjut
- exit; }
-
-require ('../../fpdf17/fpdf.php');
+require('../../fpdf17/fpdf.php');
 
 //$pdf=new PDF_AutoPrint('L','mm', array(216, 275));
 $pdf=new FPDF ('P','mm','A4');
@@ -65,41 +57,25 @@ $pdf->Ln();
 $no=0;
 $tot_blt=0;
 
-$sql=mysql_query("select kode_rekening from tabel_transaksi where kode_transaksi ='$kode_kirim' group by kode_rekening ");
-
-		
-		 
-while($result= mysql_fetch_array($sql)){
-
-}
-
-
-$sql=mysql_query("select kode_rekening from tabel_transaksi where kode_transaksi ='$kode_kirim' group by kode_rekening ");
-
-		
-		 
-while($result= mysql_fetch_array($sql)){
+foreach (db_semua("select kode_rekening from tabel_transaksi where kode_transaksi =? group by kode_rekening ", 's', $kode_kirim) as $result) {
 	$no ++;
  $kode= $result['kode_rekening'];
 
-
- $sal_simpan= mysql_fetch_array(mysql_query("select sum(kredit) as kredit,tabel_transaksi.kode_rekening, nama_rekening from tabel_transaksi 
+ $sal_simpan= db_satu("select sum(kredit) as kredit,tabel_transaksi.kode_rekening, nama_rekening from tabel_transaksi
  left join tabel_master on tabel_master.rekening_gl = tabel_transaksi.kode_rekening
- where tabel_transaksi.kode_rekening ='$kode'and kredit > 0 and  tabel_transaksi.kode_transaksi ='$kode_kirim' and tabel_master.unit='1010' "));
-$kredit= $sal_simpan['kredit'];
-$kode_kredit= $sal_simpan['kode_rekening'];
-$nama=$sal_simpan['nama_rekening'];
+ where tabel_transaksi.kode_rekening =? and kredit > 0 and  tabel_transaksi.kode_transaksi =? and tabel_master.unit='1010' ", 'ss', (string) $kode, $kode_kirim);
+$kredit= $sal_simpan ? $sal_simpan['kredit'] : null;
+$kode_kredit= $sal_simpan ? $sal_simpan['kode_rekening'] : null;
+$nama=$sal_simpan ? $sal_simpan['nama_rekening'] : null;
 $kode_kredit ="$kode_kredit - $nama";
 
-$sal_debet= mysql_fetch_array(mysql_query("select sum(tabel_transaksi.debet) as debet,tabel_transaksi.kode_rekening,nama_rekening  from tabel_transaksi 
+$sal_debet= db_satu("select sum(tabel_transaksi.debet) as debet,tabel_transaksi.kode_rekening,nama_rekening  from tabel_transaksi
 left join tabel_master on tabel_master.rekening_gl = tabel_transaksi.kode_rekening
-where tabel_transaksi.kode_rekening ='$kode' and kode_transaksi ='$kode_kirim' and tabel_transaksi.debet > 0 and tabel_master.unit ='1010' "));
-$debet= $sal_debet['debet'];
-$kode_debet= $sal_debet['kode_rekening'];
-$nama=$sal_debet['nama_rekening'];
+where tabel_transaksi.kode_rekening =? and kode_transaksi =? and tabel_transaksi.debet > 0 and tabel_master.unit ='1010' ", 'ss', (string) $kode, $kode_kirim);
+$debet= $sal_debet ? $sal_debet['debet'] : null;
+$kode_debet= $sal_debet ? $sal_debet['kode_rekening'] : null;
+$nama=$sal_debet ? $sal_debet['nama_rekening'] : null;
 $kode_debet ="$kode_debet - $nama";
-
-
 
 //query dan arraying
 $pdf->SetFont('ARIAL','',8);
@@ -111,17 +87,11 @@ $pdf->cell(1,5,''.number_format(compat_num($kredit)),0,'L',0);
 $pdf->Ln();
 }
 
-
-
-
-$sql=mysql_query("select keterangan_transaksi from tabel_transaksi where kode_transaksi ='$kode_kirim'");
-
-		
-		 
-while($result= mysql_fetch_array($sql)){
+// keterangan dari baris terakhir nomor bukti ini
+$keterangan = '';
+foreach (db_semua("select keterangan_transaksi from tabel_transaksi where kode_transaksi =?", 's', $kode_kirim) as $result) {
 $keterangan=$result['keterangan_transaksi'];
 }
-
 
 $pdf->Ln();
 $pdf->SetFont('ARIAL','B',8);
@@ -130,8 +100,6 @@ $pdf->cell(60,5,'jumlah : ',1,0,'L',1);
 $pdf->cell(0,5,'Rp.'.number_format(compat_num($total)),1,0,'R',1);
 $pdf->Ln();
 $pdf->cell(0,5,''.$keterangan,1,1,'L',1);
-
-
 
 $pdf->Ln();
 
@@ -142,7 +110,9 @@ $pdf->Ln();
 $pdf->cell(96,20,'',1,0,'L',1);
 $pdf->cell(60,20,' ',1,0,'L',1);
 //$pdf->AutoPrint(true);
- 
-$pdf->Output();
 
-?>ks
+// buang keluaran lain (spasi/peringatan) supaya berkas PDF tidak rusak
+while (ob_get_level() > 0) {
+    ob_end_clean();
+}
+$pdf->Output();

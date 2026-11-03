@@ -24,6 +24,8 @@ if(mysql_num_rows($cek)==1){//jika berhasil akan bernilai 1
         $c = mysql_fetch_array($cek);
         $_SESSION['userid'] = $c['userid'];
         $_SESSION['level'] = $c['level'];
+        // satu sesi per user + awal hitung idle (inc/penjaga_sesi.php)
+        sesi_tandai_login($c['userid']);
         if($c['level']=="lead"){
 		 $update_log = mysql_query("UPDATE user SET status ='1' WHERE userid= '$userid'");
 		 header("location:lead/homelead.php");

@@ -77,6 +77,8 @@ echo "<script>alert('Parameter tanggal libur masih aktif');</script>";
         $_SESSION['stgl_system']=$tgl;
         $_SESSION['userid'] = $c['userid'];
         $_SESSION['level'] = $c['level'];
+        // satu sesi per user + awal hitung idle (inc/penjaga_sesi.php)
+        sesi_tandai_login($c['userid']);
 
         if($c['level']=="lead"){
 		 $update_log = mysql_query("UPDATE user SET status ='1' WHERE userid= '$userid'");

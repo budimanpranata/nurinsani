@@ -1,54 +1,57 @@
-<?php require_once __DIR__ . '/../../php8_compat.php';
+<?php require_once __DIR__ . '/../../koneksi_db.php';
+/**
+ * Transaksi > Simpanan > Cetak (level kp): PDF mutasi satu rekening simpanan_kp (?norek=...) dengan saldo berjalan.
+ * Tata letak PDF sama dengan versi lama; query diubah ke prepared statement (saldo berjalan @bal tetap dihitung
+ * MySQL pada koneksi yang sama) dan buffer dibersihkan sebelum PDF dikirim.
+ * Perilaku lama yang dipertahankan: CIF = 9 karakter pertama norek; nama unit, alamat, dan tanggal buka kosong
+ * (variabelnya tidak pernah diisi di versi lama).
+ */
 session_start();
 ob_start();
 
-$userid=$_SESSION['userid'];
+$userid = isset($_SESSION['userid']) ? $_SESSION['userid'] : null;
 //cek apakah user sudah login
-if(!isset($_SESSION['userid'])){
-   header("location:index.html");
- exit; }
+if (!isset($_SESSION['userid'])) {
+    header("location:index.html");
+    exit;
+}
 
-include "../../conn2.php";
 include "../../function.php";
 
+$norek = isset($_GET['norek']) ? (string) $_GET['norek'] : '';
+$cif = substr($norek, 0, 9);
+// tidak pernah diisi di versi lama
+$nama_unit = '';
+$alamat = '';
+$buss_date = '';
 
-$koneksi=open_connection2();
-$norek=$_GET ['norek'];
-$cif=substr($norek,0,9);
-
-
-$data_loan = mysql_query ("select * from anggota where cif ='$cif'");
-while($data_l= mysql_fetch_array($data_loan)){
-$CUST_SHORT_NAME=$data_l['CUST_SHORT_NAME'];
-$maturity_date=tgl_indo($data_l['maturity_date']);
+$CUST_SHORT_NAME = '';
+foreach (db_semua("select * from anggota where cif =?", 's', $cif) as $data_l) {
+    $CUST_SHORT_NAME = $data_l['CUST_SHORT_NAME'];
 }
 
-$data_simpan = mysql_query ("select max(buss_date) as buss_date, type from simpanan_kp where snorek ='$norek'");
-while($data_l= mysql_fetch_array($data_simpan)){
-
-$mutasi=tgl_indo($data_l['buss_date']);
-$tipe=$data_l['type'];
-if ($tipe =='04'){
-$tipe='SIMPANAN POKOK';
-}elseif($tipe =='05'){
-$tipe='SIMPANAN WAJIB';
-}elseif($tipe =='06'){
-$tipe='SIMPANAN KHUSUS';
-}elseif($tipe =='07'){
-$tipe='SIMPANAN UMUM';
+$mutasi = '';
+$tipe = '';
+foreach (db_semua("select max(buss_date) as buss_date, type from simpanan_kp where snorek =?", 's', $norek) as $data_l) {
+    $mutasi = tgl_indo((string) $data_l['buss_date']);
+    $tipe = $data_l['type'];
+    if ($tipe == '04') {
+        $tipe = 'SIMPANAN POKOK';
+    } elseif ($tipe == '05') {
+        $tipe = 'SIMPANAN WAJIB';
+    } elseif ($tipe == '06') {
+        $tipe = 'SIMPANAN KHUSUS';
+    } elseif ($tipe == '07') {
+        $tipe = 'SIMPANAN UMUM';
+    }
 }
-}
 
+require('../../fpdf17/fpdf.php');
 
-
-
-
-require ('../../fpdf17/fpdf.php');
-
-$query1 = mysql_query("SET @bal = 0;");
-$sql =mysql_query ("SELECT simpanan_kp.KET,type,kode_transaksi, simpanan_kp.SNOREK,simpanan_kp.BUSS_DATE,anggota.CUST_SHORT_NAME,DEBIT,KREDIT,@bal:=@bal+KREDIT-DEBIT as balance FROM simpanan_kp 
+db_jalankan("SET @bal = 0;");
+$sql = db_semua("SELECT simpanan_kp.KET,type,kode_transaksi, simpanan_kp.SNOREK,simpanan_kp.BUSS_DATE,anggota.CUST_SHORT_NAME,DEBIT,KREDIT,@bal:=@bal+KREDIT-DEBIT as balance FROM simpanan_kp
 join anggota on anggota.cif = simpanan_kp.scif
-where simpanan_kp.SNOREK='$norek'  order by simpanan_kp.REFF");
+where simpanan_kp.SNOREK=?  order by simpanan_kp.REFF", 's', $norek);
 $pdf=new FPDF('P','mm', array(216, 275));
 $pdf->AddPage();
 //$pdf=new FPDF('L','mm', array(216, 330));
@@ -100,7 +103,7 @@ $pdf->Cell(15,3,'Saldo',1,0,'C');
 
 $pdf->Ln();
 $no =0;
-while($result= mysql_fetch_array($sql)){
+foreach ($sql as $result) {
 $no ++;
 $norek = $result['SNOREK'];
 $CUST_SHORT_NAME = $result['CUST_SHORT_NAME'];
@@ -125,7 +128,8 @@ $pdf->Cell(15,3,''.number_format (compat_num($Balance)),1,'LR',0,'R');
 
 $pdf->Ln();
 }
+// buang keluaran lain (spasi/peringatan) supaya berkas PDF tidak rusak
+while (ob_get_level() > 0) {
+    ob_end_clean();
+}
 $pdf->Output();
-
-?>
-

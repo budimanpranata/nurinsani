@@ -1,219 +1,111 @@
-<?php require_once __DIR__ . '/../../php8_compat.php'; 
+<?php require_once __DIR__ . '/../../koneksi_db.php';
+/**
+ * Transaksi > Simpanan > + Anggota (level kp): tambah anggota simpanan KP beserta 4 rekening simpanan_kp
+ * (CIF+04 pokok, +05 wajib, +06 khusus, +07 umum) bersaldo 0.
+ * Logika sama dengan versi lama; hanya tampilan dan query (prepared statement) yang berubah. var_dump($unit) sisa
+ * debug dihapus. Perilaku lama yang dipertahankan dicatat di PEKERJAAN_TERTUNDA.md bagian 44 (nomor urut dari unit
+ * '1010', tempat lahir tidak disimpan, rekening simpanan tetap dibuat walau anggota gagal disimpan, dll.).
+ */
+require_once __DIR__ . '/../../inc/tampilan.php';
 session_start();
 ob_start();
-        $userid=$_SESSION['userid'];
-        if(!isset($_SESSION['userid'])){
-   header("location:../index.html");
- exit; }
+$userid = isset($_SESSION['userid']) ? $_SESSION['userid'] : null;
+if (!isset($_SESSION['userid'])) {
+    header("location:../index.html");
+    exit;
+}
 
-include "../conn.php";
-	$today=date("Ymd");
-	$k = db_query ($koneksi,"select kode_branch AS unit FROM user where userid='$userid'");
-			  $kbranch = db_fetch_array($k);
-			  $unit = $kbranch['unit'];
-			var_dump($unit);  
-	$dcount = db_query ($koneksi,"select max(no) AS last FROM anggota where  no LIKE '%$today%' and unit ='1010'");
-			  $hit = db_fetch_array($dcount);
-			  $lastNoTransaksi = $hit['last'];
-			  $lastNoUrut = substr($lastNoTransaksi, 12,4 );
-			  $nextNoUrut = (int) $lastNoUrut + 1;
-			  $nextNoTransaksi = $today.sprintf('%04s', $nextNoUrut);
-			  $nim="$unit$nextNoTransaksi";
-			  $cif="$nextNoTransaksi";
-			   ?>
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <head>
-        <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-            <!-- css table datatables/dataTables -->
-	    <link rel="stylesheet" href="datatables/dataTables.bootstrap.css"/>
-        
-         <link type="text/css" href="../css/bootstrap.css" rel="stylesheet">
-        <link type="text/css" href="../bootstrap/css/bootstrap.min.css" rel="stylesheet"> 
-        <link type="text/css" href="../bootstrap/css/bootstrap-responsive.min.css" rel="stylesheet">
-        <link type="text/css" href="../css/theme.css" rel="stylesheet">
-        <link type="text/css" href="../images/icons/css/font-awesome.css" rel="stylesheet">
-        <link type="text/css" href='http://fonts.googleapis.com/css?family=Open+Sans:400italic,600italic,400,600'
-            rel='stylesheet'>
-        
-        <script src="../scripts/jquery-1.9.1.min.js" type="text/javascript"></script>
-        <script src="../scripts/jquery-ui-1.10.1.custom.min.js" type="text/javascript"></script>
-    </head>
-    <body>
-                
+$today = date("Ymd");
+$kbranch = db_satu("select kode_branch AS unit FROM user where userid=?", 's', (string) $userid);
+$unit = $kbranch ? (string) $kbranch['unit'] : '';
+// nomor urut harian; versi lama mengambil nomor terakhir dari unit '1010' (bukan unit user)
+$hit = db_satu("select max(no) AS last FROM anggota where  no LIKE ? and unit ='1010'", 's', '%' . $today . '%');
+$lastNoTransaksi = $hit ? (string) $hit['last'] : '';
+$nextNoUrut = (int) substr($lastNoTransaksi, 12, 4) + 1;
+$nextNoTransaksi = $today . sprintf('%04s', $nextNoUrut);
+$nim = "$unit$nextNoTransaksi";
+$cif = "$nextNoTransaksi";
 
-            <div class="container">
-                <div class="row">
-                    <div class="span12">
-                        <div class="content"><div class="panel panel-default">
-                        <div class="panel-heading">
-                        <h3 class="panel-title"><i class="icon-user"></i> Data Anggota Nur Insani</h3> 
-                        </div>
-                        <div class="panel-body">
-                            <?php
-			if(isset($_POST['input'])){
-				$nama		   = $_POST['nama'];
-				$tempat_lahir  = $_POST['tempat_lahir'];
-				$tanggal_lahir = $_POST['tanggal_lahir'];
-				$alamat        = $_POST['alamat'];
-                $notelp        = $_POST['notelp'];
-				$norek			= $_POST['norek'];
-				$nama_bank		= $_POST['bank'];
-				$ktp		= $_POST['ktp'];
-				$npwp		= $_POST['npwp'];
-$cif		= $_POST['cif'];
-$empat ="04";
-$norek04 ="$cif$empat";
-$lima ="05";
-$norek05 ="$cif$lima";
-$enam ="06";
-$norek06 ="$cif$enam";
-$tujuh ="07";
-$norek07 ="$cif$tujuh";
+$pesan = null;
+if (isset($_POST['input'])) {
+    $pos = function ($k) {
+        return isset($_POST[$k]) ? (string) $_POST[$k] : '';
+    };
+    $ktp = $pos('ktp');
+    $cif_baru = $pos('cif');
+    // versi lama: $cif ditimpa nilai kiriman, sehingga isian CIF sesudah simpan menampilkan CIF yang dikirim
+    $cif = $cif_baru;
+    if (!db_satu("SELECT 1 as ada FROM anggota WHERE ID_NUMBER=?", 's', $ktp)) {
+        // 4 rekening simpanan; kode_kel, keterangan, cao, kode transaksi kosong seperti versi lama
+        foreach (array('04', '05', '06', '07') as $jenis) {
+            db_jalankan("Insert into simpanan_kp(BUSS_DATE,SNOREK,SUNIT,SCIF,CODE_KEL,DEBIT,TYPE,KREDIT,USERID,KET,REFF,CAO,blok,tgl_input,kode_transaksi)
+                VALUES(?,?,?,?,'',0,?,0,?,'','','','1',?,'')", 'sssssss',
+                $today, $cif_baru . $jenis, $unit, $cif_baru, $jenis, (string) $userid, $today);
+        }
+        $insert = db_jalankan("INSERT INTO anggota(no,CIF,unit,CUST_SHORT_NAME,BIRTH_DATE, HADDRESS1, MOBILE_PHONE,ID_NUMBER,NPWP)
+            VALUES(?,?,?,?,?,?,?,?,?)", 'sssssssss',
+            $nim, $cif_baru, $unit, $pos('nama'), $pos('tanggal_lahir'), $pos('alamat'), $pos('notelp'), $ktp, $pos('npwp'));
+        $pesan = $insert ? array('success', 'Data Berhasil Di Simpan.') : array('danger', 'Ups, Data Gagal Di simpan !');
+    } else {
+        $pesan = array('danger', 'Maaf, GAgal..!');
+    }
+}
 
-
-
-				
-
-				$cek = db_query($koneksi,"SELECT * FROM anggota WHERE ID_NUMBER='$ktp'");
-				if(db_num_rows($cek) == 0){
-
-
- $insert= db_query($koneksi,"Insert into simpanan_kp(BUSS_DATE,SNOREK,SUNIT,SCIF,CODE_KEL,DEBIT,TYPE,KREDIT,USERID,KET,REFF,CAO,blok,tgl_input,kode_transaksi)VALUES('$today','$norek04','$unit','$cif','$code_kel',0,'04',0,'$userid','$keterangan_transaksi','','$cao','1','$today','$trns')");
- $insert= db_query($koneksi,"Insert into simpanan_kp(BUSS_DATE,SNOREK,SUNIT,SCIF,CODE_KEL,DEBIT,TYPE,KREDIT,USERID,KET,REFF,CAO,blok,tgl_input,kode_transaksi)VALUES('$today','$norek05','$unit','$cif','$code_kel',0,'05',0,'$userid','$keterangan_transaksi','','$cao','1','$today','$trns')");
- $insert= db_query($koneksi,"Insert into simpanan_kp(BUSS_DATE,SNOREK,SUNIT,SCIF,CODE_KEL,DEBIT,TYPE,KREDIT,USERID,KET,REFF,CAO,blok,tgl_input,kode_transaksi)VALUES('$today','$norek06','$unit','$cif','$code_kel',0,'06',0,'$userid','$keterangan_transaksi','','$cao','1','$today','$trns')");
- $insert= db_query($koneksi,"Insert into simpanan_kp(BUSS_DATE,SNOREK,SUNIT,SCIF,CODE_KEL,DEBIT,TYPE,KREDIT,USERID,KET,REFF,CAO,blok,tgl_input,kode_transaksi)VALUES('$today','$norek07','$unit','$cif','$code_kel',0,'07',0,'$userid','$keterangan_transaksi','','$cao','1','$today','$trns')");
-				 
-				
-				$insert = db_query($koneksi,"INSERT INTO anggota(no,CIF,unit,CUST_SHORT_NAME,BIRTH_DATE, HADDRESS1, MOBILE_PHONE,ID_NUMBER,NPWP)
-															VALUES('$nim','$cif','$unit','$nama', '$tanggal_lahir', '$alamat', '$notelp','$ktp','$npwp')") or die(mysqli_error());
-				
-						if($insert){
-							echo '<div class="alert alert-success alert-dismissable"><button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>Data Berhasil Di Simpan.</div>';
-						}else{
-							echo '<div class="alert alert-danger alert-dismissable"><button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>Ups, Data Gagal Di simpan !</div>';
-						}
-				}else{
-					echo '<div class="alert alert-danger alert-dismissable"><button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>Maaf, GAgal..!</div>';
-				}
-			}
-			?>
-            
-            <blockquote>
-            Input Data Anggota Nur Insani
-            </blockquote>
-                         <form name="form1" id="form1" class="form-horizontal row-fluid" action="input.php" method="POST" >
-										<div class="control-group">
-											<label class="control-label" for="basicinput">No</label>
-											<div class="controls">
-												<input type="text" name="nim" id="nim" placeholder="Tidak perlu di isi" value="<?php echo $nim; ?>" class="form-control span8 tip" readonly="readonly">
-											</div>
-										</div>
-<div class="control-group">
-											<label class="control-label" for="basicinput">CIF</label>
-											<div class="controls">
-												<input type="text" name="cif" value="<?php echo $cif; ?>" id="cif" placeholder="Nomor CIF" class="form-control span8 tip" required>
-											</div>
-										</div>
-
-										<div class="control-group">
-											<label class="control-label" for="basicinput">Nomor KTP</label>
-											<div class="controls">
-												<input type="text" name="ktp" id="ktp" placeholder="Nomor KTP" class="form-control span8 tip" required>
-											</div>
-										</div>
-
-										<div class="control-group">
-											<label class="control-label" for="basicinput">Nama</label>
-											<div class="controls">
-												<input type="text" name="nama" id="nama" placeholder="Nama Deposan" class="form-control span8 tip" required>
-											</div>
-										</div>
-
-										<div class="control-group">
-											<label class="control-label" for="basicinput">Tempat Lahir</label>
-											<div class="controls">
-												<input type="text" name="tempat_lahir" id="tempat_lahir" placeholder="Tempat Lahir" class="form-control span8 tip" required>
-											</div>
-										</div>
-
-										<div class="control-group">
-											<label class="control-label" for="basicinput">Tanggal Lahir</label>
-											<div class="controls">
-												<input name="tanggal_lahir" id="tanggal_lahir" class="input-group date form-control span8 tip" type="text"  date="" placeholder="yyyy/mm/dd" required />
-											</div>
-										</div>
-
-										<div class="control-group">
-											<label class="control-label" for="basicinput">Alamat</label>
-											<div class="controls">
-												<input name="alamat" id="alamat" class=" form-control span8 tip" type="text" placeholder="Alamat" required />
-											</div>
-										</div>
-<div class="control-group">
-											<label class="control-label" for="basicinput">NPWP</label>
-											<div class="controls">
-												<input name="npwp" id="npwp" class=" form-control span8 tip" type="text" placeholder="NPWP" required />
-											</div>
-										</div>
-                                        
-                                        <div class="control-group">
-											<label class="control-label" for="basicinput">No Telepon</label>
-											<div class="controls">
-												<input name="notelp" id="notelp" class=" form-control span8 tip" type="text" placeholder="No Telepon" required />
-											</div>
-										</div>
-
-                                     
-										<div class="control-group">
-											<div class="controls">
-												<button type="submit" name="input" id="input" class="btn btn-sm btn-primary">Simpan</button>
-                                               <a href="../view/master_fund.php" class="btn btn-sm btn-danger">Kembali</a>
-											</div>
-										</div>
-									</form>
-                        </div>
-                        <!--/.content-->
-                    </div>
-                    <!--/.span9-->
-                </div>
-            </div>
-            <!--/.container-->
-        
-        <!--/.wrapper--><br />
-       <script src="../js/bootstrap-datepicker.js"></script>
-       		
-	
-<script>
-	$('.date').datepicker({
-		format: 'yyyy-mm-dd',
-	})
-	</script>
-	
-  
-        <script src="../bootstrap/js/bootstrap.min.js" type="text/javascript"></script>
-        
-        <script src="../datatables/jquery.dataTables.js"></script>
-        <script src="../datatables/dataTables.bootstrap.js"></script>
-        <script>
-        $(document).ready(function() {
-				var dataTable = $('#lookup').DataTable( {
-					"processing": true,
-					"serverSide": true,
-					"ajax":{
-						url :"../view/ajax-grid-data.php", // json datasource
-						type: "post",  // method  , by default get
-						error: function(){  // error handling
-							$(".lookup-error").html("");
-							$("#lookup").append('<tbody class="employee-grid-error"><tr><th colspan="3">No data found in the server</th></tr></tbody>');
-							$("#lookup_processing").css("display","none");
-							
-						}
-					}
-				} );
-			} );
-        </script>
-      
-    </body>
+halaman_awal('Data Anggota Nur Insani');
+?>
+<?php if ($pesan): ?>
+<div class="alert alert-<?php echo $pesan[0]; ?> alert-dismissible fade show" role="alert">
+  <?php echo h($pesan[1]); ?>
+  <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+</div>
+<?php endif; ?>
+<div class="card card-ni">
+  <div class="card-header">Input Data Anggota Nur Insani</div>
+  <div class="card-body">
+    <form name="form1" id="form1" action="input.php" method="POST" class="row g-3" autocomplete="off">
+      <div class="col-sm-6">
+        <label class="form-label" for="nim">No</label>
+        <input type="text" name="nim" id="nim" placeholder="Tidak perlu di isi" value="<?php echo h($nim); ?>" class="form-control" readonly>
+      </div>
+      <div class="col-sm-6">
+        <label class="form-label" for="cif">CIF</label>
+        <input type="text" name="cif" id="cif" value="<?php echo h($cif); ?>" placeholder="Nomor CIF" class="form-control" required>
+      </div>
+      <div class="col-sm-6">
+        <label class="form-label" for="ktp">Nomor KTP</label>
+        <input type="text" name="ktp" id="ktp" placeholder="Nomor KTP" class="form-control" required>
+      </div>
+      <div class="col-sm-6">
+        <label class="form-label" for="nama">Nama</label>
+        <input type="text" name="nama" id="nama" placeholder="Nama Deposan" class="form-control" required>
+      </div>
+      <div class="col-sm-6">
+        <label class="form-label" for="tempat_lahir">Tempat Lahir</label>
+        <input type="text" name="tempat_lahir" id="tempat_lahir" placeholder="Tempat Lahir" class="form-control" required>
+      </div>
+      <div class="col-sm-6">
+        <label class="form-label" for="tanggal_lahir">Tanggal Lahir</label>
+        <input type="date" name="tanggal_lahir" id="tanggal_lahir" class="form-control" required>
+      </div>
+      <div class="col-12">
+        <label class="form-label" for="alamat">Alamat</label>
+        <input type="text" name="alamat" id="alamat" placeholder="Alamat" class="form-control" required>
+      </div>
+      <div class="col-sm-6">
+        <label class="form-label" for="npwp">NPWP</label>
+        <input type="text" name="npwp" id="npwp" placeholder="NPWP" class="form-control" required>
+      </div>
+      <div class="col-sm-6">
+        <label class="form-label" for="notelp">No Telepon</label>
+        <input type="text" name="notelp" id="notelp" placeholder="No Telepon" class="form-control" required>
+      </div>
+      <div class="col-12 d-flex gap-2">
+        <button type="submit" name="input" id="input" class="btn btn-ni">Simpan</button>
+        <?php // versi lama: tombol Kembali mengarah ke master_fund.php (tidak ada di folder ini) - dipertahankan ?>
+        <a href="../view/master_fund.php" class="btn btn-outline-secondary">Kembali</a>
+      </div>
+    </form>
+  </div>
+</div>
+<?php
+halaman_akhir();
