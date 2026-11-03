@@ -1,405 +1,171 @@
-<?php require_once __DIR__ . '/../php8_compat.php';
-
+<?php require_once __DIR__ . '/../koneksi_db.php';
+/**
+ * Menu kp > Report > Nominative Pembiayaan (juga ada di menu ho, tetapi level ho ditolak seperti versi lama).
+ *   Cari    : total NOA dan outstanding seluruh unit (CURRENT dari loan, EOM dari data_loan per bulan/tahun).
+ *   Rekap   : export .xlsx bertahap dengan indikator progres (report/nominatif_kp_export.php, assets/app/export_xlsx.js),
+ *             mengisi ulang loan_accrual seperti export_nomi_kp.php versi lama (permintaan user 2026-11-03, sama dengan menu unit).
+ *   Accrual : accrual.php (posting jurnal accrual dari loan_accrual).
+ * Pencarian dan isian sesi sama dengan versi lama; hanya tampilan dan query (prepared statement) yang berubah.
+ * Dimigrasi 2026-11-03. Satu-satunya perbedaan: Status kosong kini kembali ke halaman ini (versi lama ke Kr.php,
+ * halaman level unit, sehingga user kp mendapat "Anda bukan user").
+ */
+require_once __DIR__ . '/../inc/tampilan.php';
 session_start();
-$buss_date=$_SESSION['stgl_system'];
-
+$buss_date = isset($_SESSION['stgl_system']) ? $_SESSION['stgl_system'] : null;
 
 //cek apakah user sudah login
-
-if(!isset($_SESSION['userid'])){
-
-    die("Maaf Sesion anda habis,  Anda harus login lembali");//jika belum login jangan lanjut..
-
+if (!isset($_SESSION['userid'])) {
+    die("Maaf Sesion anda habis,  Anda harus login lembali"); //jika belum login jangan lanjut..
 }
-
-
-
 //cek level user
-
-if($_SESSION['level']!="kp"){
-
-    die("Anda bukan user");//jika bukan user jangan lanjut
-
+if ($_SESSION['level'] != "kp") {
+    die("Anda bukan user"); //jika bukan user jangan lanjut
 }
 
-?>	
-
-<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
-
-"http://www.w3.org/TR/html4/loose.dtd">
-
-<html>
-
-<head>
-
-<title>Cetak Tagihan</title>
-
-<link rel="stylesheet" href="../tabel.css" />
-
-<meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
-
-<style type="text/css">
-
-<!--
-
-.style3 {	color: #FFFFFF;
-
-	font-size: 13px;
-
-	font-weight: bold;
-
+$userid = $_SESSION['userid'];
+$unit = null;
+foreach (db_semua("select kode_branch from user where userid=?", 's', (string) $userid) as $id_user) {
+    $unit = $id_user['kode_branch'];
 }
 
-.header1 {color: #ffffff; background: #4682B4; font-weight: bold; font-family: Tahoma, Verdana; font-size: 13px; margin: 0px;}
+$bulan1 = isset($_POST['bulan']) ? (string) $_POST['bulan'] : '';
+$tahun1 = isset($_POST['tahun']) ? (string) $_POST['tahun'] : '';
+$status = isset($_POST['status']) ? (string) $_POST['status'] : '';
 
-body {
-
-	background-image: url();
-
+$pesan = array();
+$hasil = array();
+if (isset($_POST['search'])) {
+    if (empty($status)) {
+        $pesan[] = "<script>alert('Maaf,Isi Status Terlebih Dahulu  !!!');</script>";
+        $pesan[] = "<script language='javascript'>document.location.href='Kr_kp.php'</script>";
+    } else {
+        $_SESSION['bulan'] = $bulan1;
+        $_SESSION['tahun'] = $tahun1;
+        $_SESSION['status'] = $status;
+        $_SESSION['unt'] = $unit;
+    }
+    if ($status == 'CURRENT') {
+        $hasil = db_semua("Select COUNT(loan.cif) AS NOA,SUM(os) AS os, unit From loan");
+    } else {
+        $hasil = db_semua("Select buss_date,COUNT(data_loan.cif) AS NOA,SUM(os) AS os, unit From data_loan
+            Where Month(data_loan.buss_date)=? AND Year(data_loan.buss_date)=?", 'ss', $bulan1, $tahun1);
+    }
+    if (!$hasil) {
+        $pesan[] = "<script>alert('Maaf...data tidak ditemukan!!!');</script>";
+        $pesan[] = "<script language='javascript'>document.location.href='../report/Kr_kp.php' </script>";
+    }
+    foreach ($hasil as $i => $data) {
+        $hasil[$i]['tgl'] = $status == 'CURRENT' ? $buss_date : $data['buss_date'];
+        $_SESSION['buss_dates'] = $hasil[$i]['tgl'];
+    }
 }
 
-a:link {
+$nama_bulan = array(1 => 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Des');
+halaman_awal('Nominative Acrual');
+?>
+<div class="card card-ni">
+  <div class="card-header">Criteria Pencarian</div>
+  <div class="card-body">
+    <form method="post" action="Kr_kp.php" name="form" class="form-ni" autocomplete="off">
+      <div class="row g-2 mb-2">
+        <label for="status" class="col-sm-4 col-form-label">Status Nominative</label>
+        <div class="col-sm-8">
+          <select name="status" id="status" class="form-select form-select-sm">
+            <option value="">- Select Status -</option>
+            <option value="CURRENT"<?php echo $status === 'CURRENT' ? ' selected' : ''; ?>>CURRENT</option>
+            <option value="EOM"<?php echo $status === 'EOM' ? ' selected' : ''; ?>>EOM</option>
+          </select>
+        </div>
+      </div>
+      <div class="row g-2 mb-3" id="baris-periode">
+        <label for="bulan" class="col-sm-4 col-form-label">Bulan dan Tahun</label>
+        <div class="col-sm-4">
+          <select name="bulan" id="bulan" class="form-select form-select-sm">
+            <option value="">- Select Month -</option>
+            <?php foreach ($nama_bulan as $no => $nm): ?>
+            <option value="<?php echo $no; ?>"<?php echo $bulan1 === (string) $no ? ' selected' : ''; ?>><?php echo $nm; ?></option>
+            <?php endforeach; ?>
+          </select>
+        </div>
+        <div class="col-sm-4">
+          <select name="tahun" id="tahun" class="form-select form-select-sm">
+            <option>Tahun</option>
+            <?php for ($th = (int) date('Y'); $th >= 2020; $th--): ?>
+            <option value="<?php echo $th; ?>"<?php echo $tahun1 === (string) $th ? ' selected' : ''; ?>><?php echo $th; ?></option>
+            <?php endfor; ?>
+          </select>
+        </div>
+      </div>
+      <div class="text-end">
+        <button name="search" type="submit" id="submit2" value="Cari Report" class="btn btn-ni btn-sm px-4">Cari Report</button>
+      </div>
+    </form>
+  </div>
+</div>
 
-	text-decoration: none;
+<?php echo implode("\n", $pesan); ?>
 
-}
+<div class="table-responsive mt-3">
+  <table class="table table-sm table-bordered table-ni align-middle">
+    <thead>
+      <tr>
+        <th class="text-center">Bussdate</th>
+        <th class="text-end">Total NOA</th>
+        <th class="text-end">Total OS</th>
+        <th class="text-center">Cetak</th>
+        <th class="text-center">Export</th>
+        <th class="text-center">Proses</th>
+      </tr>
+    </thead>
+    <tbody>
+    <?php foreach ($hasil as $data): ?>
+      <tr>
+        <td class="text-center"><?php echo h($data['tgl']); ?></td>
+        <td class="text-end"><?php echo h($data['NOA']); ?></td>
+        <td class="text-end"><?php echo number_format(compat_num($data['os'])); ?></td>
+        <?php // versi lama: link ke /cetak_tag.php dengan $tipe yang tidak pernah diisi (file tidak ada) ?>
+        <td class="text-center"><a href="/cetak_tag.php?type=" class="btn btn-outline-secondary btn-sm" data-konfirmasi="Apakah Anda yakin?">Cetak</a></td>
+        <td class="text-center">
+          <button type="button" class="btn btn-outline-success btn-sm" data-export-xlsx data-export-url="nominatif_kp_export.php" data-export-satuan="rekening">Rekap (.xlsx)</button>
+        </td>
+        <td class="text-center">
+          <a href="accrual.php?type=<?php echo h(urlencode((string) $data['tgl'])); ?>" class="btn btn-outline-primary btn-sm" data-konfirmasi="Apakah Anda yakin?">Accrual</a>
+        </td>
+      </tr>
+    <?php endforeach; ?>
+    </tbody>
+  </table>
+</div>
 
-a:visited {
-
-	text-decoration: none;
-
-}
-
-a:hover {
-
-	text-decoration: none;
-
-}
-
-a:active {
-
-	text-decoration: none;
-
-}
-
-.style5 {font-family: Verdana, Arial, Helvetica, sans-serif}
-
-.style6 {font-size: 12px}
-
-.style7 {font-family: Verdana, Arial, Helvetica, sans-serif; font-size: 12px; }
-
-.style8 {font-size: 14px}
-
-a {
-
-	font-size: 12px;
-
-}
-
-.style9 {
-
-	font-size: 16px;
-
-	font-family: Verdana, Arial, Helvetica, sans-serif;
-
-}
-
--->
-
-</style>
-
-</head>
+<div class="modal fade" id="modal-export" tabindex="-1" aria-labelledby="judul-export" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2 class="modal-title fs-6" id="judul-export">Export Rekap Nominative Acrual</h2>
+      </div>
+      <div class="modal-body">
+        <div class="progress" role="progressbar" aria-label="Progres export" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" style="height: 1.25rem;">
+          <div class="progress-bar progress-bar-striped progress-bar-animated" style="width: 0%">0%</div>
+        </div>
+        <div class="small text-muted mt-2" data-export-teks aria-live="polite">Menyiapkan data…</div>
+        <div data-export-ringkasan></div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary btn-sm d-none" data-bs-dismiss="modal" data-export-tutup>Tutup</button>
+      </div>
+    </div>
+  </div>
+</div>
 
 <script>
-
-$(document).ready(function(){
-$('.hasil').hide();
-$('#tombol').hide();
-$('#status').change(function(){
-if($('#status').val()=='CURRENT'){
-$('.hasil').hide();	
-$('#tombol').hide();
-$('#bulan').hide();
-$('#tahun').hide();
-}else if($('#status').val()=='EOM'){
-$('.hasil').show();
-$('#tombol').show();
-$('#tahun').show();
-$('#bulan').show();
-}
-});
-});
-
+// Bulan dan Tahun hanya dipakai untuk status EOM (maksud skrip versi lama, yang tidak jalan karena jQuery tidak dimuat)
+(function () {
+    var status = document.getElementById('status');
+    var periode = document.getElementById('baris-periode');
+    function atur() { periode.classList.toggle('d-none', status.value !== 'EOM'); }
+    status.addEventListener('change', atur);
+    atur();
+})();
 </script>
-
-
-
-<table width="100%">
-
-  <tr bgcolor="#2F6B4F">
-
-  <td height="10" colspan="4" nowrap><div align="left" class="style3 style9">Nominative Acrual</div></td>
-
-  </tr>
-
-</table>
-
-
-
-<table width="428" border="1" align="center">
-
-</table>
-
-  <form method="post" action="<?php echo $_SERVER['PHP_SELF']; ?>" name="form">  <table width="566" border="0" align="center">
-
-<tr bgcolor="#2F6B4F">
-
-  <td height="10" colspan="4" nowrap><div align="center" class="style3 style9">Criteria Pencarian </div></td>
-
-  </tr>
-
-<tr>
-
-  <td width="206" height="10" nowrap bgcolor="#B3B3FF">Status Nominative</td>
-
-  <td width="11" nowrap>        <td width="335" colspan="2" nowrap><span class="style5 style6">status</span>
-
-      <select name="status" id="status">
-
-        <option value="">- Select Status -</option>
-
-        <option value="CURRENT">CURRENT</option>
-
-        <option value="EOM">EOM</option>
-
-             
-
-</select>
-
- </td>
-
-</tr>
-  <tr>
-<form>
-  <div id="tombol" class="hasil">
-    <td width="206" height="10" nowrap bgcolor="#B3B3FF">Bulan dan Tahun Pencarian</td>
-    <td width="11" nowrap> 
-    <td width="335" colspan="2" nowrap><span class="style5 style6">Bulan</span>
-      <select name="bulan" id="bulan">
-        <option value="">- Select Month -</option>
-        <option value="1">Jan</option>
-        <option value="2">Feb</option>
-        <option value="3">Mar</option>
-        <option value="4">Apr</option>
-        <option value="5">May</option>
-        <option value="6">Jun</option>
-        <option value="7">Jul</option>
-        <option value="8">Aug</option>
-        <option value="9">Sep</option>
-        <option value="10">Oct</option>
-        <option value="11">Nov</option>
-        <option value="12">Des</option>
-      </select>      
-	  <span class="style5 style6">Tahun</span>     
-       <select name="tahun" id="tahun">
-		<option selected="selected">Tahun</option>
-<option value="2026">2026</option>
-
-
-</select>
-
-</td>
-
-</tr></div></form>
-
-  <td colspan="2" nowrap>&nbsp;</td>
-
-</tr>
-
-<tr>
-
-  <td height="10" colspan="4">&nbsp;</td>
-
-  </tr>
-
-<tr bgcolor="#B3B3FF">
-
-  <td height="10">&nbsp; </td>
-
-    <td colspan="2"><input name="search" type="submit" id="submit2" value="Cari Report" size="40"></td>
-
-</tr>
-
-</table>
-
-</form>
-
-  <p>
-
-    <iframe width=174 height=189 name="gToday:normal:calender/normal.js" id="gToday:normal:calender/normal.js" src="calender/ipopeng.htm" scrolling="no" frameborder="0" style="visibility:visible; z-index:999; position:absolute; top:-500px; left:-500px;"> </iframe>
-
-  </p>
-
-
-
-  <table width="948" class="table1">
-
-    <tr class="header1">
-
-      <th width="48"><div align="center">Bussdate</div></th>
-
-      <th width="99"><div align="center">Total NOA</div></th>
-
-      <th width="194"><div align="center">Total OS</div></th>
-
-            <th width="194"><div align="center">Cetak</div></th>
-
-	        <th width="194"><div align="center">Export</div></th>
-			<th width="194"><div align="center">Proses</div></th>
-
-    </tr>
-
-    <?php
-
- include "../conn2.php";
-
-$koneksi2=open_connection2();
-$userid=$_SESSION['userid'];
-	$userrr=mysql_query("select kode_branch from user where userid='$userid'");
-			
-			while($id_user=mysql_fetch_array($userrr)){
-			
-				$unit=$id_user['kode_branch'];
-			}
-
-
-  $bulan1=$_POST ['bulan'];
-
-  $tahun1=$_POST['tahun'];
-
-  $tanggl=$_POST ['tanggal'];
-
-  $status=$_POST['status'];  
-
-  
-
-  If (isset ($_POST ['search']))
-
-{
-
-if (empty($status)){
-
-	
-
-	echo "<script>alert('Maaf,Isi Status Terlebih Dahulu  !!!');</script>";
-
-         echo "<script language='javascript'>document.location.href='Kr.php'</script>";}
-
-	else{
-
-	$_SESSION['bulan'] = $bulan1;
-
-	$_SESSION['tahun'] = $tahun1;
-
-	$_SESSION['status'] = $status;
-	$_SESSION['unt']= $unit;
-
-	}if ($status =='CURRENT'){
-
-	$select = mysql_query ("Select COUNT(loan.cif) AS NOA,SUM(os) AS os, unit From loan ");
-	//$buss_date=date("Y-m-d");
-
- //Where Month (buss_date)='$bulan1' AND Year (buss_date)='$tahun1'
-
-		}
-
-		else{
-
-			$select = mysql_query ("Select buss_date,COUNT(data_loan.cif) AS NOA,SUM(os) AS os, unit From data_loan
-
-		 Where Month(data_loan.buss_date)='$bulan1' AND Year(data_loan.buss_date)='$tahun1'");
-
-			
-
-		 }
-
-	
-
-	if(mysql_num_rows($select)==0){
-
-			echo "<script>alert('Maaf...data tidak ditemukan!!!');</script>";
-
-         echo "<script language='javascript'>document.location.href='../report/Kr.php' </script>";
-
-		 }
-
-		
-
-
-
-		?>
-
-
-
-    <?php
-
-	
-
-	//menampilkan data
-
-	while($data = mysql_fetch_array($select)){
-
-if($status =='CURRENT'){
-	$buss_date=$buss_date;
-
-}else{
-	$buss_date=$data['buss_date'];
-}
-$_SESSION['buss_dates'] = $buss_date;
-//menghitung hitung
-
-//$birthdate = $data['Birth_date'];
-
-//$age = ((time() - strtotime($birthdate))/(60*60*24*365.2425));
-
-
-
-		?>
-
-    <tr>
-
-      <td class="style6"><?php echo $buss_date; ?></td>	
-
-      <td class="style6"><?php echo $data['NOA'];  ?></td>
-
-      <td class="style6"><?php echo number_format (compat_num($data['os']));  ?></td>
-
-      <td><div align="center"><a href="/cetak_tag.php?type=<?php echo $tipe;?>" class="style6" onClick="return confirm('Apakah Anda yakin?')"><strong>Cetak</strong></a></div></td>
-
-    <td><div align="center"><a href="javascript:;" ><img src="../excel-icon.jpeg" width="16" height="15" border="0" onClick="window.open('export_nomi_kp.php','scrollwindow','top=200,left=300,width=800,height=500');"><strong> Rekap </strong></a></div>
-<td><div align="center"><a href="accrual.php?type=<?php echo $buss_date;?>" class="style6" onClick="return confirm('Apakah Anda yakin?')"><strong>Accrual</strong></a></div></td>
-</td>
-
-	</tr>
-
-    <?php
-
-		
-
-	}
-
-	}
-
-	?>
-
-</table>
-
-  <iframe width=174 height=189 name="gToday:normal:calender/normal.js" id="gToday:normal:calender/normal.js" src="calender/ipopeng.htm" scrolling="no" frameborder="0" style="visibility:visible; z-index:999; position:absolute; top:-500px; left:-500px;">
-
-</iframe>
-
-
-</body>
-
-</html>
-
+<?php
+halaman_akhir(array('assets/app/export_xlsx.js'));
