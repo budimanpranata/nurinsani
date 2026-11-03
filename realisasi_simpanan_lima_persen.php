@@ -39,14 +39,18 @@ function catat_transaksi_5($unit, $kode_trans, $rekening, $tgl, $ket, $kolom, $n
         (string) $unit, (string) $kode_trans, (string) $rekening, (string) $tgl, (string) $ket, (string) $nilai, (string) $userid);
 }
 
-/** Insert simpanan_pokok (TYPE 04, blok 4) atau simpanan_wajib (TYPE 05, blok 1) seperti versi lama. */
-function catat_simpanan_5($tabel, $tgl, $norek, $unit, $cif, $code_kel, $kredit, $userid, $kode_trans)
+/**
+ * Insert simpanan_pokok (TYPE 04, blok 4) atau simpanan_wajib (TYPE 05, blok 1) seperti versi lama.
+ * Perbaikan 2026-11-03 (perintah user): KET = 'Simpanan Pokok AN <nama>' / 'Simpanan Wajib AN <nama>'
+ * (dulu tetap 'Simpanan Pokok' / 'PB Simpanan Wajib'). CAO = kode AO pembiayaan (dulu selalu kosong).
+ */
+function catat_simpanan_5($tabel, $tgl, $norek, $unit, $cif, $code_kel, $kredit, $userid, $kode_trans, $ket, $cao)
 {
     $pokok = $tabel === 'simpanan_pokok';
     db_jalankan("Insert into " . ($pokok ? 'simpanan_pokok' : 'simpanan_wajib') . " (BUSS_DATE,NOREK,UNIT,CIF,CODE_KEL,DEBIT,TYPE,KREDIT,USERID,KET,REFF,CAO,blok,kode_transaksi)
-        VALUES(?,?,?,?,?,0,?,?,?,?,'','',?,?)", 'sssssssssss',
+        VALUES(?,?,?,?,?,0,?,?,?,?,'',?,?,?)", 'ssssssssssss',
         (string) $tgl, (string) $norek, (string) $unit, (string) $cif, (string) $code_kel, $pokok ? '04' : '05', (string) $kredit,
-        (string) $userid, $pokok ? 'Simpanan Pokok' : 'PB Simpanan Wajib', $pokok ? '4' : '1', (string) $kode_trans);
+        (string) $userid, (string) $ket, (string) $cao, $pokok ? '4' : '1', (string) $kode_trans);
 }
 
 $cekbox = isset($_POST['cekbox']) ? $_POST['cekbox'] : null;
@@ -63,6 +67,7 @@ if ($cekbox) {
             $nama=$row ? $row['Cust_Short_name'] : null;
             $unit=$row ? $row['unit'] : null;
             $code_kel=$row ? $row['code_kel'] : null;
+            $cao=$row ? $row['cao'] : null;
 			$Plafond=$row ? $row['Plafond'] : null;
 			$nominal = compat_num($Plafond) *5/100;
 			$norek="$no_anggota";
@@ -77,11 +82,10 @@ $kode_trans="BU/".$unit.$kodetr;
             $cpokok = db_satu("select SUM(KREDIT-DEBIT) as pokok from simpanan_pokok where cif =?", 's', $value);
             $pokok = $cpokok ? $cpokok['pokok'] : null;
 
-            // catatan: CAO tidak pernah diisi di versi lama, sehingga tersimpan kosong
             if ($pokok == 0 && $wajib >= 0)  {
                 $in_pokok=50000;
                 $ket="Setoran simpanan Pokok an $nama";
-                catat_simpanan_5('simpanan_pokok', $tgl_system, $norek, $unit, $value, $code_kel, $in_pokok, $userid, $kode_trans);
+                catat_simpanan_5('simpanan_pokok', $tgl_system, $norek, $unit, $value, $code_kel, $in_pokok, $userid, $kode_trans, "Simpanan Pokok AN $nama", $cao);
                 catat_transaksi_5($unit, $kode_trans, '1120000', $tgl_system, $ket, 'debet', $in_pokok, $userid);
                 catat_transaksi_5($unit, $kode_trans, '3102000', $tgl_system, $ket, 'kredit', $in_pokok, $userid);
 
@@ -89,7 +93,7 @@ $kode_trans="BU/".$unit.$kodetr;
                 $sisa = $nominal - $in_pokok;
                 if($sisa>0){
                     $ket="Setoran simpanan 5% an $nama";
-                    catat_simpanan_5('simpanan_wajib', $tgl_system, $norek, $unit, $value, $code_kel, $sisa, $userid, $kode_trans);
+                    catat_simpanan_5('simpanan_wajib', $tgl_system, $norek, $unit, $value, $code_kel, $sisa, $userid, $kode_trans, "Simpanan Wajib AN $nama", $cao);
                     catat_transaksi_5($unit, $kode_trans, '1120000', $tgl_system, $ket, 'debet', $sisa, $userid);
                     catat_transaksi_5($unit, $kode_trans, '3202000', $tgl_system, $ket, 'kredit', $sisa, $userid);
                 }
@@ -97,17 +101,32 @@ $kode_trans="BU/".$unit.$kodetr;
             //JIKA PUNYA POKOK DA BELUM MEMPUNYA WAJIB
             elseif($pokok == 50000 && $wajib >= 0){
                 $ket="Setoran simpanan 5% an $nama";
-                catat_simpanan_5('simpanan_wajib', $tgl_system, $norek, $unit, $value, $code_kel, $nominal, $userid, $kode_trans);
+                catat_simpanan_5('simpanan_wajib', $tgl_system, $norek, $unit, $value, $code_kel, $nominal, $userid, $kode_trans, "Simpanan Wajib AN $nama", $cao);
                 catat_transaksi_5($unit, $kode_trans, '1120000', $tgl_system, $ket, 'debet', $nominal, $userid);
                 catat_transaksi_5($unit, $kode_trans, '3202000', $tgl_system, $ket, 'kredit', $nominal, $userid);
             }
             // (cabang "pokok == 0 && wajib == 0" versi lama tidak pernah tercapai karena sudah tertangkap cabang pertama)
             else {
-                // versi lama memakai $sisa_pokok yang belum diisi: KREDIT simpanan_wajib tersimpan kosong,
-                // sedangkan jurnal sebesar nominal dengan keterangan "Realisasi Simpanan Wajib dan Pokok Unit ..."
-                catat_simpanan_5('simpanan_wajib', $tgl_system, $norek, $unit, $value, $code_kel, '', $userid, $kode_trans);
-                catat_transaksi_5($unit, $kode_trans, '1120000', $tgl_system, $ket, 'debet', $nominal, $userid);
-                catat_transaksi_5($unit, $kode_trans, '3202000', $tgl_system, $ket, 'kredit', $nominal, $userid);
+                // Perbaikan 2026-11-03 (perintah user): versi lama memakai $sisa_pokok yang belum diisi sehingga KREDIT
+                // simpanan_wajib kosong padahal jurnal sebesar nominal. Kini (sama dengan stor.php jenis 01): bila pokok
+                // < 50.000 dan wajib tidak negatif, pokok dilengkapi dulu sampai 50.000, sisanya ke wajib; jurnal mengikuti.
+                $ke_pokok = 0;
+                if (compat_num($pokok) < 50000 && $wajib >= 0) {
+                    $ke_pokok = min($nominal, 50000 - compat_num($pokok));
+                }
+                $ke_wajib = $nominal - $ke_pokok;
+                if ($ke_pokok > 0) {
+                    $ket="Setoran simpanan Pokok an $nama";
+                    catat_simpanan_5('simpanan_pokok', $tgl_system, $norek, $unit, $value, $code_kel, $ke_pokok, $userid, $kode_trans, "Simpanan Pokok AN $nama", $cao);
+                    catat_transaksi_5($unit, $kode_trans, '1120000', $tgl_system, $ket, 'debet', $ke_pokok, $userid);
+                    catat_transaksi_5($unit, $kode_trans, '3102000', $tgl_system, $ket, 'kredit', $ke_pokok, $userid);
+                }
+                if ($ke_wajib > 0) {
+                    $ket="Setoran simpanan 5% an $nama";
+                    catat_simpanan_5('simpanan_wajib', $tgl_system, $norek, $unit, $value, $code_kel, $ke_wajib, $userid, $kode_trans, "Simpanan Wajib AN $nama", $cao);
+                    catat_transaksi_5($unit, $kode_trans, '1120000', $tgl_system, $ket, 'debet', $ke_wajib, $userid);
+                    catat_transaksi_5($unit, $kode_trans, '3202000', $tgl_system, $ket, 'kredit', $ke_wajib, $userid);
+                }
             }
 		}
 
