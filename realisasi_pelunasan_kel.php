@@ -31,7 +31,7 @@ $checbox = isset($_POST['cekbox']) ? $_POST['cekbox'] : null;
 if ($checbox) {
 	for ($i=0; $i <sizeof($checbox);$i++){
 		//$query="insert into data (name,alamat) values ('".$checbox[$i]."','".$nom[$i]."')";
-		$kel = db_semua("select no_anggota,anggota.cif,loan.code_kel,loan.unit,angsuran,loan.Cust_Short_name,loan.cif,os,loan.cao,saldo_margin,status_app,deal_produk,Tenor,run_tenor FROM loan 
+		$kel = db_semua("select no_anggota,anggota.cif,loan.code_kel,loan.unit,angsuran,loan.Cust_Short_name,loan.cif,os,loan.cao,saldo_margin,status_app,deal_produk,Tenor,run_tenor,loan.ijaroh FROM loan
 		left join anggota on anggota.cif=loan.cif
 		where  loan.cif =?", 's', (string) $checbox[$i]);
 		$data = $kel ? $kel[0] : false;
@@ -75,6 +75,14 @@ if ($checbox) {
 		$cek_saldo = db_semua("SELECT SUM(KREDIT - DEBIT) AS saldo from simpanan where cif =? and TYPE not in ('04','05','07')", 's', (string) $cif);
 		$data_saldo = $cek_saldo ? $cek_saldo[0] : false;
 		$saldo=$data_saldo['saldo'];
+
+		// Perbaikan 2026-11-03 (perintah user): musyarokah dilunasi sebesar OS + nisbah (ijaroh) + 2.500,
+		// sama dengan proses_eod_mob_debet_pelunasan.php (kasus "pelunasan")
+		$ijaroh_mus=compat_num($data['ijaroh']);
+		$saldo_os=compat_num($os);
+		if($status_app=='MUSYAROKAH'){
+			$os = $saldo_os + $ijaroh_mus + 2500;
+		}
 
  $kodetr=7;
             $kodetr=acakangkahuruf($kodetr);
@@ -152,6 +160,61 @@ db_jalankan("insert into rek_loan(ref,tgl_realisasi,unit,no_anggota,saldo_kredit
 				db_jalankan("insert into rek_loan(ref,tgl_realisasi,unit,no_anggota,saldo_kredit,debet,tipe,ket,USERID,STATUS,cif)VALUES('',?,?,?,'0',?,'03','Pelunasan',?,'REALISASI BAGHAS',?)", 'ssssss', (string) $tanggal, (string) $unit, (string) $anggota, (string) $saldo_margin, (string) $userid, (string) $cif) or die(mysql_error());
 
 db_jalankan("Update  tagihan_cs set status_realisasi ='BAYAR'  where cif  =? and tgl_tagih=?", 'ss', (string) $checbox[$i], (string) $tanggal);
+
+				}elseif($status_app=='MUSYAROKAH'){
+				// Perbaikan 2026-11-03 (perintah user): jurnal & update loan mengikuti proses_eod_mob_debet_pelunasan.php
+				// (kasus "pelunasan", MUSYAROKAH). Bedanya: no_anggota rek_loan diisi (EOD memakai variabel kosong),
+				// nomor jurnal_umum otomatis seperti cabang lain di file ini, dan pembersihan pelunasan kelompok
+				// (SOURCE_INCOME, temp_eod, blokir simpanan, tagihan_cs) sama dengan cabang lain.
+				$ket2 = "Angsuran  an $nama $cif";
+				// Perbaikan 2026-11-03 (perintah user): minggu yang sudah disetor (cicilan 1..run_tenor) tanpa omzet (porsi 0) dianggap porsi = nisbah, jadi tidak ikut dikembalikan
+				$debetan = db_satu("SELECT sum(nisbah) as debet_ni, sum(CASE WHEN nisbah_anggota = 0 THEN nisbah ELSE nisbah_anggota END) as debet_omzet from pinjaman_detail_mus WHERE cif =? and cicilan between '1' and ?", 'ss', (string) $cif, (string) $run_tenor);
+				$debet_ni = compat_num($debetan ? $debetan['debet_ni'] : null);
+				$debet_omzet = compat_num($debetan ? $debetan['debet_omzet'] : null);
+				if($debet_omzet==0){
+					$debet_omzet = $debet_ni;
+				}
+				$kembali_nisbah = $debet_ni - $debet_omzet;
+				$os_margin = $os; // = OS + nisbah + 2.500
+
+				db_jalankan("insert into jurnal_umum(nomor_jurnal,kode_transaksi,tanggal_selesai,unit) values('',?,?,?)", 'sss', (string) $kode_trans, (string) $tanggal, (string) $unit);
+				if($kembali_nisbah > 0){
+					// nisbah yang terdebet melebihi bagian anggota dikembalikan ke simpanan
+					// (EOD menaruh teks keterangan di REFF yang berupa nomor otomatis, sehingga teksnya hilang; kini di KET)
+					db_jalankan("insert  into simpanan (BUSS_DATE,NOREK,UNIT,CIF,CODE_KEL,DEBIT,TYPE,KREDIT,USERID,KET,REFF,CAO,tgl_input,kode_transaksi)VALUES(?,?,?,?,?,'0','03',?,?,'Pengembalian Nisbah Pelunasan','',?,?,?)", 'ssssssssss',
+						(string) $tanggal, (string) $anggota, (string) $unit, (string) $cif, (string) $code_kel, (string) $kembali_nisbah, (string) $userid, (string) $cao, (string) $tgl_input, (string) $kode_trans);
+					db_jalankan("insert  into tabel_transaksi(unit,kode_transaksi,kode_rekening,tanggal_transaksi, jenis_transaksi, keterangan_transaksi,debet,id_admin)
+					values(?,?,'41063',?,'Bukti SYSTEM','Pengembalian Nisbah Pelunasan',?,?)", 'sssss', (string) $unit, (string) $kode_trans, (string) $tanggal, (string) $kembali_nisbah, (string) $userid);
+					db_jalankan("insert  into tabel_transaksi(unit,kode_transaksi,kode_rekening,tanggal_transaksi, jenis_transaksi, keterangan_transaksi,kredit,id_admin)
+					values(?,?,'2101000',?,'Bukti SYSTEM','Pengembalian Nisbah Pelunasan',?,?)", 'sssss', (string) $unit, (string) $kode_trans, (string) $tanggal, (string) $kembali_nisbah, (string) $userid);
+					$baghas_rek = 0;
+				}else{
+					$baghas_rek = $saldo_margin;
+				}
+				db_jalankan("insert into rek_loan(ref,tgl_realisasi,unit,no_anggota,saldo_kredit,debet,tipe,ket,USERID,STATUS,cif)VALUES('',?,?,?,'0',?,'03',?,?,'REALISASI POKOK',?)", 'sssssss',
+					(string) $tanggal, (string) $unit, (string) $anggota, (string) $os, (string) $ket2, (string) $userid, (string) $cif);
+				db_jalankan("insert into rek_loan(ref,tgl_realisasi,unit,no_anggota,saldo_kredit,debet,tipe,ket,USERID,STATUS,cif)VALUES('',?,?,?,'0',?,'03',?,?,'REALISASI BAGHAS',?)", 'sssssss',
+					(string) $tanggal, (string) $unit, (string) $anggota, (string) $baghas_rek, (string) $ket2, (string) $userid, (string) $cif);
+
+				$uos = db_jalankan("Update  loan set os ='0',saldo_margin='0',run_tenor='0',ke='0',last_payment=? where cif  =?", 'ss', (string) $tanggal, (string) $cif);
+				db_jalankan("delete from tunggakan where cif  =?", 's', (string) $cif);
+				$t = db_jalankan("insert  into simpanan (BUSS_DATE,NOREK,UNIT,CIF,CODE_KEL,DEBIT,TYPE,KREDIT,USERID,KET,REFF,CAO,tgl_input,kode_transaksi)VALUES(?,?,?,?,?,?,'03','0',?,?,'',?,?,?)", 'sssssssssss',
+					(string) $tanggal, (string) $anggota, (string) $unit, (string) $cif, (string) $code_kel, (string) $os_margin, (string) $userid, (string) $ket, (string) $cao, (string) $tgl_input, (string) $kode_trans);
+
+				// debet simpanan OS + nisbah + 2.500 = kredit piutang musyarokah (OS) + pendapatan nisbah + titipan 2.500
+				db_jalankan("insert  into tabel_transaksi(unit,kode_transaksi,kode_rekening,tanggal_transaksi, jenis_transaksi, keterangan_transaksi,debet,id_admin)
+				values(?,?,'2101000',?,'Bukti SYSTEM',?,?,?)", 'ssssss', (string) $unit, (string) $kode_trans, (string) $tanggal, (string) $ket2, (string) $os_margin, (string) $userid);
+				db_jalankan("insert  into tabel_transaksi(unit,kode_transaksi,kode_rekening,tanggal_transaksi, jenis_transaksi, keterangan_transaksi,kredit,id_admin)
+				values(?,?,'1472000',?,'Bukti SYSTEM',?,?,?)", 'ssssss', (string) $unit, (string) $kode_trans, (string) $tanggal, (string) $ket2, (string) $saldo_os, (string) $userid);
+				db_jalankan("insert  into tabel_transaksi(unit,kode_transaksi,kode_rekening,tanggal_transaksi, jenis_transaksi, keterangan_transaksi,kredit,id_admin)
+				values(?,?,'41062',?,'Bukti SYSTEM',?,?,?)", 'ssssss', (string) $unit, (string) $kode_trans, (string) $tanggal, (string) $ket2, (string) $ijaroh_mus, (string) $userid);
+				db_jalankan("insert  into tabel_transaksi(unit,kode_transaksi,kode_rekening,tanggal_transaksi, jenis_transaksi, keterangan_transaksi,kredit,id_admin)
+				values(?,?,'2867000',?,'Bukti SYSTEM',?,'2500',?)", 'sssss', (string) $unit, (string) $kode_trans, (string) $tanggal, (string) $ket2, (string) $userid);
+
+				db_jalankan("update anggota set SOURCE_INCOME ='0' where cif=?", 's', (string) $cif);
+				db_jalankan("delete from temp_eod where cif=?", 's', (string) $cif);
+				db_jalankan("update simpanan set type ='01', blok=' ' where cif=? and type ='02'", 's', (string) $cif);
+				db_jalankan("Update  tagihan_cs set status_realisasi ='BAYAR'  where cif  =? and tgl_tagih=?", 'ss', (string) $checbox[$i], (string) $tanggal);
 
 				}else{
 					

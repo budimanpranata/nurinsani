@@ -155,7 +155,8 @@ $os = $os;
                       break;
                     case "MUSYAROKAH":                    
                         
-                    $cek_total_debetan= db_fetch_array(db_query($con,"SELECT sum(nisbah) as debet_ni, sum(nisbah_anggota) as debet_omzet  from pinjaman_detail_mus WHERE cif ='$ciff' and cicilan between '1' and '$run_tenor'"));
+                    // Perbaikan 2026-11-03 (perintah user): minggu yang sudah disetor (cicilan 1..run_tenor) tanpa omzet (porsi 0) dianggap porsi = nisbah, jadi tidak ikut dikembalikan
+                    $cek_total_debetan= db_fetch_array(db_query($con,"SELECT sum(nisbah) as debet_ni, sum(CASE WHEN nisbah_anggota = 0 THEN nisbah ELSE nisbah_anggota END) as debet_omzet  from pinjaman_detail_mus WHERE cif ='$ciff' and cicilan between '1' and '$run_tenor'"));
         			$debet_ni=$cek_total_debetan['debet_ni'];
 
                     $debet_omzet = $cek_total_debetan['debet_omzet'];
@@ -360,7 +361,8 @@ db_query ($con,"delete from tunggakan where cif  ='".$ciff."'");
                       break;
                     case "MUSYAROKAH":                    
                         
-                    $cek_total_debetan= db_fetch_array(db_query($con,"SELECT sum(nisbah) as debet_ni, sum(nisbah_anggota) as debet_omzet  from pinjaman_detail_mus WHERE cif ='$ciff' and cicilan between '1' and '$run_tenor'"));
+                    // Perbaikan 2026-11-03 (perintah user): minggu yang sudah disetor (cicilan 1..run_tenor) tanpa omzet (porsi 0) dianggap porsi = nisbah, jadi tidak ikut dikembalikan
+                    $cek_total_debetan= db_fetch_array(db_query($con,"SELECT sum(nisbah) as debet_ni, sum(CASE WHEN nisbah_anggota = 0 THEN nisbah ELSE nisbah_anggota END) as debet_omzet  from pinjaman_detail_mus WHERE cif ='$ciff' and cicilan between '1' and '$run_tenor'"));
         			$debet_ni=$cek_total_debetan['debet_ni'];
                     $debet_omzet = $cek_total_debetan['debet_omzet'];
 
@@ -570,7 +572,8 @@ db_query ($con,"delete from tunggakan where cif  ='".$ciff."'");
                       break;
                     case "MUSYAROKAH":                    
                         
-                    $cek_total_debetan= db_fetch_array(db_query($con,"SELECT sum(nisbah) as debet_ni, sum(nisbah_anggota) as debet_omzet  from pinjaman_detail_mus WHERE cif ='$ciff' and cicilan between '1' and '$run_tenor'"));
+                    // Perbaikan 2026-11-03 (perintah user): minggu yang sudah disetor (cicilan 1..run_tenor) tanpa omzet (porsi 0) dianggap porsi = nisbah, jadi tidak ikut dikembalikan
+                    $cek_total_debetan= db_fetch_array(db_query($con,"SELECT sum(nisbah) as debet_ni, sum(CASE WHEN nisbah_anggota = 0 THEN nisbah ELSE nisbah_anggota END) as debet_omzet  from pinjaman_detail_mus WHERE cif ='$ciff' and cicilan between '1' and '$run_tenor'"));
         			$debet_ni=$cek_total_debetan['debet_ni'];
                     $debet_omzet = $cek_total_debetan['debet_omzet'];
 
