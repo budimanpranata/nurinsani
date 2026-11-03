@@ -5,8 +5,8 @@
  * KM/-1010-000031 (Kas Masuk). Nomor berikutnya = nomor terbesar kode berawalan sama di unit itu + 1 (bukan
  * nomor_jurnal yang auto increment global), dilewati selama kodenya sudah dipakai.
  * Jurnal SELESAI = kodenya ada di tabel jurnal (jurnal_umum/jurnal_keluar/jurnal_masuk) dengan tanggal_selesai terisi.
- * Nomor berjalan = kode milik user (unit + id_admin + jenis_transaksi) yang belum selesai; nomor format lama yang belum
- * selesai tetap dilanjutkan sampai Selesai.
+ * Nomor berjalan = kode format baru milik user (unit + id_admin + jenis_transaksi) yang belum selesai. Kode format lama
+ * yang belum selesai TIDAK dilanjutkan (sama dengan versi lama yang selalu memberi nomor baru).
  * Pemakaian di halaman: tampilkan nb_tampil(); saat Simpan panggil nb_kunci(), ambil nb_tampil() lagi, tulis baris,
  * lalu nb_lepas() supaya dua user yang menyimpan bersamaan tidak mendapat nomor yang sama.
  * Membutuhkan koneksi_db.php (db_satu).
@@ -35,14 +35,18 @@ function nb_selesai($awalan, $kode)
     return (bool) db_satu("select 1 as ada from $tabel where kode_transaksi=? and tanggal_selesai is not null limit 1", 's', (string) $kode);
 }
 
-/** Kode milik user yang belum selesai (format baru maupun lama), atau null. */
+/**
+ * Kode milik user yang belum selesai, atau null. Hanya kode format baru menu ini (<awalan>/-<unit>-...): kode lama
+ * dan kode dari proses lain (realisasi, PB, dll. yang juga memakai BU/... tanpa catatan di tabel jurnal) tidak
+ * dianggap jurnal berjalan (perbaikan 2026-11-03: di prod baris lama itu muncul terus di Jurnal Umum).
+ */
 function nb_berjalan($awalan, $unit, $userid, $jenis)
 {
     $tabel = nb_tabel_jurnal($awalan);
     $r = db_satu("select t.kode_transaksi from tabel_transaksi t
         where t.unit=? and t.id_admin=? and t.jenis_transaksi=? and t.kode_transaksi like ?
           and not exists (select 1 from $tabel j where j.kode_transaksi=t.kode_transaksi and j.tanggal_selesai is not null)
-        order by t.id_transaksi desc limit 1", 'ssss', (string) $unit, (string) $userid, (string) $jenis, $awalan . '/%');
+        order by t.id_transaksi desc limit 1", 'ssss', (string) $unit, (string) $userid, (string) $jenis, $awalan . '/-' . $unit . '-%');
     return $r ? (string) $r['kode_transaksi'] : null;
 }
 
