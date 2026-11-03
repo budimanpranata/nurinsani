@@ -36,7 +36,22 @@ foreach (db_semua("select kode_branch from user where userid=?", 's', (string) $
 			$kode_transaksi="BU/-".$unit .$nomor_jurnal;
 // nomor bukti yang tampil di form dihitung sebelum proses simpan (sama seperti versi lama)
 $kode_bukti_form = $kode_transaksi;
-$tanggal_form = empty($_POST['tanggal_transaksi']) ? $tanggal : $_POST['tanggal_transaksi'];
+// tanggal terakhir yang dipakai Simpan tetap dipakai sampai Selesai (form dikosongkan setelah Simpan)
+$tanggal_terakhir = !empty($_SESSION['ju_tanggal']) ? $_SESSION['ju_tanggal'] : $tanggal;
+$tanggal_form = empty($_POST['tanggal_transaksi']) ? $tanggal_terakhir : $_POST['tanggal_transaksi'];
+
+/** Simpan/Selesai berhasil: simpan notif, lalu buka ulang form kosong (pola POST-redirect-GET). */
+function kembali_ke_form($pesan)
+{
+    $_SESSION['ju_pesan'] = $pesan;
+    while (ob_get_level() > 0) {
+        ob_end_clean();
+    }
+    header('Location: umum.php?' . paramEncrypt('page=../transaksi/umum'));
+    exit;
+}
+$pesan_sesi = isset($_SESSION['ju_pesan']) ? (string) $_SESSION['ju_pesan'] : '';
+unset($_SESSION['ju_pesan']);
 $keterangan_form = isset($_POST['keterangan_transaksi']) ? $_POST['keterangan_transaksi'] : '';
 
 $tot_debet = null;
@@ -77,6 +92,14 @@ ob_start();
 									values(?,?,?,?,'Bukti Umum',?,?,?)", 'sssssss', (string) $unit, (string) $kode_transaksi, $kode_rekening,
 					(string) $tanggal_transaksi, (string) $keterangan_transaksi, $jumlah_dk, (string) $userid);
 				// (versi lama mencetak mysql_error() bila gagal; kegagalan kini dicatat di log PHP oleh db_jalankan)
+				// Perbaikan 2026-11-03 (perintah user): berhasil -> notif, form dikosongkan (nomor bukti tetap sampai Selesai)
+				if ($query) {
+					$_SESSION['ju_tanggal'] = (string) $tanggal_transaksi;
+					kembali_ke_form("Data tersimpan pada nomor bukti $kode_transaksi (" . ucfirst($dk) . " Rp. "
+						. number_format(compat_num($jumlah_dk), 0, ',', '.') . ").");
+				} elseif (!$salah) {
+					echo "<script>alert('Maaf, data gagal disimpan.');</script>";
+				}
 			}
 
 			//untuk menyelesaikan transaksi
@@ -112,7 +135,8 @@ ob_start();
 				}
 
 				if($query){
-					?><script language="javascript">document.location.href="?<?php echo paramEncrypt('page=../transaksi/umum')?>"</script><?php
+					unset($_SESSION['ju_tanggal']);
+					kembali_ke_form("Jurnal nomor bukti $kode_transaksi selesai.");
 				}
 			}
 
@@ -198,6 +222,9 @@ halaman_awal('Jurnal Umum');
   </div>
 </div>
 <?php echo $pesan_proses; ?>
+<?php if ($pesan_sesi !== ''): ?>
+<script>alert(<?php echo json_encode($pesan_sesi); ?>);</script>
+<?php endif; ?>
 
 <div class="table-responsive">
   <table class="table table-sm table-bordered table-ni align-middle">
@@ -241,7 +268,7 @@ halaman_awal('Jurnal Umum');
 </div>
 
 <form action="<?php echo h($aksi_form); ?>" method="post" name="form" class="text-end">
-  <input type="hidden" name="tanggal_selesai" value="<?php if (empty($_POST['tanggal_transaksi'])) { echo h($tanggal); } else { echo h($_POST['tanggal_transaksi']); } ?>">
+  <input type="hidden" name="tanggal_selesai" value="<?php if (empty($_POST['tanggal_transaksi'])) { echo h($tanggal_terakhir); } else { echo h($_POST['tanggal_transaksi']); } ?>">
   <input type="hidden" name="kode_bukti" value="<?php echo h($kode_transaksi); ?>">
   <input type="hidden" name="nomor_jurnal" value="<?php echo h($nomor_jurnal); ?>">
   <button type="submit" name="selesai" value="Selesai" class="btn btn-ni btn-sm px-4" data-konfirmasi="Apakah Anda Yakin?">Selesai</button>

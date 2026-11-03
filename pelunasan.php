@@ -17,13 +17,19 @@ if (!empty($_POST['search'])) {
         $pesan[] = "<script>alert('Maaf,.isi Nomor Anggota yang benar  !!!');</script>";
         $pesan[] = "<script language='javascript'>document.location.href='pelunasan.php'</script>";
     } else {
+        // Perbaikan 2026-11-03 (laporan user): isian boleh NOREK atau CIF (placeholder "CIF / nama"; versi lama hanya NOREK)
         $kkel = db_satu("select CODE_KEL,CIF,UNIT,CUST_SHORT_NAME,CAO FROM anggota where  norek =?", 's', $nopen);
+        if (!$kkel) {
+            $kkel = db_satu("select CODE_KEL,CIF,UNIT,CUST_SHORT_NAME,CAO FROM anggota where  CIF =?", 's', $nopen);
+        }
         $ciff = $kkel ? $kkel['CIF'] : null;
+        // Perbaikan 2026-11-03 (laporan user): syarat TYPE dipindah ke ON. Versi lama menaruhnya di WHERE sehingga
+        // anggota tanpa baris simpanan (selain pokok/wajib) tidak ditemukan walau pembiayaannya masih aktif.
         $hasil = db_semua("select loan.no_anggota,loan.Cust_Short_name,loan.Plafond,os,maturity_date,branch.unit,angsuran,os,(sum(KREDIT)-sum(DEBIT))as saldo
             from loan
-            left join simpanan on simpanan.cif=loan.cif
+            left join simpanan on simpanan.cif=loan.cif and simpanan.TYPE not in ('04','05')
             left join branch on branch.kode_branch=loan.unit
-            where loan.cif =? and os > 0 and simpanan.TYPE not in ('04','05') group by no_anggota", 's', (string) $ciff);
+            where loan.cif =? and os > 0 group by no_anggota", 's', (string) $ciff);
     }
     // versi lama: juga muncul saat NOREK kosong (alert kedua)
     if (!$hasil) {
