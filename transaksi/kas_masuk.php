@@ -139,6 +139,9 @@ ob_start();
 
 $pesan_proses = ob_get_clean();
 // sesudah Simpan/Selesai/Batal nomor bukti berjalan bisa berganti
+if (isset($_POST['selesai'])) {
+    nb_lupa(); // status selesai bisa berubah oleh proses di atas
+}
 $kode_transaksi = nb_tampil('KM', (string) $unit, (string) $userid, 'Kas Masuk');
 $kode_bukti_form = $kode_transaksi;
 

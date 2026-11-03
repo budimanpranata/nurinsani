@@ -180,6 +180,9 @@ ob_start();
 
 $pesan_proses = ob_get_clean();
 // sesudah Cancel nomor bukti berjalan bisa berganti
+if (isset($_POST['selesai'])) {
+    nb_lupa(); // status selesai bisa berubah oleh proses di atas
+}
 $kode_transaksi = nomor_bukti_unit($unit, $userid);
 $kode_bukti_form = $kode_transaksi;
 

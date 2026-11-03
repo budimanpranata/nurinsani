@@ -28,43 +28,61 @@ function nb_format($awalan, $unit, $nomor)
     return $awalan . '/-' . $unit . '-' . str_pad((string) $nomor, 6, '0', STR_PAD_LEFT);
 }
 
-/** true bila kode sudah SELESAI (tercatat di tabel jurnal dengan tanggal_selesai terisi). */
+/**
+ * true bila kode sudah SELESAI (tercatat di tabel jurnal dengan tanggal_selesai terisi). Hasil disimpan selama satu
+ * request (lihat nb_lupa()), karena tanpa index jurnal_umum(kode_transaksi) setiap cek membaca seluruh tabel.
+ */
 function nb_selesai($awalan, $kode)
 {
-    $tabel = nb_tabel_jurnal($awalan);
-    return (bool) db_satu("select 1 as ada from $tabel where kode_transaksi=? and tanggal_selesai is not null limit 1", 's', (string) $kode);
+    global $NB_CACHE_SELESAI;
+    $kunci = $awalan . '|' . $kode;
+    if (!isset($NB_CACHE_SELESAI[$kunci])) {
+        $tabel = nb_tabel_jurnal($awalan);
+        $NB_CACHE_SELESAI[$kunci] = (bool) db_satu("select 1 as ada from $tabel where kode_transaksi=? and tanggal_selesai is not null limit 1", 's', (string) $kode);
+    }
+    return $NB_CACHE_SELESAI[$kunci];
+}
+
+/** Lupakan hasil nb_selesai() (dipanggil sesudah proses Selesai di halaman yang sama). */
+function nb_lupa()
+{
+    $GLOBALS['NB_CACHE_SELESAI'] = array();
 }
 
 /**
  * Kode milik user yang belum selesai, atau null. Hanya kode format baru menu ini (<awalan>/-<unit>-...): kode lama
  * dan kode dari proses lain (realisasi, PB, dll. yang juga memakai BU/... tanpa catatan di tabel jurnal) tidak
  * dianggap jurnal berjalan (perbaikan 2026-11-03: di prod baris lama itu muncul terus di Jurnal Umum).
+ * Cukup kode TERBARU milik user yang diperiksa: selama jurnal berjalan belum selesai, halaman selalu memakai kode itu,
+ * jadi user tidak bisa memulai kode baru sebelum yang lama selesai.
  */
 function nb_berjalan($awalan, $unit, $userid, $jenis)
 {
-    $tabel = nb_tabel_jurnal($awalan);
-    $r = db_satu("select t.kode_transaksi from tabel_transaksi t
-        where t.unit=? and t.id_admin=? and t.jenis_transaksi=? and t.kode_transaksi like ?
-          and not exists (select 1 from $tabel j where j.kode_transaksi=t.kode_transaksi and j.tanggal_selesai is not null)
-        order by t.id_transaksi desc limit 1", 'ssss', (string) $unit, (string) $userid, (string) $jenis, $awalan . '/-' . $unit . '-%');
-    return $r ? (string) $r['kode_transaksi'] : null;
+    // index kode_transaksi (awalan kode) jauh lebih sempit daripada index unit
+    $r = db_satu("select t.kode_transaksi from tabel_transaksi t force index (kode_transaksi)
+        where t.kode_transaksi like ? and t.unit=? and t.id_admin=? and t.jenis_transaksi=?
+        order by t.id_transaksi desc limit 1", 'ssss', $awalan . '/-' . $unit . '-%', (string) $unit, (string) $userid, (string) $jenis);
+    if (!$r || nb_selesai($awalan, (string) $r['kode_transaksi'])) {
+        return null;
+    }
+    return (string) $r['kode_transaksi'];
 }
 
-/** Kode baru berikutnya untuk unit ini (nomor terbesar berawalan sama + 1, dilewati selama sudah dipakai). */
+/**
+ * Kode baru berikutnya untuk unit ini (nomor terbesar berawalan sama di tabel_transaksi + 1, dilewati selama sudah
+ * dipakai). Tabel jurnal tidak perlu dibaca: kode baru tercatat di sana hanya sesudah barisnya ada di tabel_transaksi.
+ */
 function nb_baru($awalan, $unit)
 {
-    $tabel = nb_tabel_jurnal($awalan);
     $depan = $awalan . '/-' . $unit . '-';
-    $mulai = strlen($depan) + 1;
-    $r = db_satu("select greatest(
-            coalesce((select max(cast(substring(kode_transaksi, ?) as unsigned)) from tabel_transaksi where kode_transaksi like ?), 0),
-            coalesce((select max(cast(substring(kode_transaksi, ?) as unsigned)) from $tabel where kode_transaksi like ?), 0)) as n",
-        'isis', $mulai, $depan . '%', $mulai, $depan . '%');
+    $r = db_satu("select max(cast(substring(kode_transaksi, ?) as unsigned)) as n from tabel_transaksi force index (kode_transaksi)
+        where kode_transaksi like ?", 'is', strlen($depan) + 1, $depan . '%');
     $nomor = ($r ? (int) $r['n'] : 0) + 1;
-    while (db_satu("select 1 as ada from tabel_transaksi where kode_transaksi=? limit 1", 's', nb_format($awalan, $unit, $nomor))
-        || db_satu("select 1 as ada from $tabel where kode_transaksi=? limit 1", 's', nb_format($awalan, $unit, $nomor))) {
+    while (db_satu("select 1 as ada from tabel_transaksi where kode_transaksi=? limit 1", 's', nb_format($awalan, $unit, $nomor))) {
         $nomor++;
     }
+    // kode yang belum punya baris pasti belum selesai (tidak perlu membaca tabel jurnal)
+    $GLOBALS['NB_CACHE_SELESAI'][$awalan . '|' . nb_format($awalan, $unit, $nomor)] = false;
     return nb_format($awalan, $unit, $nomor);
 }
 

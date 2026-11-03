@@ -160,6 +160,9 @@ if ($mode == 'delete' && !kas_masuk_kp_selesai($kode_transaksi)) {
 $pesan_proses = ob_get_clean();
 
 // sesudah Selesai/Batal nomor bukti berjalan bisa berganti
+if (isset($_POST['selesai'])) {
+    nb_lupa(); // status selesai bisa berubah oleh proses di atas
+}
 $kode_transaksi = nomor_bukti_km($unitt, $userid);
 
 //untuk menampilkan transaksi milik user ini pada nomor bukti berjalan
