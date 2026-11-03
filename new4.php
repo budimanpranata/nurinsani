@@ -146,7 +146,8 @@ halaman_awal('Form Approve Calon Anggota');
     <div class="card-header">Informasi Pembiayaan dan Simpanan Anggota</div>
     <div class="card-body row g-2">
       <?php isian_lead('No Rekening', 'no_anggota', $cl('no_anggota'), '', false); ?>
-      <?php isian_lead('PB', 'ke', $cl('ke'), 'maxlength="2"', false); ?>
+      <?php // Perbaikan 2026-11-03 (perintah user): PB menampilkan suffix (pembiayaan ke-) seperti form pengajuan unit; dulu kolom ke (selalu 1). Hanya tampilan, tidak dikirim ke proses approve.
+      isian_lead('PB', 'suffix', $cl('suffix'), 'maxlength="2" readonly', false); ?>
       <?php isian_lead('Sisa Pembiayaan', 'simpanan', $cl('os'), '', false); ?>
       <?php isian_lead('Pengajuan', 'num', $cl('Plafond'), $angka . ' data-format-rupiah maxlength="40"', false); ?>
       <?php isian_lead('Sisa Margin', 'angsuran', $cl('saldo_margin'), '', false); ?>

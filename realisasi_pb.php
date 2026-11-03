@@ -7,6 +7,7 @@
  *   - nominal diambil per CIF (bulat[CIF]); versi lama memakai isian ke-i untuk anggota tercentang ke-i
  *   - jurnal_masuk.kode_transaksi diisi kode transaksi PB (versi lama kosong)
  *   - tanpa pilihan kembali ke pb_kel.php (versi lama ke form.php yang tidak ada)
+ * Perbaikan 2026-11-03 (perintah user): nominal dicek terhadap saldo simpanan yang didebet (tidak boleh minus).
  */
 session_start();
 ob_start();
@@ -61,8 +62,25 @@ if ($checbox) {
 		$kode_trans="BU/".$unit.$kodetr;
 
 		// semantik PHP 5: isian kosong / bukan angka dianggap 0 (dilewati)
+		// Perbaikan 2026-11-03 (perintah user): nominal PB tidak boleh negatif dan tidak boleh melebihi saldo simpanan yang
+		// didebet (Debet: simpanan pokok/wajib; Kredit: simpanan sukarela, rumus saldo sama dengan menu Penarikan),
+		// supaya saldo tidak menjadi minus. Anggota yang tidak lolos dilewati tanpa mencatat apa pun.
+		$tabel_sumber = $baki=="Debet" ? ($simpan=="pokok" ? 'simpanan_pokok' : 'simpanan_wajib') : 'simpanan';
+		$nama_sumber = $baki=="Debet" ? ($simpan=="pokok" ? 'simpanan pokok' : 'simpanan wajib') : 'simpanan sukarela';
+		$saldo_sumber = 0;
+		if (compat_num($nominal) > 0) {
+			$s = $tabel_sumber == 'simpanan'
+				? db_satu("select sum(KREDIT)- sum(DEBIT) as saldo FROM simpanan where cif =? and type not in ('04','05')", 's', (string) $ciff)
+				: db_satu("select SUM(KREDIT-DEBIT) as saldo from $tabel_sumber where cif =?", 's', (string) $ciff);
+			$saldo_sumber = compat_num($s ? $s['saldo'] : null);
+		}
+
 		if (compat_num($nominal)==0){
 			$data=0;
+		}elseif (compat_num($nominal) < 0){
+			echo "<script>alert(" . json_encode("Pemindah Bukuan an $cif GAGAL: nominal tidak boleh minus") . ");</script>";
+		}elseif (compat_num($nominal) > $saldo_sumber){
+			echo "<script>alert(" . json_encode("Pemindah Bukuan an $cif GAGAL: nominal " . number_format(compat_num($nominal)) . " melebihi saldo $nama_sumber " . number_format($saldo_sumber)) . ");</script>";
 		}else{
 			$cao = $kkel ? $kkel['cao'] : null;
 			$norek = $kkel ? $kkel['no_anggota'] : null;

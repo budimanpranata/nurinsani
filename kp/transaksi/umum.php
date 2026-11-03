@@ -5,7 +5,7 @@
  *   Selesai : catat nomor jurnal_umum untuk nomor bukti ini.
  *   Cancel  : hapus satu baris transaksi (link terenkripsi).
  *   cetak   : PDF bukti jurnal (cetak.php).
- * Kode bukti BU/-<userid><unit><nomor>. Versi lama tidak punya cek login; sekarang wajib login. Saran rekening dari
+ * Kode bukti BU/-<unit><nomor> (sama dengan Jurnal Umum unit; dulu BU/-<userid><unit><nomor>). Versi lama tidak punya cek login; sekarang wajib login. Saran rekening dari
  * ajax/cari_gl_kp.php?kolom=rekening_gl (query sama dengan kp/autosuggesst.php).
  * Perbaikan 2026-11-03 (perintah user, PEKERJAAN_TERTUNDA.md bagian 47; model sama dengan Jurnal Masuk/Keluar kp):
  *   - nomor bukti berjalan milik user dihitung server: yang belum diselesaikan dilanjutkan, kalau tidak ada nomor baru
@@ -14,6 +14,11 @@
  *   - Cancel hanya baris milik user pada nomor bukti berjalan yang belum selesai
  *   - Simpan memeriksa rekening (DETAIL unit 1010), posisi, tanggal, dan jumlah
  *   - tautan cetak selalu memakai nomor bukti berjalan (total dihitung cetak.php dari DB)
+ * Perbaikan 2026-11-03 (perintah user, bagian 61): disamakan dengan Jurnal Umum unit
+ *   - kode BU/-<unit><nomor jurnal_umum terakhir + 1>; nomor yang sedang dipakai user lain (belum selesai) dilewati
+ *     supaya dua user tidak mendapat nomor yang sama; nomor lama BU/-<userid>... yang belum selesai tetap dilanjutkan
+ *   - Simpan berhasil: notif + form kosong (nomor bukti tetap sampai Selesai, tanggal terakhir dipertahankan)
+ *   - Selesai berhasil: notif + nomor bukti baru
  */
 require_once __DIR__ . '/../../inc/tampilan.php';
 session_start();
@@ -28,7 +33,7 @@ $unit = '';
 foreach (db_semua("select kode_branch from user where userid=?", 's', $userid) as $id_user) {
     $unit = (string) $id_user['kode_branch'];
 }
-$awalan_kode = 'BU/-' . $userid . $unit;
+$awalan_kode = 'BU/-' . $unit;
 
 /** true bila nomor bukti ini sudah diselesaikan (ada di jurnal_umum). */
 function jurnal_umum_kp_selesai($kode)
@@ -42,18 +47,37 @@ function tanggal_valid_ju($t)
     $d = DateTime::createFromFormat('!Y-m-d', (string) $t);
     return $d && $d->format('Y-m-d') === (string) $t;
 }
-/** Nomor bukti berjalan user: lanjutkan yang belum selesai, kalau tidak ada nomor baru (jurnal_umum terakhir unit + 1). */
+/**
+ * Nomor bukti berjalan user: lanjutkan yang belum selesai (termasuk format lama BU/-<userid>...), kalau tidak ada
+ * nomor baru = jurnal_umum terakhir unit + 1, dilewati selama kode itu sudah dipakai (mis. oleh user lain yang belum
+ * menyelesaikan jurnalnya).
+ */
 function nomor_bukti_ju($unit, $userid, $awalan)
 {
     $belum = db_satu("select t.kode_transaksi from tabel_transaksi t
-        where t.unit=? and t.id_admin=? and t.jenis_transaksi='Bukti Umum' and t.kode_transaksi like ?
+        where t.unit=? and t.id_admin=? and t.jenis_transaksi='Bukti Umum' and t.kode_transaksi like 'BU/-%'
           and not exists (select 1 from jurnal_umum j where j.kode_transaksi=t.kode_transaksi)
-        order by t.id_transaksi desc limit 1", 'sss', $unit, $userid, $awalan . '%');
+        order by t.id_transaksi desc limit 1", 'ss', $unit, $userid);
     if ($belum) {
         return (string) $belum['kode_transaksi'];
     }
     $j = db_satu("SELECT max(nomor_jurnal) AS n FROM jurnal_umum where unit =?", 's', $unit);
-    return $awalan . (compat_num($j ? $j['n'] : null) + 1);
+    $nomor = compat_num($j ? $j['n'] : null) + 1;
+    while (db_satu("select 1 as ada from tabel_transaksi where kode_transaksi=? limit 1", 's', $awalan . $nomor)
+        || jurnal_umum_kp_selesai($awalan . $nomor)) {
+        $nomor++;
+    }
+    return $awalan . $nomor;
+}
+/** Simpan/Selesai berhasil: simpan notif, lalu buka ulang form kosong (pola POST-redirect-GET, sama dengan unit). */
+function kembali_ke_form_kp($pesan)
+{
+    $_SESSION['jukp_pesan'] = $pesan;
+    while (ob_get_level() > 0) {
+        ob_end_clean();
+    }
+    header('Location: umum.php?' . paramEncrypt('page=../transaksi/umum'));
+    exit;
 }
 /** Total debet dan kredit baris user pada nomor bukti ini. */
 function total_ju($kode, $userid, $unit)
@@ -64,7 +88,11 @@ function total_ju($kode, $userid, $unit)
 }
 
 $kode_transaksi = nomor_bukti_ju($unit, $userid, $awalan_kode);
-$tanggal_form = empty($_POST['tanggal_transaksi']) ? $tanggal : $_POST['tanggal_transaksi'];
+// tanggal terakhir yang dipakai Simpan tetap dipakai sampai Selesai (form dikosongkan setelah Simpan)
+$tanggal_terakhir = !empty($_SESSION['jukp_tanggal']) ? (string) $_SESSION['jukp_tanggal'] : $tanggal;
+$tanggal_form = empty($_POST['tanggal_transaksi']) ? $tanggal_terakhir : $_POST['tanggal_transaksi'];
+$pesan_sesi = isset($_SESSION['jukp_pesan']) ? (string) $_SESSION['jukp_pesan'] : '';
+unset($_SESSION['jukp_pesan']);
 $keterangan_form = isset($_POST['keterangan_transaksi']) ? $_POST['keterangan_transaksi'] : '';
 
 // pesan/script dari proses ditampilkan di bawah form, seperti versi lama
@@ -96,9 +124,15 @@ if (isset($_POST['simpan'])) {
     if ($salah) {
         echo "<script>alert(" . json_encode(implode("\n", $salah) . "\nTransaksi tidak disimpan.") . ");</script>";
     } else {
-        db_jalankan("insert into tabel_transaksi(unit,kode_transaksi,kode_rekening,tanggal_transaksi, jenis_transaksi, keterangan_transaksi,$posisi,id_admin)
+        if (db_jalankan("insert into tabel_transaksi(unit,kode_transaksi,kode_rekening,tanggal_transaksi, jenis_transaksi, keterangan_transaksi,$posisi,id_admin)
             values(?,?,?,?,'Bukti Umum',?,?,?)", 'sssssss', $unit, $kode_transaksi, $kode_rekening, $tanggal_transaksi,
-            $keterangan_transaksi, $jumlah_dk, $userid);
+            $keterangan_transaksi, $jumlah_dk, $userid)) {
+            $_SESSION['jukp_tanggal'] = $tanggal_transaksi;
+            kembali_ke_form_kp("Data tersimpan pada nomor bukti $kode_transaksi (" . ucfirst($posisi) . " Rp. "
+                . number_format(compat_num($jumlah_dk), 0, ',', '.') . ").");
+        } else {
+            echo "<script>alert('Maaf, data gagal disimpan.');</script>";
+        }
     }
 }
 
@@ -121,7 +155,9 @@ if (isset($_POST['selesai'])) {
             echo "<script>alert('Tanggal tidak valid.');</script>";
         } elseif (db_jalankan("insert into jurnal_umum(nomor_jurnal,kode_transaksi,tanggal_selesai,unit) values(NULL,?,?,?)", 'sss',
             $kode_transaksi, $tanggal_selesai, $unit)) {
-            ?><script language="javascript">document.location.href="?<?php echo paramEncrypt('page=../transaksi/umum')?>"</script><?php
+            db_satu("SELECT RELEASE_LOCK('nurinsani_kp_jurnal_umum') as ok");
+            unset($_SESSION['jukp_tanggal']);
+            kembali_ke_form_kp("Jurnal nomor bukti $kode_transaksi selesai.");
         } else {
             echo "<script>alert('Pencatatan jurnal umum gagal, transaksi belum diselesaikan.');</script>";
         }
@@ -214,6 +250,9 @@ halaman_awal('Jurnal Umum');
   </div>
 </div>
 <?php echo $pesan_proses; ?>
+<?php if ($pesan_sesi !== ''): ?>
+<script>alert(<?php echo json_encode($pesan_sesi); ?>);</script>
+<?php endif; ?>
 
 <div class="table-responsive mt-3">
   <table class="table table-sm table-bordered table-ni align-middle">
@@ -257,7 +296,7 @@ halaman_awal('Jurnal Umum');
 </div>
 
 <form action="<?php echo h($aksi_form); ?>" method="post" name="form" class="text-end">
-  <input type="hidden" name="tanggal_selesai" value="<?php if (empty($_POST['tanggal_transaksi'])) { echo h($tanggal); } else { echo h($_POST['tanggal_transaksi']); } ?>">
+  <input type="hidden" name="tanggal_selesai" value="<?php if (empty($_POST['tanggal_transaksi'])) { echo h($tanggal_terakhir); } else { echo h($_POST['tanggal_transaksi']); } ?>">
   <input type="hidden" name="kode_bukti" value="<?php echo h($kode_transaksi); ?>">
   <button type="submit" name="selesai" value="Selesai" class="btn btn-ni btn-sm px-4" data-konfirmasi="Apakah Anda Yakin?">Selesai</button>
 </form>

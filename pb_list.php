@@ -6,6 +6,7 @@
  *   - nominal PB dikirim sebagai bulat[CIF] agar dipasangkan dengan anggota yang benar
  *     (versi lama memasangkan isian ke-i dengan anggota tercentang ke-i)
  *   - kolom Pokok menampilkan saldo simpanan pokok (versi lama selalu 0 karena salah nama variabel)
+ * Perbaikan 2026-11-03 (perintah user): kolom saldo Sukarela (rumus menu Penarikan); nominal dicek di realisasi_pb.php.
  */
 require_once __DIR__ . '/inc/tampilan.php';
 session_start();
@@ -46,6 +47,7 @@ halaman_awal('PB Kelompok');
           <th>Kelompok</th>
           <th class="text-end">Wajib</th>
           <th class="text-end">Pokok</th>
+          <th class="text-end">Sukarela</th>
           <th>Nominal PB</th>
         </tr>
       </thead>
@@ -53,6 +55,8 @@ halaman_awal('PB Kelompok');
       <?php foreach ($data_anggota as $data):
           $wajib = db_satu("select SUM(KREDIT-DEBIT) as wajib from simpanan_wajib where cif =?", 's', (string) $data['cif']);
           $pokok = db_satu("select SUM(KREDIT-DEBIT) as pokok from simpanan_pokok where cif =?", 's', (string) $data['cif']);
+          // saldo sukarela dengan rumus menu Penarikan (dipakai realisasi_pb.php untuk PB Kredit)
+          $sukarela = db_satu("select sum(KREDIT)- sum(DEBIT) as saldo FROM simpanan where cif =? and type not in ('04','05')", 's', (string) $data['cif']);
       ?>
         <tr>
           <td class="text-center"><input type="checkbox" class="form-check-input" name="cekbox[]" value="<?php echo h($data['cif']); ?>" aria-label="Pilih <?php echo h($data['Cust_Short_name']); ?>"></td>
@@ -62,6 +66,7 @@ halaman_awal('PB Kelompok');
           <td><?php echo h($data['nama_kel']); ?></td>
           <td class="text-end"><?php echo number_format(compat_num($wajib ? $wajib['wajib'] : null)); ?></td>
           <td class="text-end"><?php echo number_format(compat_num($pokok ? $pokok['pokok'] : null)); ?></td>
+          <td class="text-end"><?php echo number_format(compat_num($sukarela ? $sukarela['saldo'] : null)); ?></td>
           <td><input type="text" class="form-control form-control-sm text-end" name="bulat[<?php echo h($data['cif']); ?>]" value="0" inputmode="numeric" aria-label="Nominal PB <?php echo h($data['Cust_Short_name']); ?>"></td>
         </tr>
       <?php endforeach; ?>
