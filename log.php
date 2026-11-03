@@ -71,6 +71,10 @@ elseif($tgl==$tgl_eod){
 
 echo "<script>alert('Parameter tanggal libur masih aktif');</script>";
          echo "<script language='javascript'>document.location.href='index.html'</script>";
+}elseif($c['level']=="toko"){
+        // modul Toko sudah tidak dipakai dan folder toko/ dihapus (2026-11-03, perintah user)
+echo "<script>alert('Level toko sudah tidak aktif');</script>";
+         echo "<script language='javascript'>document.location.href='index.html'</script>";
 }else{
         // login berhasil: id session baru supaya id lama (fixation) tidak bisa dipakai
         session_regenerate_id(true);
@@ -98,8 +102,6 @@ echo "<script>alert('Parameter tanggal libur masih aktif');</script>";
 		 header("location:admin/admin.php");
         	 }else if($c['level']=="ho"){
 		 header("location:ho/ho.php");
-	 	 }else if($c['level']=="toko"){
-		 header("location:toko/toko.php");
         }else if($c['level']=="unit"){
 		$update_log = mysql_query("UPDATE user SET status ='1',tgl_open='$buss_date' WHERE userid= '$userid'");
 		include ("redirect.php");

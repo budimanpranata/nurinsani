@@ -1,6 +1,0 @@
-# Folder tujuan upload (gambar / file excel). Skrip di folder ini tidak boleh dijalankan maupun diunduh, supaya
-# file .php (termasuk nama ganda seperti foto.php.jpg) yang sempat terunggah tidak bisa dipakai sebagai pintu masuk.
-# Akibatnya index.php penjaga di folder ini juga ditolak (403), sehingga isi folder tetap tidak bisa dilihat.
-<FilesMatch "\.(php[0-9]?|pht|phtml|phar|phps|cgi|pl|py|sh|shtml)(\.|$)">
-    Require all denied
-</FilesMatch>

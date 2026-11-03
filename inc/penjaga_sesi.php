@@ -6,7 +6,7 @@
  *   2. logout otomatis bila tidak ada aktivitas selama SESI_IDLE_MENIT menit;
  *   3. satu sesi per user: login di perangkat/browser lain membuat sesi lama tidak berlaku.
  * Halaman yang memang dibuka tanpa login dikecualikan (lihat penjaga_sesi_publik()). Tidak berjalan di CLI
- * (cron dan skrip uji). Login yang berhasil wajib memanggil sesi_tandai_login() (log.php, toko/log.php).
+ * (cron dan skrip uji). Login yang berhasil wajib memanggil sesi_tandai_login() (log.php).
  * Pencatatan sesi aktif per user disimpan sebagai berkas kecil di folder sementara server, bukan di database.
  */
 
@@ -62,8 +62,8 @@ function penjaga_sesi_skrip()
 function penjaga_sesi_publik($rel)
 {
     $tetap = array(
-        'log.php', 'toko/log.php',
-        'logout.php', 'admin/logout.php', 'lead/logout.php', 'toko/logout.php',
+        'log.php',
+        'logout.php', 'admin/logout.php', 'lead/logout.php',
         'gantipass.php', 'changepass.php', 'ganti_password.php',
     );
     if (in_array($rel, $tetap, true)) {
