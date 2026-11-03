@@ -1,365 +1,105 @@
-<?php require_once __DIR__ . '/../../php8_compat.php';
+<?php require_once __DIR__ . '/../../koneksi_db.php';
+/**
+ * Menu kp > Report > Akuntasi > Konsolidasi > Konsolidasi: total saldo awal/akhir per posisi pada tanggal awal periode,
+ * dari tabel_master_konsol (bila kosong: tabel_master_eoy, lalu tabel_master_hari). Link per posisi ke ../konsolidasi.php
+ * (meneruskan ke laporan/neraca_konsol.php atau laporan/laba_konsol.php); tanggal dan jenis report disimpan di sesi
+ * tgl_cari_konsols / jenis (dipakai halaman konsolidasi lanjutan).
+ * Dimigrasi 2026-11-03: hanya tampilan (Bootstrap 5) dan query (prepared statement); logika sama dengan versi lama, termasuk:
+ *   - sesi unit_konsols diisi variabel $unit yang tidak pernah diisi (selalu null)
+ * Dibuang: skrip autosuggest/formatCurrency dan skrip #select yang tidak dipakai.
+ */
+require_once __DIR__ . '/../../inc/tampilan.php';
 session_start();
 ob_start();
-$userid=$_SESSION['userid'];
-$tgl_system=$_SESSION['stgl_system'];
+$userid = isset($_SESSION['userid']) ? $_SESSION['userid'] : null;
 //cek apakah user sudah login
-if(!isset($_SESSION['userid'])){
-   header("location:index.html");
- exit; }
+if (!isset($_SESSION['userid'])) {
+    header("location:index.html");
+    exit;
+}
 
-?>
-	<script type="text/javascript" src="../../jquery.js"></script>
-	<script>
-	function suggest(inputString){
-		if(inputString.length == 0) {
-			$('#suggestions').fadeOut();
-		} else {
-		$('#country').addClass('load');
-			$.post("autosuggesst_rek.php", {queryString: ""+inputString+""}, function(data){
-				if(data.length >0) {
-					$('#suggestions').fadeIn();
-					$('#suggestionsList').html(data);
-					$('#country').removeClass('load');
-				}
-			});
-		}
-	}
-	
-	function fill(thisValue) {
-		$('#country').val(thisValue);
-		setTimeout("$('#suggestions').fadeOut();", 100);
-	}
-	
-	function fill2(thisValue) {
-		$('#kode').val(thisValue);
-		setTimeout("$('#suggestions').fadeOut();", 100);
-	}
-	
-	</script>
-<script>
-	function formatCurrency(num) {
-    num = num.toString().replace(/\$|\,/g,'');
-	num = num.toString().replace(/[^0-9]/g,'');
-    if(isNaN(num))
-    num = "0";
-    sign = (num == (num = Math.abs(num)));
-    num = Math.floor(num*100+0.50000000001);
-    cents = num%100;
-    num = Math.floor(num/100).toString();
-    if(cents<10)
-    cents = "0" + cents;
-    for (var i = 0; i < Math.floor((num.length-(1+i))/3); i++)
-    num = num.substring(0,num.length-(4*i+3))+'.'+
-    num.substring(num.length-(4*i+3));
-    return (((sign)?'':'-') + 'Rp. ' + num + '');
+$buss_date1 = isset($_POST['buss_date1']) ? trim((string) $_POST['buss_date1']) : '';
+$jenis = isset($_POST['jenis']) ? (string) $_POST['jenis'] : '';
+$pesan = array();
+$hasil = array();
+if (isset($_POST['search'])) {
+    if (empty($buss_date1)) {
+        $pesan[] = "<script>alert('Maaf,.isi Tanggal Pencarian  !!!');</script>";
+        $pesan[] = "<script language='javascript'>document.location.href='konsolidasi.php'</script>";
+    } else {
+        $_SESSION['tgl_cari_konsols'] = $buss_date1;
+        $_SESSION['unit_konsols'] = null;
+        $_SESSION['jenis'] = $jenis;
+        foreach (array('tabel_master_konsol', 'tabel_master_eoy', 'tabel_master_hari') as $tabel) {
+            $hasil = db_semua("Select unit,sum(saldo_awal) as debet,sum(saldo_akhir) as kredit,posisi from $tabel where tanggal_awal = ? group by posisi", 's', $buss_date1);
+            if ($hasil) {
+                break;
+            }
+        }
+        if (!$hasil) {
+            $pesan[] = "<script>alert('Maaf,.data tidak ditemukan');</script>";
+            $pesan[] = "<script language='javascript'>document.location.href='konsolidasi.php'</script>";
+        }
     }
-	</script>
-	
-</script>
-
-
-<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
-"http://www.w3.org/TR/html4/loose.dtd">
-<html>
-<head>
-<title>Transaksi NI</title>
-<link rel="stylesheet" href="../../tabel.css" />
-<meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
-<style type="text/css">
-<script type="text/javascript" src="../../jquery.js"></script>
-		<link href="../../style.css" rel="stylesheet" type="text/css" media="screen" />
-		<link rel="stylesheet" href="../../css/bootstrap.min.css"/>
-<script>
-
-<!--
-.style3 {	color: #FFFFFF;
-	font-size: 13px;
-	font-weight: bold;
-}
-.header1 {color: #ffffff; background: #4682B4; font-weight: bold; font-family: Tahoma, Verdana; font-size: 13px; margin: 0px;}
-body {
-	background-image: url();
-}
-a:link {
-	text-decoration: none;
-}
-a:visited {
-	text-decoration: none;
-}
-a:hover {
-	text-decoration: none;
-}
-a:active {
-	text-decoration: none;
-}
-.style5 {font-family: Verdana, Arial, Helvetica, sans-serif}
-.style6 {font-size: 12px}
-.style7 {font-family: Verdana, Arial, Helvetica, sans-serif; font-size: 12px; }
-.style8 {font-size: 14px}
-a {
-	font-size: 12px;
-}
-.style9 {
-	font-size: 16px;
-	font-family: Verdana, Arial, Helvetica, sans-serif;
-}
--->
-
-	#result {
-		height:20px;
-		font-size:12px;
-		font-family:Arial, Helvetica, sans-serif;
-		color:#333;
-		padding:5px;
-		margin-bottom:10px;
-		background-color:#FFFF99;
-	}
-	#country{
-		padding:3px;
-		border:1px #CCC solid;
-		font-size:12px;
-	}
-	.suggestionsBox {
-		position: absolute;
-		left: 0px;
-		top:40px;
-		margin: 26px 0px 0px 0px;
-		width: 200px;
-		padding:0px;
-		background-color:#999999;
-		border-top: 3px solid #999999;
-		color: #fff;
-	}
-	.suggestionList {
-		margin: 0px;
-		padding: 0px;
-	}
-	.suggestionList ul li {
-		list-style:none;
-		margin: 0px;
-		padding: 6px;
-		border-bottom:1px dotted #666;
-		cursor: pointer;
-	}
-	.suggestionList ul li:hover {
-		background-color: #FC3;
-		color:#000;
-	}
-	ul {
-		font-family:Arial, Helvetica, sans-serif;
-		font-size:11px;
-		color:#FFF;
-		padding:0;
-		margin:0;
-	}
-	
-	.load{
-	background-image:url(loader.gif);
-	background-position:right;
-	background-repeat:no-repeat;
-	}
-	
-	#suggest {
-		position:relative;
-	}
-	.style9 {
-	font-size: 16px;
-	font-family: Verdana, Arial, Helvetica, sans-serif;
-}
-.style3 {	color: #FFFFFF;
-	font-size: 13px;
-	font-weight: bold;
-}
-.header1 {color: #ffffff; background: #4682B4; font-weight: bold; font-family: Tahoma, Verdana; font-size: 13px; margin: 0px;}
-body {
-	background-image: url();
-}
-a:link {
-	text-decoration: none;
-}
-a:visited {
-	text-decoration: none;
-}
-a:hover {
-	text-decoration: none;
-}
-a:active {
-	text-decoration: none;
-}
-	.style10 {
-	font-family: Verdana, Arial, Helvetica, sans-serif;
-	font-size: 12px;
 }
 
-    .style11 {font-size: small}
-    </style>
-</head>
+halaman_awal('Neraca');
+?>
+<div class="card card-ni">
+  <div class="card-header">Pencarian Berdasarkan Tanggal</div>
+  <div class="card-body">
+    <form method="post" action="konsolidasi.php" name="postform" class="form-ni" autocomplete="off">
+      <div class="row g-2 mb-2">
+        <label for="buss_date1" class="col-sm-4 col-form-label">Tanggal Awal</label>
+        <div class="col-sm-8">
+          <input type="date" name="buss_date1" id="buss_date1" class="form-control form-control-sm" value="<?php echo h($buss_date1); ?>">
+        </div>
+      </div>
+      <div class="row g-2 mb-3">
+        <label for="jenis" class="col-sm-4 col-form-label">Jenis Report</label>
+        <div class="col-sm-8">
+          <select name="jenis" id="jenis" class="form-select form-select-sm">
+            <option> pilih Report </option>
+            <?php foreach (array('eom', 'eoy', 'current') as $j): ?>
+            <option value="<?php echo $j; ?>"<?php echo $jenis === $j ? ' selected' : ''; ?>><?php echo $j; ?></option>
+            <?php endforeach; ?>
+          </select>
+        </div>
+      </div>
+      <div class="text-end">
+        <button type="submit" name="search" value="Search" class="btn btn-ni btn-sm px-4">Search</button>
+      </div>
+    </form>
+  </div>
+</div>
 
-<table width="100%" cellpadding="1" bordercolor="#CCCCCC" bgcolor="#CCCCCC">
-  <tr>
-    <td height="10"nowrap  bgcolor="#2F6B4F" class="style3 style9">Neraca 
-      <div align="right"></div></td>
-  </tr>
-</table>
+<?php echo implode("\n", $pesan); ?>
 
-<table width="428" border="0" align="center">
-</table>
-  <form method="post" action="<?php echo $_SERVER['PHP_SELF']; ?>" name="postform">  <table width="502" border="0" align="center">
-<tr bgcolor="#2F6B4F">
-  <td height="10" colspan="4" nowrap><div align="center" class="style3 style9"> Pencarian Berdasarkan Tanggal </div></td>
-  </tr>
-<tr>
-  <td height="10" nowrap bgcolor="#B3B3FF"><span class="style7">Tangggal Awal </span></td>
-  <td nowrap><div align="center"><strong>:</strong></div></td>
-  <td colspan="2" nowrap><input name="buss_date1" type="text" id="tgl_lahir" value="" size="20"/>
-    <a href="javascript:void(0)" onClick="if(self.gfPop)gfPop.fPopCalendar(document.postform.tgl_lahir);return true;" ><img src="../../images/calendarIcon.jpg" alt="" name="popcal" width="17" height="17" border="0" align="absmiddle" id="popcal" /></a></td>
-</tr>
-
-<tr>
-  <td height="10" nowrap bgcolor="#B3B3FF"><span class="style7">Jenis Report </span></td>
-  <td nowrap><div align="center"><strong>:</strong></div></td>
-<td><select name="jenis" id="jenis">
-<option selected> pilih Report </option>
-<option value="eom"> eom </option>
-<option value="eoy"> eoy </option>  
-<option value="current"> current </option>
-</select></td>
-</tr>
-
-
-
-<tr>
-  <td height="10" colspan="4">&nbsp;</td>
-  </tr>
-<tr bgcolor="#B3B3FF">
-  <td height="10">&nbsp; </td>
-  <td><div align="center"></div></td>
-  <td colspan="2"><input name="search" type="submit" id="submit2" value="Search" size="40"></td>
-</tr>
-
-</table>
-
-</form>
-<iframe width=174 height=189 name="gToday:normal:calender/normal.js" id="gToday:normal:calender/normal.js" src="calender/ipopeng.htm" scrolling="no" frameborder="0" style="visibility:visible; z-index:999; position:absolute; top:-500px; left:-500px;">
-</iframe>
-
-<table border="4" bgcolor="" width="100%" class="table1">
-  <tr class="table1">
-    <th>Unit</th>
-    <th>Tgl Awal Periode</th>
-	<th>Total Saldo_awal</th>
-    <th>Totak Saldo Akhir</th>
-	<th>Konsolidasi </th>
-  
-  </tr>
-  <?php
-  require_once "../../conn2.php";
-  $koneksi=open_connection2();
-  $tanggal=date("Y-m-d");
-$buss_date1=$_POST['buss_date1'];
-  $buss_date2=$_POST['buss_date2'];  
-$jenis=$_POST['jenis'];
-  
-  If (isset($_POST ['search']))
-{
-if (empty($buss_date1)){
-
-  
-  
-	echo "<script>alert('Maaf,.isi Tanggal Pencarian  !!!');</script>";
-         echo "<script language='javascript'>document.location.href='konsolidasi.php'</script>";}
-	
-	else{
-		$_SESSION['tgl_cari_konsols']=$buss_date1;
-		$_SESSION['unit_konsols']=$unit;
-		$_SESSION['jenis']=$jenis;
-
-
-
-		
-		 $select = mysql_query("Select unit,sum(saldo_awal) as debet,sum(saldo_akhir) as kredit,posisi from tabel_master_konsol where  tanggal_awal = '$buss_date1' group by posisi");
-		}
-if(mysql_num_rows($select)==0){
-			 $select = mysql_query("Select unit,sum(saldo_awal) as debet,sum(saldo_akhir) as kredit,posisi from tabel_master_eoy where  tanggal_awal = '$buss_date1' group by posisi");
-		 }
-		 if(mysql_num_rows($select)==0){
-			 $select = mysql_query("Select unit,sum(saldo_awal) as debet,sum(saldo_akhir) as kredit,posisi from tabel_master_hari where  tanggal_awal = '$buss_date1' group by posisi");
-		 }
-if(mysql_num_rows($select)==0){
-			echo "<script>alert('Maaf,.data tidak ditemukan');</script>";
-         echo "<script language='javascript'>document.location.href='konsolidasi.php'</script>";
-		 }
-	
-  ?>
-  
-  <?php
-	
-	//menampilkan data
-	while($data = mysql_fetch_array($select)){
-
-//menghitung hitung
-//$birthdate = $data['Birth_date'];
-//$age = ((time() - strtotime($birthdate))/(60*60*24*365.2425));
-
-		?>
-  <tr>
-    <td class="style6"><?php echo "Konsolidasi"; ?></td>
-	<td class="style6"><?php echo $buss_date1;  ?></td>
-    <td class="style6"><?php echo number_format (compat_num($data['debet']));?></td>
-    <td class="style6"><?php echo number_format (compat_num($data['kredit'])); ?></td>
-	<td><div align="center"><a href="../konsolidasi.php?consol=<?php echo $data['posisi'];?>" class="style6" onClick="return confirm('Apakah adan Yakin akan melakukan Posting Neraca ?')"><strong><?php echo $data['posisi'];?></strong></a></div></td>
-
-    
-  </tr>
-  <?php
-		
-	}
-	}else{
-		
-			
-		?>
-  
-  <?php
-	}
-	
-	?>
-  
-</table>
-<p>&nbsp;</p>
-
- <iframe width=174 height=189 name="gToday:normal:../../calender/normal.js" id="gToday:normal:../../calender/normal.js" src="../../calender/ipopeng.htm" scrolling="no" frameborder="0" style="visibility:visible; z-index:999; position:absolute; top:-500px; left:-500px;">
-</iframe>
-<script>
-$(document).ready(function(){
-$('.hasil').hide();
-$('#tombol').hide();
-$('#baki').hide();
-$('#simpan').hide();
-$('#select').change(function(){
-if($('#select').val()=='01'){
-$('.hasil').hide();	
-$('#tombol').hide();
-$('#baki').hide();
-$('#simpan').hide();
-}else if($('#select').val()=='02'){
-$('.hasil').hide();
-$('#tombol').hide();
-$('#baki').hide();
-$('#simpan').hide();
-}else if($('#select').val()=='03'){
-$('.hasil').hide();
-$('#tombol').hide();
-$('#baki').hide();
-$('#simpan').hide();
-}else if($('#select').val()=='04'){
-$('.hasil').show();
-$('#tombol').show();
-$('#baki').show();
-$('#simpan').show();
-}
-});
-});
-</script>
-</body>
-</html>
+<div class="table-responsive mt-3">
+  <table class="table table-sm table-bordered table-ni align-middle">
+    <thead>
+      <tr>
+        <th>Unit</th>
+        <th>Tgl Awal Periode</th>
+        <th class="text-end">Total Saldo Awal</th>
+        <th class="text-end">Total Saldo Akhir</th>
+        <th class="text-center">Konsolidasi</th>
+      </tr>
+    </thead>
+    <tbody>
+    <?php foreach ($hasil as $data): ?>
+      <tr>
+        <td>Konsolidasi</td>
+        <td><?php echo h($buss_date1); ?></td>
+        <td class="text-end"><?php echo number_format(compat_num($data['debet'])); ?></td>
+        <td class="text-end"><?php echo number_format(compat_num($data['kredit'])); ?></td>
+        <td class="text-center">
+          <a href="../konsolidasi.php?consol=<?php echo h(urlencode((string) $data['posisi'])); ?>" class="btn btn-outline-primary btn-sm" data-konfirmasi="Apakah adan Yakin akan melakukan Posting Neraca ?"><?php echo h($data['posisi']); ?></a>
+        </td>
+      </tr>
+    <?php endforeach; ?>
+    </tbody>
+  </table>
+</div>
+<?php
+halaman_akhir();
