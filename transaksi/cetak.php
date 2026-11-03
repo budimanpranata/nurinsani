@@ -1,146 +1,131 @@
-<?php require_once __DIR__ . '/../php8_compat.php';
+<?php require_once __DIR__ . '/../koneksi_db.php';
+/**
+ * Cetak bukti Jurnal Umum (level unit), dibuka dari transaksi/umum.php: ?file=<nomor bukti>.
+ * Perbaikan 2026-11-03 (laporan user: PDF berantakan):
+ *   - versi lama mencetak angka debet/kredit di sel selebar 1 mm (menimpa kolom sebelah) dan mengambil nama rekening
+ *     dari tabel_master unit '2025' lewat kolom yang salah (nama kosong); kini tabel No | Kode | Nama | Debet | Kredit
+ *     dengan nama dari COA dan baris total
+ *   - jumlah & tanggal diambil dari DB (dulu ?total dan ?tgl), hanya nomor bukti unit user yang login
+ *   - teks "ks" sesudah penutup PHP (ikut terkirim di belakang PDF) dibuang; query prepared statement
+ */
 session_start();
 ob_start();
-$userid=$_SESSION['userid'];
-$tgl_jatuh_tempo=$_SESSION['jatuh'];
-$cao=$_SESSION['code_cao'];
+$userid = isset($_SESSION['userid']) ? $_SESSION['userid'] : null;
 
 //cek apakah user sudah login
-if(!isset($_SESSION['userid'])){
-   header("location:index.html");
- exit; }
-
+if (!isset($_SESSION['userid'])) {
+    header("location:../index.html");
+    exit;
+}
 //cek level user
-if($_SESSION['level']!="unit"){
-   header("location:index.html");
- exit; }
- include "../conn2.php";
- include "../indo_tgl.php";
- $koneksi=open_connection2();	
-$kode_kirim=$_GET['file'];
-$total=$_GET['total'];
-$tgl=($_GET['tgl']);
+if ($_SESSION['level'] != "unit") {
+    header("location:../index.html");
+    exit;
+}
+include "../indo_tgl.php";
 
+$kode_kirim = isset($_GET['file']) ? (string) $_GET['file'] : '';
+$u = db_satu("select kode_branch from user where userid=?", 's', (string) $userid);
+$unit = $u ? (string) $u['kode_branch'] : '';
 
+// satu baris per rekening & posisi (debet dulu), nama rekening dari COA
+$baris = db_semua("select t.kode_rekening, coa.nama_rek, sum(t.debet) as debet, sum(t.kredit) as kredit,
+        case when sum(t.debet) > 0 then 0 else 1 end as urut
+    from tabel_transaksi t
+    left join coa on coa.kode_rek = t.kode_rekening
+    where t.kode_transaksi = ? and t.unit = ?
+    group by t.kode_rekening, coa.nama_rek, t.debet > 0
+    order by urut, t.kode_rekening", 'ss', $kode_kirim, $unit);
 
-$buss_date=date("y-m-d");
-//cek apakah user sudah login
-if(!isset($_SESSION['userid'])){
-   header("location:../index.html");//jika belum login jangan lanjut..
- exit; }
+$info = db_satu("select min(tanggal_transaksi) as tgl, coalesce(sum(debet),0) as tot_debet, coalesce(sum(kredit),0) as tot_kredit
+    from tabel_transaksi where kode_transaksi = ? and unit = ?", 'ss', $kode_kirim, $unit);
+$tgl = tgl_indo($info && $info['tgl'] ? substr((string) $info['tgl'], 0, 10) : '');
+$tot_debet = $info ? compat_num($info['tot_debet']) : 0;
+$tot_kredit = $info ? compat_num($info['tot_kredit']) : 0;
 
-//cek level user
-if($_SESSION['level']!="unit"){
-     header("location:../index.html");//jika bukan user jangan lanjut
- exit; }
+$keterangan = array();
+foreach (db_semua("select distinct keterangan_transaksi from tabel_transaksi where kode_transaksi = ? and unit = ? and keterangan_transaksi <> ''",
+        'ss', $kode_kirim, $unit) as $k) {
+    $keterangan[] = $k['keterangan_transaksi'];
+}
 
-require ('../fpdf17/fpdf.php');
+require('../fpdf17/fpdf.php');
 
-//$pdf=new PDF_AutoPrint('L','mm', array(216, 275));
-$pdf=new FPDF ('P','mm','A4');
+$pdf = new FPDF('P', 'mm', 'A4');
+$pdf->SetMargins(12, 15, 12);
+$pdf->SetAutoPageBreak(true, 15);
 $pdf->AddPage();
-//$pdf=new FPDF('L','mm', array(216, 330));
-$pdf->SetFont ('Arial','',8);
-$pdf->setTopMargin(15);
-$pdf->setLeftMargin(12);
-$pdf->setFillColor(255,255,255);
+$pdf->SetFillColor(235, 235, 235);
 
 $pdf->Image('../Image/nii.png');
-//$pdf-> Write (12,'User ID: ');
 $pdf->Ln(3);
 
-$pdf->multicell(0,5,'no :' .$kode_kirim ,0,'L',1);
-$pdf->multicell(0,5,'tgl :' .$tgl ,0,'L',1);
+$pdf->SetFont('Arial', 'B', 12);
+$pdf->Cell(0, 7, 'BUKTI JURNAL UMUM', 0, 1, 'C');
+$pdf->Ln(2);
+
+$pdf->SetFont('Arial', '', 9);
+$pdf->Cell(28, 5, 'Nomor Bukti', 0, 0);
+$pdf->Cell(0, 5, ': ' . $kode_kirim, 0, 1);
+$pdf->Cell(28, 5, 'Tanggal', 0, 0);
+$pdf->Cell(0, 5, ': ' . $tgl, 0, 1);
+$pdf->Cell(28, 5, 'Unit', 0, 0);
+$pdf->Cell(0, 5, ': ' . $unit, 0, 1);
 $pdf->Ln(3);
-$pdf->multicell(0,5,'DEBET',0,'L',1);
+
+// lebar kolom: total 186 mm (A4 210 - margin 2 x 12)
+$w = array(10, 28, 78, 35, 35);
+$pdf->SetFont('Arial', 'B', 9);
+$pdf->Cell($w[0], 7, 'No', 1, 0, 'C', true);
+$pdf->Cell($w[1], 7, 'Kode Rekening', 1, 0, 'C', true);
+$pdf->Cell($w[2], 7, 'Nama Rekening', 1, 0, 'C', true);
+$pdf->Cell($w[3], 7, 'Debet', 1, 0, 'C', true);
+$pdf->Cell($w[4], 7, 'Kredit', 1, 1, 'C', true);
+
+$pdf->SetFont('Arial', '', 9);
+$no = 0;
+foreach ($baris as $r) {
+    $no++;
+    $debet = compat_num($r['debet']);
+    $kredit = compat_num($r['kredit']);
+    $nama = (string) $r['nama_rek'];
+    // potong nama yang lebih panjang dari kolomnya
+    while ($nama !== '' && $pdf->GetStringWidth($nama) > $w[2] - 3) {
+        $nama = substr($nama, 0, -1);
+    }
+    $pdf->Cell($w[0], 6, $no, 1, 0, 'C');
+    $pdf->Cell($w[1], 6, $r['kode_rekening'], 1, 0, 'L');
+    $pdf->Cell($w[2], 6, $nama, 1, 0, 'L');
+    $pdf->Cell($w[3], 6, $debet > 0 ? number_format($debet, 0, ',', '.') : '', 1, 0, 'R');
+    $pdf->Cell($w[4], 6, $kredit > 0 ? number_format($kredit, 0, ',', '.') : '', 1, 1, 'R');
+}
+if (!$baris) {
+    $pdf->Cell(array_sum($w), 6, 'Nomor bukti tidak ditemukan', 1, 1, 'C');
+}
+
+$pdf->SetFont('Arial', 'B', 9);
+$pdf->Cell($w[0] + $w[1] + $w[2], 7, 'Jumlah', 1, 0, 'R', true);
+$pdf->Cell($w[3], 7, number_format($tot_debet, 0, ',', '.'), 1, 0, 'R', true);
+$pdf->Cell($w[4], 7, number_format($tot_kredit, 0, ',', '.'), 1, 1, 'R', true);
 $pdf->Ln(4);
-$fill=false;
-$pdf->SetFont('ARIAL','B',8);
-$pdf->cell(100,5,'No.Rek',1,0,'C',1);
-$pdf->cell(91,5,'Perkiraann Lawan',1,0,'C',1);
 
-$pdf->Ln();
-$no=0;
-$tot_blt=0;
+$pdf->SetFont('Arial', 'B', 9);
+$pdf->Cell(0, 6, 'Keterangan', 1, 1, 'L', true);
+$pdf->SetFont('Arial', '', 9);
+$pdf->MultiCell(0, 5, $keterangan ? implode("\n", $keterangan) : '-', 1, 'L');
+$pdf->Ln(6);
 
-$sql=mysql_query("select kode_rekening from tabel_transaksi where kode_transaksi ='$kode_kirim' group by kode_rekening ");
-
-		
-		 
-while($result= mysql_fetch_array($sql)){
-
+$kolom_ttd = array_sum($w) / 3;
+$pdf->SetFont('Arial', 'B', 9);
+foreach (array('Dibuat', 'Diperiksa', 'Disetujui') as $i => $judul) {
+    $pdf->Cell($kolom_ttd, 6, $judul, 1, $i == 2 ? 1 : 0, 'C', true);
+}
+foreach (array(0, 1, 2) as $i) {
+    $pdf->Cell($kolom_ttd, 22, '', 1, $i == 2 ? 1 : 0);
 }
 
-
-$sql=mysql_query("select kode_rekening from tabel_transaksi where kode_transaksi ='$kode_kirim' group by kode_rekening ");
-
-		
-		 
-while($result= mysql_fetch_array($sql)){
-	$no ++;
- $kode= $result['kode_rekening'];
-
-
- $sal_simpan= mysql_fetch_array(mysql_query("select sum(kredit) as kredit,tabel_transaksi.kode_rekening, nama_rekening from tabel_transaksi 
- left join tabel_master on tabel_master.kode_rekening = tabel_transaksi.kode_rekening
- where tabel_transaksi.kode_rekening ='$kode'and kredit > 0 and  tabel_transaksi.kode_transaksi ='$kode_kirim' and tabel_master.unit='2025' "));
-$kredit= $sal_simpan['kredit'];
-$kode_kredit= $sal_simpan['kode_rekening'];
-$nama=$sal_simpan['nama_rekening'];
-$kode_kredit ="$kode_kredit - $nama";
-
-$sal_debet= mysql_fetch_array(mysql_query("select sum(tabel_transaksi.debet) as debet,tabel_transaksi.kode_rekening,nama_rekening  from tabel_transaksi 
-left join tabel_master on tabel_master.kode_rekening = tabel_transaksi.kode_rekening
-where tabel_transaksi.kode_rekening ='$kode' and kode_transaksi ='$kode_kirim' and tabel_transaksi.debet > 0 and tabel_master.unit ='2025' "));
-$debet= $sal_debet['debet'];
-$kode_debet= $sal_debet['kode_rekening'];
-$nama=$sal_debet['nama_rekening'];
-$kode_debet ="$kode_debet - $nama";
-
-
-
-//query dan arraying
-$pdf->SetFont('ARIAL','',8);
-$pdf->cell(100,5,''.$kode_debet,1,'L',1);
-$pdf->cell(1,5,''.number_format(compat_num($debet)),0,'L',0);
-$pdf->cell(90,5,''.$kode_kredit,1,'L',1);
-$pdf->cell(1,5,''.number_format(compat_num($kredit)),0,'L',0);
-
-$pdf->Ln();
+// buang keluaran lain (spasi/peringatan) supaya berkas PDF tidak rusak
+while (ob_get_level() > 0) {
+    ob_end_clean();
 }
-
-
-
-
-$sql=mysql_query("select keterangan_transaksi from tabel_transaksi where kode_transaksi ='$kode_kirim'");
-
-		
-		 
-while($result= mysql_fetch_array($sql)){
-$keterangan=$result['keterangan_transaksi'];
-}
-
-
-$pdf->Ln();
-$pdf->SetFont('ARIAL','B',8);
-$pdf->cell(96,5,'Keterangan :',1,0,'L',1);
-$pdf->cell(60,5,'jumlah : ',1,0,'L',1);
-$pdf->cell(0,5,'Rp.'.number_format(compat_num($total)),1,0,'R',1);
-$pdf->Ln();
-$pdf->cell(0,5,''.$keterangan,1,1,'L',1);
-
-
-
-$pdf->Ln();
-
-$pdf->SetFont('ARIAL','B',8);
-$pdf->cell(96,5,'Dibuat :',1,0,'L',1);
-$pdf->cell(60,5,'Diperiksa : ',1,0,'L',1);
-$pdf->Ln();
-$pdf->cell(96,20,'',1,0,'L',1);
-$pdf->cell(60,20,' ',1,0,'L',1);
-//$pdf->AutoPrint(true);
- 
 $pdf->Output();
-
-?>ks
