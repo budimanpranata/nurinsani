@@ -134,7 +134,6 @@ if ($pilih=='01') {
             //@mysql_query("Update calon_loan set next_schedule = (select DATE_ADD(tgl_murab,INTERVAL 7 DAY) from calon_loan where no_anggota  ='" . $value . "') where no_anggota  ='" . $value . "'") or die(mysql_error("GAGAL INPUT"));
             db_jalankan("update loan  set os =?, saldo_margin='0',angsuran=?,pokok=?,bulat=?,tenor=?,maturity_date =?,run_tenor='0', ke ='1',ijaroh='0',gol='1',status_app='REST',tgl_murab=?, deal_produk ='1' WHERE cif =?", 'ssssssss', (string) $os_res, (string) $angsuran, (string) $angsuran, (string) $bulat, (string) $tenor, (string) $maturity_date, (string) $tgl_system, (string) $cif) or die(mysql_error());
            db_jalankan("delete from tunggakan WHERE cif =?", 's', (string) $cif) or die(mysql_error());
-db_jalankan("delete from temp_eod where cif =?", 's', (string) $cif) or die(mysql_error());
 db_jalankan("delete from  rest_covid where cif =?", 's', (string) $cif) or die(mysql_error());	
 db_jalankan("insert into rest_covid values('',?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)", 'sssssssssssssss', (string) $tgl_system, (string) $cif, (string) $angsur, (string) $pokok, (string) $ijaroh, (string) $bulat_lama, (string) $tenor_lama, (string) $matur, (string) $angsuran, (string) $angsuran_pokok, (string) $angsuran_margin, (string) $bulat, (string) $tenor, (string) $maturity_date, (string) $kelompok) or die(mysql_error());
 
@@ -230,7 +229,6 @@ db_jalankan("insert into rest_covid values('',?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)", '
 
 
            db_jalankan("delete from tunggakan WHERE cif =?", 's', (string) $cif) or die(mysql_error());
-db_jalankan("delete from temp_eod where cif =?", 's', (string) $cif) or die(mysql_error());
             //mysql_query("insert into rek_loan(ref,tgl_realisasi,unit,no_anggota,saldo_kredit,debet,tipe,ket,USERID,STATUS,cif)VALUES('','$tgl_system','$unit','$no_anggota','0','$saldo_margin','03','$ket','$userid','REALISASI BAGHAS','$cif')") or die(mysql_error("GAGAL INPUT"));
            
 

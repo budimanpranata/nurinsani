@@ -93,7 +93,6 @@ $gagal_awal = db_jumlah_gagal();
 
 				$uos = db_jalankan("Update loan set os =os - ?,saldo_margin='0',ke='1',status='LUNAS',Tenor ='25',status_app ='MURAB' where no_anggota=?", 'ss', (string) $os, (string) $anggota);
 				$hapus = db_jalankan("delete from tunggakan where cif=?", 's', (string) $cif);
-				$hapus = db_jalankan("delete from temp_eod where cif=?", 's', (string) $cif);
 
 				$sc = db_jalankan("update simpanan set type ='01', blok=' ' where cif=? and type ='02'", 's', (string) $cif);
 
@@ -125,7 +124,6 @@ db_jalankan("Update  tagihan_cs set status_realisasi ='BAYAR'  where cif  =? and
 				$uos = db_jalankan("Update loan set os =os - ?,saldo_margin='0',run_tenor='0',ke='1',status='LUNAS' where no_anggota=?", 'ss', (string) $os, (string) $anggota);
 				$hapus = db_jalankan("delete from tunggakan where cif=?", 's', (string) $cif);
 
-				$hapus = db_jalankan("delete from temp_eod where cif=?", 's', (string) $cif);
 				$sc = db_jalankan("update simpanan set type ='01', blok=' ' where cif=? and type ='02'", 's', (string) $cif);
 
 

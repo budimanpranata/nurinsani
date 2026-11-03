@@ -109,7 +109,6 @@ $norek =$anggota;
 
 				$uos = db_jalankan("Update loan set os =os - ?,saldo_margin='0',ke='1',status='LUNAS',Tenor ='25',status_app ='MURAB' where no_anggota=?", 'ss', (string) $os, (string) $anggota);
 				$hapus = db_jalankan("delete from tunggakan where cif=?", 's', (string) $cif);
-				$hapus = db_jalankan("delete from temp_eod where cif=?", 's', (string) $cif);
 
 				$sc = db_jalankan("update simpanan set type ='01', blok=' ' where cif=? and type ='02'", 's', (string) $cif);
 
@@ -159,7 +158,6 @@ $norek =$anggota;
 				$uos = db_jalankan("Update  loan set os ='0',saldo_margin='0',run_tenor='0',ke='0',last_payment=? where cif  =?", 'ss', (string) $tanggal, (string) $ciff);
 				db_jalankan("delete from tunggakan where cif  =?", 's', (string) $ciff);
 				db_jalankan("delete from pinjaman_detail_mus where cif  =?", 's', (string) $ciff);
-				db_jalankan("delete from temp_eod where cif=?", 's', (string) $ciff);
 				db_jalankan("update simpanan set type ='01', blok=' ' where cif=? and type ='02'", 's', (string) $ciff);
 				$t = db_jalankan("insert  into simpanan (BUSS_DATE,NOREK,UNIT,CIF,CODE_KEL,DEBIT,TYPE,KREDIT,USERID,KET,REFF,CAO,tgl_input,kode_transaksi)VALUES(?,?,?,?,?,?,'03','0',?,?,'',?,?,?)", 'sssssssssss',
 					(string) $tanggal, (string) $norek, (string) $unit, (string) $ciff, (string) $code_kel, (string) $os_margin, (string) $userid, (string) $ket2, (string) $cao, (string) $date, (string) $kode_trans);
@@ -193,7 +191,6 @@ $norek =$anggota;
 				$uos = db_jalankan("Update loan set os =os - ?,saldo_margin='0',run_tenor='0',ke='1',status='LUNAS' where no_anggota=?", 'ss', (string) $os, (string) $anggota);
 				$hapus = db_jalankan("delete from tunggakan where cif=?", 's', (string) $cif);
 
-				$hapus = db_jalankan("delete from temp_eod where cif=?", 's', (string) $cif);
 				$sc = db_jalankan("update simpanan set type ='01', blok=' ' where cif=? and type ='02'", 's', (string) $cif);
 
 

@@ -204,7 +204,6 @@ if ($checbox) {
 			}
 			if ($jarak<2){
 				$hapus_tunggak_hari_ini();
-				qs("delete from temp_eod where cif =? and tgl_eod =? ", $c, $tanggal);
 			}
 
 		}elseif($nom_i < $bulat){

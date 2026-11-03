@@ -113,7 +113,6 @@ if ($saldo < $os ){
 				$hapus = db_jalankan("delete from tunggakan where cif=?", 's', (string) $cif);
 
 				$sc = db_jalankan("update anggota set SOURCE_INCOME ='0' where cif=?", 's', (string) $cif);
-				$hapus = db_jalankan("delete from temp_eod where cif=?", 's', (string) $cif);
 
 				$sc = db_jalankan("update simpanan set type ='01', blok=' ' where cif=? and type ='02'", 's', (string) $cif);
 
@@ -147,7 +146,6 @@ db_jalankan("insert into jurnal_umum(nomor_jurnal,kode_transaksi,tanggal_selesai
 				$hapus = db_jalankan("delete from tunggakan where cif=?", 's', (string) $cif);
 
 				$sc = db_jalankan("update anggota set SOURCE_INCOME ='0' where cif=?", 's', (string) $cif);
-				$hapus = db_jalankan("delete from temp_eod where cif=?", 's', (string) $cif);
 
 				$sc = db_jalankan("update simpanan set type ='01', blok=' ' where cif=? and type ='02'", 's', (string) $cif);
 
@@ -212,7 +210,6 @@ db_jalankan("Update  tagihan_cs set status_realisasi ='BAYAR'  where cif  =? and
 				values(?,?,'2867000',?,'Bukti SYSTEM',?,'2500',?)", 'sssss', (string) $unit, (string) $kode_trans, (string) $tanggal, (string) $ket2, (string) $userid);
 
 				db_jalankan("update anggota set SOURCE_INCOME ='0' where cif=?", 's', (string) $cif);
-				db_jalankan("delete from temp_eod where cif=?", 's', (string) $cif);
 				db_jalankan("update simpanan set type ='01', blok=' ' where cif=? and type ='02'", 's', (string) $cif);
 				db_jalankan("Update  tagihan_cs set status_realisasi ='BAYAR'  where cif  =? and tgl_tagih=?", 'ss', (string) $checbox[$i], (string) $tanggal);
 
@@ -260,7 +257,6 @@ db_jalankan("Update  tagihan_cs set status_realisasi ='BAYAR'  where cif  =? and
 				$hapus = db_jalankan("delete from tunggakan where cif=?", 's', (string) $cif);
 
 				$sc = db_jalankan("update anggota set SOURCE_INCOME ='0' where cif=?", 's', (string) $cif);
-				$hapus = db_jalankan("delete from temp_eod where cif=?", 's', (string) $cif);
 
 				$sc = db_jalankan("update simpanan set type ='01', blok=' ' where cif=? and type ='02'", 's', (string) $cif);
 

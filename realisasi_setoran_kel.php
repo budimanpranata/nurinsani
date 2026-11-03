@@ -155,10 +155,6 @@ if ($checbox) {
 			qs("insert  into tunggakan (tgl_tunggak,NOREK,UNIT,CIF,CODE_KEL,DEBIT,TYPE,KREDIT,USERID,REFF,CAO,blok)VALUES(?,?,?,?,?,?,?,'0',?,?,?,'') ",
 				$tanggal, $norek, $unit, $c, $code_kel, $debet, $type, $userid, $reff, $cao);
 		};
-		$temp_eod = function () use ($c, $unit, &$setoran, &$angsuran, $angsuran_pokok, &$ijaroh, $ft, $tanggal) {
-			qs("insert  into temp_eod (cif,unit,setoran,angsuran,pokok,margin,ft,pb,tgl_setor,tgl_eod,status,status_eod)VALUES
-				(?,?,?,?,?,?,?,'',?,?,'NUNGGAK','PENDING') ", $c, $unit, $setoran, $angsuran, $angsuran_pokok, $ijaroh, $ft, $tanggal, $tanggal);
-		};
 		$tagihan = function ($status) use ($c, $tanggal) {
 			qs("Update  tagihan_cs set status_realisasi =?  where cif  =? and tgl_tagih=?", $status, $c, $tanggal);
 		};
@@ -208,21 +204,18 @@ if ($checbox) {
 		if ($nom_i =='0'){
 			$tunggak_kredit('01', $angsuran_pokok, true);
 			$tunggak_kredit('02', $ijaroh, true);
-			$temp_eod();
 			$tagihan('NUNGGAK');
 			if ($ada_tunggak>=$os){
 				$hapus_tunggak_hari_ini();
 			}
 			if ($jarak<2){
 				$hapus_tunggak_hari_ini();
-				qs("delete from temp_eod where cif =? and tgl_eod =? ", $c, $tanggal);
 			}
 
 		}elseif($nom_i < $bulat){
 			// (cabang "nominal == '0'" di dalam versi lama tidak pernah tercapai karena sudah tertangkap di atas)
 			$tunggak_kredit('01', $angsuran_pokok, false);
 			$tunggak_kredit('02', $ijaroh, false);
-			$temp_eod();
 			$simpanan_setor('01', $setoran, '0');
 			$simpanan_setor('02', $simpanan_minggon, '1');
 			$simpanan_setor('01', $simpan_duaribu, '1');

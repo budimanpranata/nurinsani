@@ -76,7 +76,6 @@ $maturity_date_res=$maturity_date_res;
 
 db_jalankan("update loan set maturity_date =?, gol='1', deal_produk ='1' where cif =?", 'ss', (string) $maturity_date_res, (string) $cif);
 db_jalankan("delete from tunggakan where cif =?", 's', (string) $cif);
-db_jalankan("delete from temp_eod where cif =?", 's', (string) $cif) or die(mysql_error());
 
 
 

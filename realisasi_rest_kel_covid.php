@@ -95,7 +95,6 @@ db_jalankan("insert into rest_covid values('',?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)", '
 db_jalankan("update loan set angsuran=?, pokok=?,ijaroh=?,bulat=?,gol='1',run_tenor ='0', ke='1',maturity_date =?,tgl_akad =?,status_app='REST_ANGSURAN',Tenor =?, deal_produk ='1' where cif =?", 'ssssssss', (string) $angsuran_baru, (string) $pokok_baru, (string) $ijaroh_baru, (string) $angsuran_baru, (string) $maturity_date_res, (string) $tanggal, (string) $tenor_baru, (string) $cif) or die(mysql_error());
 db_jalankan("delete from tunggakan where cif =?", 's', (string) $cif) or die(mysql_error());
 $update =db_jalankan("delete from pinjaman_detail where cif =?", 's', (string) $cif) or die(mysql_error());
-$update =db_jalankan("delete from temp_eod where cif =?", 's', (string) $cif) or die(mysql_error());
 $ket ="Restrukturisasi Rest pokok margin ke REST_ANGSURAN ";
 
 db_jalankan("insert into jurnal_umum(nomor_jurnal,kode_transaksi,tanggal_selesai,unit) values('',?,?,?)", 'sss', (string) $kode_trans, (string) $tanggal, (string) $unit);
@@ -123,7 +122,6 @@ db_jalankan("insert into rest_covid values('',?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)", '
 db_jalankan("update loan set angsuran=?, pokok=?,ijaroh=?,bulat=?,gol='1',run_tenor ='0', ke='1',maturity_date =?,tgl_akad =?,status_app='REST_ANGSURAN',Tenor =?, deal_produk ='1' where cif =?", 'ssssssss', (string) $angsuran_baru, (string) $pokok_baru, (string) $ijaroh_baru, (string) $angsuran_baru, (string) $maturity_date_res, (string) $tanggal, (string) $tenor_baru, (string) $cif) or die(mysql_error());
 db_jalankan("delete from tunggakan where cif =?", 's', (string) $cif) or die(mysql_error());
 $update =db_jalankan("delete from pinjaman_detail where cif =?", 's', (string) $cif) or die(mysql_error());
-$update =db_jalankan("delete from temp_eod where cif =?", 's', (string) $cif) or die(mysql_error());
 $ket ="Restrukturisasi Rest pokok margin ke REST_ANGSURAN ";
 break;
 case "MURAB":
@@ -132,7 +130,6 @@ db_jalankan("insert into rest_covid values('',?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)", '
 db_jalankan("update loan set angsuran=?, pokok=?,ijaroh=?,bulat=?,gol='1',run_tenor ='0', ke='1',maturity_date =?,tgl_akad =?,status_app='REST_ANGSURAN',Tenor =?,deal_produk ='1' where cif =?", 'ssssssss', (string) $angsuran_baru, (string) $pokok_baru, (string) $ijaroh_baru, (string) $angsuran_baru, (string) $maturity_date_res, (string) $tanggal, (string) $tenor_baru, (string) $cif) or die(mysql_error());
 db_jalankan("delete from tunggakan where cif =?", 's', (string) $cif) or die(mysql_error());
 $update =db_jalankan("delete from pinjaman_detail where cif =?", 's', (string) $cif) or die(mysql_error());
-$update =db_jalankan("delete from temp_eod where cif =?", 's', (string) $cif) or die(mysql_error());
 $ket ="Restrukturisasi Rest pokok margin ke REST_ANGSURAN ";
 break;
 default:

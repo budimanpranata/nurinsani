@@ -76,8 +76,6 @@ if(mysql_num_rows($select)==0){
 				$uos = mysql_query($upos);
 				$hapus_tg="delete from tunggakan where cif='$cif'";
 				$hapus = mysql_query($hapus_tg);
-				$hapus_tg="delete from temp_eod where cif='$cif'";
-				$hapus = mysql_query($hapus_tg);
 
 				$hapus_sc="update simpanan set type ='01', blok=' ' where cif='$cif' and type ='02'";
 
@@ -115,8 +113,6 @@ mysql_query("Update  tagihan_cs set status_realisasi ='BAYAR'  where cif  ='$cif
 				$hapus_tg="delete from tunggakan where cif='$cif'";
 				$hapus = mysql_query($hapus_tg);
 
-				$hapus_tg="delete from temp_eod where cif='$cif'";
-				$hapus = mysql_query($hapus_tg);
 				$hapus_sc="update simpanan set type ='01', blok=' ' where cif='$cif' and type ='02'";
 
 				$sc = mysql_query($hapus_sc);
