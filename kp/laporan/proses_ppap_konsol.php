@@ -1,234 +1,162 @@
-<?php require_once __DIR__ . '/../../koneksi_db.php'; 
+<?php require_once __DIR__ . '/../../koneksi_db.php';
+/**
+ * Menu kp > Hitung PPAP.
+ *   Proses PPAP        : fetch POST ke progres_ppap.php (hitung ulang loan.gol semua unit dan isi report_ppap), lalu muat ulang.
+ *   Posting Jurnal PPAP: untuk setiap baris report_ppap yang belum diposting dan selisihnya bukan 0, buat jurnal
+ *                        tabel_transaksi tanggal sistem, kode BU/<unit><8 acak>:
+ *                        status 1 -> debet 54131 / kredit 1512000 sebesar selisih; selain itu -> debet 1512000 / kredit 42131
+ *                        sebesar -selisih; lalu report_ppap.status_posting='post' untuk unit itu.
+ * Dimigrasi 2026-11-03: tampilan Bootstrap 5, prepared statement, posting lalu kembali ke halaman ini dengan pesan sama
+ * ("update Total SHU Sukses"); indikator proses memakai spinner Bootstrap (dulu gambar GIF dari internet). Tanggal periode
+ * kini tampil (dulu variabelnya kosong). Logika sama dengan versi lama, kecuali (perintah user 2026-11-03):
+ *   - Posting Jurnal PPAP dulu selalu error fatal: acakangkahuruf() di file ini memanggil teks sebagai fungsi
+ *     ($karakter($pos)); kini memakai acakangkahuruf() dari function.php (8 karakter acak)
+ * Perbaikan lain atas perintah user 2026-11-03: hanya level kp; posting hanya baris yang belum diposting dan selisih
+ * bukan 0 (dulu semua baris, termasuk yang sudah 'post' -> klik dua kali = jurnal dobel; selisih 0 -> jurnal 0), dalam
+ * satu transaksi DB; teks "Proses ini akan melakukan blokir userid" dibuang (tidak ada proses blokir).
+ */
+require_once __DIR__ . '/../../inc/tampilan.php';
 session_start();
-$userid=$_SESSION['userid'];
-$tanggal_transaksi=$_SESSION['stgl_system'];
-
-	//untuk waktu
-	//$tanggal=date("y-m-d");
-	include "../encryption/function.php";	
-	$con = db_ni();
-	if (mysqli_connect_errno()) {
-		echo "Failed to connect to MySQL: " . mysqli_connect_error();
-		exit;
-	
-	}
-
-	function acakangkahuruf($panjang)
-{
-    $karakter= '1234567890ABCDEFGHIJKL';
-    $string = '';
-    for ($i = 0; $i < $panjang; $i++) {
-  $pos = rand(0, strlen($karakter)-1);
-  $string = $karakter($pos);
-    }
-    return $string;
+ob_start();
+$userid = isset($_SESSION['userid']) ? $_SESSION['userid'] : null;
+if (!isset($_SESSION['stgl_system'])) {
+    echo "<script>alert('Maaf,.tanggal system belum di setup');</script>";
+    header("location:../../param_tgl.php");
+    exit;
 }
-	
-if(!isset($_SESSION['stgl_system'])){
-echo "<script>alert('Maaf,.tanggal system belum di setup');</script>";
+if (!isset($_SESSION['userid'])) {
+    header("location:../../index.html");
+    exit;
+}
+if ($_SESSION['level'] != 'kp') {
+    header("location:../../index.html");
+    exit;
+}
+$tanggal_transaksi = (string) $_SESSION['stgl_system'];
+include __DIR__ . '/../../function.php';
 
-   header("location:../../param_tgl.php");
- exit; }
-//cek apakah user sudah login
-if(!isset($_SESSION['userid'])){
-   header("location:../../index.html");
- exit; }
-	
-?>
-
-<?php
-	if(isset($_POST['proses_ppap'])){
-		$_SESSION['progress'] =0;
-		
-	
-		$ambilunit=db_query($con,"select * from report_ppap");
-		while($row_hit_mut=db_fetch_array($ambilunit)){
-			$unit=$row_hit_mut['unit'];	
-			$nominal=$row_hit_mut['jumlah_selisih'];
-			$status=$row_hit_mut['status'];
-			$kodetrs=8;
-		$kodetrs=acakangkahuruf($kodetrs);
-		$kode_transaksi="BU/".$unit.$kodetrs;
-	
-		if($status=='1'){
-			$query=db_query($con,"insert into tabel_transaksi(unit,kode_transaksi,kode_rekening,tanggal_transaksi, jenis_transaksi, keterangan_transaksi,debet,id_admin)
-			values('$unit','$kode_transaksi','54131','$tanggal_transaksi','Bukti System','Biaya PPA Umum-Piutang-Murabahah','$nominal','$userid')");
-	
-	$query=db_query($con,"insert into tabel_transaksi(unit,kode_transaksi,kode_rekening,tanggal_transaksi, jenis_transaksi, keterangan_transaksi,kredit,id_admin)
-			values('$unit','$kode_transaksi','1512000','$tanggal_transaksi','Bukti System','PPA Umum-PYD Piutang Murabahah','$nominal','$userid')");
-	
-	
-		} else{
-			$nominal = -1*($nominal);
-	
-			$query=db_query($con,"insert into tabel_transaksi(unit,kode_transaksi,kode_rekening,tanggal_transaksi, jenis_transaksi, keterangan_transaksi,debet,id_admin)
-			values('$unit','$kode_transaksi','1512000','$tanggal_transaksi','Bukti System','PPA Umum-PYD Piutang Murabahah','$nominal','$userid')");
-	
-	$query=db_query($con,"insert into tabel_transaksi(unit,kode_transaksi,kode_rekening,tanggal_transaksi, jenis_transaksi, keterangan_transaksi,kredit,id_admin)
-			values('$unit','$kode_transaksi','42131','$tanggal_transaksi','Bukti System','Pdptn-Koreksi PPA-Piutang-Murabahah','$nominal','$userid')");
-	
-		}
-			
-	
-	
-	
-		$berhasil= db_query ($con,"update report_ppap set status_posting ='post' where unit ='$unit'");					
-		
-		}
-		echo "<script>alert('update Total SHU Sukses ');</script>";
-
-	
-	
-							
-	}else{
-		unset($_POST['hitung_ppap']);
-	}
-	?>
- 
-	<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Progress Bar Example</title>
-    <link href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" rel="stylesheet">
-
-	<style>
-        .loading-indicator {
-            display: none;
-            width: 100px;
-            height: 100px;
+if (isset($_POST['proses_ppap'])) {
+    $_SESSION['progress'] = 0;
+    $db = db_ni();
+    $gagal_awal = db_jumlah_gagal();
+    $db->begin_transaction();
+    $jumlah = 0;
+    foreach (db_semua("select no, unit, jumlah_selisih, status from report_ppap where status_posting is null and jumlah_selisih <> 0 for update") as $row_hit_mut) {
+        $jumlah++;
+        $unit = (string) $row_hit_mut['unit'];
+        $nominal = $row_hit_mut['jumlah_selisih'];
+        $kode_transaksi = "BU/" . $unit . acakangkahuruf(8);
+        if ($row_hit_mut['status'] == '1') {
+            db_jalankan("insert into tabel_transaksi(unit,kode_transaksi,kode_rekening,tanggal_transaksi, jenis_transaksi, keterangan_transaksi,debet,id_admin)
+                values(?,?,'54131',?,'Bukti System','Biaya PPA Umum-Piutang-Murabahah',?,?)", 'sssss',
+                $unit, $kode_transaksi, $tanggal_transaksi, (string) $nominal, (string) $userid);
+            db_jalankan("insert into tabel_transaksi(unit,kode_transaksi,kode_rekening,tanggal_transaksi, jenis_transaksi, keterangan_transaksi,kredit,id_admin)
+                values(?,?,'1512000',?,'Bukti System','PPA Umum-PYD Piutang Murabahah',?,?)", 'sssss',
+                $unit, $kode_transaksi, $tanggal_transaksi, (string) $nominal, (string) $userid);
+        } else {
+            $nominal = -1 * compat_num($nominal);
+            db_jalankan("insert into tabel_transaksi(unit,kode_transaksi,kode_rekening,tanggal_transaksi, jenis_transaksi, keterangan_transaksi,debet,id_admin)
+                values(?,?,'1512000',?,'Bukti System','PPA Umum-PYD Piutang Murabahah',?,?)", 'sssss',
+                $unit, $kode_transaksi, $tanggal_transaksi, (string) $nominal, (string) $userid);
+            db_jalankan("insert into tabel_transaksi(unit,kode_transaksi,kode_rekening,tanggal_transaksi, jenis_transaksi, keterangan_transaksi,kredit,id_admin)
+                values(?,?,'42131',?,'Bukti System','Pdptn-Koreksi PPA-Piutang-Murabahah',?,?)", 'sssss',
+                $unit, $kode_transaksi, $tanggal_transaksi, (string) $nominal, (string) $userid);
         }
-    </style>
-</head>
-<body>
-		
-
-
-			<h2 align="center"><strong>Proses PPAP</strong></h2>
-			<p align="center">&nbsp;</p>
-			<p align="center">
-			<p align="center" class="style1"><font color="#666666">
-			<p align="center"><em><font color="#666666">Tanggal Periode PPAP <?php echo $tgl_system?>.
-		    <p align="center"><em><font color="#666666">Proses bisa Setelah Neraca Balance.
-			<p align="center"><em><font color="#666666">Proses ini akan melakukan blokir userid
-			
-				
-				<form action="progres_ppap.php" method="post" id ="myform">
-
-				</font>
-		    <div align="center"><font color="#0066FF">
-			<button type="submit" class="btn btn-primary">Proses PPAP</button>
-				
-           
-	        </font>
-				
-</div>	
-				
-			
-				
-				</form>
-				
-		    <div align="center"><font color="#0066FF">
-			
-			<div class="mt-3" id="loadingContainer">
-            <img src="https://c.tenor.com/5o2p0tH5LFQAAAAi/hug.gif" class="loading-indicator" id="loadingIndicator" alt="Loading...">
-        </div>
-	      
-	      
-            </div>
-				
-				
-				<form action="?<?php echo paramEncrypt('page=../laporan/hitung_shu')?>" method="post" name="postform" >
-				<div align="center">
-				<table border="1" cellpadding="10">
-				<tr>
-				<td bgcolor="#00ff80"> No</td>
-				<td bgcolor="#00ff80"> Kode AP</td>
-				<td bgcolor="#00ff80"> AP</td>
-				<td bgcolor="#00ff80"> Akan dibentuk</td>
-				<td bgcolor="#00ff80"> Sudah dibentuk</td>
-				<td bgcolor="#00ff80"> Selisih</td>
-				<td bgcolor="#00ff80"> Status Jurnal</td>
-				</tr>
-				<?php
-				$report=db_query($con,"select no,akan_dibentuk, sdh_dibentuk, jumlah_selisih,status, report_ppap.unit, branch.unit as ap from report_ppap
-				left join branch on branch.kode_branch = report_ppap.unit
-				where status_posting is null");
-				while($row=db_fetch_array($report))
-
-{
-	if($row['status']=='1'	){
-		$status= 'Selisih lebih besar';
-	}else{
-		$status= 'Selisih lebih Kecil';
-	}
-
-	echo '<tr>
-		<td>' . $row['no'] . '</td>
-		<td>' . $row['unit'] . '</td>
-		<td>' . $row['ap'] . '</td>
-		<td>' . number_format(compat_num($row['akan_dibentuk'])) . '</td>
-		<td>' . number_format(compat_num($row['sdh_dibentuk'])) . '</td>
-		<td>' . number_format(compat_num($row['jumlah_selisih'])) . '</td>
-		<td>' .$status. '</td> 
-	
-		</tr>';
-
+        db_jalankan("update report_ppap set status_posting ='post' where no =?", 's', (string) $row_hit_mut['no']);
+    }
+    if (db_jumlah_gagal() > $gagal_awal) {
+        $db->rollback();
+        $_SESSION['pesan_ppap'] = 'Posting Jurnal PPAP gagal dan dibatalkan: ' . db_error_terakhir();
+    } else {
+        $db->commit();
+        $_SESSION['pesan_ppap'] = $jumlah ? 'update Total SHU Sukses ' : 'Tidak ada PPAP yang perlu diposting';
+    }
+    header('Location: proses_ppap_konsol.php');
+    exit;
 }
 
+$pesan = isset($_SESSION['pesan_ppap']) ? $_SESSION['pesan_ppap'] : null;
+unset($_SESSION['pesan_ppap']);
+$report = db_semua("select no,akan_dibentuk, sdh_dibentuk, jumlah_selisih,status, report_ppap.unit, branch.unit as ap from report_ppap
+    left join branch on branch.kode_branch = report_ppap.unit
+    where status_posting is null");
+
+halaman_awal('Proses PPAP');
 ?>
-				<table>
-				<p>&nbsp;</p><p>
-				<font color="#666666">
-				<input type="submit" onclick="return confirm('Apakah Anda Yakin akan proses PPAP?')" name="proses_ppap" value="Posting Jurnal PPAP" class="btn btn-primary" />
-				
-				</font></p>
-				
-				</form>			
-				
-				
-			
-		
-			</font>
-		    <div align="center"><font color="#0066FF">
-			
-           
-	        </font>
-	        </p>
-            </div>
-	
+<?php if ($pesan !== null): ?>
+<div class="alert alert-<?php echo stripos($pesan, 'gagal') !== false ? 'danger' : 'success'; ?>"><?php echo h($pesan); ?></div>
+<script>alert(<?php echo json_encode($pesan); ?>);</script>
+<?php endif; ?>
+<div class="card card-ni">
+  <div class="card-header">Proses PPAP</div>
+  <div class="card-body text-center">
+    <p class="mb-1">Tanggal Periode PPAP <strong><?php echo h($tanggal_transaksi); ?></strong></p>
+    <p class="text-muted fst-italic">Proses bisa Setelah Neraca Balance.</p>
+    <form action="progres_ppap.php" method="post" id="myform">
+      <button type="submit" class="btn btn-ni px-4" id="tombol-proses">Proses PPAP</button>
+    </form>
+    <div class="mt-3 d-none" id="loadingIndicator" aria-live="polite">
+      <div class="spinner-border text-success" role="status"></div>
+      <div class="small text-muted mt-1">Menghitung PPAP semua unit…</div>
+    </div>
+  </div>
+</div>
 
-			<script>
-        document.getElementById('myform').addEventListener('submit', function(event) {
-            event.preventDefault();
+<form action="proses_ppap_konsol.php" method="post" name="postform">
+  <div class="table-responsive mt-3">
+    <table class="table table-sm table-bordered table-ni align-middle">
+      <thead>
+        <tr>
+          <th>No</th><th>Kode AP</th><th>AP</th>
+          <th class="text-end">Akan dibentuk</th><th class="text-end">Sudah dibentuk</th><th class="text-end">Selisih</th>
+          <th>Status Jurnal</th>
+        </tr>
+      </thead>
+      <tbody>
+      <?php foreach ($report as $row): ?>
+        <tr>
+          <td><?php echo h($row['no']); ?></td>
+          <td><?php echo h($row['unit']); ?></td>
+          <td><?php echo h($row['ap']); ?></td>
+          <td class="text-end"><?php echo number_format(compat_num($row['akan_dibentuk'])); ?></td>
+          <td class="text-end"><?php echo number_format(compat_num($row['sdh_dibentuk'])); ?></td>
+          <td class="text-end"><?php echo number_format(compat_num($row['jumlah_selisih'])); ?></td>
+          <td><?php echo $row['status'] == '1' ? 'Selisih lebih besar' : 'Selisih lebih Kecil'; ?></td>
+        </tr>
+      <?php endforeach; ?>
+      </tbody>
+    </table>
+  </div>
+  <div class="text-center">
+    <button type="submit" name="proses_ppap" value="Posting Jurnal PPAP" class="btn btn-ni px-4" data-konfirmasi="Apakah Anda Yakin akan proses PPAP?">Posting Jurnal PPAP</button>
+  </div>
+</form>
 
-            var formData = new FormData(this);
-            var loadingIndicator = document.getElementById('loadingIndicator');
-            loadingIndicator.style.display = 'block';
-
-            fetch('progres_ppap.php', {
-                method: 'POST',
-                body: formData
-            })
-            .then(response => response.json())
-            .then(data => {
-                loadingIndicator.style.display = 'none';
-                if (data.success) {
-                    setTimeout(() => {
-                        window.location.href = 'proses_ppap_konsol.php';
-                    }, 1000);
-                } else {
-                    alert('Error: ' + data.message);
-                }
-            })
-            .catch(error => {
-                loadingIndicator.style.display = 'none';
-                console.error('Error:', error);
-                alert('Error: Server tidak merespon.');
-            });
+<script>
+document.getElementById('myform').addEventListener('submit', function (event) {
+    event.preventDefault();
+    var tombol = document.getElementById('tombol-proses');
+    var loadingIndicator = document.getElementById('loadingIndicator');
+    tombol.disabled = true;
+    loadingIndicator.classList.remove('d-none');
+    fetch('progres_ppap.php', { method: 'POST', body: new FormData(this), credentials: 'same-origin' })
+        .then(function (response) { return response.json(); })
+        .then(function (data) {
+            loadingIndicator.classList.add('d-none');
+            if (data.success) {
+                setTimeout(function () { window.location.href = 'proses_ppap_konsol.php'; }, 1000);
+            } else {
+                tombol.disabled = false;
+                alert('Error: ' + data.message);
+            }
+        })
+        .catch(function (error) {
+            loadingIndicator.classList.add('d-none');
+            tombol.disabled = false;
+            console.error('Error:', error);
+            alert('Error: Server tidak merespon.');
         });
-    </script>
-
-</body>
-</html>
+});
+</script>
+<?php
+halaman_akhir();

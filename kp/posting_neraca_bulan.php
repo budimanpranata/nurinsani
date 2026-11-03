@@ -1,283 +1,100 @@
-<?php require_once __DIR__ . '/../php8_compat.php'; 
+<?php require_once __DIR__ . '/../koneksi_db.php';
+/**
+ * Posting Ulang neraca kantor pusat (unit 1010), dibuka dari Detail di posting_neraca.php; rentang tanggal dari sesi
+ * tgl_awal_pos / tgl_akhir_pos. Menampilkan ringkasan transaksi per rekening, lalu tombol POSTING JURNAL:
+ *   1. mut_debet/mut_kredit tabel_master unit 1010 dinolkan
+ *   2. mutasi = jumlah debet/kredit tabel_transaksi unit 1010 dalam rentang (semua, termasuk yang bertanda EOM),
+ *      ditambahkan ke tabel_master per rekening_gl
+ *   3. sisa_debet/sisa_kredit tiap rekening 1010 dihitung dari awal + mutasi menurut normal (negatif pindah sisi)
+ *   4. tabel_transaksi unit 1010 dalam rentang (kecuali EOM) ditandai keterangan_posting='Post'
+ *   lalu alert "posting Selesai." dan pindah ke laporan/hitung_shu.php.
+ * Dimigrasi 2026-11-03: tampilan Bootstrap 5, prepared statement; perhitungan dan urutan sama dengan versi lama, termasuk:
+ *   - tombol POSTING JURNAL selalu tampil: pemeriksaan versi lama memakai kolom salah ketik (keteterangan_posting) sehingga
+ *     query selalu gagal dan syaratnya selalu benar
+ *   - tanpa transaksi DB (tabel_master MyISAM)
+ * Dibuang: teks status dari decode(REQUEST_URI) (tidak pernah berisi).
+ */
+require_once __DIR__ . '/../inc/tampilan.php';
 session_start();
-$userid=$_SESSION['userid'];
-$tgl_awal=$_SESSION['tgl_awal_pos'];
-$tgl_akhir=$_SESSION['tgl_akhir_pos'];
-$unitt=1010;
-
-
-if(!isset($_SESSION['userid'])){
-   header("location:index.html");
- exit; }
-
-//cek level user
-if($_SESSION['level']!="kp"){
-   header("location:index.html");
- exit; }
-
-	include "../encryption/function.php";
-	include"../../indo_tgl.php";
-	
-	//untuk waktu
-	$tanggal=date("y-m-d");
-	
-	//untuk koneksi database
-	include "conn2.php";
-	$koneksi=open_connection2();
-	
-?>	
-<script type="text/javascript" src="jquery.js"></script>
-		<link href="style.css" rel="stylesheet" type="text/css" media="screen" />
-		<link rel="stylesheet" href="css/bootstrap.min.css"/>
-	</script>
-	
-		<style>
-	#result {
-		height:20px;
-		font-size:12px;
-		font-family:Arial, Helvetica, sans-serif;
-		color:#333;
-		padding:5px;
-		margin-bottom:10px;
-		background-color:#FFFF99;
-	}
-	#country{
-		padding:3px;
-		border:1px #CCC solid;
-		font-size:12px;
-	}
-	.suggestionsBox {
-		position: absolute;
-		left: 0px;
-		top:40px;
-		margin: 26px 0px 0px 0px;
-		width: 200px;
-		padding:0px;
-		background-color:#999999;
-		border-top: 3px solid #999999;
-		color: #fff;
-	}
-	.suggestionList {
-		margin: 0px;
-		padding: 0px;
-	}
-	.suggestionList ul li {
-		list-style:none;
-		margin: 0px;
-		padding: 6px;
-		border-bottom:1px dotted #666;
-		cursor: pointer;
-	}
-	.suggestionList ul li:hover {
-		background-color: #FC3;
-		color:#000;
-	}
-	ul {
-		font-family:Arial, Helvetica, sans-serif;
-		font-size:11px;
-		color:#FFF;
-		padding:0;
-		margin:0;
-	}
-	
-	.load{
-	background-image:url(loader.gif);
-	background-position:right;
-	background-repeat:no-repeat;
-	}
-	
-	#suggest {
-		position:relative;
-	}
-	.style9 {
-	font-size: 16px;
-	font-family: Verdana, Arial, Helvetica, sans-serif;
+ob_start();
+$userid = isset($_SESSION['userid']) ? $_SESSION['userid'] : null;
+$tgl_awal = isset($_SESSION['tgl_awal_pos']) ? (string) $_SESSION['tgl_awal_pos'] : '';
+$tgl_akhir = isset($_SESSION['tgl_akhir_pos']) ? (string) $_SESSION['tgl_akhir_pos'] : '';
+if (!isset($_SESSION['userid'])) {
+    header("location:index.html");
+    exit;
 }
-.style3 {	color: #FFFFFF;
-	font-size: 13px;
-	font-weight: bold;
-}
-.header1 {color: #ffffff; background: #4682B4; font-weight: bold; font-family: Tahoma, Verdana; font-size: 13px; margin: 0px;}
-body {
-	background-image: url();
-}
-a:link {
-	text-decoration: none;
-}
-a:visited {
-	text-decoration: none;
-}
-a:hover {
-	text-decoration: none;
-}
-a:active {
-	text-decoration: none;
-}
-	.style10 {
-	font-family: Verdana, Arial, Helvetica, sans-serif;
-	font-size: 12px;
+if ($_SESSION['level'] != "kp") {
+    header("location:index.html");
+    exit;
 }
 
-    .style11 {font-size: small}
-    </style>
+if (isset($_POST['posting'])) {
+    db_jalankan("update tabel_master set mut_kredit=0,mut_debet=0 where unit ='1010'");
+    $mutasi = db_semua("select kode_rekening,sum(debet) as debet,sum(kredit) as kredit,unit from tabel_transaksi
+        where unit ='1010' and tanggal_transaksi between ? and ? Group By kode_rekening", 'ss', $tgl_awal, $tgl_akhir);
+    foreach ($mutasi as $m) {
+        db_jalankan("update tabel_master set mut_debet=mut_debet+?, mut_kredit=mut_kredit+? where rekening_gl=? and unit ='1010'", 'sss',
+            (string) $m['debet'], (string) $m['kredit'], (string) $m['kode_rekening']);
+    }
+    foreach (db_semua("select normal,kode_rekening,awal_debet,awal_kredit,mut_debet,mut_kredit from tabel_master where unit ='1010'") as $r) {
+        $sisa_debet = $sisa_kredit = null;
+        if ($r['normal'] == "debet") {
+            $hitung = (compat_num($r['awal_debet']) + compat_num($r['mut_debet'])) - compat_num($r['mut_kredit']);
+            list($sisa_debet, $sisa_kredit) = $hitung < 0 ? array(0, abs($hitung)) : array($hitung, 0);
+        }
+        if ($r['normal'] == "kredit") {
+            $hitung = (compat_num($r['awal_kredit']) - compat_num($r['mut_debet'])) + compat_num($r['mut_kredit']);
+            list($sisa_debet, $sisa_kredit) = $hitung < 0 ? array(abs($hitung), 0) : array(0, $hitung);
+        }
+        if ($sisa_debet !== null) {
+            db_jalankan("update tabel_master set sisa_debet=?, sisa_kredit=? where kode_rekening=? and unit ='1010'", 'sss',
+                (string) $sisa_debet, (string) $sisa_kredit, (string) $r['kode_rekening']);
+        }
+    }
+    $selesai = db_jalankan("update tabel_transaksi set keterangan_posting='Post' where unit ='1010' and tanggal_transaksi between ? and ?
+        and keterangan_posting not in ('EOM')", 'ss', $tgl_awal, $tgl_akhir);
+    if ($selesai) {
+        echo '<script>alert("posting Selesai."); window.location="laporan/hitung_shu.php"</script>';
+    } else {
+        echo h(db_error_terakhir());
+    }
+    exit;
+}
 
-	
-	<div class="post">
-	<div class="entry">
-	
-			<table width="100%">
-		<tr bgcolor="#2F6B4F">
-		<td height="25" colspan="4" nowrap><div align="left" class="style3 style9">Porses Posting Jurnal</div></td>
-			</tr>
-            </table>
-			<p>
-		<div class = "panel panel-default">
-	  		<table width="100%" border="1" bordercolor="669900" style="margin: 7px 10px" class="table table-striped" >
-		<tr>
-			<th>Kode Rekening</th><th>Nama Rekening</th><th>Debet</th><th>Kredit</th>
-		</tr>
-		<?php
-		$query_transaksi=mysql_query("select tanggal_transaksi,tabel_transaksi.kode_rekening,sum(debet) as debet,sum(kredit) as kredit,nama_rek from tabel_transaksi inner join coa on coa.kode_rek = SUBSTR(kode_rekening,6)  where  tabel_transaksi.unit ='1010' and tanggal_transaksi between '$tgl_awal' and '$tgl_akhir'  Group By kode_rekening");
-		$total=mysql_fetch_array(mysql_query("select sum(debet) as tot_debet, sum(kredit) as tot_kredit from tabel_transaksi where  tabel_transaksi.unit ='1010' and tanggal_transaksi between '$tgl_awal' and '$tgl_akhir'  order by kode_rekening  asc"));
-		while($row_tran=mysql_fetch_array($query_transaksi)){
-			$debet=$row_tran['debet'];
-			$kredit=$row_tran['kredit'];
-			
-			?>
-			<tr>
-				
-				<td><div align="center"><?php echo $row_tran['kode_rekening'];?></div></td>
-				<td><div align="left"><?php echo $row_tran['nama_rek'];?></div></td>
-				<td align="right"><?php echo number_format(compat_num($debet),2,'.',','); ?></td>
-				<td align="right"><?php echo number_format(compat_num($kredit),2,'.',','); ?></td>
-				
-			</tr>
-			<?php
-		}
-		?>
-		<tr>
-				<td colspan="2"><div align="center"><strong>TOTAL TRANSAKSI</strong></div></td>
-				<td align="right"><strong><?php echo number_format(compat_num($total['tot_debet'])); ?></strong></td>
-				<td align="right"><strong><?php echo number_format(compat_num($total['tot_kredit'])); ?></strong></td>
-			</tr>
-		</table>
-		</p>
-	</div>
-	</div>
+$rekening = db_semua("select tanggal_transaksi,tabel_transaksi.kode_rekening,sum(debet) as debet,sum(kredit) as kredit,nama_rek from tabel_transaksi
+    inner join coa on coa.kode_rek = SUBSTR(kode_rekening,6)
+    where tabel_transaksi.unit ='1010' and tanggal_transaksi between ? and ? Group By kode_rekening", 'ss', $tgl_awal, $tgl_akhir);
+$total = db_satu("select sum(debet) as tot_debet, sum(kredit) as tot_kredit from tabel_transaksi
+    where tabel_transaksi.unit ='1010' and tanggal_transaksi between ? and ?", 'ss', $tgl_awal, $tgl_akhir);
 
-
-
-	<div class="post">
-	<div class="entry">
-		<p>
-		<table border="0" align="center">
-		<tr>
-			<td width="72" align="center">
-			<!---untuk mengakhiri posting dan memberi tanda posting-->
-			<?php 
-			$cek=mysql_query("select unit from tabel_transaksi where tabel_transaksi.unit ='1010' and tanggal_transaksi between '$tgl_awal' and '$tgl_akhir' and keteterangan_posting not in ('EOM')");
-			$cek_posting=mysql_num_rows($cek);
-			if($cek_posting!==0){
-				?>
-				<form action="?<?php echo paramEncrypt('page=/posting_neraca_bulan')?>" method="post" name="postform">
-				<input type="submit" onclick="return confirm('Apakah Anda Yakin?')" name="posting" value="POSTING JURNAL" />
-				</form>
-			<?php
-			}
-			?>
-		  </td>
-		</tr>
-		<tr>
-			<td width="601" align="center">
-			<font face="verdana" color="#666666">
-			<?php
-			//untuk mendecode url yang di enrypsi
-			$var=decode($_SERVER['REQUEST_URI']);
-			//pecahkan nilai array
-			echo $page=$var['status'];
-			?>
-			</font>			
-			</td>
-		</tr>
-		</table>
-		</p>
-	</div>
-	</div>
-
-	
-	<?php
-	if(isset($_POST['posting'])){
-	$update_mutasi=mysql_query("update tabel_master set mut_kredit=0,mut_debet=0  where unit ='1010'");
-		///////////////////////// HITUNG MUTASI /////////////////////
-		$query_hitung_mutasi=mysql_query("select kode_rekening,sum(debet) as debet,sum(kredit) as kredit,unit from tabel_transaksi where unit ='1010' and tanggal_transaksi between '$tgl_awal' and '$tgl_akhir' Group By kode_rekening");
-		while($row_hit_mut=mysql_fetch_array($query_hitung_mutasi)){
-			$kode_rekening=$row_hit_mut['kode_rekening'];	
-			$debet=$row_hit_mut['debet'];
-			$kredit=$row_hit_mut['kredit'];
-			$unit =$row_hit_mut['unit'];
-			$update_mutasi=mysql_query("update tabel_master set mut_debet=mut_debet+'$debet', mut_kredit=mut_kredit+'$kredit' where rekening_gl='$kode_rekening' and unit ='1010'");
-
-			//$update_mutasi=mysql_query("update tabel_master set mut_debet=mut_debet+(SELECT debet FROM tabel_transaksi WHERE kode_rekening ='$kode_rekening' and keterangan_posting=''), mut_kredit=mut_kredit+(SELECT kredit FROM tabel_transaksi WHERE kode_rekening ='$kode_rekening' and keterangan_posting='') where kode_rekening='$kode_rekening'");
-
-		}
-				
-		if($query_hitung_mutasi){
-			$query_hitung_sisa=mysql_query("select * from tabel_master where unit ='1010'");
-			
-			while($row_hit_sisa=mysql_fetch_array($query_hitung_sisa)){
-			
-				$normal=$row_hit_sisa['normal'];
-				$kode_rekening=$row_hit_sisa['kode_rekening'];
-					
-				$awal_debet=$row_hit_sisa['awal_debet'];
-				$awal_kredit=$row_hit_sisa['awal_kredit'];
-				
-				$mutasi_debet=$row_hit_sisa['mut_debet'];
-				$mutasi_kredit=$row_hit_sisa['mut_kredit'];
-					
-			
-				if($normal=="debet"){
-					$hitung_sisa_debet=($awal_debet+$mutasi_debet)-$mutasi_kredit;
-					if($hitung_sisa_debet<0){
-						$positif_sisa_kredit=abs(compat_num($hitung_sisa_debet));
-						$update_mutasi=mysql_query("update tabel_master set sisa_debet=0, sisa_kredit='$positif_sisa_kredit' where kode_rekening='$kode_rekening' and unit ='1010'");
-					}else{
-						$update_mutasi=mysql_query("update tabel_master set sisa_debet='$hitung_sisa_debet', sisa_kredit='0' where kode_rekening='$kode_rekening' and unit ='1010'");
-					}	
-								
-				}
-				
-				if($normal=="kredit"){
-					$hitung_sisa_kredit=($awal_kredit-$mutasi_debet)+$mutasi_kredit;
-					
-					if($hitung_sisa_kredit<0){
-						$positif_sisa_debet=abs(compat_num($hitung_sisa_kredit));
-						$update_mutasi=mysql_query("update tabel_master set sisa_debet='$positif_sisa_debet', sisa_kredit='0' where kode_rekening='$kode_rekening' and unit ='1010'");
-					}else{
-						$update_mutasi=mysql_query("update tabel_master set sisa_debet=0, sisa_kredit='$hitung_sisa_kredit' where kode_rekening='$kode_rekening' and unit ='1010'");
-					}		
-				}
-			}
-
-
-		}
-		
-		
-		////////////////////////// UBAH STATUS POSTING //////////////////////////////
-		$selesai=mysql_query("update tabel_transaksi set  keterangan_posting='Post' where unit ='1010' and tanggal_transaksi between '$tgl_awal' and '$tgl_akhir' and keterangan_posting not in ('EOM')");
-		
-		if($selesai){
-			echo '<script>alert("posting Selesai."); window.location="laporan/hitung_shu.php"</script>';
-		}else{
-			echo mysql_error();
-		} 
-		
-							
-	}else{
-		unset($_POST['posting']);
-	}
-	?>
-
-<?php 
-
+halaman_awal('Proses Posting Jurnal');
 ?>
+<p class="mb-2">Periode <strong><?php echo h($tgl_awal); ?></strong> s.d. <strong><?php echo h($tgl_akhir); ?></strong>, unit 1010</p>
+<div class="table-responsive">
+  <table class="table table-sm table-bordered table-ni align-middle">
+    <thead>
+      <tr><th>Kode Rekening</th><th>Nama Rekening</th><th class="text-end">Debet</th><th class="text-end">Kredit</th></tr>
+    </thead>
+    <tbody>
+    <?php foreach ($rekening as $row): ?>
+      <tr>
+        <td class="text-center"><?php echo h($row['kode_rekening']); ?></td>
+        <td><?php echo h($row['nama_rek']); ?></td>
+        <td class="text-end"><?php echo number_format(compat_num($row['debet']), 2, '.', ','); ?></td>
+        <td class="text-end"><?php echo number_format(compat_num($row['kredit']), 2, '.', ','); ?></td>
+      </tr>
+    <?php endforeach; ?>
+      <tr class="fw-bold">
+        <td colspan="2" class="text-center">TOTAL TRANSAKSI</td>
+        <td class="text-end"><?php echo number_format(compat_num($total ? $total['tot_debet'] : null)); ?></td>
+        <td class="text-end"><?php echo number_format(compat_num($total ? $total['tot_kredit'] : null)); ?></td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+<form action="posting_neraca_bulan.php" method="post" name="postform" class="text-center mt-3">
+  <button type="submit" name="posting" value="POSTING JURNAL" class="btn btn-ni px-4" data-konfirmasi="Apakah Anda Yakin?">POSTING JURNAL</button>
+</form>
+<?php
+halaman_akhir();

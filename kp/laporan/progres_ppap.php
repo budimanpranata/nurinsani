@@ -1,169 +1,70 @@
 <?php require_once __DIR__ . '/../../koneksi_db.php';
+/**
+ * Hitung PPAP kp (dipanggil tombol "Proses PPAP" di proses_ppap_konsol.php lewat fetch, POST), untuk tanggal sistem.
+ * Per unit yang punya pembiayaan aktif:
+ *   - hitung ulang loan.gol dengan rumus menu Report > PPAP unit (inc/kolektabilitas.php: per deal_produk, aturan jatuh
+ *     tempo terhadap tanggal sistem, satu transaksi DB per unit)
+ *   - report_ppap: sudah dibentuk = saldo_awal 1512000 unit (tersimpan negatif), akan dibentuk = PPAP seperti rekap PPAP
+ *     unit (report/rekap_ppap.php): 0,5% gol 1 + 10% gol 2 + 50% gol 3 + 100% gol 4 dari os - saldo_margin, tanpa
+ *     MUSYAROKAH; selisih = akan + sudah dibentuk; status 1 bila selisih > 0, selain itu 2
+ * Jawaban JSON {success, message, progress} sama dengan versi lama.
+ * Dimigrasi 2026-11-03; perbaikan atas perintah user 2026-11-03 (versi lama):
+ *   - report_ppap tidak pernah dikosongkan ("truncate from report_ppap" salah sintaks) -> kini dikosongkan dulu
+ *   - tanggal acuan $tgl kosong sehingga aturan jatuh tempo tidak pernah berlaku -> kini tanggal sistem
+ *   - PPAP golongan 2 tidak ikut ($tot_ppap12 salah ketik) dan MUSYAROKAH ikut dihitung -> kini sama dengan rekap unit
+ *   - rumus golongan berbeda dengan menu unit -> kini fungsi yang sama
+ *   - tanpa cek login/level -> kini wajib login level kp
+ */
 session_start();
-
-$con = db_ni();
-if (mysqli_connect_errno()) {
-    echo "Failed to connect to MySQL: " . mysqli_connect_error();
-    exit;
-
-}
-
-function acakangkahuruf($panjang)
-{
-$karakter= '1234567890ABCDEFGHIJKL';
-$string = '';
-for ($i = 0; $i < $panjang; $i++) {
-$pos = rand(0, strlen($karakter)-1);
-$string = $karakter($pos);
-}
-return $string;
-}
+require_once __DIR__ . '/../../inc/cek_login.php';
+require_once __DIR__ . '/../../inc/kolektabilitas.php';
+wajib_login('json');
+header('Content-Type: application/json; charset=utf-8');
 
 if (!isset($_SESSION['progress'])) {
     $_SESSION['progress'] = 0;
 }
-
-if ($_SERVER['REQUEST_METHOD'] == 'POST') {
-	$berhasil= db_query ($con,"truncate from report_ppap");	
-		
-
-		$ambilunit=db_query($con,"select unit from loan where os > 0  group by unit");
-		while($row_hit_mut=db_fetch_array($ambilunit)){
-			$unit=$row_hit_mut['unit'];	
-		
-			db_query($con,"update loan
-			set gol=(SELECT
-			CASE
-			WHEN sum(KREDIT-DEBIT)/angsuran between 1 and 3 then '1'
-			WHEN sum(KREDIT-DEBIT)/angsuran between 4 and 6 then '2'
-			WHEN sum(KREDIT-DEBIT)/angsuran between 7 and 12 then '3'
-			WHEN sum(KREDIT-DEBIT)/angsuran > 12 then '4'
-			else '1' end as gol
-			FROM
-			tunggakan
-			where loan.cif=tunggakan.CIF
-			) where loan.unit ='$unit'");
-				   
-				 
-			$cek_matur=db_query($con,"Select loan.cif,angsuran,ROUND(sum(KREDIT-DEBIT)/angsuran) as ft, Cust_Short_name,datediff('$tgl',maturity_date) as lama_jatpo from loan
-			inner JOIN tunggakan
-			on loan.cif=tunggakan.CIF
-			WHERE loan.unit ='$unit' and maturity_date < '$tgl' and os >0
-			GROUP BY loan.CIF ");
-			while($data_matur=db_fetch_array($cek_matur)){
-			$cif=$data_matur['cif'];
-			$a=$data_matur['ft'];
-			$b=$data_matur['lama_jatpo'];
-			//cek lama Jatpo
-			$c=30;
-			
-			if ($a<=6){
-			$gol='2';   
-			
-				if($b>60){
-				$gol='4';
-				}else{
-					$gol='2';
-			}
-			}
-			elseif($a<=12){
-			$gol='3';
-			
-			if($b>60){
-				$gol='4';
-			}else{
-					$gol='3';
-			}
-			}
-			elseif($a>12){
-			$gol='4';
-			
-			if($b>60){
-				$gol='4';
-			}else{
-					$gol='4';
-			}   
-			}else {
-				$gol='10';
-			}
-			
-			if ($a<4){
-				$gol='10';
-			}
-			   
-			db_query($con,"update loan set gol='$gol' where cif ='$cif'");
-			
-		}
-					   
-			db_query($con,"update loan
-			set gol=(SELECT
-			CASE
-			WHEN sum(KREDIT-DEBIT)/angsuran > 0 and datediff('$tgl',maturity_date) between 1 and 30 then '2'
-			WHEN sum(KREDIT-DEBIT)/angsuran > 0 and datediff('$tgl',maturity_date) between 31 and 60 then '3'
-			WHEN sum(KREDIT-DEBIT)/angsuran > 0 and datediff('$tgl',maturity_date) > 60 then '4'
-			else '4' end as gol
-			FROM
-			tunggakan
-			where loan.cif=tunggakan.CIF
-			) where loan.unit ='$unit' and maturity_date < '$tgl' and gol='10' ");  
-
-
-			
-			$coa_sdh_dibentuk= db_fetch_array(db_query($con,"select saldo_awal from tabel_master WHERE unit ='".$unit."' and kode_rekening ='1512000' "));
-			$sdh_dibentuk=$coa_sdh_dibentuk['saldo_awal']; 
-			
-			$berhasil= db_query ($con,"insert into report_ppap(sdh_dibentuk,akan_dibentuk,jumlah_selisih,unit,status) values('$sdh_dibentuk','0','0','$unit','0')");
-
-			//query dan arraying coll 1 
-	//$cek_saldo= mysql_fetch_array(mysql_query("SELECT sum(saldo_kredit) - sum(debet) as saldo from rek_loan where unit ='$kode_branch' "));
-	$data_noa= db_fetch_array(db_query($con,"SELECT count(cif) as noa, sum(Plafond) as pla,sum(os-saldo_margin) as saldo from loan where gol='1' AND loan.unit ='$unit' and os>0"));
-	$tot_ppap1= (0.5/100 * $data_noa['saldo']);	
-//query dan arraying coll 2 
-	//$cek_saldo2= mysql_fetch_array(mysql_query("SELECT sum(pokok)+sum(margin) as saldo, datediff('$tgl', tgl_tunggak) as selisih from tunggakan where datediff('$tgl', tgl_tunggak) between 91 and 120 AND unit  ='$kode_branch' group by cif "));
-	$data_noa2= db_fetch_array(db_query($con,"SELECT count(cif) as noa, sum(Plafond) as pla,sum(os-saldo_margin) as saldo from loan where gol='2' AND loan.unit ='$unit' and os>0"));
-	$tot_ppap2= (10/100 * $data_noa2['saldo']);
-//query dan arraying coll 3 
-	//$cek_saldo3= mysql_fetch_array(mysql_query("SELECT sum(pokok)+sum(margin) as saldo, datediff('$tgl', tgl_tunggak) as selisih from tunggakan where datediff('$tgl', tgl_tunggak) between 121 AND 365 AND unit  ='$kode_branch' group by cif "));
-	$data_noa3= db_fetch_array(db_query($con,"SELECT count(cif) as noa, sum(Plafond) as pla ,sum(os-saldo_margin) as saldo from loan where gol='3' AND loan.unit ='$unit'and os>0"));
-	$tot_ppap3= (50/100 * $data_noa3['saldo']);
-//query dan arraying coll 4
-	//$cek_saldo4= mysql_fetch_array(mysql_query("SELECT sum(pokok)+sum(margin) as saldo, datediff('$tgl', tgl_tunggak) as selisih from tunggakan where datediff('$tgl', tgl_tunggak) >365 AND unit  ='$kode_branch' group by cif "));
-	$data_noa4= db_fetch_array(db_query($con,"SELECT count(cif) as noa, sum(Plafond) as pla ,sum(os-saldo_margin) as saldo from loan where gol='4' AND loan.unit ='$unit' and os>0"));
-	$tot_ppap4= (100/100 * $data_noa4['saldo']);
-	$total_ppap_unit = $tot_ppap1 + $tot_ppap12 + $tot_ppap3 + $tot_ppap4;
-	$berhasil= db_query ($con,"update report_ppap set akan_dibentuk ='$total_ppap_unit' where unit ='$unit'");	
-	$berhasil= db_query ($con,"update report_ppap set jumlah_selisih = akan_dibentuk + sdh_dibentuk  where unit ='$unit'");	
-	$berhasil= db_query ($con,"update report_ppap  
-			set status=(SELECT 
-			CASE WHEN jumlah_selisih > 0 then '1'
-			else '2' end as status
-			) where unit ='$unit'");	
-		
-         
-		
-		}
-        if ($_SESSION['progress'] > 100) {
-			$_SESSION['progress'] = 100;
-		}
-	
-		echo json_encode([
-			'success' => true,
-			'message' => 'Data berhasil disimpan',
-			'progress' => $_SESSION['progress']
-		]);
-	} else {
-        echo json_encode([
-            'success' => false,
-            'message' => 'Gagal menyimpan data'
-        ]);
+if ($_SESSION['level'] != 'kp') {
+    echo json_encode(array('success' => false, 'message' => 'Anda bukan user'));
+    exit;
+}
+$tgl = isset($_SESSION['stgl_system']) ? (string) $_SESSION['stgl_system'] : '';
+if ($_SERVER['REQUEST_METHOD'] == 'POST' && $tgl !== '') {
+    db_jalankan("TRUNCATE TABLE report_ppap");
+    $gagal = array();
+    foreach (db_semua("select unit from loan where os > 0 group by unit") as $row_hit_mut) {
+        $unit = (string) $row_hit_mut['unit'];
+        if (!hitung_kolektabilitas($unit, $tgl)) {
+            $gagal[] = $unit;
+            continue;
+        }
+        $coa = db_satu("select saldo_awal from tabel_master WHERE unit =? and kode_rekening ='1512000'", 's', $unit);
+        $sdh_dibentuk = compat_num($coa ? $coa['saldo_awal'] : null);
+        $saldo = array();
+        foreach (db_semua("SELECT gol, sum(os-saldo_margin) as saldo from loan where loan.unit =? and os>0 and status_app not in ('MUSYAROKAH')
+            and gol in ('1','2','3','4') group by gol", 's', $unit) as $g) {
+            $saldo[(string) $g['gol']] = compat_num($g['saldo']);
+        }
+        $akan_dibentuk = 0.5 / 100 * (isset($saldo['1']) ? $saldo['1'] : 0)
+            + 10 / 100 * (isset($saldo['2']) ? $saldo['2'] : 0)
+            + 50 / 100 * (isset($saldo['3']) ? $saldo['3'] : 0)
+            + 100 / 100 * (isset($saldo['4']) ? $saldo['4'] : 0);
+        $akan_dibentuk = (int) round($akan_dibentuk);
+        $selisih = $akan_dibentuk + $sdh_dibentuk;
+        db_jalankan("insert into report_ppap(sdh_dibentuk,akan_dibentuk,jumlah_selisih,unit,status) values(?,?,?,?,?)", 'sssss',
+            (string) $sdh_dibentuk, (string) $akan_dibentuk, (string) $selisih, $unit, $selisih > 0 ? '1' : '2');
     }
-
-	
-
-		
-							
-	
-
-	
-
-    ?>
+    if ($_SESSION['progress'] > 100) {
+        $_SESSION['progress'] = 100;
+    }
+    echo json_encode(array(
+        'success' => !$gagal,
+        'message' => $gagal ? 'Perhitungan kolektabilitas gagal untuk unit ' . implode(', ', $gagal) . '; silakan ulangi.' : 'Data berhasil disimpan',
+        'progress' => $_SESSION['progress'],
+    ));
+} else {
+    echo json_encode(array(
+        'success' => false,
+        'message' => $tgl === '' ? 'Tanggal sistem belum di setup' : 'Gagal menyimpan data',
+    ));
+}
