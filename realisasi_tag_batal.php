@@ -60,7 +60,6 @@ if ($cekbox) {
 
 				mysql_query("Update  loan set next_schedule ='$next_schedule',os =os+'$angsuran',saldo_margin=saldo_margin+'$ijaroh',run_tenor=run_tenor - 1,last_payment='$tanggal' where no_anggota  ='" . $value . "'") or die(mysql_error("GAGAL INPUT"));
 				mysql_query("insert  into simpanan (BUSS_DATE,NOREK,UNIT,CIF,CODE_KEL,DEBIT,TYPE,KREDIT,USERID,REFF,CAO)VALUES('$tanggal','$no_anggota','$unit','$cif','$code_kel','0','03','$ijaroh','$userid','BATAL REALISASI TAGIHAN','$cao') ") or die(mysql_error("GAGAL INPUT"));
-				mysql_query("Update  tabungan_detail set saldo =(select(sum(KREDIT)-SUM(DEBIT)) as saldo from simpanan where NOREK='" . $value . "') where no_anggota  ='" . $value . "'") or die(mysql_error("GAGAL INPUT"));
 				mysql_query("Update  pinjaman_detail set jumlah_bayar ='0',tgl_bayar='$tanggal' where id_pinjam  ='" . $value . "' and cicilan='$pb'") or die(mysql_error("GAGAL INPUT"));
 				mysql_query("insert  into tagihan (id_reff,code_kel,no_anggota,bagi_hasil,pokok,tagihan,bulat,tagihan_ke,sisa_os,tgl_realisasi,status)VALUES('','$code_kel','$no_anggota','$ijaroh','$pokok','$angsuran','$bulat','$ke','$os','$next_schedule','RENCANA') ") or die(mysql_error("GAGAL INPUT"));
 				$jurnal_umum=mysql_fetch_array(mysql_query("SELECT max(nomor_jurnal) FROM jurnal_umum where unit ='$unit' ORDER BY tanggal_selesai DESC"));

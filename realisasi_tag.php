@@ -143,7 +143,6 @@ db_jalankan("insert into rek_loan(ref,tgl_realisasi,unit,no_anggota,saldo_kredit
                
                 db_jalankan("Update  loan set next_schedule =?,os =os-?,saldo_margin=saldo_margin-?,run_tenor=?,ke=?+1 ,last_payment=? where no_anggota  =?", 'sssssss', (string) $next_schedule, (string) $angsuran, (string) $ijaroh, (string) $pb, (string) $ke_tenor, (string) $tanggal, (string) $value) or die(mysql_error());
                 db_jalankan("insert  into simpanan (BUSS_DATE,NOREK,UNIT,CIF,CODE_KEL,DEBIT,TYPE,KREDIT,USERID,REFF,CAO,tgl_input,kode_transaksi)VALUES(?,?,?,?,?,?,'03','0',?,?,?,?,?) ", 'sssssssssss', (string) $tanggal, (string) $no_anggota, (string) $unit, (string) $cif, (string) $code_kel, (string) $angsuran, (string) $userid, (string) $ket, (string) $cao, (string) $tgl_input, (string) $kode_tran) or die(mysql_error());
-                //mysql_query("Update  tabungan_detail set saldo =(select(sum(KREDIT)-SUM(DEBIT)) as saldo from simpanan where NOREK='" . $value . "') where no_anggota  ='" . $value . "'") or die(mysql_error("GAGAL INPUT"));
                 db_jalankan("Update  pinjaman_detail set jumlah_bayar =?,tgl_bayar=? where id_pinjam  =? and cicilan=?", 'ssss', (string) $angsuran, (string) $tanggal, (string) $value, (string) $pb) or die(mysql_error());
                 db_jalankan("Update  pinjaman_detail_jatpo set jumlah_bayar =?,tgl_bayar=? where id_pinjam  =? and cicilan=?", 'ssss', (string) $angsuran, (string) $tanggal, (string) $value, (string) $pb) or die(mysql_error());
                 //mysql_query("Update  tunggakan set pokok ='0',margin='0' where cif  ='$cif' and ke='$ke_tenor'") or die(mysql_error("GAGAL INPUT"));
@@ -172,7 +171,6 @@ db_jalankan("insert into rek_loan(ref,tgl_realisasi,unit,no_anggota,saldo_kredit
                
                 db_jalankan("Update  loan set next_schedule =?,os =os-?,saldo_margin=saldo_margin-?,run_tenor=?,ke=?+1 ,last_payment=? where no_anggota  =?", 'sssssss', (string) $next_schedule, (string) $angsuran, (string) $ijaroh, (string) $pb, (string) $ke_tenor, (string) $tanggal, (string) $value) or die(mysql_error());
                 db_jalankan("insert  into simpanan (BUSS_DATE,NOREK,UNIT,CIF,CODE_KEL,DEBIT,TYPE,KREDIT,USERID,REFF,CAO,tgl_input,kode_transaksi)VALUES(?,?,?,?,?,?,'03','0',?,?,?,?,?) ", 'sssssssssss', (string) $tanggal, (string) $no_anggota, (string) $unit, (string) $cif, (string) $code_kel, (string) $angsuran, (string) $userid, (string) $ket, (string) $cao, (string) $tgl_input, (string) $kode_tran) or die(mysql_error());
-                //mysql_query("Update  tabungan_detail set saldo =(select(sum(KREDIT)-SUM(DEBIT)) as saldo from simpanan where NOREK='" . $value . "') where no_anggota  ='" . $value . "'") or die(mysql_error("GAGAL INPUT"));
                 db_jalankan("Update  pinjaman_detail set jumlah_bayar =?,tgl_bayar=? where id_pinjam  =? and cicilan=?", 'ssss', (string) $angsuran, (string) $tanggal, (string) $value, (string) $pb) or die(mysql_error());
                 db_jalankan("Update  pinjaman_detail_jatpo set jumlah_bayar =?,tgl_bayar=? where id_pinjam  =? and cicilan=?", 'ssss', (string) $angsuran, (string) $tanggal, (string) $value, (string) $pb) or die(mysql_error());
                 //mysql_query("Update  tunggakan set pokok ='0',margin='0' where cif  ='$cif' and ke='$ke_tenor'") or die(mysql_error("GAGAL INPUT"));
@@ -577,7 +575,6 @@ db_jalankan("insert into rek_loan(ref,tgl_realisasi,unit,no_anggota,saldo_kredit
  
                  
 db_jalankan("insert  into simpanan (BUSS_DATE,NOREK,UNIT,CIF,CODE_KEL,DEBIT,TYPE,KREDIT,USERID,KET,REFF,CAO,blok,tgl_input,kode_transaksi)VALUES(?,?,?,?,?,?,'03','0',?,?,'',?,'2',?,?) ", 'sssssssssss', (string) $tanggal, (string) $no_anggota, (string) $unit, (string) $cif, (string) $code_kel, (string) $angsuran, (string) $userid, (string) $ket, (string) $cao, (string) $tgl_input, (string) $kode_tran) or die(mysql_error());
-                //mysql_query("Update  tabungan_detail set saldo =(select(sum(KREDIT)-SUM(DEBIT)) as saldo from simpanan where NOREK='" . $value . "') where no_anggota  ='" . $value . "'") or die(mysql_error("GAGAL INPUT"));
                 //mysql_query("Update  pinjaman_detail set jumlah_bayar ='$angsuran',tgl_bayar='$tanggal' where id_pinjam  ='" . $value . "' and cicilan='$pb'") or die(mysql_error("GAGAL INPUT"));
                 //mysql_query("Update  pinjaman_detail_jatpo set jumlah_bayar ='$angsuran',tgl_bayar='$tanggal' where id_pinjam  ='" . $value . "' and cicilan='$pb'") or die(mysql_error("GAGAL INPUT"));
                 //mysql_query("Update  tunggakan set pokok ='0',margin='0' where cif  ='$cif' and ke='$ke_tenor'") or die(mysql_error("GAGAL INPUT"));
@@ -609,7 +606,6 @@ db_jalankan("Update  tagihan_cs set status_realisasi ='BAYAR'  where cif  =? and
  
                 db_jalankan("Update  loan set next_schedule =?,os =os-?,saldo_margin=saldo_margin-?,run_tenor=?,ke=?+1,last_payment=? where no_anggota  =?", 'sssssss', (string) $next_schedule, (string) $angsuran, (string) $ijaroh, (string) $pb, (string) $ke_tenor, (string) $tanggal, (string) $value) or die(mysql_error());
                 db_jalankan("insert  into simpanan (BUSS_DATE,NOREK,UNIT,CIF,CODE_KEL,DEBIT,TYPE,KREDIT,USERID,REFF,CAO,tgl_input,kode_transaksi)VALUES(?,?,?,?,?,?,'03','0',?,?,?,?,?) ", 'sssssssssss', (string) $tanggal, (string) $no_anggota, (string) $unit, (string) $cif, (string) $code_kel, (string) $angsuran, (string) $userid, (string) $ket, (string) $cao, (string) $tgl_input, (string) $kode_tran) or die(mysql_error());
-                //mysql_query("Update  tabungan_detail set saldo =(select(sum(KREDIT)-SUM(DEBIT)) as saldo from simpanan where NOREK='" . $value . "') where no_anggota  ='" . $value . "'") or die(mysql_error("GAGAL INPUT"));
                 //mysql_query("Update  pinjaman_detail set jumlah_bayar ='$angsuran',tgl_bayar='$tanggal' where id_pinjam  ='" . $value . "' and cicilan='$pb'") or die(mysql_error("GAGAL INPUT"));
                 //mysql_query("Update  pinjaman_detail_jatpo set jumlah_bayar ='$angsuran',tgl_bayar='$tanggal' where id_pinjam  ='" . $value . "' and cicilan='$pb'") or die(mysql_error("GAGAL INPUT"));
                 //mysql_query("Update  tunggakan set pokok ='0',margin='0' where cif  ='$cif' and ke='$ke_tenor'") or die(mysql_error("GAGAL INPUT"));

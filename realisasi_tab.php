@@ -84,7 +84,6 @@ if ($cekbox) {
 				//values('$unit','$kode_trans','$cif','$tanggal','Bukti Umum','Tabungan','$angsuran','$userid')");
 
 
-				mysql_query("Update  tabungan_detail set saldo =(select(sum(KREDIT)-SUM(DEBIT)) as saldo from simpanan where cif='$cif') where cif  ='$cif'") or die(mysql_error("GAGAL INPUT"));
 	
 				}
 			}

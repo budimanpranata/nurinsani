@@ -123,8 +123,6 @@ switch ( $_GET['p'] ) {
 					//$conn->query("insert  into tabel_transaksi(unit,kode_transaksi,kode_rekening,tanggal_transaksi, jenis_transaksi, keterangan_transaksi,debet,id_admin)
 					//values('$unit','$kode_transaksi','1431000','$buss_date','Bukti Umum','$keterangan_transaksi','$pla','$userid')");
 
-					//$conn->query ("insert DELAYED into tabungan_detail (no_anggota,cif,saldo,unit,account_open) 
-						//VALUES ('$anggota','$cif','$saldo','$unit','$buss_date')");
 				
 					//$conn->query("insert into jurnal_umum(nomor_jurnal,kode_transaksi,tanggal_selesai) values('$nomor','$kode_transaksi','$buss_date')");
 

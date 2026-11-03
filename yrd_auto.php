@@ -35,7 +35,6 @@ if ($cekbox) {
 			@mysql_query("Update  `loan` set next_schedule ='$next_schedule',os =os-'$pokok',run_tenor='$RUN_TENOR',ke='$ke' where no_anggota  ='" . $value . "'") or die(mysql_error("GAGAL INPUT"));
 			@mysql_query("Update  `rek_loan` set ket ='$ket',STATUS='REALISASI' where no_anggota  ='" . $value . "'") or die(mysql_error("GAGAL INPUT"));
 			@mysql_query("insert into simpanan (BUSS_DATE,NOREK,UNIT,CIF,CODE_KEL,DEBIT,TYPE,KREDIT,USERID,REFF)VALUES('$tanggal','$no_anggota','$unit','$cif','$code_kel','0','02','$pokok','$userid','') ") or die(mysql_error("GAGAL INPUT"));
-			@mysql_query("Update  `tabungan_detail` set saldo =(select(sum(DEBIT)-SUM(KREDIT)) as saldo from simpanan where NOREK='" . $value . "') where no_anggota  ='" . $value . "'") or die(mysql_error("GAGAL INPUT"));
 			@mysql_query("insert into tagihan (id_reff,code_kel,no_anggota,bagi_hasil,pokok,tagihan,bulat,tagihan_ke,sisa_os,tgl_realisasi,status)VALUES('','$code_kel','$no_anggota','$ijaroh','$pokok','$angsuran','$bulat','$ke','$os','$next_schedule','RENCANA') ") or die(mysql_error("GAGAL INPUT"));
 			}
 				}

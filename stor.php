@@ -217,8 +217,8 @@ if (isset($_POST['search'])) {
                         (string) $tgl_system, $norek, (string) $unit, (string) $ciff, (string) $code_kel, $nominal, (string) $userid, $ket1, (string) $cao, $tanggal, $kode_trans);
                     if ($inputtrnsk) {
                         $ket = "Setoran Angsuran An $nama";
-                        db_jalankan("Update  tabungan_detail set saldo =(select(sum(KREDIT)-SUM(DEBIT)) as saldo from simpanan where NOREK=?) where no_anggota  =?", 'ss', $norek, $norek)
-                            or die(mysqli_error(db_ni()));
+                        // Perbaikan 2026-11-03 (perintah user): update tabungan_detail (tidak dipakai; sum simpanan per NOREK tanpa
+                        // index) dihapus. Saldo dihitung langsung dari simpanan per CIF.
                         $nomor_jurnal = nomor_jurnal_berikut($unit);
                         db_jalankan("insert into jurnal_masuk(nomor_jurnal,kode_transaksi,tanggal_selesai,unit) values(?,?,?,?)", 'ssss',
                             (string) $nomor_jurnal, $kode_trans, (string) $tgl_system, (string) $unit);
@@ -272,14 +272,13 @@ if (isset($_POST['search'])) {
                     }
                     $alert("Pemindah Bukuan an $cif Suksess");
                     $mutasi = $ambil_mutasi("SELECT simpanan.NOREK,simpanan.BUSS_DATE,anggota.CUST_SHORT_NAME,DEBIT,KREDIT,@bal:=(@bal+KREDIT)-DEBIT as balance FROM simpanan
-                        join anggota on anggota.NOREK = simpanan.NOREK
-                        where simpanan.NOREK=? order by simpanan.REFF", $norek);
+                        join anggota on anggota.cif = simpanan.cif
+                        where simpanan.cif=? order by simpanan.REFF", $ciff);
                     break;
 
                 case "05":
                     $ket = "Setoran Angsuran WO An $nama";
-                    db_jalankan("Update  tabungan_detail set saldo =(select(sum(KREDIT)-SUM(DEBIT)) as saldo from simpanan where NOREK=?) where no_anggota  =?", 'ss', $norek, $norek)
-                        or die(mysqli_error(db_ni()));
+                    // Perbaikan 2026-11-03 (perintah user): update tabungan_detail dihapus, sama seperti jenis 03
                     $nomor_jurnal = nomor_jurnal_berikut($unit);
                     db_jalankan("insert into jurnal_masuk(nomor_jurnal,kode_transaksi,tanggal_selesai,unit) values(?,?,?,?)", 'ssss',
                         (string) $nomor_jurnal, $kode_trans, (string) $tgl_system, (string) $unit);

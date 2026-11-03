@@ -200,13 +200,14 @@ foreach ($sql as $result){
  $TGL_KUNJUNGAN = $result['nama_ao'];
 $cif = $result['cif'];
 $cao = $result['cao'];
-$del_produk= $result['deal_produk'];
+// query cadangan (jadwal JATPO) tidak mengambil deal_produk
+$del_produk= isset($result['deal_produk']) ? $result['deal_produk'] : null;
 if($del_produk==2){
-$angsur = $result['angsuran'] + 2500;
+$angsur = compat_num($result['angsuran']) + 2500;
 }else{
 $angsur=$result['angsuran'];
 }
-$t=$result['angsuran'] + 2500;
+$t=compat_num($result['angsuran']) + 2500;
 $cust_Short_name= $result['cust_Short_name'];
 $Plafond= number_format (compat_num($result['Plafond']));  
 $angsuran = number_format (compat_num($angsur));
@@ -232,13 +233,14 @@ $saldo_p =$cek_saldo_p['saldo'];
 $cek_saldo_w= db_satu("select sum(KREDIT - DEBIT) as saldo from simpanan_wajib WHERE cif=?", 's', (string) $cif);
 $saldo_w =$cek_saldo_w['saldo'];
 
-$pw=number_format(compat_num($saldo_p + $saldo_w));
+// PHP 8: nilai kosong/bukan angka (mis. run_tenor '') di aritmetika = TypeError (error 500); dihitung 0 seperti PHP 5
+$pw=number_format(compat_num(compat_num($saldo_p) + compat_num($saldo_w)));
 
-$tunggak=$tunggak_pokok + $tunggak_margin;
+$tunggak=compat_num($tunggak_pokok) + compat_num($tunggak_margin);
 $tg=number_format(compat_num($tunggak));
-$ftt=$tunggak/$t;
+$ftt=compat_bagi($tunggak,$t);
 $ft=number_format(compat_num($ftt));
-$p=number_format(compat_num($ftt + $run_tenor + 1));
+$p=number_format(compat_num(compat_num($ftt) + compat_num($run_tenor) + 1));
 
 //query dan arraying
 $pdf->SetFont('Arial','',9);
@@ -267,10 +269,10 @@ $sql2 = db_semua("select sum(os) as biaya,sum(Plafond) as totpla,sum(loan.bagi_h
 from loan
 where code_kel=? and cao=? and os > 1 AND hari=? group by code_kel", 'sss', (string) $code_kel, (string) $cao, (string) $dayList[$day]);
 foreach ($sql2 as $result1){
-$noa = $result1['noa']*2500;
-$tot_angsur+=$result1['tot_angsur'];
+$noa = compat_num($result1['noa'])*2500;
+$tot_angsur=compat_num(isset($tot_angsur) ? $tot_angsur : null) + compat_num($result1['tot_angsur']);
 $tot_angsur=ceil(compat_num($tot_angsur+($noa)));
-$totpla+=$result1['totpla'];
+$totpla=compat_num(isset($totpla) ? $totpla : null) + compat_num($result1['totpla']);
 $baghas=$result1['baghas'];
 $biaya=$result1['biaya'];
 $tot_blt +=$result1['tot_bulat'];
@@ -281,7 +283,7 @@ inner join loan on loan.cif = simpanan.cif
 where  loan.code_kel =? and os > 1 and type not in ('04','05') AND hari=? ", 'ss', (string) $code_kel, (string) $dayList[$day]);
 foreach ($sql3 as $result3){
 
-$saldo1+=$result3['saldo'];
+$saldo1=compat_num(isset($saldo1) ? $saldo1 : null) + compat_num($result3['saldo']);
 
 }
 
