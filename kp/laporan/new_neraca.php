@@ -1,344 +1,165 @@
 <?php require_once __DIR__ . '/../../koneksi_db.php';
+/**
+ * Menu kp > Report > Akuntasi > Neraca > TB (neraca percobaan): rekening AKTIVA, PASIVA, dan rugi-laba dari tabel_master
+ * (saldo awal, mutasi debet/kredit, saldo akhir) beserta total dan SHU.
+ * Link Excel ke neraca_excel_kp.php, link PDF ke neraca_pdf.php (sama dengan versi lama; neraca_pdf.php tidak ada di kp/laporan).
+ * Dimigrasi 2026-11-03: hanya tampilan (Bootstrap 5) dan query (prepared statement); logika sama dengan versi lama, termasuk:
+ *   - daftar PASIVA tanpa saring posisi; TOTAL PASIVA = rekening 3901000+3902000 ditambah jumlah HEADING PASIVA
+ *   - saldo awal/akhir negatif dalam kurung, mutasi dan total dengan tanda minus; SHU NON OPERASIONAL nilai mutlak
+ *   - estimasi pajak tidak pernah diisi (0); SHU SETELAH PAJAK kolom mutasi debet/kredit selalu 0 (variabelnya tidak pernah
+ *     diisi di versi lama)
+ */
+require_once __DIR__ . '/../../inc/tampilan.php';
 session_start();
 ob_start();
-$userid=$_SESSION['userid'];
-
+$userid = isset($_SESSION['userid']) ? $_SESSION['userid'] : null;
 //cek apakah user sudah login
-if(!isset($_SESSION['userid'])){
-   header("location:../../index.html");
- exit; }
-
+if (!isset($_SESSION['userid'])) {
+    header("location:../../index.html");
+    exit;
+}
 //cek level user
-if($_SESSION['level']!="kp"){
-   header("location:../../index.html");
- exit; }
-function open_connection2(){
-
-	//konfigurasi
-	$host="localhost";
-	$user="root";
-	$pass="";
-	$db="nur_insani";
-	
-	
-	//koneksi database
-	$koneksi2=db_ni();
-	mysql_select_db($db,$koneksi2);
-	
-	return $koneksi2;
+if ($_SESSION['level'] != "kp") {
+    header("location:../../index.html");
+    exit;
 }
 
-$koneksi=open_connection2();
-$user=mysql_query("select kode_branch from user where userid='$userid'");
-			
-			while($id_user=mysql_fetch_array($user)){
-			
-				$unit=$id_user['kode_branch'];
-			}
-			
-			$sql = mysql_query("SELECT kode_rekening,nama_rekening,saldo_awal,saldo_akhir,mut_debet,mut_kredit,LINE_BALANCE
-FROM `tabel_master` 
-where unit ='$unit' and posisi='Neraca' and gr_neraca='AKTIVA'
-GROUP BY gr_neraca,kode_rekening ");
+$unit = null;
+foreach (db_semua("select kode_branch from user where userid=?", 's', (string) $userid) as $id_user) {
+    $unit = $id_user['kode_branch'];
+}
+$unit = (string) $unit;
 
-$total_ak=mysql_fetch_array(mysql_query("select sum(mut_debet) as tot_mut_debet,  sum(mut_kredit) as tot_mut_kredit,
-								sum(saldo_awal) as tot_saldo_awal, sum(saldo_akhir) as tot_saldo_akhir from tabel_master where unit ='$unit' and gr_neraca='AKTIVA' and LINE_BALANCE='HEADING'  "));
-$total_pa=mysql_fetch_array(mysql_query("select sum(mut_debet) as tot_mut_debet,  sum(mut_kredit) as tot_mut_kredit,
-								sum(saldo_awal) as tot_saldo_awal, sum(saldo_akhir) as tot_saldo_akhir from tabel_master where unit ='$unit' and gr_neraca='PASIVA' and kode_rekening in ('3901000','3902000')  "));
-$total_shu=mysql_fetch_array(mysql_query("select sum(mut_debet) as tot_mut_debet,  sum(mut_kredit) as tot_mut_kredit,
-								sum(saldo_awal) as tot_saldo_awal, sum(saldo_akhir) as tot_saldo_akhir from tabel_master where unit ='$unit' and gr_neraca='PASIVA' and LINE_BALANCE='HEADING'  "));
+$kolom_rek = "SELECT kode_rekening,nama_rekening,saldo_awal,saldo_akhir,mut_debet,mut_kredit,LINE_BALANCE FROM `tabel_master` ";
+$aktiva = db_semua($kolom_rek . "where unit =? and posisi='Neraca' and gr_neraca='AKTIVA' GROUP BY gr_neraca,kode_rekening", 's', $unit);
+$pasiva = db_semua($kolom_rek . "where unit =? and gr_neraca='PASIVA' GROUP BY gr_neraca,kode_rekening", 's', $unit);
+$rugi_laba = db_semua($kolom_rek . "where unit =? and posisi='rugi-laba' and gr_neraca='rugi-laba' GROUP BY gr_neraca,kode_rekening", 's', $unit);
 
-								
-								$total_la=mysql_fetch_array(mysql_query("select sum(mut_debet) as tot_mut_debet,  sum(mut_kredit) as tot_mut_kredit,
-								sum(saldo_awal) as tot_saldo_awal, sum(saldo_akhir) as tot_saldo_akhir from tabel_master where unit ='$unit' and gr_neraca='rugi-laba' and LINE_BALANCE='HEADING'  "));
+$kolom_total = "select sum(mut_debet) as tot_mut_debet, sum(mut_kredit) as tot_mut_kredit,
+    sum(saldo_awal) as tot_saldo_awal, sum(saldo_akhir) as tot_saldo_akhir from tabel_master ";
+$total_ak = db_satu($kolom_total . "where unit =? and gr_neraca='AKTIVA' and LINE_BALANCE='HEADING'", 's', $unit);
+$total_pa = db_satu($kolom_total . "where unit =? and gr_neraca='PASIVA' and kode_rekening in ('3901000','3902000')", 's', $unit);
+$total_shu = db_satu($kolom_total . "where unit =? and gr_neraca='PASIVA' and LINE_BALANCE='HEADING'", 's', $unit);
 
-echo '<html>
-		<head>
-			<title>NeracaPercobaan</title>
-			<style>
-				body {font-family:tahoma, arial}
-				table {border-collapse: collapse}
-				th, td {font-size: 13px; border: 1px solid #DEDEDE; padding: 5px 7px; color: #303030}
-				th {background: #EAEAEA; font-size: 13px; border-color:#B0B0B0}
-				.subtotal td{background: #F5F5F5}
-				.total td{background: #ECECEC}
-				.right{text-align: right}
-			</style>
-		</head>
-		<body>';
-
-echo '<table class="grey">
-<tr>
-            <a href="neraca_excel_kp.php" /><img src="../excel-icon.jpeg" width="16" height="16" />
-    excel
-</tr>
-
-<tr>       
-    <a href="neraca_pdf.php" /><img src="../pdf-icon.jpg" width="16" height="16" /> pdf
-     
-</tr> 
-<br>
-		<thead>
-			<tr>
-				<th rowspan="2">TYPE COA</th>
-				<th rowspan="2">COA</th>
-				<th rowspan="2">Deskripsi</th>
-				<th rowspan="2">Saldo Awal</th>
-				<th colspan="2">Mutasi</th>
-				<th rowspan="2">Saldo Akhir</th>
-			</tr>
-			<tr>
-			<th>Debet</th>
-				<th>Kredit</th>
-				</tr>
-		</thead>
-		<tbody>';
-while($row=mysql_fetch_array($sql))
+/** Nilai kolom dari satu baris hasil query (0 bila baris tidak ada). */
+function nilai_tb($baris, $kolom)
 {
-	$class = '';
-	$akhir =$row['saldo_akhir'];
-	$awal =$row['saldo_awal'];
-	
-	
-	if ($akhir < 0){
-		
-		$akhir = "(".number_format (compat_num(abs(compat_num($akhir))), '0', ',', '.').")";
-		
-	}else{
-		$akhir =number_format (compat_num($row['saldo_akhir']), '0', ',', '.');
-	}
-
-if ($awal < 0){
-		
-		$awal = "(".number_format (compat_num(abs(compat_num($awal))), '0', ',', '.').")";
-		
-	}else{
-		$awal =number_format (compat_num($row['saldo_awal']), '0', ',', '.');
-	}
-
-	// jika ada total atau sub total
-		if ($row['LINE_BALANCE'] == 'HEADING') {
-		$class = ' class="subtotal"';
-	} else if ($row['kode_rekening'] == 'SUB TOTAL' || $row['nama_rekening'] == 'SUB TOTAL') {
-		//$class = ' class="subtotal"';
-	}
-	
-	echo 
-	'<tr'.$class.'>
-		<td>' . $row['LINE_BALANCE'] . '</td>
-		<td>' . $row['kode_rekening'] . '</td>
-		<td>' . $row['nama_rekening'] . '</td>
-		<td>' . $awal. '</td>
-		<td>' . number_format(compat_num($row['mut_debet']), '0', ',', '.') . '</td>
-		<td>' . number_format(compat_num($row['mut_kredit']), '0', ',', '.') . '</td>
-		<td>' . $akhir. '</td>
-		</tr>';
-		$total += $row['total'];
+    return compat_num($baris ? $baris[$kolom] : null);
 }
-	
-	
-	
-	echo '<tr class="grey">
-		<td colspan="3"><b>TOTAL AKTIVA</td>
-		<td><b>' . number_format(compat_num($total_ak['tot_saldo_awal']), 0, ',', '.') . '</td>
-		<td><b>' . number_format(compat_num($total_ak['tot_mut_debet']), 0, ',', '.') . '</td>
-		<td><b>' . number_format(compat_num($total_ak['tot_mut_kredit']), 0, ',', '.') . '</td>
-		<td><b>' . number_format(compat_num($total_ak['tot_saldo_akhir']), 0, ',', '.') . '</td>
-	 </tr>';
-echo '<tr class="grey">
-		<td colspan="3"><b></td>
-		<td><b></td>
-		<td><b></td>
-		<td><b></td>
-		<td><b></td>
-	 </tr>';
-$sql2 = mysql_query("SELECT kode_rekening,nama_rekening,saldo_awal,saldo_akhir,mut_debet,mut_kredit,LINE_BALANCE
-FROM `tabel_master` 
-where unit ='$unit' and gr_neraca='PASIVA'
-GROUP BY gr_neraca,kode_rekening ");
-while($row=mysql_fetch_array($sql2))
+
+/** Saldo satu rekening ringkasan rugi laba (null bila tidak ada). */
+function rek_tb($unit, $kode)
 {
-	$class = '';
-	$akhir =$row['saldo_akhir'];
-	$awal =$row['saldo_awal'];
-	
-	
-	if ($akhir < 0){
-		
-		$akhir = "(".number_format (compat_num(abs(compat_num($akhir))), '0', ',', '.').")";
-		
-	}else{
-		$akhir =number_format (compat_num($row['saldo_akhir']), '0', ',', '.');
-	}
-
-if ($awal < 0){
-		
-		$awal = "(".number_format (compat_num(abs(compat_num($awal))), '0', ',', '.').")";
-		
-	}else{
-		$awal =number_format (compat_num($row['saldo_awal']), '0', ',', '.');
-	}
-
-	
-	// jika ada total atau sub total
-	if ($row['LINE_BALANCE'] == 'HEADING') {
-		$class = ' class="subtotal"';
-	} else if ($row['kode_rekening'] == 'SUB TOTAL' || $row['nama_rekening'] == 'SUB TOTAL') {
-	$class = ' class="subtotal"';
-	}
-	
-	echo 
-	'<tr'.$class.'>
-			<td>' . $row['LINE_BALANCE'] . '</td>
-		<td>' . $row['kode_rekening'] . '</td>
-		<td>' . $row['nama_rekening'] . '</td>
-		<td>' . $awal. '</td>
-		<td>' . number_format(compat_num($row['mut_debet']), '0', ',', '.') . '</td>
-		<td>' . number_format(compat_num($row['mut_kredit']), '0', ',', '.') . '</td>
-		<td>' . $akhir. '</td>
-		</tr>';
-		$total += $row['total'];
+    return db_satu("select mut_debet,mut_kredit,saldo_awal,saldo_akhir from tabel_master where unit =? and kode_rekening=?", 'ss', $unit, $kode);
 }
-	
-	echo '<tr class="grey">
-		<td colspan="3"><b>TOTAL PASIVA</td>
-		<td><b>' . number_format(compat_num($total_pa['tot_saldo_awal'] + $total_shu['tot_saldo_awal']), 0, ',', '.') . '</td>
-		<td><b>' . number_format(compat_num($total_pa['tot_mut_debet'] + $total_shu['tot_mut_debet']), 0, ',', '.') . '</td>
-		<td><b>' . number_format(compat_num($total_pa['tot_mut_kredit'] + $total_shu['tot_mut_kredit']), 0, ',', '.') . '</td>
-		<td><b>' . number_format(compat_num($total_pa['tot_saldo_akhir'] + $total_shu['tot_saldo_akhir']), 0, ',', '.') . '</td>
-	 </tr>';
-	 echo '<tr class="grey">
-		<td colspan="3"><b></td>
-		<td><b></td>
-		<td><b></td>
-		<td><b></td>
-		<td><b></td>
-	 </tr>';
- $sql3 = mysql_query("SELECT kode_rekening,nama_rekening,saldo_awal,saldo_akhir,mut_debet,mut_kredit,LINE_BALANCE
-FROM `tabel_master` 
-where unit ='$unit' and posisi='rugi-laba' and gr_neraca='rugi-laba'
-GROUP BY gr_neraca,kode_rekening ");
-while($row=mysql_fetch_array($sql3))
+
+$kol = array('saldo_awal', 'mut_debet', 'mut_kredit', 'saldo_akhir');
+$tot_aktiva = array();
+$tot_pasiva = array();
+foreach ($kol as $k) {
+    $tot_aktiva[] = nilai_tb($total_ak, 'tot_' . $k);
+    $tot_pasiva[] = nilai_tb($total_pa, 'tot_' . $k) + nilai_tb($total_shu, 'tot_' . $k);
+}
+
+$pendapatan = rek_tb($unit, '40000');
+$biaya = rek_tb($unit, '50000');
+$pendapatan_n = rek_tb($unit, '57000');
+$beban = rek_tb($unit, '58000');
+$shu_ops = array();
+$shu_non_ops = array();
+$shu_sb_pajak = array();
+foreach ($kol as $i => $k) {
+    $shu_ops[$i] = nilai_tb($pendapatan, $k) - nilai_tb($biaya, $k);
+    $shu_non_ops[$i] = nilai_tb($pendapatan_n, $k) - nilai_tb($beban, $k);
+    $shu_sb_pajak[$i] = $shu_ops[$i] + $shu_non_ops[$i];
+}
+// versi lama: estimasi pajak tidak pernah diisi (0); kolom mutasi SHU setelah pajak memakai variabel yang tidak pernah diisi (0)
+$estimasi_pajak = array(0, 0, 0, 0);
+$shu_after_pajak = array($shu_sb_pajak[0], 0, 0, $shu_sb_pajak[3]);
+
+/** Angka laporan: titik ribuan tanpa desimal (negatif dengan tanda minus). */
+function angka_tb($v)
 {
-	$class = '';
-	$akhir =$row['saldo_akhir'];
-	$awal =$row['saldo_awal'];
-	
-	
-	if ($akhir < 0){
-		
-		$akhir = "(".number_format (compat_num(abs(compat_num($akhir))), '0', ',', '.').")";
-		
-	}else{
-		$akhir =number_format (compat_num($row['saldo_akhir']), '0', ',', '.');
-	}
-
-if ($awal < 0){
-		
-		$awal = "(".number_format (compat_num(abs(compat_num($awal))), '0', ',', '.').")";
-		
-	}else{
-		$awal =number_format (compat_num($row['saldo_awal']), '0', ',', '.');
-	}
-
-	
-	// jika ada total atau sub total
-	if ($row['LINE_BALANCE'] == 'HEADING') {
-		$class = ' class="subtotal"';
-	} else if ($row['kode_rekening'] == 'SUB TOTAL' || $row['nama_rekening'] == 'SUB TOTAL') {
-	$class = ' class="subtotal"';
-	}
-	
-	echo 
-	'<tr'.$class.'>
-			<td>' . $row['LINE_BALANCE'] . '</td>
-		<td>' . $row['kode_rekening'] . '</td>
-		<td>' . $row['nama_rekening'] . '</td>
-		<td>' . $awal. '</td>
-		<td>' . number_format(compat_num($row['mut_debet']), '0', ',', '.') . '</td>
-		<td>' . number_format(compat_num($row['mut_kredit']), '0', ',', '.') . '</td>
-		<td>' . $akhir. '</td>
-		</tr>';
-		$total += $row['total'];
+    return number_format(compat_num($v), 0, ',', '.');
 }
-	
-	
-	 $sql = mysql_query("SELECT kode_rekening,nama_rekening,saldo_awal,saldo_akhir,saldo_jalan,LINE_BALANCE
-FROM `tabel_master` 
-where unit ='$unit' and posisi='rugi-laba' and gr_neraca='rugi-laba' and kode_rekening not in ('59999')
-GROUP BY gr_neraca,kode_rekening ");
 
-$total_pendapan=mysql_fetch_array(mysql_query("select mut_debet,mut_kredit,saldo_awal,saldo_akhir from tabel_master where unit ='$unit' and kode_rekening='40000'"));
-$total_biaya=mysql_fetch_array(mysql_query("select mut_debet,mut_kredit,saldo_awal,saldo_akhir from tabel_master where unit ='$unit' and kode_rekening='50000'"));
+/** Saldo awal/akhir rekening: negatif dalam kurung (versi lama). */
+function saldo_tb($v)
+{
+    $v = compat_num($v);
+    return $v < 0 ? '(' . angka_tb(abs($v)) . ')' : angka_tb($v);
+}
 
+$bagian = array(
+    array('rek' => $aktiva, 'sub_total' => false, 'judul' => 'TOTAL AKTIVA', 'total' => $tot_aktiva),
+    array('rek' => $pasiva, 'sub_total' => true, 'judul' => 'TOTAL PASIVA', 'total' => $tot_pasiva),
+    array('rek' => $rugi_laba, 'sub_total' => true, 'judul' => null, 'total' => null),
+);
+$ringkasan = array(
+    'SHU OPERASIONAL' => $shu_ops,
+    'SHU NON OPERASIONAL' => array_map('abs', $shu_non_ops),
+    'SHU TAHUN BERJALAN SEBELUM PAJAK' => $shu_sb_pajak,
+    'ESTIMASI TAKSIRAN PAJAK PENGHASILAN' => $estimasi_pajak,
+    'SHU TAHUN BERJALAN SETELAH PAJAK' => $shu_after_pajak,
+);
 
-$shu_ops_awal=$total_pendapan['saldo_awal'] - $total_biaya['saldo_awal'];
-$shu_ops_mut_debet=$total_pendapan['mut_debet'] - $total_biaya['mut_debet'];
-$shu_ops_mut_kredit=$total_pendapan['mut_kredit'] - $total_biaya['mut_kredit'];
-$shu_ops_akhir=$total_pendapan['saldo_akhir'] - $total_biaya['saldo_akhir'];
-
-$total_pendapan_n=mysql_fetch_array(mysql_query("select mut_debet,mut_kredit,saldo_awal,saldo_akhir from tabel_master where unit ='$unit' and kode_rekening='57000'"));
-$total_beban=mysql_fetch_array(mysql_query("select mut_debet,mut_kredit,saldo_awal,saldo_akhir from tabel_master where unit ='$unit' and kode_rekening='58000'"));
-
-
-$shu_non_ops_awal=$total_pendapan_n['saldo_awal'] - $total_beban['saldo_awal'];
-$shu_non_ops_mut_debet=$total_pendapan_n['mut_debet'] - $total_beban['mut_debet'];
-$shu_non_ops_mut_kredit=$total_pendapan_n['mut_kredit'] - $total_beban['mut_kredit'];
-$shu_ops_non_akhir=$total_pendapan_n['saldo_akhir'] - $total_beban['saldo_akhir'];
-
-$shu_sb_pajak_awal=$shu_ops_awal + $shu_non_ops_awal;
-$shu_sb_pajak_mut_debet=$shu_ops_mut_debet + $shu_non_ops_mut_debet;
-$shu_sb_pajak_mut_kredit=$shu_ops_mut_kredit + $shu_non_ops_mut_kredit;
-$shu_sb_pajak_akhir=$shu_ops_akhir + $shu_ops_non_akhir;
-
-//estimasi
-
-$shu_after_pajak_awal=$shu_sb_pajak_awal - $estimasi_awal;
-$shu_after_pajak_jalan=$shu_sb_pajak_jalan - $estimasi_jalan;
-$shu_after_pajak_akhir=$shu_sb_pajak_akhir - $estimasi_jalan;
-
-echo '<tr class="grey">
-		<td colspan="3"><b>SHU OPERASIONAL</td>
-		<td><b>' . number_format(compat_num($shu_ops_awal), 0, ',', '.') . '</td>
-		<td><b>' . number_format(compat_num($shu_ops_mut_debet), 0, ',', '.') . '</td>
-		<td><b>' . number_format(compat_num($shu_ops_mut_kredit), 0, ',', '.') . '</td>
-		<td><b>' . number_format(compat_num($shu_ops_akhir), 0, ',', '.') . '</td>
-	 </tr>';
-
-echo '<tr class="grey">
-		<td colspan="3"><b>SHU NON OPERASIONAL</td>
-		<td><b>' . number_format(compat_num(abs(compat_num($shu_non_ops_awal))), 0, ',', '.') . '</td>
-		<td><b>' . number_format(compat_num(abs(compat_num($shu_non_ops_mut_debet))), 0, ',', '.') . '</td>
-		<td><b>' . number_format(compat_num(abs(compat_num($shu_non_ops_mut_kredit))), 0, ',', '.') . '</td>
-		<td><b>' . number_format(compat_num(abs(compat_num($shu_ops_non_akhir))), 0, ',', '.') . '</td>
-	 </tr>';
-	 
-echo '<tr class="grey">
-		<td colspan="3"><b>SHU TAHUN BERJALAN SEBELUM PAJAK</td>
-		<td><b>' . number_format(compat_num($shu_sb_pajak_awal), 0, ',', '.') . '</td>
-		<td><b>' . number_format(compat_num($shu_sb_pajak_mut_debet), 0, ',', '.') . '</td>
-		<td><b>' . number_format(compat_num($shu_sb_pajak_mut_kredit), 0, ',', '.') . '</td>
-		<td><b>' . number_format(compat_num($shu_sb_pajak_akhir), 0, ',', '.') . '</td>
-	 </tr>';	 
-	 
-	 echo '<tr class="grey">
-		<td colspan="3"><b>ESTIMASI TAKSIRAN PAJAK PENGHASILAN</td>
-		<td><b>' . number_format(compat_num($shu_ops_awal1), 0, ',', '.') . '</td>
-		<td><b>' . number_format(compat_num($shu_ops_jalan1), 0, ',', '.') . '</td>
-		<td><b>' . number_format(compat_num($shu_ops_jalan1), 0, ',', '.') . '</td>
-		<td><b>' . number_format(compat_num($shu_ops_akhir1), 0, ',', '.') . '</td>
-	 </tr>';
-echo '<tr class="grey">
-		<td colspan="3"><b>SHU TAHUN BERJALAN SETELAH PAJAK</td>
-		<td><b>' . number_format(compat_num($shu_after_pajak_awal), 0, ',', '.') . '</td>
-		<td><b>' . number_format(compat_num($shu_after_pajak_mut_debet), 0, ',', '.') . '</td>
-		<td><b>' . number_format(compat_num($shu_after_pajak_mut_kredit), 0, ',', '.') . '</td>
-		<td><b>' . number_format(compat_num($shu_after_pajak_akhir), 0, ',', '.') . '</td>
-	 </tr>	 	 
-
-
-
-	</tbody>
-</table>
-</body>
-</html>';
+halaman_awal('Neraca Percobaan');
+?>
+<div class="d-flex gap-2 mb-3">
+  <a href="neraca_excel_kp.php" class="btn btn-outline-success btn-sm">Excel</a>
+  <a href="neraca_pdf.php" class="btn btn-outline-secondary btn-sm">PDF</a>
+</div>
+<div class="table-responsive">
+  <table class="table table-sm table-bordered table-ni align-middle">
+    <thead>
+      <tr>
+        <th rowspan="2">TYPE COA</th>
+        <th rowspan="2">COA</th>
+        <th rowspan="2">Deskripsi</th>
+        <th rowspan="2" class="text-end">Saldo Awal</th>
+        <th colspan="2" class="text-center">Mutasi</th>
+        <th rowspan="2" class="text-end">Saldo Akhir</th>
+      </tr>
+      <tr>
+        <th class="text-end">Debet</th>
+        <th class="text-end">Kredit</th>
+      </tr>
+    </thead>
+    <tbody>
+    <?php foreach ($bagian as $b): ?>
+      <?php foreach ($b['rek'] as $row):
+          $sub = $row['LINE_BALANCE'] == 'HEADING'
+              || ($b['sub_total'] && ($row['kode_rekening'] == 'SUB TOTAL' || $row['nama_rekening'] == 'SUB TOTAL')); ?>
+      <tr<?php echo $sub ? ' class="table-secondary fw-semibold"' : ''; ?>>
+        <td><?php echo h($row['LINE_BALANCE']); ?></td>
+        <td><?php echo h($row['kode_rekening']); ?></td>
+        <td><?php echo h($row['nama_rekening']); ?></td>
+        <td class="text-end"><?php echo saldo_tb($row['saldo_awal']); ?></td>
+        <td class="text-end"><?php echo angka_tb($row['mut_debet']); ?></td>
+        <td class="text-end"><?php echo angka_tb($row['mut_kredit']); ?></td>
+        <td class="text-end"><?php echo saldo_tb($row['saldo_akhir']); ?></td>
+      </tr>
+      <?php endforeach; ?>
+      <?php if ($b['judul'] !== null): ?>
+      <tr class="fw-bold">
+        <td colspan="3"><?php echo $b['judul']; ?></td>
+        <?php foreach ($b['total'] as $v): ?>
+        <td class="text-end"><?php echo angka_tb($v); ?></td>
+        <?php endforeach; ?>
+      </tr>
+      <tr><td colspan="7">&nbsp;</td></tr>
+      <?php endif; ?>
+    <?php endforeach; ?>
+    <?php foreach ($ringkasan as $judul => $nilai): ?>
+      <tr class="fw-bold">
+        <td colspan="3"><?php echo $judul; ?></td>
+        <?php foreach ($nilai as $v): ?>
+        <td class="text-end"><?php echo angka_tb($v); ?></td>
+        <?php endforeach; ?>
+      </tr>
+    <?php endforeach; ?>
+    </tbody>
+  </table>
+</div>
+<?php
+halaman_akhir();
