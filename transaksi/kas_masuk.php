@@ -13,8 +13,13 @@
  *   - Selesai ditolak bila belum ada transaksi atau sudah selesai
  *   - Simpan memeriksa rekening (harus ada di COA, DETAIL), tanggal, dan jumlah
  *   - tanggal default = tanggal sistem (versi lama: tanggal hari ini)
+ * Perbaikan 2026-11-03 (perintah user, PEKERJAAN_TERTUNDA.md bagian 65): nomor bukti urut per unit KM/-<unit>-<6 digit>
+ * (inc/nomor_bukti.php). Nomor berjalan milik user dihitung server dan dipakai Simpan/Selesai/Batal (dulu isian form);
+ * nomor baru dipastikan di dalam kunci saat Simpan. Jurnal yang sudah ada di jurnal_masuk dengan tanggal_selesai
+ * terisi dianggap selesai dan barisnya tidak tampil lagi.
  */
 require_once __DIR__ . '/../inc/tampilan.php';
+require_once __DIR__ . '/../inc/nomor_bukti.php';
 session_start();
 $userid=isset($_SESSION['userid']) ? $_SESSION['userid'] : null;
 if(!isset($_SESSION['userid'])){
@@ -36,11 +41,9 @@ foreach (db_semua("select kode_branch from user where userid=?", 's', (string) $
     $unit=$id_user['kode_branch'];
 }
 
-			//jurnal baru. cari nomor paling besar yaitu nomor jurnal terakhir
-			$j = db_satu("SELECT max(nomor_jurnal) AS n FROM jurnal_masuk where unit=? ORDER BY tanggal_selesai DESC", 's', (string) $unit);
-			$nomor_jurnal=compat_num($j ? $j['n'] : null)+1;
-			$kode_transaksi="KM/".$unit .$nomor_jurnal;
-// nomor bukti yang tampil di form dihitung sebelum proses simpan (sama seperti versi lama)
+// nomor bukti berjalan milik user, atau nomor urut unit berikutnya (bagian 65)
+$kode_transaksi = nb_tampil('KM', (string) $unit, (string) $userid, 'Kas Masuk');
+$nomor_jurnal = '';
 $kode_bukti_form = $kode_transaksi;
 $tanggal_form = empty($_POST['tanggal_transaksi']) ? $tanggal : $_POST['tanggal_transaksi'];
 $keterangan_form = isset($_POST['keterangan_jurnal']) ? $_POST['keterangan_jurnal'] : '';
@@ -51,7 +54,7 @@ ob_start();
 			//untuk menyimpan transaksi
 			if(isset($_POST['simpan'])){
 
-				$kode_transaksi=isset($_POST['kode_bukti']) ? $_POST['kode_bukti'] : null;
+				// nomor bukti dari server (nomor berjalan user), bukan isian form
 				$tanggal_transaksi=isset($_POST['tanggal_transaksi']) ? $_POST['tanggal_transaksi'] : null;
 				$keterangan_transaksi=isset($_POST['keterangan_transaksi']) ? $_POST['keterangan_transaksi'] : null;
 				$kode_rekening=isset($_POST['kode_rekening']) ? $_POST['kode_rekening'] : null;
@@ -69,18 +72,24 @@ ob_start();
 				if ($salah) {
 					$query = false;
 					echo "<script>alert(" . json_encode(implode("\n", $salah) . "\nTransaksi tidak disimpan.") . ");</script>";
-				} else
+				} elseif (!nb_kunci('KM', $unit)) {
+					$query = false;
+					echo "<script>alert('Sistem sedang memproses transaksi lain, coba lagi.');</script>";
+				} else {
+				// nomor dipastikan ulang di dalam kunci (nomor baru bisa sudah diambil user lain sejak halaman dibuka)
+				$kode_transaksi = nb_tampil('KM', (string) $unit, (string) $userid, 'Kas Masuk');
 				$query=db_jalankan("insert into tabel_transaksi(unit,kode_transaksi,kode_rekening,tanggal_transaksi, jenis_transaksi, keterangan_transaksi,kredit,id_admin)
 									values(?,?,?,?,'Kas Masuk',?,?,?)", 'sssssss', (string) $unit, (string) $kode_transaksi, (string) $kode_rekening,
 					(string) $tanggal_transaksi, (string) $keterangan_transaksi, (string) $jumlah_dk, (string) $userid);
+				nb_lepas('KM', $unit);
+				}
 				// (versi lama mencetak mysql_error() bila gagal; kegagalan kini dicatat di log PHP oleh db_jalankan)
 			}
 
 			//untuk menyelesaikan transaksi
 			if(isset($_POST['selesai'])){
 
-				$kode_transaksi=isset($_POST['kode_bukti']) ? $_POST['kode_bukti'] : null;
-				$nomor_jurnal=isset($_POST['nomor_jurnal']) ? $_POST['nomor_jurnal'] : null;
+				// yang diselesaikan selalu nomor berjalan milik user (dihitung server)
 				$tgl_transaksi=isset($_POST['tanggal_selesai']) ? $_POST['tanggal_selesai'] : null;
 				$keterangan_jurnal=isset($_POST['keterangan_jurnal']) ? $_POST['keterangan_jurnal'] : null;
 
@@ -90,8 +99,7 @@ ob_start();
 				$saldo = db_satu("select sum(kredit)-sum(debet) as saldo from tabel_transaksi where kode_transaksi=? and id_admin=? and unit=?", 'sss',
 					(string) $kode_transaksi, (string) $userid, (string) $unit);
 				$debet_kas = compat_num($saldo ? $saldo['saldo'] : null);
-				$sudah = db_satu("select count(*) as n from jurnal_masuk where kode_transaksi=?", 's', (string) $kode_transaksi);
-				if ($sudah && $sudah['n'] > 0) {
+				if (nb_selesai('KM', $kode_transaksi)) {
 					echo "<script>alert('Nomor bukti " . h($kode_transaksi) . " sudah diselesaikan.');</script>";
 				} elseif ($debet_kas <= 0) {
 					echo "<script>alert('Belum ada transaksi yang perlu diselesaikan.');</script>";
@@ -123,18 +131,21 @@ ob_start();
 			$mode=isset($var['mode']) ? $var['mode'] : null;
 			$id_transaksi=isset($var['id_transaksi']) ? $var['id_transaksi'] : null;
 
-			if($mode=='delete'){
+			if($mode=='delete' && !nb_selesai('KM', $kode_transaksi)){
 				// hanya baris milik user ini pada nomor bukti yang sedang dibuka (versi lama: id apa pun)
 				db_jalankan("delete from tabel_transaksi where id_transaksi=? and id_admin=? and kode_transaksi=?", 'sss',
 					(string) $id_transaksi, (string) $userid, (string) $kode_transaksi);
 			}
 
 $pesan_proses = ob_get_clean();
+// sesudah Simpan/Selesai/Batal nomor bukti berjalan bisa berganti
+$kode_transaksi = nb_tampil('KM', (string) $unit, (string) $userid, 'Kas Masuk');
+$kode_bukti_form = $kode_transaksi;
 
 			//untuk menampilkan transaksi
 $baris_transaksi = array();
 $tot_kredit = null;
-foreach (db_semua("select * from tabel_transaksi where kode_transaksi=? and id_admin=?", 'ss', (string) $kode_transaksi, (string) $userid) as $row) {
+foreach (nb_selesai('KM', $kode_transaksi) ? array() : db_semua("select * from tabel_transaksi where kode_transaksi=? and id_admin=? order by id_transaksi", 'ss', (string) $kode_transaksi, (string) $userid) as $row) {
     // versi lama membaca angka sebagai teks; perbandingan !== "0" di bawah bergantung pada itu
     $kredit = $row['kredit'] === null ? null : (string) $row['kredit'];
     $tgl_transaksi = $row['tanggal_transaksi'];
@@ -221,7 +232,6 @@ halaman_awal('Jurnal Masuk');
 <form action="<?php echo h($aksi_form); ?>" method="post" name="form" class="text-end">
   <input type="hidden" name="tanggal_selesai" value="<?php if (empty($_POST['tanggal_transaksi'])) { echo h($tanggal); } else { echo h($_POST['tanggal_transaksi']); } ?>">
   <input type="hidden" name="kode_bukti" value="<?php echo h($kode_transaksi); ?>">
-  <input type="hidden" name="nomor_jurnal" value="<?php echo h($nomor_jurnal); ?>">
   <input type="hidden" name="keterangan_jurnal" value="<?php echo h(isset($keterangan_jurnal) ? $keterangan_jurnal : ''); ?>">
   <input type="hidden" name="tgl_transaksi" value="<?php echo h(isset($tgl_transaksi) ? $tgl_transaksi : ''); ?>">
   <button type="submit" name="selesai" value="Selesai" class="btn btn-ni btn-sm px-4" data-konfirmasi="Apakah Anda Yakin?">Selesai</button>

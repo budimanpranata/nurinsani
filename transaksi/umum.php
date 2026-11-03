@@ -11,8 +11,18 @@
  *   - Selesai ditolak bila belum ada baris atau nomor bukti sudah ada di jurnal_umum
  *   - tanggal default = tanggal sistem (versi lama: tanggal hari ini)
  *   - Simpan memeriksa rekening (harus ada di COA, DETAIL), posisi, tanggal, dan jumlah
+ * Perbaikan 2026-11-03 (perintah user, PEKERJAAN_TERTUNDA.md bagian 64): jurnal yang sudah ada di jurnal_umum dengan
+ * tanggal_selesai terisi dianggap SELESAI. Dulu kode = nomor jurnal_umum terakhir unit + 1 tanpa cek apakah kode itu
+ * sudah dipakai (nomor_jurnal auto increment global), sehingga baris jurnal lama bisa muncul lagi di daftar. Kini:
+ *   - nomor bukti berjalan milik user (belum selesai) dilanjutkan; kalau tidak ada, nomor baru dilewati selama kodenya
+ *     sudah ada di tabel_transaksi atau sudah selesai
+ *   - Simpan/Selesai/Cancel memakai nomor bukti dari server (bukan isian form) dan ditolak untuk jurnal yang selesai
+ *   - daftar hanya menampilkan baris jurnal yang belum selesai
+ * Perbaikan 2026-11-03 (perintah user, bagian 65): nomor bukti urut per unit BU/-<unit>-<6 digit> (inc/nomor_bukti.php);
+ * nomor baru dipastikan di dalam kunci saat Simpan supaya dua user tidak mendapat nomor yang sama.
  */
 require_once __DIR__ . '/../inc/tampilan.php';
+require_once __DIR__ . '/../inc/nomor_bukti.php';
 session_start();
 require_once __DIR__ . '/../inc/cek_login.php';
 wajib_login();
@@ -30,10 +40,17 @@ foreach (db_semua("select kode_branch from user where userid=?", 's', (string) $
     $unit=$id_user['kode_branch'];
 }
 
-			//jurnal baru. cari nomor paling besar yaitu nomor jurnal terakhir
-			$j = db_satu("SELECT max(nomor_jurnal) AS n FROM jurnal_umum where unit =? ORDER BY tanggal_selesai DESC", 's', (string) $unit);
-			$nomor_jurnal=compat_num($j ? $j['n'] : null)+1;
-			$kode_transaksi="BU/-".$unit .$nomor_jurnal;
+/** true bila nomor bukti sudah SELESAI: tercatat di jurnal_umum dengan tanggal_selesai terisi. */
+function ju_selesai($kode)
+{
+    return nb_selesai('BU', $kode);
+}
+/** Nomor bukti berjalan user, atau nomor urut unit berikutnya BU/-<unit>-<6 digit> (inc/nomor_bukti.php, bagian 65). */
+function nomor_bukti_unit($unit, $userid)
+{
+    return nb_tampil('BU', (string) $unit, (string) $userid, 'Bukti Umum');
+}
+$kode_transaksi = nomor_bukti_unit($unit, $userid);
 // nomor bukti yang tampil di form dihitung sebelum proses simpan (sama seperti versi lama)
 $kode_bukti_form = $kode_transaksi;
 // tanggal terakhir yang dipakai Simpan tetap dipakai sampai Selesai (form dikosongkan setelah Simpan)
@@ -63,7 +80,7 @@ ob_start();
 			//untuk menyimpan transaksi
 			if(isset($_POST['simpan'])){
 
-				$kode_transaksi=isset($_POST['kode_bukti']) ? $_POST['kode_bukti'] : null;
+				// nomor bukti dari server (nomor berjalan user), bukan isian form
 				$tanggal_transaksi=isset($_POST['tanggal_transaksi']) ? $_POST['tanggal_transaksi'] : null;
 				$keterangan_transaksi=isset($_POST['keterangan_transaksi']) ? $_POST['keterangan_transaksi'] : null;
 				$kode_rekening=trim((string) (isset($_POST['kode_rekening']) ? $_POST['kode_rekening'] : ''));
@@ -84,13 +101,22 @@ ob_start();
 				if ($posisi !== 'debet' && $posisi !== 'kredit') { $salah[] = 'Posisi harus Debet atau Kredit'; }
 				if (trim((string) $tanggal_transaksi) === '') { $salah[] = 'Tanggal belum diisi'; }
 				if (!is_numeric($jumlah_dk) || $jumlah_dk <= 0) { $salah[] = 'Jumlah harus angka lebih dari 0'; }
+				if (ju_selesai($kode_transaksi)) { $salah[] = 'Nomor bukti ' . $kode_transaksi . ' sudah selesai'; }
 				if ($salah) {
 					$query = false;
 					echo "<script>alert(" . json_encode(implode("\n", $salah) . "\nTransaksi tidak disimpan.") . ");</script>";
-				} else
+				} elseif (!nb_kunci('BU', $unit)) {
+					$query = false;
+					$salah[] = 'sibuk';
+					echo "<script>alert('Sistem sedang memproses transaksi lain, coba lagi.');</script>";
+				} else {
+				// nomor dipastikan ulang di dalam kunci (nomor baru bisa sudah diambil user lain sejak halaman dibuka)
+				$kode_transaksi = nomor_bukti_unit($unit, $userid);
 				$query=db_jalankan("insert into tabel_transaksi(unit,kode_transaksi,kode_rekening,tanggal_transaksi, jenis_transaksi, keterangan_transaksi,".$dk.",id_admin)
 									values(?,?,?,?,'Bukti Umum',?,?,?)", 'sssssss', (string) $unit, (string) $kode_transaksi, $kode_rekening,
 					(string) $tanggal_transaksi, (string) $keterangan_transaksi, $jumlah_dk, (string) $userid);
+				nb_lepas('BU', $unit);
+				}
 				// (versi lama mencetak mysql_error() bila gagal; kegagalan kini dicatat di log PHP oleh db_jalankan)
 				// Perbaikan 2026-11-03 (perintah user): berhasil -> notif, form dikosongkan (nomor bukti tetap sampai Selesai)
 				if ($query) {
@@ -105,7 +131,7 @@ ob_start();
 			//untuk menyelesaikan transaksi
 			if(isset($_POST['selesai'])){
 
-				$kode_transaksi=isset($_POST['kode_bukti']) ? $_POST['kode_bukti'] : null;
+				// nomor bukti dari server (nomor berjalan user), bukan isian form
 				$nomor_jurnal=isset($_POST['nomor_jurnal']) ? $_POST['nomor_jurnal'] : null;
 				$tanggal_selesai=isset($_POST['tanggal_selesai']) ? $_POST['tanggal_selesai'] : null;
 				$jumlah_baris = 0;
@@ -116,9 +142,8 @@ ob_start();
 				}
 				// versi lama: hasil select di atas (selalu berhasil) dipakai sebagai penanda bila tidak balance
 				$query = true;
-				$sudah = db_satu("select count(*) as n from jurnal_umum where kode_transaksi=?", 's', (string) $kode_transaksi);
 
-				if ($sudah && $sudah['n'] > 0) {
+				if (ju_selesai($kode_transaksi)) {
 					// versi lama mencatat nomor jurnal_umum lagi (dobel)
 					$query = false;
 					echo "<script>alert('Nomor bukti " . h($kode_transaksi) . " sudah diselesaikan.');</script>";
@@ -147,17 +172,21 @@ ob_start();
 			$mode=isset($var['mode']) ? $var['mode'] : null;
 			$id_transaksi=isset($var['id_transaksi']) ? $var['id_transaksi'] : null;
 
-			if($mode=='delete'){
+			if($mode=='delete' && !ju_selesai($kode_transaksi)){
 				// hanya baris milik user ini pada nomor bukti yang sedang dibuka (versi lama: id apa pun)
 				db_jalankan("delete from tabel_transaksi where id_transaksi=? and id_admin=? and kode_transaksi=?", 'sss',
 					(string) $id_transaksi, (string) $userid, (string) $kode_transaksi);
 			}
 
 $pesan_proses = ob_get_clean();
+// sesudah Cancel nomor bukti berjalan bisa berganti
+$kode_transaksi = nomor_bukti_unit($unit, $userid);
+$kode_bukti_form = $kode_transaksi;
 
 			//untuk menampilkan data (versi lama: total saat Selesai ikut terjumlah lagi di sini)
 $baris_transaksi = array();
-foreach (db_semua("select * from tabel_transaksi where kode_transaksi=? and id_admin=?", 'ss', (string) $kode_transaksi, (string) $userid) as $row) {
+// hanya baris jurnal yang belum selesai (jurnal_umum dengan tanggal_selesai = sudah selesai, tidak ditampilkan lagi)
+foreach (ju_selesai($kode_transaksi) ? array() : db_semua("select * from tabel_transaksi where kode_transaksi=? and id_admin=? order by id_transaksi", 'ss', (string) $kode_transaksi, (string) $userid) as $row) {
     // versi lama membaca angka sebagai teks; perbandingan !== "0" di bawah bergantung pada itu
     $debet = $row['debet'] === null ? null : (string) $row['debet'];
     $kredit = $row['kredit'] === null ? null : (string) $row['kredit'];
@@ -270,7 +299,6 @@ halaman_awal('Jurnal Umum');
 <form action="<?php echo h($aksi_form); ?>" method="post" name="form" class="text-end">
   <input type="hidden" name="tanggal_selesai" value="<?php if (empty($_POST['tanggal_transaksi'])) { echo h($tanggal_terakhir); } else { echo h($_POST['tanggal_transaksi']); } ?>">
   <input type="hidden" name="kode_bukti" value="<?php echo h($kode_transaksi); ?>">
-  <input type="hidden" name="nomor_jurnal" value="<?php echo h($nomor_jurnal); ?>">
   <button type="submit" name="selesai" value="Selesai" class="btn btn-ni btn-sm px-4" data-konfirmasi="Apakah Anda Yakin?">Selesai</button>
 </form>
 <script>

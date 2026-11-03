@@ -16,8 +16,12 @@
  *   - Batal hanya baris milik user pada nomor bukti yang sedang dibuka dan belum selesai
  *   - Simpan memeriksa rekening (DETAIL unit 1010), tanggal, dan jumlah; Simpan/Selesai selalu memakai nomor bukti
  *     berjalan milik user yang dihitung server (bukan isian form), sehingga tidak bisa menyentuh nomor user lain
+ * Perbaikan 2026-11-03 (perintah user, PEKERJAAN_TERTUNDA.md bagian 65): nomor bukti urut per unit KM/-<unit>-<6 digit>
+ * (inc/nomor_bukti.php, dulu KM/<unit><userid><nomor>); nomor baru dipastikan di dalam kunci saat Simpan supaya dua user
+ * tidak mendapat nomor yang sama. Selesai = ada di jurnal_masuk dengan tanggal_selesai terisi.
  */
 require_once __DIR__ . '/../../inc/tampilan.php';
+require_once __DIR__ . '/../../inc/nomor_bukti.php';
 session_start();
 require_once __DIR__ . '/../../inc/cek_login.php';
 wajib_login();
@@ -30,13 +34,11 @@ $unitt = '';
 foreach (db_semua("select kode_branch from user where userid=?", 's', $userid) as $id_user) {
     $unitt = (string) $id_user['kode_branch'];
 }
-$awalan_kode = 'KM/' . $unitt . $userid;
 
-/** true bila nomor bukti ini sudah diselesaikan (ada di jurnal_masuk). */
+/** true bila nomor bukti ini sudah SELESAI (ada di jurnal_masuk dengan tanggal_selesai terisi). */
 function kas_masuk_kp_selesai($kode)
 {
-    $r = db_satu("select count(*) as n from jurnal_masuk where kode_transaksi=?", 's', (string) $kode);
-    return $r && (int) $r['n'] > 0;
+    return nb_selesai('KM', $kode);
 }
 /** Tanggal Y-m-d yang benar-benar ada. */
 function tanggal_valid_km($t)
@@ -44,18 +46,10 @@ function tanggal_valid_km($t)
     $d = DateTime::createFromFormat('!Y-m-d', (string) $t);
     return $d && $d->format('Y-m-d') === (string) $t;
 }
-/** Nomor bukti berjalan user: lanjutkan yang belum selesai, kalau tidak ada nomor baru (jurnal_masuk terakhir unit + 1). */
-function nomor_bukti_km($unit, $userid, $awalan)
+/** Nomor bukti berjalan user, atau nomor urut unit berikutnya KM/-<unit>-<6 digit> (bagian 65). */
+function nomor_bukti_km($unit, $userid)
 {
-    $belum = db_satu("select t.kode_transaksi from tabel_transaksi t
-        where t.unit=? and t.id_admin=? and t.jenis_transaksi='Kas Masuk' and t.kode_transaksi like ?
-          and not exists (select 1 from jurnal_masuk j where j.kode_transaksi=t.kode_transaksi)
-        order by t.id_transaksi desc limit 1", 'sss', $unit, $userid, $awalan . '%');
-    if ($belum) {
-        return (string) $belum['kode_transaksi'];
-    }
-    $j = db_satu("SELECT max(nomor_jurnal) AS n FROM jurnal_masuk where unit=?", 's', $unit);
-    return $awalan . (compat_num($j ? $j['n'] : null) + 1);
+    return nb_tampil('KM', (string) $unit, (string) $userid, 'Kas Masuk');
 }
 
 /** Insert satu baris tabel_transaksi (sisi debet atau kredit). */
@@ -67,7 +61,7 @@ function catat_kas_masuk_kp($unit, $kode_transaksi, $kode_rekening, $tanggal, $k
         (string) $tanggal, (string) $keterangan, (string) $jumlah, (string) $userid);
 }
 
-$kode_transaksi = nomor_bukti_km($unitt, $userid, $awalan_kode);
+$kode_transaksi = nomor_bukti_km($unitt, $userid);
 $tanggal_form = empty($_POST['tanggal_transaksi']) ? $tanggal : $_POST['tanggal_transaksi'];
 $keterangan_form = isset($_POST['keterangan_jurnal']) ? $_POST['keterangan_jurnal'] : '';
 $keterangan_jurnal = '';
@@ -100,8 +94,13 @@ if (isset($_POST['simpan'])) {
     }
     if ($salah) {
         echo "<script>alert(" . json_encode(implode("\n", $salah) . "\nTransaksi tidak disimpan.") . ");</script>";
+    } elseif (!nb_kunci('KM', $unitt)) {
+        echo "<script>alert('Sistem sedang memproses transaksi lain, coba lagi.');</script>";
     } else {
+        // nomor dipastikan ulang di dalam kunci (nomor baru bisa sudah diambil user lain sejak halaman dibuka)
+        $kode_kirim = nomor_bukti_km($unitt, $userid);
         catat_kas_masuk_kp($unitt, $kode_kirim, $kode_rekening, $tanggal_transaksi, $keterangan_transaksi, 'kredit', $jumlah_dk, $userid);
+        nb_lepas('KM', $unitt);
         $kode_transaksi = $kode_kirim;
     }
 }
@@ -161,7 +160,7 @@ if ($mode == 'delete' && !kas_masuk_kp_selesai($kode_transaksi)) {
 $pesan_proses = ob_get_clean();
 
 // sesudah Selesai/Batal nomor bukti berjalan bisa berganti
-$kode_transaksi = nomor_bukti_km($unitt, $userid, $awalan_kode);
+$kode_transaksi = nomor_bukti_km($unitt, $userid);
 
 //untuk menampilkan transaksi milik user ini pada nomor bukti berjalan
 $baris_transaksi = array();

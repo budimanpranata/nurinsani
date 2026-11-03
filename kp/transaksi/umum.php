@@ -19,8 +19,12 @@
  *     supaya dua user tidak mendapat nomor yang sama; nomor lama BU/-<userid>... yang belum selesai tetap dilanjutkan
  *   - Simpan berhasil: notif + form kosong (nomor bukti tetap sampai Selesai, tanggal terakhir dipertahankan)
  *   - Selesai berhasil: notif + nomor bukti baru
+ * Perbaikan 2026-11-03 (perintah user, PEKERJAAN_TERTUNDA.md bagian 65): nomor bukti urut per unit BU/-<unit>-<6 digit>
+ * (inc/nomor_bukti.php, dulu BU/-<unit><nomor jurnal_umum terakhir + 1>); nomor baru dipastikan di dalam kunci saat Simpan supaya dua user
+ * tidak mendapat nomor yang sama. Selesai = ada di jurnal_umum dengan tanggal_selesai terisi.
  */
 require_once __DIR__ . '/../../inc/tampilan.php';
+require_once __DIR__ . '/../../inc/nomor_bukti.php';
 session_start();
 require_once __DIR__ . '/../../inc/cek_login.php';
 wajib_login();
@@ -33,13 +37,11 @@ $unit = '';
 foreach (db_semua("select kode_branch from user where userid=?", 's', $userid) as $id_user) {
     $unit = (string) $id_user['kode_branch'];
 }
-$awalan_kode = 'BU/-' . $unit;
 
-/** true bila nomor bukti ini sudah diselesaikan (ada di jurnal_umum). */
+/** true bila nomor bukti ini sudah SELESAI (ada di jurnal_umum dengan tanggal_selesai terisi). */
 function jurnal_umum_kp_selesai($kode)
 {
-    $r = db_satu("select count(*) as n from jurnal_umum where kode_transaksi=?", 's', (string) $kode);
-    return $r && (int) $r['n'] > 0;
+    return nb_selesai('BU', $kode);
 }
 /** Tanggal Y-m-d yang benar-benar ada. */
 function tanggal_valid_ju($t)
@@ -47,27 +49,10 @@ function tanggal_valid_ju($t)
     $d = DateTime::createFromFormat('!Y-m-d', (string) $t);
     return $d && $d->format('Y-m-d') === (string) $t;
 }
-/**
- * Nomor bukti berjalan user: lanjutkan yang belum selesai (termasuk format lama BU/-<userid>...), kalau tidak ada
- * nomor baru = jurnal_umum terakhir unit + 1, dilewati selama kode itu sudah dipakai (mis. oleh user lain yang belum
- * menyelesaikan jurnalnya).
- */
-function nomor_bukti_ju($unit, $userid, $awalan)
+/** Nomor bukti berjalan user, atau nomor urut unit berikutnya BU/-<unit>-<6 digit> (bagian 65). */
+function nomor_bukti_ju($unit, $userid)
 {
-    $belum = db_satu("select t.kode_transaksi from tabel_transaksi t
-        where t.unit=? and t.id_admin=? and t.jenis_transaksi='Bukti Umum' and t.kode_transaksi like 'BU/-%'
-          and not exists (select 1 from jurnal_umum j where j.kode_transaksi=t.kode_transaksi)
-        order by t.id_transaksi desc limit 1", 'ss', $unit, $userid);
-    if ($belum) {
-        return (string) $belum['kode_transaksi'];
-    }
-    $j = db_satu("SELECT max(nomor_jurnal) AS n FROM jurnal_umum where unit =?", 's', $unit);
-    $nomor = compat_num($j ? $j['n'] : null) + 1;
-    while (db_satu("select 1 as ada from tabel_transaksi where kode_transaksi=? limit 1", 's', $awalan . $nomor)
-        || jurnal_umum_kp_selesai($awalan . $nomor)) {
-        $nomor++;
-    }
-    return $awalan . $nomor;
+    return nb_tampil('BU', (string) $unit, (string) $userid, 'Bukti Umum');
 }
 /** Simpan/Selesai berhasil: simpan notif, lalu buka ulang form kosong (pola POST-redirect-GET, sama dengan unit). */
 function kembali_ke_form_kp($pesan)
@@ -87,7 +72,7 @@ function total_ju($kode, $userid, $unit)
     return array($r ? (float) $r['d'] : 0.0, $r ? (float) $r['k'] : 0.0);
 }
 
-$kode_transaksi = nomor_bukti_ju($unit, $userid, $awalan_kode);
+$kode_transaksi = nomor_bukti_ju($unit, $userid);
 // tanggal terakhir yang dipakai Simpan tetap dipakai sampai Selesai (form dikosongkan setelah Simpan)
 $tanggal_terakhir = !empty($_SESSION['jukp_tanggal']) ? (string) $_SESSION['jukp_tanggal'] : $tanggal;
 $tanggal_form = empty($_POST['tanggal_transaksi']) ? $tanggal_terakhir : $_POST['tanggal_transaksi'];
@@ -123,10 +108,16 @@ if (isset($_POST['simpan'])) {
     }
     if ($salah) {
         echo "<script>alert(" . json_encode(implode("\n", $salah) . "\nTransaksi tidak disimpan.") . ");</script>";
+    } elseif (!nb_kunci('BU', $unit)) {
+        echo "<script>alert('Sistem sedang memproses transaksi lain, coba lagi.');</script>";
     } else {
-        if (db_jalankan("insert into tabel_transaksi(unit,kode_transaksi,kode_rekening,tanggal_transaksi, jenis_transaksi, keterangan_transaksi,$posisi,id_admin)
+        // nomor dipastikan ulang di dalam kunci (nomor baru bisa sudah diambil user lain sejak halaman dibuka)
+        $kode_transaksi = nomor_bukti_ju($unit, $userid);
+        $tersimpan = db_jalankan("insert into tabel_transaksi(unit,kode_transaksi,kode_rekening,tanggal_transaksi, jenis_transaksi, keterangan_transaksi,$posisi,id_admin)
             values(?,?,?,?,'Bukti Umum',?,?,?)", 'sssssss', $unit, $kode_transaksi, $kode_rekening, $tanggal_transaksi,
-            $keterangan_transaksi, $jumlah_dk, $userid)) {
+            $keterangan_transaksi, $jumlah_dk, $userid);
+        nb_lepas('BU', $unit);
+        if ($tersimpan) {
             $_SESSION['jukp_tanggal'] = $tanggal_transaksi;
             kembali_ke_form_kp("Data tersimpan pada nomor bukti $kode_transaksi (" . ucfirst($posisi) . " Rp. "
                 . number_format(compat_num($jumlah_dk), 0, ',', '.') . ").");
@@ -178,13 +169,14 @@ if ($mode == 'delete' && !jurnal_umum_kp_selesai($kode_transaksi)) {
 $pesan_proses = ob_get_clean();
 
 // sesudah Selesai/Cancel nomor bukti berjalan bisa berganti
-$kode_transaksi = nomor_bukti_ju($unit, $userid, $awalan_kode);
+$kode_transaksi = nomor_bukti_ju($unit, $userid);
 
 //untuk menampilkan data
 $baris_transaksi = array();
 $tot_debet = 0;
 $tot_kredit = 0;
-foreach (db_semua("select * from tabel_transaksi where kode_transaksi=? and id_admin=? and unit=? order by id_transaksi", 'sss', $kode_transaksi, $userid, $unit) as $row) {
+// hanya baris jurnal yang belum selesai (bagian 64)
+foreach (jurnal_umum_kp_selesai($kode_transaksi) ? array() : db_semua("select * from tabel_transaksi where kode_transaksi=? and id_admin=? and unit=? order by id_transaksi", 'sss', $kode_transaksi, $userid, $unit) as $row) {
     $debet = $row['debet'] === null ? null : (string) $row['debet'];
     $kredit = $row['kredit'] === null ? null : (string) $row['kredit'];
     $tot_debet += compat_num($debet);
