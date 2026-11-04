@@ -13,11 +13,14 @@ if (!empty($limit)) {
     $sql_limit = ' LIMIT 0,'.$limit;
 }
 $sql_name = '';
+$param = array();
 if (!empty($name)) {
-    $sql_name = ' where os > 0 or id_member LIKE \'%'.$name.'%\' ';
+    // prepared statement (dulu $name ditempel langsung -> SQL injection); teks kueri sama dengan versi lama
+    $sql_name = ' where os > 0 or id_member LIKE :name ';
+    $param['name'] = '%'.$name.'%';
 }
 
-$cat_list = $db->query('select * from musawamah where os > 0'.$sql_name.' '.$sql_limit);
+$cat_list = $db->query('select * from musawamah where os > 0'.$sql_name.' '.$sql_limit, $param);
 
 
 

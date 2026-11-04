@@ -18,12 +18,19 @@ $sql_name = '';
 $tahun='2021';
 $satu='1';
 $unit='1010';
+// cegah SQL injection: bln ditempel tanpa kutip, jadi hanya angka yang diterima (selain itu hasil kosong); name lewat parameter
+$param = array();
+if (!empty($name) && !preg_match('/^\d+$/', (string) $bln)) {
+    echo json_encode(array());
+    exit;
+}
 if (!empty($name)) {
-    $sql_name = 'month(tanggal_transaksi) between '.$satu.' and '.$bln.' and kode_rekening LIKE \'%'.$name.'%\' ';
+    $sql_name = 'month(tanggal_transaksi) between '.$satu.' and '.$bln.' and kode_rekening LIKE :name ';
+    $param['name'] = '%'.$name.'%';
 }
 
 $cat_list = $db->query('select unit,kode_rekening,kode_transaksi,tanggal_transaksi,keterangan_transaksi,debet,kredit from tabel_transaksi_2021
- where unit='.$unit.' and year(tanggal_transaksi)='.$tahun.' and '.$sql_name.' '.$sql_limit);
+ where unit='.$unit.' and year(tanggal_transaksi)='.$tahun.' and '.$sql_name.' '.$sql_limit, $param);
 
 
 

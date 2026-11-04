@@ -17,6 +17,11 @@ if (!empty($limit)) {
 $sql_name = '';
 $tahun='2021';
 $satu='1';
+// cegah SQL injection: bln dan name ditempel tanpa kutip, jadi hanya angka yang diterima (selain itu hasil kosong)
+if (!empty($name) && (!preg_match('/^\d+$/', (string) $bln) || !preg_match('/^\d+$/', (string) $name))) {
+    echo json_encode(array());
+    exit;
+}
 if (!empty($name)) {
     $sql_name = 'month(tanggal_transaksi) between '.$satu.' and '.$bln.' and kode_rekening ='.$name.'';
 }

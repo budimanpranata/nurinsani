@@ -44,7 +44,6 @@ var TREE_ITEMS = [
 			['Pelunasan', 'pelunasan.php'],
 			['Pelunasan Hapus Margin', 'pelunasan_hapus_margin.php'],
 			['Pelunasan Kelompok', 'pelunasan_kel.php'],
-			['Tagihan', 'm_tagih.php'],
 
 			['Batal Wakalah / Musyarakah', 'batal_waka.php'],
 			['Kelompok', 'kelompok.php'],

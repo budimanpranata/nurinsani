@@ -323,6 +323,10 @@ $norek=$_POST['kode_rekening'];
 $bulan =$_POST['bulan'];
 $tahun =$_POST['tahun'];
 $checkbox =$_POST['all'];
+// cegah SQL injection: isian dipakai di dalam kutip pada kueri di bawah dan di excel_buku_besar_konsol.php (lewat session)
+$norek=mysql_real_escape_string((string) $norek);
+$bulan=mysql_real_escape_string((string) $bulan);
+$tahun=mysql_real_escape_string((string) $tahun);
 
 
 		$bulan_lalu=$bulan-1;

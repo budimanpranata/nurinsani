@@ -1,0 +1,2 @@
+# Kelas Db/Log dan settings hanya dimuat lewat include; folder logs berisi SQL mentah dari error. Tidak boleh dibuka lewat web (2026-11-05).
+Require all denied

@@ -36,6 +36,8 @@ return;
 //koneksi ke database dan jalankan query
 db_mobcol();
 mysql_select_db('mobcol');
+// cegah SQL injection: $tgl dipakai di dalam kutip pada kueri di bawah ($jenis hanya untuk switch)
+$tgl=mysql_real_escape_string((string) $tgl);
 
 switch($jenis)
 {

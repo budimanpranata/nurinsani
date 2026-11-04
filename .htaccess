@@ -15,6 +15,12 @@
     Require all denied
 </FilesMatch>
 
+# Folder/file berawalan titik (.git, .gitignore, .vscode, .env, ...) di mana pun: riwayat git berisi seluruh kode
+# sumber termasuk password lama. Dicek lewat URI karena FilesMatch tidak mengenai isi folder (2026-11-05).
+<If "%{REQUEST_URI} =~ m#/\.(?!well-known/)#">
+    Require all denied
+</If>
+
 # Kredensial database server (lihat koneksi_db.php); tidak boleh dibuka langsung.
 <Files "koneksi_db.lokal.php">
     Require all denied

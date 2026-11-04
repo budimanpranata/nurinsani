@@ -65,6 +65,8 @@ halaman_awal('Report Mobcol');
 
   $tgl=$_POST['tgl'];
   $select=$_POST['select'];
+  // cegah SQL injection: $tgl dipakai di dalam kutip pada kueri di bawah
+  $tgl=mysql_real_escape_string((string) $tgl);
   $buss_date=date("Ymd");
                
   If (isset($_POST ['search']))

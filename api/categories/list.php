@@ -13,14 +13,17 @@ if (!empty($limit)) {
     $sql_limit = ' LIMIT 0,'.$limit;
 }
 $sql_name = '';
+$param = array();
 if (!empty($name)) {
-    $sql_name = ' where rekening_gl LIKE \'%'.$name.'%\' ';
+    // prepared statement (dulu $name ditempel langsung -> SQL injection)
+    $sql_name = ' where rekening_gl LIKE :name ';
+    $param['name'] = '%'.$name.'%';
 }
 
 $cat_list = $db->query('select rekening_gl,kode_rekening,unit,nama_rekening,tanggal_awal,awal_debet,
 awal_kredit,mut_debet,mut_kredit,sisa_debet,sisa_kredit,posisi,normal,gr_head,gr_sub,gr_neraca,saldo_awal,saldo_akhir,LINE_BALANCE 
 
- from tabel_master '.$sql_name.' '.$sql_limit);
+ from tabel_master '.$sql_name.' '.$sql_limit, $param);
 
 
 
