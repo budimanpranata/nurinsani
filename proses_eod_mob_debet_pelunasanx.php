@@ -95,7 +95,7 @@ while($data = db_fetch_array($select)){
                         $jurnal_umum=db_fetch_array(db_query($con,"SELECT max(nomor_jurnal) FROM jurnal_umum where unit ='$unit' ORDER BY tanggal_selesai DESC"));
                         $nomor_jurnal=$jurnal_umum[0]+1;
  
-                        db_query ($con,"insert into rek_loan(ref,tgl_realisasi,unit,no_anggota,saldo_kredit,debet,tipe,ket,USERID,STATUS,cif)VALUES('','$tanggal','$unit','$norek','0','$os','03','$ket2','$userid','REALISASI POKOK','".$ciff."')");
+                        db_query ($con,"insert into rek_loan(ref,tgl_realisasi,unit,no_anggota,saldo_kredit,debet,tipe,ket,USERID,STATUS,cif,AO)VALUES('','$tanggal','$unit','$norek','0','$os','03','$ket2','EOD','REALISASI POKOK','".$ciff."',(select cao from loan where cif='".$ciff."' limit 1))");
                         db_query ($con,"Update  loan set os =os-'$os',saldo_margin='0',run_tenor='0',ke='0' ,last_payment='$tanggal' where cif  ='".$ciff."'");
 			db_query ($con,"delete from tunggakan where cif  ='".$ciff."'");
                         db_query ($con,"insert  into simpanan (BUSS_DATE,NOREK,UNIT,CIF,CODE_KEL,DEBIT,TYPE,KREDIT,USERID,REFF,CAO,tgl_input,kode_transaksi)VALUES('$tanggal','$norek','$unit','".$ciff."','$code_kel','$angsuran','03','0','$userid','$ket2','$cao','$tgl_input','$kode_tran') ");
@@ -118,8 +118,8 @@ while($data = db_fetch_array($select)){
                     $nomor_jurnal=$jurnal_umum[0]+1;                 
                      
  
-                        db_query($con,"insert into rek_loan(ref,tgl_realisasi,unit,no_anggota,saldo_kredit,debet,tipe,ket,USERID,STATUS,cif)VALUES('','$tanggal','$unit','$norek','0','$os','03','$ket2','$userid','REALISASI POKOK','".$ciff."')");
-                        db_query($con,"insert into rek_loan(ref,tgl_realisasi,unit,no_anggota,saldo_kredit,debet,tipe,ket,USERID,STATUS,cif)VALUES('','$tanggal','$unit','$norek','0','$saldo_margin','03','$ket2','$userid','REALISASI BAGHAS','".$ciff."')");
+                        db_query($con,"insert into rek_loan(ref,tgl_realisasi,unit,no_anggota,saldo_kredit,debet,tipe,ket,USERID,STATUS,cif,AO)VALUES('','$tanggal','$unit','$norek','0','$os','03','$ket2','EOD','REALISASI POKOK','".$ciff."',(select cao from loan where cif='".$ciff."' limit 1))");
+                        db_query($con,"insert into rek_loan(ref,tgl_realisasi,unit,no_anggota,saldo_kredit,debet,tipe,ket,USERID,STATUS,cif,AO)VALUES('','$tanggal','$unit','$norek','0','$saldo_margin','03','$ket2','EOD','REALISASI BAGHAS','".$ciff."',(select cao from loan where cif='".$ciff."' limit 1))");
  
                         db_query ($con,"Update  loan set os =os-'$os',saldo_margin='0',run_tenor='0',ke='0' ,last_payment='$tanggal' where cif  ='".$ciff."'");
 db_query ($con,"delete from tunggakan where cif  ='".$ciff."'");
@@ -147,8 +147,8 @@ db_query ($con,"delete from tunggakan where cif  ='".$ciff."'");
                         $nomor_jurnal=$jurnal_umum[0]+1;                 
                          
                                                     
-                            db_query($con,"insert into rek_loan(ref,tgl_realisasi,unit,no_anggota,saldo_kredit,debet,tipe,ket,USERID,STATUS,cif)VALUES('','$tanggal','$unit','$no_anggota','0','$os','03','$ket2','$userid','REALISASI POKOK','".$ciff."')");
-                            db_query($con,"insert into rek_loan(ref,tgl_realisasi,unit,no_anggota,saldo_kredit,debet,tipe,ket,USERID,STATUS,cif)VALUES('','$tanggal','$unit','$no_anggota','0','$saldo_margin','03','$ket2','$userid','REALISASI BAGHAS','".$ciff."')");
+                            db_query($con,"insert into rek_loan(ref,tgl_realisasi,unit,no_anggota,saldo_kredit,debet,tipe,ket,USERID,STATUS,cif,AO)VALUES('','$tanggal','$unit','\$norek','0','$os','03','$ket2','EOD','REALISASI POKOK','".$ciff."',(select cao from loan where cif='".$ciff."' limit 1))");
+                            db_query($con,"insert into rek_loan(ref,tgl_realisasi,unit,no_anggota,saldo_kredit,debet,tipe,ket,USERID,STATUS,cif,AO)VALUES('','$tanggal','$unit','\$norek','0','$saldo_margin','03','$ket2','EOD','REALISASI BAGHAS','".$ciff."',(select cao from loan where cif='".$ciff."' limit 1))");
                              
                             db_query($con,"Update  loan set os =os-'$os',saldo_margin='0',run_tenor='0',ke='0',last_payment='$tanggal' where cif  ='".$ciff."'");
 db_query ($con,"delete from tunggakan where cif  ='".$ciff."'");
@@ -185,8 +185,8 @@ db_query ($con,"delete from tunggakan where cif  ='".$ciff."'");
                      
                 
                          
-                        db_query($con,"insert into rek_loan(ref,tgl_realisasi,unit,no_anggota,saldo_kredit,debet,tipe,ket,USERID,STATUS,cif)VALUES('','$tanggal','$unit','$no_anggota','0','$os','03','$ket2','$userid','REALISASI POKOK','".$ciff."')");
-                        db_query($con,"insert into rek_loan(ref,tgl_realisasi,unit,no_anggota,saldo_kredit,debet,tipe,ket,USERID,STATUS,cif)VALUES('','$tanggal','$unit','$no_anggota','0','$saldo_margin','03','$ket2','$userid','REALISASI BAGHAS','".$ciff."')");
+                        db_query($con,"insert into rek_loan(ref,tgl_realisasi,unit,no_anggota,saldo_kredit,debet,tipe,ket,USERID,STATUS,cif,AO)VALUES('','$tanggal','$unit','\$norek','0','$os','03','$ket2','EOD','REALISASI POKOK','".$ciff."',(select cao from loan where cif='".$ciff."' limit 1))");
+                        db_query($con,"insert into rek_loan(ref,tgl_realisasi,unit,no_anggota,saldo_kredit,debet,tipe,ket,USERID,STATUS,cif,AO)VALUES('','$tanggal','$unit','\$norek','0','$saldo_margin','03','$ket2','EOD','REALISASI BAGHAS','".$ciff."',(select cao from loan where cif='".$ciff."' limit 1))");
                          
                         db_query($con,"Update  loan set os =os-'$os',saldo_margin='0',run_tenor='0',ke='0',last_payment='$tanggal' where cif  ='".$ciff."'");
 db_query ($con,"delete from tunggakan where cif  ='".$ciff."'");

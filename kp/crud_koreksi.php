@@ -1,9 +1,10 @@
 <?php require_once __DIR__ . '/../koneksi_db.php';
 /**
- * Simpan/hapus untuk menu kp > Koreksi (view_koreksi.php). POST aksi:
+ * Simpan untuk menu kp > Koreksi (view_koreksi.php). POST aksi:
  *   get   : satu baris tabel_transaksi (JSON) untuk form Edit
  *   edit  : ubah debet, kredit, kode_rekening, tanggal_transaksi satu baris tabel_transaksi
- *   hapus : hapus satu baris tabel_transaksi
+ *   (hapus dibuang atas perintah user 2026-11-04: tombol Hapus dihilangkan, dan aksi ini tidak lagi menghapus jurnal
+ *   walaupun dipanggil langsung)
  *   tambah: sisa versi lama (insert ke omzet), tidak dipanggil dari halaman
  * Jawaban "ok" sama dengan versi lama (juga bila query gagal, seperti versi lama).
  * Dimigrasi 2026-11-03: dulu tanpa cek login dan query disusun dari isian (rawan SQL injection); kini wajib login,
@@ -29,9 +30,6 @@ if ($aksi == 'tambah') {
 } elseif ($aksi == 'edit') {
     db_jalankan("UPDATE tabel_transaksi SET debet=?, kredit=?, kode_rekening=?, tanggal_transaksi=? WHERE id_transaksi=?", 'sssss',
         $isi('debet'), $isi('kredit'), $isi('kode_rekening'), $isi('tanggal'), $isi('id'));
-    echo "ok";
-} elseif ($aksi == 'hapus') {
-    db_jalankan("DELETE FROM tabel_transaksi WHERE id_transaksi=?", 's', $isi('id'));
     echo "ok";
 } elseif ($aksi == 'get') {
     $data = db_satu("SELECT id_transaksi as id, DATE(tanggal_transaksi) as tanggal,unit, kode_transaksi, kode_rekening, jenis_transaksi, keterangan_transaksi, debet,kredit

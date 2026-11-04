@@ -5,6 +5,10 @@ $tgl_system=$_SESSION['stgl_system'];
 if(!isset($_SESSION['userid'])){
    header("location:index.html");
  exit; }
+//cek level user (hanya kp; ditambahkan 2026-11-04, dulu semua level yang login bisa membuka)
+if($_SESSION['level']!="kp"){
+   header("location:../index.html");
+ exit; }
 
 ?>
 <HTML>

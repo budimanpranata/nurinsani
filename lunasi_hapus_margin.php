@@ -101,7 +101,7 @@ $gagal_awal = db_jumlah_gagal();
 				
 				$t = db_jalankan("insert into simpanan(BUSS_DATE,NOREK,UNIT,CIF,CODE_KEL,DEBIT,TYPE,KREDIT,USERID,KET,REFF,CAO,blok,tgl_input,kode_transaksi) 
 				VALUES (?,?,?,?,?,?,'03','0',?,?,'',?,'0',?,?)", 'sssssssssss', (string) $tanggal, (string) $anggota, (string) $unit, (string) $cif, (string) $code_kel, (string) $os, (string) $userid, (string) $ket, (string) $cao, (string) $date, (string) $kode_trans);
-db_jalankan("insert into rek_loan(ref,tgl_realisasi,unit,no_anggota,saldo_kredit,debet,tipe,ket,USERID,STATUS,cif)VALUES('',?,?,?,'0',?,'03','Pelunasan',?,'REALISASI POKOK',?)", 'ssssss', (string) $tanggal, (string) $unit, (string) $anggota, (string) $os, (string) $userid, (string) $cif) or die(mysql_error());
+db_jalankan("insert into rek_loan(ref,tgl_realisasi,unit,no_anggota,saldo_kredit,debet,tipe,ket,USERID,STATUS,cif,AO)VALUES('',?,?,?,'0',?,'03','Pelunasan',?,'REALISASI POKOK',?,(select cao from loan where cif=? limit 1))", 'sssssss', (string) $tanggal, (string) $unit, (string) $anggota, (string) $os, (string) $userid, (string) $cif, (string) $cif) or die(mysql_error());
 db_jalankan("Update  tagihan_cs set status_realisasi ='BAYAR'  where cif  =? and tgl_tagih=?", 'ss', (string) $cif, (string) $tanggal);
 				
 
@@ -131,8 +131,8 @@ db_jalankan("Update  tagihan_cs set status_realisasi ='BAYAR'  where cif  =? and
 				db_jalankan("delete from tunggakan where cif=?", 's', (string) $cif);
 				$t = db_jalankan("insert into simpanan(BUSS_DATE,NOREK,UNIT,CIF,CODE_KEL,DEBIT,TYPE,KREDIT,USERID,KET,REFF,CAO,blok,tgl_input,kode_transaksi) 
 				VALUES (?,?,?,?,?,?,'03','0',?,?,'',?,'0',?,?)", 'sssssssssss', (string) $tanggal, (string) $anggota, (string) $unit, (string) $cif, (string) $code_kel, (string) $pokok, (string) $userid, (string) $ket, (string) $cao, (string) $date, (string) $kode_trans);
-db_jalankan("insert into rek_loan(ref,tgl_realisasi,unit,no_anggota,saldo_kredit,debet,tipe,ket,USERID,STATUS,cif)VALUES('',?,?,?,'0',?,'03','Pelunasan',?,'REALISASI POKOK',?)", 'ssssss', (string) $tanggal, (string) $unit, (string) $anggota, (string) $pokok, (string) $userid, (string) $cif) or die(mysql_error());
-				db_jalankan("insert into rek_loan(ref,tgl_realisasi,unit,no_anggota,saldo_kredit,debet,tipe,ket,USERID,STATUS,cif)VALUES('',?,?,?,'0',?,'03','Pelunasan',?,'REALISASI BAGHAS',?)", 'ssssss', (string) $tanggal, (string) $unit, (string) $anggota, (string) $saldo_margin, (string) $userid, (string) $cif) or die(mysql_error());
+db_jalankan("insert into rek_loan(ref,tgl_realisasi,unit,no_anggota,saldo_kredit,debet,tipe,ket,USERID,STATUS,cif,AO)VALUES('',?,?,?,'0',?,'03','Pelunasan',?,'REALISASI POKOK',?,(select cao from loan where cif=? limit 1))", 'sssssss', (string) $tanggal, (string) $unit, (string) $anggota, (string) $pokok, (string) $userid, (string) $cif, (string) $cif) or die(mysql_error());
+				db_jalankan("insert into rek_loan(ref,tgl_realisasi,unit,no_anggota,saldo_kredit,debet,tipe,ket,USERID,STATUS,cif,AO)VALUES('',?,?,?,'0',?,'03','Pelunasan',?,'REALISASI BAGHAS',?,(select cao from loan where cif=? limit 1))", 'sssssss', (string) $tanggal, (string) $unit, (string) $anggota, (string) $saldo_margin, (string) $userid, (string) $cif, (string) $cif) or die(mysql_error());
 db_jalankan("Update  tagihan_cs set status_realisasi ='BAYAR'  where cif  =? and tgl_tagih=?", 'ss', (string) $cif, (string) $tanggal);
 
 }

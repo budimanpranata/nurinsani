@@ -15,8 +15,9 @@ var TREE_ITEMS = [
 		 	['Nominative Pembiayaan', 'report/Kr.php'],
 			['Nominative Simpanan', 'report/krt.php'],
 			['TUnggakan', 'tunggak.php'],
-			
+
 		],
+		['Koreksi Pembiayaan','koreksi_loan.php'],
 
 		['EOM','hitung_shu.php'],
 		['Ganti Password','Gantipass.php'],

@@ -1,0 +1,164 @@
+=====================================================================
+ PANDUAN ENKRIPSI NIK & ALAMAT - SERVER PROD
+ (dipakai saat GO-LIVE, sesudah data asli dimasukkan)
+=====================================================================
+
+Untuk siapa : admin server yang menjalankan go-live.
+Lokasi      : folder aplikasi di server, mis. /var/www/html/app-ni
+Lama kerja  : +- 30-60 menit (tergantung besar data). Kerjakan di luar
+              jam operasional.
+
+Apa yang dienkripsi?
+  NIK/KTP dan alamat di tabel DEPOSAN, plus baris ANGGOTA yang menjadi
+  pasangan deposan. Anggota pembiayaan biasa BELUM dienkripsi.
+
+Kenapa langkah ini harus diulang saat go-live?
+  Dump data asli dari server lama membawa struktur tabel LAMA dan
+  NIK/alamat yang masih TERBUKA. Jadi kolom enkripsi harus ditambahkan
+  lagi, lalu data asli dienkripsi.
+
+
+---------------------------------------------------------------------
+ SEBELUM MULAI - siapkan 3 hal ini
+---------------------------------------------------------------------
+[ ] 1. Kode terbaru sudah di-git pull di server.
+[ ] 2. File koneksi_db.lokal.php di server berisi bagian 'enkripsi'
+       (kunci yang SUDAH dibuat saat uji coba). Cek:
+          grep -c "kunci_indeks" koneksi_db.lokal.php
+       Hasil harus 1. Kalau 0, BERHENTI - lihat "MASALAH" nomor 1.
+[ ] 3. Cadangan kunci tersimpan di tempat aman (bukan di server,
+       bukan di backup database).
+
+  PENTING: JANGAN menjalankan "php inc/enkripsi.php buat-kunci" lagi.
+  Kunci yang sudah ada tetap dipakai selamanya.
+
+
+---------------------------------------------------------------------
+ LANGKAH 1 - Backup database
+---------------------------------------------------------------------
+  mysqldump -u <user> -p nur_insani > backup_sebelum_enkripsi.sql
+
+  Simpan file backup itu di luar folder aplikasi.
+
+
+---------------------------------------------------------------------
+ LANGKAH 2 - Masukkan data asli
+---------------------------------------------------------------------
+  Restore dump data asli ke database nur_insani (cara biasa Anda).
+
+
+---------------------------------------------------------------------
+ LANGKAH 3 - Cek apakah kolom enkripsi sudah ada
+---------------------------------------------------------------------
+  Jalankan di phpMyAdmin (tab SQL) atau mysql:
+
+    SHOW COLUMNS FROM deposan LIKE 'ID_NUMBER_IDX';
+    SHOW COLUMNS FROM anggota LIKE 'ID_NUMBER_IDX';
+
+  - Keduanya KOSONG  -> lanjut LANGKAH 4.
+  - Keduanya ada 1 baris -> kolom sudah ada, LEWATI langkah 4,
+                            langsung ke LANGKAH 5.
+
+
+---------------------------------------------------------------------
+ LANGKAH 4 - Tambah kolom enkripsi (hanya bila langkah 3 kosong)
+---------------------------------------------------------------------
+  Lewat phpMyAdmin:
+    a. Buka file db/enkripsi/2026-11-04_enkripsi_nik_alamat.sql
+    b. Salin SELURUH isinya (termasuk baris "SET SESSION sql_mode"
+       di atas) ke tab SQL, klik Go SEKALI.
+  Atau lewat terminal:
+    mysql -u <user> -p nur_insani < db/enkripsi/2026-11-04_enkripsi_nik_alamat.sql
+
+  Pesan "'utf8mb3' is deprecated ..." = NORMAL, bukan error.
+  Sesudahnya ulangi LANGKAH 3 -> keduanya harus ada 1 baris.
+
+
+---------------------------------------------------------------------
+ LANGKAH 5 - Uji enkripsi (TIDAK mengubah data)
+---------------------------------------------------------------------
+  php db/enkripsi/migrasi_data.php
+
+  Contoh hasil yang BAIK:
+    MODE UJI (tidak menulis) - database: nur_insani
+    deposan  baris 166 | perlu dienkripsi 163 (627 kolom) | ditulis 0 ...
+    anggota  baris 3 | perlu dienkripsi 3 (9 kolom) | ditulis 0 ...
+    nilai terenkripsi yang tidak bisa dibuka dengan kunci ini: 0
+
+  Yang harus diperhatikan:
+    - "tidak bisa dibuka dengan kunci ini" HARUS 0.
+      Bila bukan 0 -> BERHENTI, lihat "MASALAH" nomor 2.
+    - Angka "perlu dienkripsi" kira-kira sama dengan jumlah deposan.
+
+
+---------------------------------------------------------------------
+ LANGKAH 6 - Jalankan enkripsi (MENGUBAH data)
+---------------------------------------------------------------------
+  php db/enkripsi/migrasi_data.php --jalankan --sudah-backup
+
+  (ketik persis; "--sudah-back" saja akan ditolak)
+
+  Hasil yang BAIK:
+    deposan ... ditulis <angka sama dengan "perlu dienkripsi">
+    deposan sisa belum terenkripsi: NIK 0, alamat 0, NIK tanpa indeks 0
+    nilai terenkripsi yang tidak bisa dibuka dengan kunci ini: 0
+    Selesai.
+
+
+---------------------------------------------------------------------
+ LANGKAH 7 - Pastikan selesai
+---------------------------------------------------------------------
+  php db/enkripsi/migrasi_data.php
+
+  Sekarang harus: "perlu dienkripsi 0" untuk deposan dan anggota.
+  (Skrip aman dijalankan berulang kali.)
+
+
+---------------------------------------------------------------------
+ LANGKAH 8 - Cek di aplikasi (login level fund)
+---------------------------------------------------------------------
+  [ ] Data Master Deposan: alamat tampil normal (bukan "enc:v1:...").
+  [ ] Edit satu deposan: NIK & alamat lengkap; Simpan berhasil.
+  [ ] + Data dengan NIK deposan yang sudah ada -> ditolak (dobel).
+  [ ] Cetak > Reprint: bilyet/advis mencetak nama & alamat normal.
+
+  Semua centang = ENKRIPSI SELESAI.
+
+
+=====================================================================
+ MASALAH YANG MUNGKIN MUNCUL
+=====================================================================
+1. "Proses dihentikan: kunci enkripsi data pribadi belum diatur..."
+   atau error kunci saat menjalankan skrip
+   -> Bagian 'enkripsi' tidak ada / salah ketik di koneksi_db.lokal.php.
+      Tempel lagi kunci dari CADANGAN (bukan buat kunci baru), tepat
+      sebelum baris ");" paling bawah. Cek: php -l koneksi_db.lokal.php
+
+2. "nilai terenkripsi yang tidak bisa dibuka dengan kunci ini" bukan 0
+   -> Ada data terenkripsi dengan kunci LAIN (mis. kunci pernah dibuat
+      ulang). Jangan lanjut; pasang kunci yang benar dari cadangan.
+
+3. Error kolom tidak ada (Unknown column 'ID_NUMBER_IDX') saat simpan
+   deposan -> LANGKAH 4 belum dijalankan.
+
+4. "Duplicate column name 'ID_NUMBER_IDX'" saat LANGKAH 4
+   -> Kolom sudah ada. Bukan kerusakan; lanjut ke LANGKAH 5.
+
+5. phpMyAdmin timeout saat ALTER TABLE anggota
+   -> Jangan langsung diulang. Tunggu beberapa menit, cek LANGKAH 3.
+      Bila sudah ada 1 baris, ALTER sudah selesai di server.
+
+Bila ada hasil lain yang tidak sesuai panduan ini: berhenti, salin
+teks lengkapnya, dan tanyakan dulu sebelum melanjutkan.
+
+
+=====================================================================
+ LANGKAH GO-LIVE LAIN (bukan enkripsi, tapi jangan terlupa)
+=====================================================================
+  - db/parameter/2026-11-04_hari_dep.sql   (tabel hari bagi hasil)
+  - db/parameter/2026-11-04_index_konsol.sql (index laporan konsolidasi;
+    "Duplicate key name" = sudah ada, abaikan)
+  - db/parameter/2026-11-04_koreksi_loan.sql (riwayat menu Admin >
+    Koreksi Pembiayaan; aman diulang)
+  - Folder load/specimen dan load/reprint bisa ditulis web server
+  - Jalankan EOD fund sebelum Realisasi Bagi Hasil

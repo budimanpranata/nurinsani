@@ -55,8 +55,8 @@ if ($cekbox) {
 				
 			
 		
-				mysql_query("insert into rek_loan(ref,tgl_realisasi,unit,no_anggota,saldo_kredit,debet,tipe,ket,USERID,STATUS,cif)VALUES('','$tanggal','$unit','$no_anggota','$pokok','0','03','$ket','$userid','BATAL REALISASI POKOK','$cif')") or die(mysql_error("GAGAL INPUT"));
-				mysql_query("insert into rek_loan(ref,tgl_realisasi,unit,no_anggota,saldo_kredit,debet,tipe,ket,USERID,STATUS,cif)VALUES('','$tanggal','$unit','$no_anggota','$ijaroh','0','03','$ket','$userid','BATAL REALISASI BAGHAS','$cif')") or die(mysql_error("GAGAL INPUT"));
+				mysql_query("insert into rek_loan(ref,tgl_realisasi,unit,no_anggota,saldo_kredit,debet,tipe,ket,USERID,STATUS,cif,AO)VALUES('','$tanggal','$unit','$no_anggota','$pokok','0','03','$ket','$userid','BATAL REALISASI POKOK','$cif',(select cao from loan where cif='$cif' limit 1))") or die(mysql_error("GAGAL INPUT"));
+				mysql_query("insert into rek_loan(ref,tgl_realisasi,unit,no_anggota,saldo_kredit,debet,tipe,ket,USERID,STATUS,cif,AO)VALUES('','$tanggal','$unit','$no_anggota','$ijaroh','0','03','$ket','$userid','BATAL REALISASI BAGHAS','$cif',(select cao from loan where cif='$cif' limit 1))") or die(mysql_error("GAGAL INPUT"));
 
 				mysql_query("Update  loan set next_schedule ='$next_schedule',os =os+'$angsuran',saldo_margin=saldo_margin+'$ijaroh',run_tenor=run_tenor - 1,last_payment='$tanggal' where no_anggota  ='" . $value . "'") or die(mysql_error("GAGAL INPUT"));
 				mysql_query("insert  into simpanan (BUSS_DATE,NOREK,UNIT,CIF,CODE_KEL,DEBIT,TYPE,KREDIT,USERID,REFF,CAO)VALUES('$tanggal','$no_anggota','$unit','$cif','$code_kel','0','03','$ijaroh','$userid','BATAL REALISASI TAGIHAN','$cao') ") or die(mysql_error("GAGAL INPUT"));

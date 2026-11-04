@@ -138,7 +138,7 @@ db_jalankan("delete from  rest_covid where cif =?", 's', (string) $cif) or die(m
 db_jalankan("insert into rest_covid values('',?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)", 'sssssssssssssss', (string) $tgl_system, (string) $cif, (string) $angsur, (string) $pokok, (string) $ijaroh, (string) $bulat_lama, (string) $tenor_lama, (string) $matur, (string) $angsuran, (string) $angsuran_pokok, (string) $angsuran_margin, (string) $bulat, (string) $tenor, (string) $maturity_date, (string) $kelompok) or die(mysql_error());
 
 
-            db_jalankan("insert into rek_loan(ref,tgl_realisasi,unit,no_anggota,saldo_kredit,debet,tipe,ket,USERID,STATUS,cif)VALUES('',?,?,?,'0',?,'03',?,?,'REALISASI BAGHAS',?)", 'sssssss', (string) $tgl_system, (string) $unit, (string) $no_anggota, (string) $saldo_margin, (string) $ket, (string) $userid, (string) $cif) or die(mysql_error());
+            db_jalankan("insert into rek_loan(ref,tgl_realisasi,unit,no_anggota,saldo_kredit,debet,tipe,ket,USERID,STATUS,cif,AO)VALUES('',?,?,?,'0',?,'03',?,?,'REALISASI BAGHAS',?,(select cao from loan where cif=? limit 1))", 'ssssssss', (string) $tgl_system, (string) $unit, (string) $no_anggota, (string) $saldo_margin, (string) $ket, (string) $userid, (string) $cif, (string) $cif) or die(mysql_error());
            
 
 

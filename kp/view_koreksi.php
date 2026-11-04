@@ -1,7 +1,8 @@
 <?php require_once __DIR__ . '/../koneksi_db.php';
 /**
  * Menu kp > Koreksi: daftar jurnal tabel_transaksi 2 hari terakhir (semua unit) dengan Edit (tanggal, kode rekening,
- * debet, kredit) dan Hapus. Data dari ajax_koreksi.php?type=koreksi, simpan/hapus lewat crud_koreksi.php.
+ * debet, kredit). Data dari ajax_koreksi.php?type=koreksi, simpan lewat crud_koreksi.php. Tombol Hapus dibuang atas
+ * perintah user 2026-11-04.
  * Dimigrasi 2026-11-03: dulu HTML statis tanpa cek login dengan Bootstrap/DataTables/jQuery dari CDN; kini kerangka
  * bersama (Bootstrap 5 lokal), wajib login, DataTables lokal (assets/media), skrip di assets/app/kp_koreksi.js.
  * Perilaku sama dengan versi lama; judul kolom Jenis/Keterangan disesuaikan dengan isinya (versi lama tertukar) dan

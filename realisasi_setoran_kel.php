@@ -179,8 +179,8 @@ if ($checbox) {
 				values(?,?,?,?,'Bukti SYSTEM',?,?,?)", $unit, $kode_tran, $rekening, $tanggal, $ket2, $nilai, $userid);
 		};
 		$rek_loan = function ($nilai, $ket_rek, $status, $no_ang, $cif_rek) use ($tanggal, $unit, $userid) {
-			qs("insert into rek_loan(ref,tgl_realisasi,unit,no_anggota,saldo_kredit,debet,tipe,ket,USERID,STATUS,cif)VALUES('',?,?,?,'0',?,'03',?,?,?,?)",
-				$tanggal, $unit, $no_ang, $nilai, $ket_rek, $userid, $status, $cif_rek);
+			qs("insert into rek_loan(ref,tgl_realisasi,unit,no_anggota,saldo_kredit,debet,tipe,ket,USERID,STATUS,cif,AO)VALUES('',?,?,?,'0',?,'03',?,?,?,?,(select cao from loan where cif=? limit 1))",
+				$tanggal, $unit, $no_ang, $nilai, $ket_rek, $userid, $status, $cif_rek, $cif_rek);
 		};
 		// ke = ke + 1 seperti Tagihan Kelompok (versi lama: '$ke_tenor'+1 dengan $ke_tenor kosong, selalu 1)
 		$update_loan = function () use (&$next_schedule, &$angsuran, &$ijaroh, $pb, $tanggal, $c) {

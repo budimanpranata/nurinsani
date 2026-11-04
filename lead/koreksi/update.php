@@ -1,4 +1,12 @@
 <?php require_once __DIR__ . '/../../php8_compat.php';
+// wajib login level lead (ditambahkan 2026-11-04; dulu tanpa cek login padahal mengubah tabel_transaksi)
+session_start();
+require_once __DIR__ . '/../../inc/cek_login.php';
+wajib_login();
+if ((isset($_SESSION['level']) ? $_SESSION['level'] : '') != "lead") {
+    header("location:../../index.html");
+    exit;
+}
 include "config.php";
 include "header.php";
 if(isset($_GET['u'])):

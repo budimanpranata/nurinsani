@@ -141,9 +141,10 @@ if (isset($_POST['search'])) {
                         if ($sisa > 0) {
                             $ket = "Setoran simpanan 5% an $nama";
                             catat_simpanan('simpanan_wajib', $dasar + array('TYPE' => '05', 'KREDIT' => $sisa, 'USERID' => $userid, 'KET' => 'PB Simpanan Wajib', 'REFF' => '', 'CAO' => $cao, 'blok' => '1', 'kode_transaksi' => $kode_trans));
-                            // versi lama memakai $ket1 yang belum diisi: keterangan jurnal kosong
-                            catat_transaksi($unit, $kode_trans, '1120000', $tgl_system, 'Bukti SYSTEM', '', 'debet', $sisa, $userid);
-                            catat_transaksi($unit, $kode_trans, '3202000', $tgl_system, 'Bukti SYSTEM', '', 'kredit', $sisa, $userid);
+                            // Perbaikan 2026-11-04 (perintah user): versi lama memakai $ket1 yang belum diisi sehingga keterangan
+                            // jurnal 1120000/3202000 kosong; kini sama dengan setoran wajib lain ("Setoran simpanan 5% an <nama>")
+                            catat_transaksi($unit, $kode_trans, '1120000', $tgl_system, 'Bukti SYSTEM', $ket, 'debet', $sisa, $userid);
+                            catat_transaksi($unit, $kode_trans, '3202000', $tgl_system, 'Bukti SYSTEM', $ket, 'kredit', $sisa, $userid);
                         }
                     } elseif ($pokok == 50000 && $wajib >= 0) {
                         //JIKA PUNYA POKOK DA BELUM MEMPUNYA WAJIB
@@ -266,8 +267,10 @@ if (isset($_POST['search'])) {
                         catat_simpanan('simpanan', $isi($nominal, '01', 0));
                         db_jalankan("insert into jurnal_masuk(nomor_jurnal,kode_transaksi,tanggal_selesai,unit) values(?,'',?,?)", 'sss',
                             (string) $nomor_jurnal, (string) $tgl_system, (string) $unit);
-                        // versi lama memakai $ket yang belum diisi: keterangan jurnal debet kosong
-                        catat_transaksi($unit, $kode_trans, '2101000', $tgl_system, 'Bukti SYSTEM', '', 'debet', $nominal, $userid);
+                        // Perbaikan 2026-11-04 (perintah user): versi lama memakai $ket yang belum diisi sehingga keterangan jurnal
+                        // debet 2101000 kosong; kini isian Keterangan form (seperti arah Debet), bila kosong "PB Simpanan Pokok/Wajib an <nama>"
+                        $ket_pb = trim((string) $keterangan) !== '' ? $keterangan : 'PB Simpanan ' . ($simpan == "pokok" ? 'Pokok' : 'Wajib') . " an $nama";
+                        catat_transaksi($unit, $kode_trans, '2101000', $tgl_system, 'Bukti SYSTEM', $ket_pb, 'debet', $nominal, $userid);
                         catat_transaksi($unit, $kode_trans, $gl, $tgl_system, 'Bukti SYSTEM', 'Simpanan Pokok', 'kredit', $nominal, $userid);
                     }
                     $alert("Pemindah Bukuan an $cif Suksess");

@@ -3,7 +3,10 @@ require_once __DIR__ . '/inc/cek_login.php';
 wajib_login();
 /**
  * Menu Pemeliharaan Data > Pelunasan Hapus Margin: cari pembiayaan aktif (OS > 0) berdasarkan NOREK, lalu lunasi pokok saja
- * (lunasi_hapus_margin.php). Pesan & pengalihan halaman sama dengan versi lama (mengarah ke pelunasan.php).
+ * (lunasi_hapus_margin.php).
+ * Perbaikan 2026-11-04 (perintah user): form Cari dikirim ke halaman ini sendiri (versi lama PHP_SELF; migrasi sempat salah
+ * ke pelunasan.php sehingga pencarian pindah ke Pelunasan biasa), dan pengalihan saat NOREK kosong / tidak ditemukan
+ * juga ke halaman ini (versi lama ke pelunasan.php).
  * Perilaku sama dengan versi lama; pengaman login ditambahkan (versi lama tidak memeriksa login).
  */
 require_once __DIR__ . '/inc/tampilan.php';
@@ -16,7 +19,7 @@ $pesan = array(); // script alert/pindah, dicetak seperti versi lama
 if (!empty($_POST['search'])) {
     if (empty($nopen)) {
         $pesan[] = "<script>alert('Maaf,.isi Nomor Anggota yang benar  !!!');</script>";
-        $pesan[] = "<script language='javascript'>document.location.href='pelunasan.php'</script>";
+        $pesan[] = "<script language='javascript'>document.location.href='pelunasan_hapus_margin.php'</script>";
     } else {
         $kkel = db_satu("select CODE_KEL,CIF,UNIT,CUST_SHORT_NAME,CAO FROM anggota where  norek =?", 's', $nopen);
         $ciff = $kkel ? $kkel['CIF'] : null;
@@ -29,7 +32,7 @@ if (!empty($_POST['search'])) {
     // versi lama: juga muncul saat NOREK kosong (alert kedua)
     if (!$hasil) {
         $pesan[] = "<script>alert('Maaf...,data tdak di temukan!!!');</script>";
-        $pesan[] = "<script language='javascript'>document.location.href='pelunasan.php'</script>";
+        $pesan[] = "<script language='javascript'>document.location.href='pelunasan_hapus_margin.php'</script>";
     }
 }
 
@@ -38,7 +41,7 @@ halaman_awal('Pelunasan Hapus Margin');
 <div class="card card-ni">
   <div class="card-header">Kriteria Pencarian</div>
   <div class="card-body">
-    <form method="post" action="pelunasan.php" class="form-ni" autocomplete="off">
+    <form method="post" action="pelunasan_hapus_margin.php" class="form-ni" autocomplete="off">
       <div class="row g-2 mb-3">
         <label for="kode" class="col-sm-3 col-form-label">NOREK</label>
         <div class="col-sm-4 autocomplete">

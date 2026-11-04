@@ -1,5 +1,5 @@
-/* Koreksi level kp (kp/view_koreksi.php): daftar jurnal 2 hari terakhir, Edit dan Hapus; permintaan sama dengan versi
-   lama (GET ajax_koreksi.php?type=koreksi, POST crud_koreksi.php aksi=get/edit/hapus). */
+/* Koreksi level kp (kp/view_koreksi.php): daftar jurnal 2 hari terakhir dan Edit; permintaan sama dengan versi
+   lama (GET ajax_koreksi.php?type=koreksi, POST crud_koreksi.php aksi=get/edit). Hapus dibuang (perintah user 2026-11-04). */
 $(function () {
     var modal = bootstrap.Modal.getOrCreateInstance(document.getElementById('modalForm'));
     var aksi = '';
@@ -27,8 +27,8 @@ $(function () {
             {
                 data: null, orderable: false, className: 'text-center text-nowrap',
                 render: function (data) {
-                    return '<button type="button" class="btn btn-outline-warning btn-sm" data-edit="' + teks(data.id) + '">Edit</button> '
-                        + '<button type="button" class="btn btn-outline-danger btn-sm" data-hapus="' + teks(data.id) + '">Hapus</button>';
+                    // tombol Hapus dibuang atas perintah user 2026-11-04
+                    return '<button type="button" class="btn btn-outline-warning btn-sm" data-edit="' + teks(data.id) + '">Edit</button>';
                 }
             }
         ],
@@ -71,14 +71,5 @@ $(function () {
             $('#kredit').val(data.kredit);
             modal.show();
         });
-    });
-
-    // --- HAPUS DATA ---
-    $('#omzetTable').on('click', '[data-hapus]', function () {
-        if (confirm('Yakin ingin menghapus data ini?')) {
-            $.post('crud_koreksi.php', { id: $(this).attr('data-hapus'), aksi: 'hapus' }, function (res) {
-                if (res == 'ok') { table.ajax.reload(null, false); }
-            });
-        }
     });
 });
