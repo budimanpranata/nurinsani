@@ -126,7 +126,9 @@ $pbiaya = satu($db, 'SELECT margin, tab, pla, jw FROM param_biaya WHERE jw = ? A
 if (!$pbiaya || $pbiaya['jw'] != $tenor || $pbiaya['pla'] != $pla) {
     kembali('danger', 'Parameter Pembiayaan tidak ditemukan');
 }
-if (satu($db, 'SELECT 1 AS ada FROM anggota WHERE ID_NUMBER = ?', 's', $ktp)) {
+// enkripsi (PEKERJAAN_TERTUNDA.md bagian 87): NIK anggota pasangan deposan tersimpan terenkripsi -> cocokkan juga indeksnya
+require_once __DIR__ . '/inc/enkripsi.php';
+if (satu($db, 'SELECT 1 AS ada FROM anggota WHERE ID_NUMBER = ? OR ID_NUMBER_IDX = ?', 'ss', $ktp, indeks_nik($ktp))) {
     kembali('danger', "data $ktp and $nama sudah ada dalam System");
 }
 if (satu($db, 'SELECT 1 AS ada FROM anggota WHERE CIF = ?', 's', $cif)) {

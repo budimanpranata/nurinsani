@@ -35,7 +35,9 @@ if (isset($_POST['input'])) {
     $cif_baru = $pos('cif');
     // versi lama: $cif ditimpa nilai kiriman, sehingga isian CIF sesudah simpan menampilkan CIF yang dikirim
     $cif = $cif_baru;
-    if (!db_satu("SELECT 1 as ada FROM anggota WHERE ID_NUMBER=?", 's', $ktp)) {
+    // enkripsi (PEKERJAAN_TERTUNDA.md bagian 87): NIK anggota pasangan deposan tersimpan terenkripsi -> cocokkan juga indeksnya
+    require_once __DIR__ . '/../../inc/enkripsi.php';
+    if (!db_satu("SELECT 1 as ada FROM anggota WHERE ID_NUMBER=? OR ID_NUMBER_IDX=?", 'ss', $ktp, indeks_nik($ktp))) {
         // 4 rekening simpanan; kode_kel, keterangan, cao, kode transaksi kosong seperti versi lama
         foreach (array('04', '05', '06', '07') as $jenis) {
             db_jalankan("Insert into simpanan_kp(BUSS_DATE,SNOREK,SUNIT,SCIF,CODE_KEL,DEBIT,TYPE,KREDIT,USERID,KET,REFF,CAO,blok,tgl_input,kode_transaksi)

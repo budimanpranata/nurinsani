@@ -27,7 +27,7 @@ $koneksi=open_connection2();
 $userid=$_SESSION['userid'];
 $result = mysql_query("SELECT * FROM user WHERE userid='$userid'");
 while($row = mysql_fetch_array($result)){
-echo "<h>Selamat Datang ".$row['nama']. " Aplikasi Sales Management tools</h>";
+echo "<h>Selamat Datang ".$row['nama']. " Aplikasi Nurinsani</h>";
 }
 //cek apakah user sudah login
 if(!isset($_SESSION['userid'])){

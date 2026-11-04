@@ -14,6 +14,7 @@ if($_SESSION['level']!="fund"){
    header("location:index.html");
  exit; }
  include "../../conn2.php";
+ require_once __DIR__ . '/../../inc/enkripsi.php';
  include "../../indo_tgl.php";
  $koneksi=open_connection2();	
 $kode=$_GET['kd'];
@@ -32,7 +33,9 @@ $br= mysql_fetch_array($sql2);
 $nama_unit=$br['unit'];
 $alamat=$br['alamat'];
 
-$sql4=mysql_query("Select contract_date,maturity_date,tenor,rasio,nominal,CUST_SHORT_NAME,HADDRESS1,norek_tujuan,nama_bank,aro from deposito inner join deposan on deposito.cif = deposan.cif 
+// perbaikan 2026-11-04 (perintah user): nama_bank ada di deposito dan deposan sehingga query gagal 'ambiguous' dan
+// dokumen tercetak kosong; diambil dari deposan, pasangan norek_tujuan yang dicetak di baris Norek
+$sql4=mysql_query("Select contract_date,maturity_date,tenor,rasio,nominal,CUST_SHORT_NAME,HADDRESS1,norek_tujuan,deposan.nama_bank,aro from deposito inner join deposan on deposito.cif = deposan.cif 
 where deposito.norek='$kode'
 ");
 $cd= mysql_fetch_array($sql4);
@@ -46,7 +49,8 @@ $norek_tujuan=$cd['norek_tujuan'];
 $nama_bank=$cd['nama_bank'];
 $nominal=number_format (compat_num($cd['nominal']));
 $CUST_SHORT_NAME=$cd['CUST_SHORT_NAME'];
-$HADDRESS1=$cd['HADDRESS1'];
+// alamat deposan tersimpan terenkripsi (inc/enkripsi.php, PEKERJAAN_TERTUNDA.md bagian 87); data lama terbuka tetap terbaca
+$HADDRESS1=dekripsi_data($cd['HADDRESS1']);
 $rasio_cor=100-$rasio;
 $Terbilang=ucwords (Terbilang($angka));
 $buss_date=date("y-m-d");

@@ -1,224 +1,134 @@
-<?php require_once __DIR__ . '/../../php8_compat.php'; 
+<?php require_once __DIR__ . '/../../koneksi_db.php';
+/**
+ * Data Master Deposan > + Data Perusahaan (level fund): tambah deposan perusahaan ke tabel deposan (tanpa anggota dan
+ * tanpa rekening simpanan_kp), JENIS 'PERUSAHAAN'. Nomor urut sama dengan deposan perorangan (no = unit + YYYYMMDD +
+ * 4 digit, CIF = YYYYMMDD + 4 digit). NIK pengurus 1 yang sudah ada di deposan (ID_NUMBER) ditolak "NOMOR KTP Sudah Ada..!".
+ * Dimigrasi 2026-11-04 (tampilan Bootstrap 5, prepared statement, simpan lalu kembali dengan pesan). Perbaikan atas
+ * perintah user 2026-11-04 (versi lama):
+ *   - form mengirim ke input.php (perorangan) sehingga tersimpan sebagai perorangan + anggota + 4 simpanan_kp
+ *   - isi kolom: cek KTP memakai variabel kosong; norek_tujuan diisi variabel kosong, nama_bank dan ID_NUMBER tidak
+ *     terisi; alamat perusahaan dibaca dari isian yang tidak ada; JENIS 'PERUSHAAN'
+ *   Kini: CUST_SHORT_NAME nama perusahaan, HADDRESS1 alamat perusahaan (isian baru), NPWP, norek_tujuan, nama_bank;
+ *   pengurus 1: KTP_SATU + ID_NUMBER, NAMA_SATU, HADDRESS2; pengurus 2: KTP_DUA, NAMA_DUA, HADDRESS3.
+ * Isian "Bertindak Sebagai" (jabatan pengurus) belum disimpan: tabel deposan tidak punya kolomnya.
+ * Enkripsi (PEKERJAAN_TERTUNDA.md bagian 87): NIK (ID_NUMBER, KTP_SATU, KTP_DUA) dan alamat (HADDRESS1-3) disimpan
+ * terenkripsi, plus ID_NUMBER_IDX (indeks buta NIK pengurus 1) untuk cek dobel (juga mencocokkan data lama).
+ */
+require_once __DIR__ . '/../../inc/tampilan.php';
+require_once __DIR__ . '/../../inc/enkripsi.php';
 session_start();
 ob_start();
-		$userid=$_SESSION['userid'];
-include "../conn.php";
-	$today=date("Ymd");
-	$k = db_query ($koneksi,"select kode_branch AS unit FROM user where userid='$userid'");
-			  $kbranch = db_fetch_array($k);
-			  $unit = $kbranch['unit'];
-			  
-	$dcount = db_query ($koneksi,"select max(no) AS last FROM deposan where  no LIKE '%$today%'");
-			  $hit = db_fetch_array($dcount);
-			  $lastNoTransaksi = $hit['last'];
-			  $lastNoUrut = substr($lastNoTransaksi, 12, 4);
-			  $nextNoUrut = (int) $lastNoUrut + 1;
-			  $nextNoTransaksi = $today.sprintf('%04s', $nextNoUrut);
-			  $nim="$unit$nextNoTransaksi";
-			  $cif="$nextNoTransaksi";
-			   ?>
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <head>
-        <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-            <!-- css table datatables/dataTables -->
-	    <link rel="stylesheet" href="datatables/dataTables.bootstrap.css"/>
-        
-         <link type="text/css" href="../css/bootstrap.css" rel="stylesheet">
-        <link type="text/css" href="../bootstrap/css/bootstrap.min.css" rel="stylesheet"> 
-        <link type="text/css" href="../bootstrap/css/bootstrap-responsive.min.css" rel="stylesheet">
-        <link type="text/css" href="../css/theme.css" rel="stylesheet">
-        <link type="text/css" href="../images/icons/css/font-awesome.css" rel="stylesheet">
-        <link type="text/css" href='http://fonts.googleapis.com/css?family=Open+Sans:400italic,600italic,400,600'
-            rel='stylesheet'>
-        
-        <script src="../scripts/jquery-1.9.1.min.js" type="text/javascript"></script>
-        <script src="../scripts/jquery-ui-1.10.1.custom.min.js" type="text/javascript"></script>
-    </head>
-    <body>
-                
+$userid = isset($_SESSION['userid']) ? $_SESSION['userid'] : null;
+if (!isset($_SESSION['userid'])) {
+    header("location:../index.html");
+    exit;
+}
 
-            <div class="container">
-                <div class="row">
-                    <div class="span12">
-                        <div class="content"><div class="panel panel-default">
-                        <div class="panel-heading">
-                        <h3 class="panel-title"><i class="icon-user"></i> Data Deposan Nur Insani</h3> 
-                        </div>
-                        <div class="panel-body">
-                            <?php
-			if(isset($_POST['input'])){
-				$nama		   = $_POST['nama'];
-				$npwp  = $_POST['npwp'];
-				$norek			= $_POST['norek'];
-				$nama_bank		= $_POST['bank'];
-				$alamat			= $_POST['alamat'];
-				$ktp_satu		= $_POST['ktp'];
-				$ktp_dua		= $_POST['ktp_dua'];
-				$nama_satu = $_POST['nama_satu'];
-				$nama_dua = $_POST['nama_dua'];
-				$alamat_satu=$_POST['alamat_satu'];
-				$alamat_dua = $_POST['alamat_dua'];
-				$jabatan_satu=$_POST['jabatan_satu'];
-				$jabatan_dua = $_POST['jabatan_dua'];
-				
-				$cek = db_query($koneksi, "SELECT * FROM deposan WHERE ID_NUMBER='$ktp'");
-				if(db_num_rows($cek) == 0){
-						$insert = db_query($koneksi, "INSERT INTO deposan(no,CIF,unit,CUST_SHORT_NAME,NAMA_SATU,NAMA_DUA,KTP_SATU,KTP_DUA,HADDRESS1,HADDRESS2,HADDRESS3,norek_tujuan,nama_bank,ID_NUMBER,JENIS,NPWP)
-															VALUES('$nim','$cif','$unit','$nama','$nama_satu', '$nama_dua','$ktp_satu','$ktp_dua','$alamat','$alamat_satu','$alamat_dua','$bank','$ktp','PERUSHAAN','$npwp')") or die(mysqli_error());
-						if($insert){
-							echo '<div class="alert alert-success alert-dismissable"><button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>Data Berhasil Di Simpan.</div>';
-						}else{
-							echo '<div class="alert alert-danger alert-dismissable"><button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>Ups, Data Gagal Di simpan !</div>';
-						}
-				}else{
-					echo '<div class="alert alert-danger alert-dismissable"><button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>NOMOR KTP Sudah Ada..!</div>';
-				}
-			}
-			?>
-            
-            <blockquote>
-            Input Data Perusahaan
-            </blockquote>
-                         <form name="form1" id="form1" class="form-horizontal row-fluid" action="input.php" method="POST" >
-										<div class="control-group">
-											<label class="control-label" for="basicinput">No</label>
-											<div class="controls">
-												<input type="text" name="nim" id="nim" placeholder="Tidak perlu di isi" value="<?php echo $nim; ?>" class="form-control span8 tip" readonly="readonly">
-											</div>
-										</div>
-										
-										<div class="control-group">
-											<label class="control-label" for="basicinput">Nama Perusahaan</label>
-											<div class="controls">
-												<input type="text" name="nama" id="nama" placeholder="Nama Perusahaan" class="form-control span8 tip" required>
-											</div>
-										</div>
-										<div class="control-group">
-											<label class="control-label" for="basicinput">NPWP</label>
-											<div class="controls">
-												<input type="text" name="npwp" id="npwp" placeholder="NPWP Perusahaan" class="form-control span8 tip" required>
-											</div>
-										</div>
-										 <div class="control-group">
-											<label class="control-label" for="basicinput">No Rekening Bank Lain</label>
-											<div class="controls">
-												<input name="norek" id="norek" class=" form-control span8 tip" type="text" placeholder="No Rekening Pencairan Baghas" required />
-											</div>
-										</div>
-										 <div class="control-group">
-											<label class="control-label" for="basicinput">Nama Bank</label>
-											<div class="controls">
-												<input name="bank" id="bank" class=" form-control span8 tip" type="text" placeholder="Nama Bank" required />
-											</div>
-										</div>
-			<div class="control-group">
-			<blockquote>
-            Susunan Pengurus
-            </blockquote>
-			</div>							<div class="control-group">
-											<label class="control-label" for="basicinput">NIK</label>
-											<div class="controls">
-												<input type="text" name="ktp" id="ktp" placeholder="Nomor KTP" class="form-control span8 tip" required>
-											</div>
-										</div>
+$today = date("Ymd");
+$kbranch = db_satu("select kode_branch AS unit FROM user where userid=?", 's', (string) $userid);
+$unit = $kbranch ? (string) $kbranch['unit'] : '';
+$hit = db_satu("select max(no) AS last FROM deposan where no LIKE ?", 's', '%' . $today . '%');
+$lastNoTransaksi = $hit ? (string) $hit['last'] : '';
+$nextNoUrut = (int) substr($lastNoTransaksi, 12, 4) + 1;
+$nextNoTransaksi = $today . sprintf('%04s', $nextNoUrut);
+$nim = "$unit$nextNoTransaksi";
+$cif = "$nextNoTransaksi";
 
-										<div class="control-group">
-											<label class="control-label" for="basicinput">Nama</label>
-											<div class="controls">
-												<input type="text" name="nama_satu" id="nama_satu" placeholder="Nama Deposan" class="form-control span8 tip" required>
-											</div>
-										</div>
+if (isset($_POST['input'])) {
+    $pos = function ($k) {
+        return isset($_POST[$k]) ? trim((string) $_POST[$k]) : '';
+    };
+    $ktp = potong_data($pos('ktp'), 40);
+    $ktp_idx = indeks_nik($ktp);
+    $ktp_enc = enkripsi_data($ktp);
+    if (!db_satu("SELECT 1 as ada FROM deposan WHERE ID_NUMBER_IDX=? OR ID_NUMBER=?", 'ss', $ktp_idx, $ktp)) {
+        $ok = db_jalankan("INSERT INTO deposan(no,CIF,unit,CUST_SHORT_NAME,NAMA_SATU,NAMA_DUA,KTP_SATU,KTP_DUA,HADDRESS1,HADDRESS2,HADDRESS3,norek_tujuan,nama_bank,ID_NUMBER,ID_NUMBER_IDX,JENIS,NPWP)
+            VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,'PERUSAHAAN',?)", 'ssssssssssssssss',
+            $nim, $cif, $unit, $pos('nama'), $pos('nama_satu'), $pos('nama_dua'), $ktp_enc, enkripsi_data(potong_data($pos('ktp_dua'), 40)),
+            enkripsi_data(potong_data($pos('alamat'), 100)), enkripsi_data(potong_data($pos('alamat_satu'), 100)),
+            enkripsi_data(potong_data($pos('alamat_dua'), 100)),
+            $pos('norek'), $pos('bank'), $ktp_enc, $ktp_idx, $pos('npwp'));
+        $_SESSION['pesan_deposan_per'] = $ok ? array('success', 'Data Berhasil Di Simpan.')
+            : array('danger', 'Ups, Data Gagal Di simpan ! ' . db_error_terakhir());
+    } else {
+        $_SESSION['pesan_deposan_per'] = array('danger', 'NOMOR KTP Sudah Ada..!');
+    }
+    header('Location: input_per.php');
+    exit;
+}
 
-											<div class="control-group">
-											<label class="control-label" for="basicinput">Alamat</label>
-											<div class="controls">
-												<input name="alamat_satu" id="alamat_satu" class=" form-control span8 tip" type="text" placeholder="Alamat" required />
-											</div>
-										</div>
-                                        
-                                        <div class="control-group">
-											<label class="control-label" for="basicinput">Bertindak Sebagai</label>
-											<div class="controls">
-												<input name="jabatan_satu" id="jabatan_dua" class=" form-control span8 tip" type="text" placeholder="Jabatan" required />
-											</div>
-										</div>
-										<div class="control-group">
-											<label class="control-label" for="basicinput">NIK</label>
-											<div class="controls">
-												<input type="text" name="ktp_dua" id="ktp_dua" placeholder="Nomor KTP" class="form-control span8 tip" required>
-											</div>
-										</div>
+$pesan = isset($_SESSION['pesan_deposan_per']) ? $_SESSION['pesan_deposan_per'] : null;
+unset($_SESSION['pesan_deposan_per']);
 
-                                       <div class="control-group">
-											<label class="control-label" for="basicinput">Nama</label>
-											<div class="controls">
-												<input type="text" name="nama_dua" id="nama_dua" placeholder="Nama Deposan" class="form-control span8 tip" required>
-											</div>
-										</div>
-
-											<div class="control-group">
-											<label class="control-label" for="basicinput">Alamat</label>
-											<div class="controls">
-												<input name="alamat_dua" id="alamat_dua" class=" form-control span8 tip" type="text" placeholder="Alamat" required />
-											</div>
-										</div>
-                                        
-                                        <div class="control-group">
-											<label class="control-label" for="basicinput">Bertindak Sebagai</label>
-											<div class="controls">
-												<input name="jabatan_dua" id="jabatan_dua" class=" form-control span8 tip" type="text" placeholder="Jabatan" required />
-											</div>
-										</div>
-										<div class="control-group">
-											<div class="controls">
-												<button type="submit" name="input" id="input" class="btn btn-sm btn-primary">Simpan</button>
-                                               <a href="../view/master_trans.php" class="btn btn-sm btn-danger">Kembali</a>
-											</div>
-										</div>
-									</form>
-                        </div>
-                        <!--/.content-->
-                    </div>
-                    <!--/.span9-->
-                </div>
-            </div>
-            <!--/.container-->
-        
-        <!--/.wrapper--><br />
-       <script src="../js/bootstrap-datepicker.js"></script>
-       		
-	
-<script>
-	$('.date').datepicker({
-		format: 'yyyy-mm-dd',
-	})
-	</script>
-	
-  
-        <script src="../bootstrap/js/bootstrap.min.js" type="text/javascript"></script>
-        
-        <script src="../datatables/jquery.dataTables.js"></script>
-        <script src="../datatables/dataTables.bootstrap.js"></script>
-        <script>
-        $(document).ready(function() {
-				var dataTable = $('#lookup').DataTable( {
-					"processing": true,
-					"serverSide": true,
-					"ajax":{
-						url :"../view/ajax-grid-data.php", // json datasource
-						type: "post",  // method  , by default get
-						error: function(){  // error handling
-							$(".lookup-error").html("");
-							$("#lookup").append('<tbody class="employee-grid-error"><tr><th colspan="3">No data found in the server</th></tr></tbody>');
-							$("#lookup_processing").css("display","none");
-							
-						}
-					}
-				} );
-			} );
-        </script>
-      
-    </body>
+halaman_awal('Data Deposan Nur Insani');
+?>
+<?php if ($pesan): ?>
+<div class="alert alert-<?php echo $pesan[0]; ?> alert-dismissible fade show" role="alert">
+  <?php echo h($pesan[1]); ?>
+  <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+</div>
+<?php endif; ?>
+<form name="form1" id="form1" action="input_per.php" method="POST" autocomplete="off">
+  <div class="card card-ni">
+    <div class="card-header">Input Data Perusahaan</div>
+    <div class="card-body row g-3">
+      <div class="col-sm-6">
+        <label class="form-label" for="nim">No</label>
+        <input type="text" name="nim" id="nim" placeholder="Tidak perlu di isi" value="<?php echo h($nim); ?>" class="form-control" readonly>
+      </div>
+      <div class="col-sm-6">
+        <label class="form-label" for="nama">Nama Perusahaan</label>
+        <input type="text" name="nama" id="nama" placeholder="Nama Perusahaan" class="form-control" required>
+      </div>
+      <div class="col-sm-6">
+        <label class="form-label" for="alamat">Alamat Perusahaan</label>
+        <input type="text" name="alamat" id="alamat" placeholder="Alamat Perusahaan" class="form-control" maxlength="100" required>
+      </div>
+      <div class="col-sm-6">
+        <label class="form-label" for="npwp">NPWP</label>
+        <input type="text" name="npwp" id="npwp" placeholder="NPWP Perusahaan" class="form-control" required>
+      </div>
+      <div class="col-sm-6">
+        <label class="form-label" for="norek">No Rekening Bank Lain</label>
+        <input type="text" name="norek" id="norek" placeholder="No Rekening Pencairan Baghas" class="form-control" required>
+      </div>
+      <div class="col-sm-6">
+        <label class="form-label" for="bank">Nama Bank</label>
+        <input type="text" name="bank" id="bank" placeholder="Nama Bank" class="form-control" required>
+      </div>
+    </div>
+  </div>
+  <div class="row g-3 mt-0">
+    <?php foreach (array(array('', 'satu', '1'), array('_dua', 'dua', '2')) as $p): ?>
+    <div class="col-lg-6">
+      <div class="card card-ni h-100">
+        <div class="card-header">Pengurus <?php echo $p[2]; ?></div>
+        <div class="card-body row g-3">
+          <div class="col-12">
+            <label class="form-label" for="ktp<?php echo $p[0]; ?>">NIK</label>
+            <input type="text" name="ktp<?php echo $p[0]; ?>" id="ktp<?php echo $p[0]; ?>" placeholder="Nomor KTP" class="form-control" maxlength="40" required>
+          </div>
+          <div class="col-12">
+            <label class="form-label" for="nama_<?php echo $p[1]; ?>">Nama</label>
+            <input type="text" name="nama_<?php echo $p[1]; ?>" id="nama_<?php echo $p[1]; ?>" placeholder="Nama" class="form-control" required>
+          </div>
+          <div class="col-12">
+            <label class="form-label" for="alamat_<?php echo $p[1]; ?>">Alamat</label>
+            <input type="text" name="alamat_<?php echo $p[1]; ?>" id="alamat_<?php echo $p[1]; ?>" placeholder="Alamat" class="form-control" maxlength="100" required>
+          </div>
+          <div class="col-12">
+            <label class="form-label" for="jabatan_<?php echo $p[1]; ?>">Bertindak Sebagai</label>
+            <input type="text" name="jabatan_<?php echo $p[1]; ?>" id="jabatan_<?php echo $p[1]; ?>" placeholder="Jabatan" class="form-control">
+          </div>
+        </div>
+      </div>
+    </div>
+    <?php endforeach; ?>
+  </div>
+  <div class="text-end mt-3">
+    <a href="../view/master_fund.php" class="btn btn-outline-secondary">Kembali</a>
+    <button type="submit" name="input" id="input" value="Simpan" class="btn btn-ni px-4">Simpan</button>
+  </div>
+</form>
+<?php
+halaman_akhir();

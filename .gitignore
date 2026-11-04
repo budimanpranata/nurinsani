@@ -3,6 +3,8 @@
 
 # Dump database (ukuran besar & berisi data)
 *.sql
+# kecuali SQL perubahan skema enkripsi NIK/alamat (bukan dump; perlu ikut ke server)
+!db/enkripsi/*.sql
 
 # Kredensial database server (salin dari koneksi_db.lokal.contoh.php)
 koneksi_db.lokal.php

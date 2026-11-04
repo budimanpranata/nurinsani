@@ -27,7 +27,7 @@ halaman_awal('Home');
 <div class="card card-ni mb-3">
   <div class="card-body">
     <h1 class="h5 mb-1">Selamat Datang <?php echo h($row['nama']); ?></h1>
-    <div class="text-muted small">Di Aplikasi Sales Manajement Tools</div>
+    <div class="text-muted small">Di Aplikasi Nurinsani</div>
   </div>
 </div>
 <?php endforeach; ?>

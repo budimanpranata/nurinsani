@@ -6,7 +6,10 @@
  *   - recordsTotal/recordsFiltered dihitung dari query yang sama dengan data yang tampil
  *     (versi lama selalu memakai jumlah seluruh tabel anggota, sehingga info & jumlah halaman saat mencari salah).
  * Catatan: data belum difilter per unit (lihat PEKERJAAN_TERTUNDA.md).
+ * Enkripsi (PEKERJAAN_TERTUNDA.md bagian 87): NIK terenkripsi (anggota pasangan deposan) tampil tersamar; NIK lengkap
+ * yang diketik juga dicocokkan lewat ID_NUMBER_IDX (NIK terenkripsi tidak bisa dicari sebagian dengan LIKE).
  */
+require_once __DIR__ . '/inc/enkripsi.php';
 date_default_timezone_set('Asia/Jakarta');
 session_start();
 ob_start();
@@ -38,10 +41,10 @@ $saring = '';
 $tipe = '';
 $param = array();
 if (!empty($search)) {
-    $saring = " AND (ID_NUMBER LIKE ? OR anggota.Cust_Short_name LIKE ? OR anggota.CIF LIKE ?)";
+    $saring = " AND (ID_NUMBER LIKE ? OR anggota.Cust_Short_name LIKE ? OR anggota.CIF LIKE ? OR ID_NUMBER_IDX = ?)";
     $pola = '%' . $search . '%';
-    $tipe = 'sss';
-    $param = array($pola, $pola, $pola);
+    $tipe = 'ssss';
+    $param = array($pola, $pola, $pola, indeks_nik($search));
 }
 
 // jumlah seluruh data (tanpa kata kunci) dan jumlah hasil pencarian, dari query yang sama dengan data yang tampil
@@ -60,6 +63,9 @@ foreach (db_semua($sql, $tipe . 'ii', ...array_merge($param, array($start, $leng
     // nilai dikirim sebagai teks seperti versi lama (mysqli_query)
     foreach ($row as $k => $v) {
         $row[$k] = $v === null ? null : (string) $v;
+    }
+    if ($row['ID_NUMBER'] !== null) {
+        $row['ID_NUMBER'] = tampil_nik($row['ID_NUMBER']);
     }
     $row['action'] = '<a href="new3.php?cif=' . htmlspecialchars((string) $row['cif'], ENT_QUOTES) . '" class="btn btn-sm btn-ni">Edit</a>';
     $data[] = $row;

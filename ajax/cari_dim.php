@@ -21,6 +21,9 @@ if (strlen($q) == 0) {
     exit;
 }
 
+// enkripsi (PEKERJAAN_TERTUNDA.md bagian 87): NIK/alamat terenkripsi didekripsi untuk isi form, NIK di label tersamar,
+// NIK lengkap juga dicocokkan lewat ID_NUMBER_IDX (NIK terenkripsi tidak bisa dicari dengan LIKE)
+require_once __DIR__ . '/../inc/enkripsi.php';
 $user = db_satu('SELECT kode_branch FROM user WHERE userid = ?', 's', (string) $_SESSION['userid']);
 $unit = $user ? (string) $user['kode_branch'] : '';
 $awalan = $q . '%';
@@ -34,8 +37,9 @@ $baris = db_semua("SELECT nama_kel,calon_loan.no_anggota,tgl_wakalah, anggota.CI
     left join calon_loan on anggota.CIF=calon_loan.cif
     left join barang on barang.id_barang=calon_loan.no_anggota
     left join kelompok on calon_loan.code_kel = kelompok.code_kel
-    WHERE anggota.CIF LIKE ? and anggota.UNIT=? or anggota.CUST_SHORT_NAME LIKE ? and anggota.UNIT =? or ID_NUMBER LIKE ? and anggota.UNIT=?",
-    'ssssss', $awalan, $unit, $awalan, $unit, $awalan, $unit);
+    WHERE anggota.CIF LIKE ? and anggota.UNIT=? or anggota.CUST_SHORT_NAME LIKE ? and anggota.UNIT =? or ID_NUMBER LIKE ? and anggota.UNIT=?
+       or ID_NUMBER_IDX = ? and anggota.UNIT=?",
+    'ssssssss', $awalan, $unit, $awalan, $unit, $awalan, $unit, indeks_nik($q), $unit);
 
 $teks = function ($v) {
     return $v === null ? '' : (string) $v;
@@ -49,15 +53,15 @@ $urutan = array('satu', 'dua', 'tiga', 'empat', 'lima', 'enam', 'tujuh', 'delapa
 $hasil = array();
 foreach ($baris as $r) {
     $data = array(
-        'label' => trim($teks($r['nama_kel']) . '  ' . $r['CIF'] . '  ' . $r['CUST_SHORT_NAME'] . '  ' . $teks($r['ID_NUMBER'])),
+        'label' => trim($teks($r['nama_kel']) . '  ' . $r['CIF'] . '  ' . $r['CUST_SHORT_NAME'] . '  ' . tampil_nik($teks($r['ID_NUMBER']))),
         'nama' => $teks($r['CUST_SHORT_NAME']), 'cif' => $teks($r['CIF']),
         'no_anggota' => $teks($r['no_anggota']), // versi lama: fill3(NOREK) lalu ditimpa fill50(no_anggota)
-        'branch' => $teks($r['UNIT']), 'ibu' => $teks($r['MOTHER_NAME']), 'alamat' => $teks($r['HADDRESS1']),
+        'branch' => $teks($r['UNIT']), 'ibu' => $teks($r['MOTHER_NAME']), 'alamat' => $teks(dekripsi_data($r['HADDRESS1'])),
         'lurah' => $teks($r['HADDRESS2']), 'kec' => $teks($r['HADDRESS3']), 'kota' => $teks($r['HADDRESS4']),
         'wali' => $teks($r['WARIS']), 'no_tlp' => $teks($r['MOBILE_PHONE']), 'tgl_lahir' => $tanggal($r['BIRTH_DATE']),
         'tempat_lahir' => $teks($r['TEMPAT_LAHIR']), 'code_kel' => $teks($r['CODE_KEL']), 'pendidikan' => $teks($r['EDUCATION']),
         'npwp' => $teks($r['NPWP']), 'kd_pos' => $teks($r['HPOST_CODE']), 'status_kawin' => $teks($r['MARITAL_STATUS']),
-        'id_expire' => $teks($r['ID_EXPIRED']), 'id' => $teks($r['ID_NUMBER']), 'sumber' => $teks($r['SOURCE_INCOME']),
+        'id_expire' => $teks($r['ID_EXPIRED']), 'id' => $teks(dekripsi_data($r['ID_NUMBER'])), 'sumber' => $teks($r['SOURCE_INCOME']),
         'jenis_kel' => $teks($r['GENDER']), 'code_ao' => $teks($r['CAO']), 'tgl_skep' => $tanggal($r['tgl_wakalah']),
         'rt' => $teks($r['HADDRESS5']), 'pla' => $teks($r['Plafond']), 'usaha' => $teks($r['usaha']),
         'nama_usaha' => $teks($r['nama_usaha']), 'tgl_akad' => $tanggal($r['tgl_akad']), 'tenor' => $teks($r['tenor']),
