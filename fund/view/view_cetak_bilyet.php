@@ -1,181 +1,105 @@
-<?php require_once __DIR__ . '/../../koneksi_db.php'; error_reporting(0); // tambahkan untuk menghilangkan notice... hehe 
- include "../../function.php";
+<?php require_once __DIR__ . '/../../koneksi_db.php';
+/**
+ * Menu fund > Cetak > Cetak Bilyet: deposito dengan status_print 'OK' dan tombol Print (cetak_bilyet.php, PDF di tab
+ * baru; daftar dimuat ulang saat kembali ke tab ini karena deposito yang dicetak berstatus 'Print'), serta Export .xlsx
+ * bertahap (tempo_export.php?laporan=bilyet). Filter di sesi bilyet_filter.
+ * Dimigrasi 2026-11-04 (perintah user): tampilan Bootstrap 5, DataTables lokal, prepared statement, wajib login level
+ * fund (dulu tanpa cek login); pencarian CIF/nama diperbaiki (dulu salah tanda kutip, selalu gagal); export tidak lagi
+ * lewat export.php.
+ */
+require_once __DIR__ . '/../../inc/tampilan.php';
+date_default_timezone_set('Asia/Jakarta');
+session_start();
+ob_start();
+require_once __DIR__ . '/../../inc/cek_login.php';
+wajib_login();
+if ((isset($_SESSION['level']) ? $_SESSION['level'] : '') != "fund") {
+    header("location:../../index.html");
+    exit;
+}
+include_once __DIR__ . '/../../function.php';
+require_once __DIR__ . '/../../inc/cetak_deposito.php';
+
+$cari = isset($_GET['cari']) ? trim((string) $_GET['cari']) : '';
+$filter = array('cari' => $cari);
+$_SESSION['bilyet_filter'] = $filter;
+$data = bilyet_daftar($filter);
+
+halaman_awal('Cetak Bilyet Deposito', array('assets/app/datatables-ni.css'));
 ?>
-<!doctype html>
-<html>
-    <head>
-         <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Data Deposan Nur Insani</title>
-        <!-- css table datatables/dataTables -->
-	<link rel="stylesheet" href="../datatables/dataTables.bootstrap.css"/>
-    
-         <link rel="stylesheet" href="bootstrap.min.css"/>
-        <link type="text/css" href="../bootstrap/css/bootstrap-responsive.min.css" rel="stylesheet">
-        <link type="text/css" href="../css/theme.css" rel="stylesheet">
-        <link type="text/css" href="../images/icons/css/font-awesome.css" rel="stylesheet">
-        <link type="text/css" href='http://fonts.googleapis.com/css?family=Open+Sans:400italic,600italic,400,600'
-            rel='stylesheet'>
-            
-            
-            
-        <script src="../scripts/jquery-1.9.1.min.js" type="text/javascript"></script>
-        <script src="../scripts/jquery-ui-1.10.1.custom.min.js" type="text/javascript"></script>
-        <style>
-            /*fix margin pagination*/
-            .pagination{
-                margin-top: 0px;
-            }
-        </style>
-    </head>
-    <body>
-	 <div class="container" >
-                <div class="row">
-                    <div class="span12">
-                        <div class="content">
-        <?php 
-//        includekan fungsi paginasi
-        include 'pagination1.php';
-//        koneksi ke database
-        $koneksi = db_ni();
-        $db = mysql_select_db('nur_insani');
-        
-//        mengatur variabel reload dan sql
-        if(isset($_REQUEST['keyword']) && $_REQUEST['keyword']<>""){
-//        jika ada kata kunci pencarian (artinya form pencarian disubmit dan tidak kosong)
-//        pakai ini
-            $keyword=$_REQUEST['keyword'];
-            $reload = "view_cetak_bilyet.php?pagination=true&keyword=$keyword";
-            $sql =  "SELECT norek,CUST_SHORT_NAME,nominal,tenor,maturity_date,deposito.cif,aro FROM deposito join deposan on deposan.cif = deposito.cif where status_print ='OK' and deposito.cif LIKE '%$keyword% or status_print ='OK' and deposito.CUST_SHORT_NAME LIKE '%$keyword%''";
-            $result = mysql_query($sql);
-        }else{
-//            jika tidak ada pencarian pakai ini
-            $reload = "view_cetak_bilyet.php?pagination=true";
-            $sql =  "SELECT norek,CUST_SHORT_NAME,nominal,tenor,maturity_date,deposito.cif,aro FROM deposito join deposan on deposan.CIF = deposito.cif where status_print ='OK'";
-            $result = mysql_query($sql);
-        }
-        
-        //pagination config start
-        $rpp = 10; // jumlah record per halaman
-        $page = intval($_GET["page"]);
-        if($page<=0) $page = 1;  
-        $tcount = mysql_num_rows($result);
-        $tpages = ($tcount) ? ceil(compat_num($tcount/$rpp)) : 1; // total pages, last page number
-        $count = 0;
-        $i = ($page-1)*$rpp;
-        $no_urut = ($page-1)*$rpp;
-        //pagination config end
-        ?>
-	<div class="panel panel-default">
-		<div class="panel-heading">
-                        <h3 class="panel-title"><i class="icon-user"></i> Data Bilyet Nur Insani</h3> 
-                        </div>
-						<div class="panel-body">
-       
-            
-			<div class="row" >
-			
-                <div class="col-lg-8">
-                    <!--muncul jika ada pencarian (tombol reset pencarian)-->
-                    <?php
-                    if($_REQUEST['keyword']<>""){
-                    ?>
-                        <a class="btn btn-default btn-outline" href="view_break.php"> Reset Pencarian</a>
-                    <?php
-                    }
-                    ?>
-                </div>
-                <div class="col-lg-4 text-right">
-                    <form method="post" action="view_break.php">
-                        <div class="form-group input-group">
-                            <input type="text" name="keyword" class="form-control" placeholder="Search..." value="<?php echo $_REQUEST['keyword']; ?>">
-                            <span class="input-group-btn">
-                                <button class="btn btn-primary" type="submit">Cari
-                                </button>
-                            </span>
-                        </div>
-                    </form>
-                </div>
-            </div>
-            <table class="table table-bordered">
-                <thead>
-                    <tr>
-                        <th>#</th>
-						<th>NO TRANSAKSI</th>
-                        <th>Cif</th>
-						<th>Nama</th>
-						  <th>Nominal</th>
-						   <th>Tenor</th>
-						    <th>Jatuh Tempo	</th>
-							<th>Status Aro</th>
-                        <th>Aksi</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <?php
-                    while(($count<$rpp) && ($i<$tcount)) {
-                        mysql_data_seek($result,$i);
-                        $data = mysql_fetch_array($result);
-                    ?>
-                    <tr>
-                        <td width="80px">
-                            <?php echo ++$no_urut;?> 
-                        </td>
-						 <td>
-                            <?php echo $data ['norek']; ?> 
-                        </td>
+<div class="card card-ni mw-100">
+  <div class="card-header">Cetak Bilyet Deposito</div>
+  <div class="card-body">
+    <form method="get" action="view_cetak_bilyet.php" class="row g-2 align-items-end mb-3">
+      <div class="col-sm-4">
+        <label class="form-label" for="cari">Cari CIF / Nama Deposan</label>
+        <input type="text" name="cari" id="cari" value="<?php echo h($cari); ?>" class="form-control">
+      </div>
+      <div class="col-sm-8 d-flex gap-2">
+        <button type="submit" class="btn btn-ni">Tampilkan</button>
+        <?php if ($cari !== ''): ?>
+        <a class="btn btn-outline-secondary" href="view_cetak_bilyet.php">Reset Pencarian</a>
+        <?php endif; ?>
+        <button type="button" class="btn btn-outline-success ms-auto" data-export-xlsx data-export-url="tempo_export.php?laporan=bilyet" data-export-satuan="deposito">Export Excel (.xlsx)</button>
+      </div>
+    </form>
+    <table id="tabel_cetak" class="table table-sm table-bordered table-ni align-middle w-100">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>No Transaksi</th>
+          <th>Cif</th>
+          <th>Nama</th>
+          <th class="text-end">Nominal</th>
+          <th>Tenor</th>
+          <th>Jatuh Tempo</th>
+          <th>Status Aro</th>
+          <th class="text-center">Aksi</th>
+        </tr>
+      </thead>
+      <tbody>
+        <?php foreach ($data as $i => $row): ?>
+        <tr>
+          <td><?php echo $i + 1; ?></td>
+          <td><?php echo h($row['norek']); ?></td>
+          <td><?php echo h($row['cif']); ?></td>
+          <td><?php echo h($row['CUST_SHORT_NAME']); ?></td>
+          <td class="text-end" data-order="<?php echo h($row['nominal']); ?>"><?php echo number_format(compat_num($row['nominal'])); ?></td>
+          <td><?php echo h($row['tenor']); ?></td>
+          <td data-order="<?php echo h($row['maturity_date']); ?>"><?php echo h(tgl_indo($row['maturity_date'])); ?></td>
+          <td><?php echo h($row['aro']); ?></td>
+          <td class="text-center"><a href="cetak_bilyet.php?kd=<?php echo h(urlencode($row['norek'])); ?>" target="_blank" rel="noopener" class="btn btn-sm btn-success" data-cetak>Print</a></td>
+        </tr>
+        <?php endforeach; ?>
+      </tbody>
+    </table>
+  </div>
+</div>
 
-                        <td>
-                            <?php echo $data ['cif']; ?> 
-                        </td>
-						 <td>
-                            <?php echo $data ['CUST_SHORT_NAME']; ?> 
-                        </td>
-						<td>
-                            <?php echo $data ['nominal']; ?> 
-                        </td>
-							<td>
-                            <?php echo $data ['tenor']; ?> 
-                        </td>
-							<td>	
-                            <?php echo tgl_indo ($data ['maturity_date']); ?> 
-                        </td>
-						<td>	
-                            <?php echo $data ['aro']; ?> 
-                        </td>
-                        <td width="120px" class="text-center">
-												  
-                            <a  href="cetak_bilyet.php?kd=<?php echo $data ['norek'] ?> " class="btn btn-success btn-lg"> 
-							<span class="glyphicon glyphicon-print"></span> Print
-							</a>
-						
-						</div>	
-                        </td>
-                    </tr>
-                    <?php
-                        $i++; 
-                        $count++;
-                    }
-                    ?>
-                </tbody>
-            </table>
-            <div class="row">
-                <div class="col-md-8">
-                    <?php echo paginate_one($reload, $page, $tpages); ?>
-                </div>
-                <div class="col-md-4 text-right">
-                    <!--form ini akan brfungsi untuk mengirimkan query sql yang sekarang aktif-->
-                    <!--sql diambil dari baris 28 atau 33, tergantung ada atau tidaknya kata kunci pencarian-->
-                    <form action="export.php" method="post">
-                        <input type="hidden" name="sql" value="<?php echo $sql ?>" >
-                        <input type="submit" value="Export Excel" class="btn btn-default" >
-                    </form>
-                </div>
-				</div>
-              </div>
-			    </div>
-				  </div>
-				    </div>
-    </body>
-</html>
-
+<div class="modal fade" id="modal-export" tabindex="-1" aria-labelledby="judul-export" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2 class="modal-title fs-6" id="judul-export">Export Data Cetak Bilyet</h2>
+      </div>
+      <div class="modal-body">
+        <div class="progress" role="progressbar" aria-label="Progres export" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" style="height: 1.25rem;">
+          <div class="progress-bar progress-bar-striped progress-bar-animated" style="width: 0%">0%</div>
+        </div>
+        <div class="small text-muted mt-2" data-export-teks aria-live="polite">Menyiapkan data…</div>
+        <div data-export-ringkasan></div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary btn-sm d-none" data-bs-dismiss="modal" data-export-tutup>Tutup</button>
+      </div>
+    </div>
+  </div>
+</div>
+<?php
+halaman_akhir(array(
+    'assets/media/js/jquery.js',
+    'assets/media/js/jquery.dataTables.js',
+    'assets/media/js/dataTables.bootstrap.js',
+    'assets/app/export_xlsx.js',
+    'assets/app/fund_cetak.js',
+));

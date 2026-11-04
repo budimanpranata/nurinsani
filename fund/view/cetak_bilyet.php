@@ -1,44 +1,36 @@
-<?php require_once __DIR__ . '/../../php8_compat.php';
+<?php require_once __DIR__ . '/../../koneksi_db.php';
+/**
+ * Cetak Bilyet deposito (?kd=norek, dari view_cetak_bilyet.php): PDF FPDF 330x330 mm; tata letak dan isi sama dengan
+ * versi lama. Sesudah data diambil, status_print diubah ke 'Print' (deposito hilang dari daftar Cetak Bilyet).
+ * Perbaikan atas perintah user 2026-11-04: prepared statement; norek tidak ada atau status_print bukan 'OK' -> pesan
+ * (dulu PDF kosong dan status tetap di-update); query ao/branch yang hasilnya tidak dipakai dibuang.
+ * Sebelumnya (2026-11-04): nama_bank dari deposan (dulu query 'ambiguous' -> bilyet kosong), alamat didekripsi.
+ */
+require_once __DIR__ . '/../../inc/tampilan.php';
 session_start();
 ob_start();
-$userid=$_SESSION['userid'];
-$tgl_jatuh_tempo=$_SESSION['jatuh'];
-$cao=$_SESSION['code_cao'];
-//cek apakah user sudah login
-if(!isset($_SESSION['userid'])){
-   header("location:index.html");
- exit; }
-
+require_once __DIR__ . '/../../inc/cek_login.php';
+wajib_login();
 //cek level user
-if($_SESSION['level']!="fund"){
-   header("location:index.html");
- exit; }
- include "../../conn2.php";
- require_once __DIR__ . '/../../inc/enkripsi.php';
- include "../../indo_tgl.php";
- $koneksi=open_connection2();	
-$kode=$_GET['kd'];
+if ((isset($_SESSION['level']) ? $_SESSION['level'] : '') != "fund") {
+    header("location:../../index.html");
+    exit;
+}
+require_once __DIR__ . '/../../inc/enkripsi.php';
+include "../../indo_tgl.php";
+$kode = isset($_GET['kd']) ? trim((string) $_GET['kd']) : '';
 
-$sql111=mysql_query("Select nama_ao FROM ao WHERE cao='$cao'");
-$ca= mysql_fetch_array($sql111);
-$nama_sales=$ca['nama_ao'];
-
-
-$sql1=mysql_query("Select nama,kode_branch FROM user WHERE userid='$userid'");
-$dsmo= mysql_fetch_array($sql1);
-$kode_branch=$dsmo['kode_branch'];
-
-$sql2=mysql_query("Select * FROM branch WHERE kode_branch='$kode_branch'");
-$br= mysql_fetch_array($sql2);
-$nama_unit=$br['unit'];
-$alamat=$br['alamat'];
-
-// perbaikan 2026-11-04 (perintah user): nama_bank ada di deposito dan deposan sehingga query gagal 'ambiguous' dan
-// dokumen tercetak kosong; diambil dari deposan, pasangan norek_tujuan yang dicetak di baris Norek
-$sql4=mysql_query("Select contract_date,maturity_date,tenor,rasio,nominal,CUST_SHORT_NAME,HADDRESS1,norek_tujuan,deposan.nama_bank,aro from deposito inner join deposan on deposito.cif = deposan.cif 
-where deposito.norek='$kode'
-");
-$cd= mysql_fetch_array($sql4);
+$cd = db_satu("Select contract_date,maturity_date,tenor,rasio,nominal,CUST_SHORT_NAME,HADDRESS1,norek_tujuan,deposan.nama_bank,aro,status_print
+    from deposito inner join deposan on deposito.cif = deposan.cif where deposito.norek=?", 's', $kode);
+if (!$cd || (string) $cd['status_print'] !== 'OK') {
+    halaman_awal('Cetak Bilyet');
+    echo '<div class="alert alert-warning">' . ($cd
+        ? 'Bilyet deposito ' . h($kode) . ' tidak bisa dicetak: status ' . h($cd['status_print']) . ' (hanya status OK). Untuk cetak ulang gunakan menu Reprint.'
+        : 'Deposito ' . h($kode) . ' tidak ditemukan.') . '</div>';
+    echo '<a href="view_cetak_bilyet.php" class="btn btn-sm btn-secondary">Kembali</a>';
+    halaman_akhir();
+    exit;
+}
 $contract_date=tgl_indo ($cd['contract_date']);
 $maturity_date=tgl_indo ($cd['maturity_date']);
 $tenor=$cd['tenor'];
@@ -53,10 +45,9 @@ $CUST_SHORT_NAME=$cd['CUST_SHORT_NAME'];
 $HADDRESS1=dekripsi_data($cd['HADDRESS1']);
 $rasio_cor=100-$rasio;
 $Terbilang=ucwords (Terbilang($angka));
-$buss_date=date("y-m-d");
-//cek apakah user sudah login
 
-@mysql_query("update deposito set status_print ='Print' where norek ='$kode'");
+db_jalankan("update deposito set status_print ='Print' where norek =?", 's', $kode);
+ob_end_clean();
 
 require ('../../fpdf17/fpdf.php');
 class PDF_JavaScript extends FPDF {

@@ -1,204 +1,131 @@
-<?php require_once __DIR__ . '/../../koneksi_db.php'; 
-//error_reporting(0); // tambahkan untuk menghilangkan notice... hehe 
- include "../../function.php";
+<?php require_once __DIR__ . '/../../koneksi_db.php';
+/**
+ * Menu fund > Data Jatuh Tempo (Posting & Report): deposito yang jatuh tempo pada bulan terpilih (bawaan bulan ini),
+ * atau hasil pencarian tanggal jatuh tempo (kalender) dan/atau nama deposan (semua bulan), dengan tombol
+ * Realisasi (r_dep.php) dan Export .xlsx bertahap (tempo_export.php, assets/app/export_xlsx.js).
+ * Filter disimpan di sesi (tempo_filter) untuk export.
+ * Dimigrasi 2026-11-04: tampilan Bootstrap 5, DataTables lokal, prepared statement.
+ * Perbaikan atas perintah user 2026-11-04:
+ *   - wajib login level fund (dulu tanpa cek login)
+ *   - daftar bawaan: dulu bulan = substr('Y-m-d', 2, 2) = 2 digit TAHUN ('26') sehingga MONTH(maturity_date)='26' tidak
+ *     pernah cocok dan daftar selalu kosong; kini bulan + tahun terpilih
+ *   - export tidak lagi mengirim teks SQL ke export.php (siapa pun bisa menjalankan SQL apa pun)
+ */
+require_once __DIR__ . '/../../inc/tampilan.php';
+date_default_timezone_set('Asia/Jakarta');
+session_start();
+ob_start();
+require_once __DIR__ . '/../../inc/cek_login.php';
+wajib_login();
+if ((isset($_SESSION['level']) ? $_SESSION['level'] : '') != "fund") {
+    header("location:../../index.html");
+    exit;
+}
+include_once __DIR__ . '/../../function.php';
+
+require_once __DIR__ . '/../../inc/jatuh_tempo_deposito.php';
+
+$tanggal = isset($_GET['tanggal']) ? substr(trim((string) $_GET['tanggal']), 0, 10) : '';
+$dt = DateTime::createFromFormat('!Y-m-d', $tanggal);
+if (!$dt || $dt->format('Y-m-d') !== $tanggal) {
+    $tanggal = '';
+}
+$nama = isset($_GET['nama']) ? trim((string) $_GET['nama']) : '';
+$bulan = isset($_GET['bulan']) && preg_match('/^\d{4}-(0[1-9]|1[0-2])$/', (string) $_GET['bulan']) ? (string) $_GET['bulan'] : date('Y-m');
+$filter = array('tanggal' => $tanggal, 'nama' => $nama, 'bulan' => $bulan);
+$cari = tempo_keterangan_cari($filter);
+$_SESSION['tempo_filter'] = $filter;
+$data = tempo_daftar($filter);
+
+halaman_awal('Data Jatuh Tempo Nur Insani', array('assets/app/datatables-ni.css'));
 ?>
-<!doctype html>
-<html>
-    <head>
-         <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Data Jatuh Tempo Nur Insani</title>
-        <!-- css table datatables/dataTables -->
-	<link rel="stylesheet" href="../datatables/dataTables.bootstrap.css"/>
-    
-         <link rel="stylesheet" href="bootstrap.min.css"/> 
-        <link type="text/css" href="../bootstrap/css/bootstrap-responsive.min.css" rel="stylesheet">
-        <link type="text/css" href="../css/theme.css" rel="stylesheet">
-        <link type="text/css" href="../images/icons/css/font-awesome.css" rel="stylesheet">
-        <link type="text/css" href='http://fonts.googleapis.com/css?family=Open+Sans:400italic,600italic,400,600'
-            rel='stylesheet'>
-            
-            
-            
-        <script src="../scripts/jquery-1.9.1.min.js" type="text/javascript"></script>
-        <script src="../scripts/jquery-ui-1.10.1.custom.min.js" type="text/javascript"></script>
-        <style>
-            /*fix margin pagination*/
-            .pagination{
-                margin-top: 0px;
-            }
-        </style>
-    </head>
-    <body>
-	 <div class="container" >
-                <div class="row">
-                    <div class="span12">
-                        <div class="content">
-        <?php 
-//        includekan fungsi paginasi
-        include 'pagination1.php';
-//        koneksi ke database
-        $koneksi = db_ni();
-        $db = mysql_select_db('nur_insani');
-		$buss_date=date('Y-m-d');
-        $bulan=substr($buss_date,2,2);
-//        mengatur variabel reload dan sql
-        if(isset($_REQUEST['keyword']) && $_REQUEST['keyword']<>""){
-//        jika ada kata kunci pencarian (artinya form pencarian disubmit dan tidak kosong)
-//        pakai ini
-            $keyword=$_REQUEST['keyword'];
-            $reload = "view_tempo.php?pagination=true&keyword=$keyword";
-            $sql =  "SELECT norek,CUST_SHORT_NAME,bilyet,nominal,tenor,maturity_date,deposito.cif,aro FROM deposito inner join deposan on deposan.cif = deposito.cif where deposito.maturity_date='$keyword' or CUST_SHORT_NAME like '%$keyword%'";
-            $result = mysql_query($sql);
-        }else{
-//            jika tidak ada pencarian pakai ini
-            $reload = "view_tempo.php?pagination=true";
-            $sql =  "SELECT norek,CUST_SHORT_NAME,bilyet,nominal,tenor,maturity_date,deposito.cif,aro FROM deposito inner join deposan on deposan.CIF = deposito.cif where MONTH(maturity_date)='$bulan' order by maturity_date  ";
-            $result = mysql_query($sql);
-        }
-        
-        //pagination config start
-        $rpp = 10; // jumlah record per halaman
-        $page = intval($_GET["page"]);
-        if($page<=0) $page = 1;  
-        $tcount = mysql_num_rows($result);
-        $tpages = ($tcount) ? ceil(compat_num($tcount/$rpp)) : 1; // total pages, last page number
-        $count = 0;
-        $i = ($page-1)*$rpp;
-        $no_urut = ($page-1)*$rpp;
-        //pagination config end
-        ?>
-	<div class="panel panel-default">
-		<div class="panel-heading">
-                        <h3 class="panel-title"><i class="icon-user"></i> Jatuh Tempo Nur Insani</h3> 
-                        </div>
-						<div class="panel-body">
-       
-            
-			<div class="row" >
-			
-                <div class="col-lg-8">
-                    <!--muncul jika ada pencarian (tombol reset pencarian)-->
-                    <?php
-                    if($_REQUEST['keyword']<>""){
-                    ?>
-                        <a class="btn btn-default btn-outline" href="view_tempo.php"> Reset Pencarian</a>
-                    <?php
-                    }
-                    ?>
-                </div>
-                <div class="col-lg-4 text-right">
-                    <form method="post" action="view_tempo.php">
-                        <div class="form-group input-group">
-                            <input type="text" name="keyword"  class="input-group date form-control span8 tip " required  value="<?php echo $_REQUEST['keyword']; ?>">
-                            <span class="input-group-btn">
-                                <button class="btn btn-primary" type="submit">Cari
-                                </button>
-                            </span>
-                        </div>
-                    </form>
-                </div>
-            </div>
-			
-            <table class="table table-bordered">
-                <thead>
-                    <tr>
-                        <th>#</th>
-						<th>No Rekening</th>
-                        <th>Bilyet</th>
-						<th>Cif</th>
-									
-						<th>Nama</th>
-						  <th>Nominal</th>
-						   <th>Tenor</th>
-						    <th>Jatuh Tempo</th>
-							<th>Status</th>
-                        <th>Aksi</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <?php
-                    while(($count<$rpp) && ($i<$tcount)) {
-                        mysql_data_seek($result,$i);
-                        $data = mysql_fetch_array($result);
-                    ?>
-                    <tr>
-                        <td width="65px" >
-                            <?php echo ++$no_urut;?> 
-                        </td>
-						 <td>
-                            <?php echo $data ['norek']; ?> 
-                        </td>
-						<td>
-                            <?php echo $data ['bilyet']; ?> 
-                        </td>
-                        <td>
-                            <?php echo $data ['cif']; ?> 
-                        </td>
-						 <td>
-                            <?php echo $data ['CUST_SHORT_NAME']; ?> 
-                        </td>
+<div class="card card-ni mw-100">
+  <div class="card-header">Jatuh Tempo Nur Insani</div>
+  <div class="card-body">
+    <form method="get" action="view_tempo.php" class="row g-2 align-items-end mb-3">
+      <div class="col-sm-3">
+        <label class="form-label" for="bulan">Bulan Jatuh Tempo</label>
+        <input type="month" name="bulan" id="bulan" value="<?php echo h($bulan); ?>" class="form-control">
+      </div>
+      <div class="col-sm-2">
+        <label class="form-label" for="tanggal">Cari Tanggal Jatuh Tempo</label>
+        <input type="date" name="tanggal" id="tanggal" value="<?php echo h($tanggal); ?>" class="form-control">
+      </div>
+      <div class="col-sm-3">
+        <label class="form-label" for="nama">Cari Nama Deposan</label>
+        <input type="text" name="nama" id="nama" value="<?php echo h($nama); ?>" class="form-control" placeholder="kosongkan untuk per bulan">
+      </div>
+      <div class="col-sm-4 d-flex gap-2">
+        <button type="submit" class="btn btn-ni">Tampilkan</button>
+        <?php if ($cari !== ''): ?>
+        <a class="btn btn-outline-secondary" href="view_tempo.php?bulan=<?php echo h(urlencode($bulan)); ?>">Reset Pencarian</a>
+        <?php endif; ?>
+        <button type="button" class="btn btn-outline-success ms-auto" data-export-xlsx data-export-url="tempo_export.php" data-export-satuan="deposito">Export Excel (.xlsx)</button>
+      </div>
+    </form>
+    <div class="small text-muted mb-2">
+      <?php echo $cari !== '' ? 'Hasil pencarian ' . h($cari) . ' (semua bulan)' : 'Jatuh tempo bulan ' . h(getBulan(substr($bulan, 5, 2)) . ' ' . substr($bulan, 0, 4)); ?>
+      (<?php echo count($data); ?> deposito)
+    </div>
+    <table id="tabel_tempo" class="table table-sm table-bordered table-ni align-middle w-100">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>No Rekening</th>
+          <th>Bilyet</th>
+          <th>Cif</th>
+          <th>Nama</th>
+          <th class="text-end">Nominal</th>
+          <th>Tenor</th>
+          <th>Jatuh Tempo</th>
+          <th>Status</th>
+          <th class="text-center">Aksi</th>
+        </tr>
+      </thead>
+      <tbody>
+        <?php foreach ($data as $i => $row): ?>
+        <tr>
+          <td><?php echo $i + 1; ?></td>
+          <td><?php echo h($row['norek']); ?></td>
+          <td><?php echo h($row['bilyet']); ?></td>
+          <td><?php echo h($row['cif']); ?></td>
+          <td><?php echo h($row['CUST_SHORT_NAME']); ?></td>
+          <td class="text-end" data-order="<?php echo h($row['nominal']); ?>"><?php echo number_format(compat_num($row['nominal'])); ?></td>
+          <td><?php echo h($row['tenor']); ?></td>
+          <td data-order="<?php echo h($row['maturity_date']); ?>"><?php echo h(tgl_indo($row['maturity_date'])); ?></td>
+          <td><?php echo h($row['aro']); ?></td>
+          <td class="text-center"><a href="r_dep.php?kd=<?php echo h(urlencode($row['norek'])); ?>" class="btn btn-sm btn-warning">Realisasi</a></td>
+        </tr>
+        <?php endforeach; ?>
+      </tbody>
+    </table>
+  </div>
+</div>
 
-						<td class="text-Right">
-						<?php echo number_format (compat_num($data ['nominal'])); ?> 
-                        </td>
-							<td>
-                            <?php echo $data ['tenor']; ?> 
-                        </td>
-							<td>	
-                            <?php echo tgl_indo ($data ['maturity_date']); ?> 
-                        </td>
-						<td>	
-                            <?php echo $data ['aro']; ?>  
-                        </td>
-                        <td width="120px" class="text-center">
-												  
-                            <a  href="r_dep.php?kd=<?php echo $data['norek'] ?> " class="btn btn-sm btn-warning"> 
-							<span class="glyphicon"></span> Realisasi
-							</a>
-						
-						</div>	
-                        </td>
-                    </tr>
-                    <?php
-                        $i++; 
-                        $count++;
-                    }
-                    ?>
-                </tbody>
-            </table>
-            <div class="row">
-                <div class="col-md-8">
-                    <?php echo paginate_one($reload, $page, $tpages); ?>
-                </div>
-                <div class="col-md-4 text-right">
-                    <!--form ini akan brfungsi untuk mengirimkan query sql yang sekarang aktif-->
-                    <!--sql diambil dari baris 28 atau 33, tergantung ada atau tidaknya kata kunci pencarian-->
-                    <form action="export.php" method="post">
-                        <input type="hidden" name="sql" value="<?php echo $sql ?>" >
-                        <input type="submit" value="Export Excel" class="btn btn-default" >
-                    </form>
-                </div>
-				</div>
-              </div>
-			    </div>
-				  </div>
-				    </div>
-					  <script src="../js/bootstrap-datepicker.js"></script>
-       		
-	
-<script>
-	$('.date').datepicker({
-		format: 'yyyy-mm-dd',
-	})
-	</script>
-	
-  
-        <script src="../bootstrap/js/bootstrap.min.js" type="text/javascript"></script>
-        
-        <script src="../datatables/jquery.dataTables.js"></script>
-        <script src="../datatables/dataTables.bootstrap.js"></script>
-        <script>
-    </body>
-</html>
-
+<div class="modal fade" id="modal-export" tabindex="-1" aria-labelledby="judul-export" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2 class="modal-title fs-6" id="judul-export">Export Data Jatuh Tempo</h2>
+      </div>
+      <div class="modal-body">
+        <div class="progress" role="progressbar" aria-label="Progres export" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" style="height: 1.25rem;">
+          <div class="progress-bar progress-bar-striped progress-bar-animated" style="width: 0%">0%</div>
+        </div>
+        <div class="small text-muted mt-2" data-export-teks aria-live="polite">Menyiapkan data…</div>
+        <div data-export-ringkasan></div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary btn-sm d-none" data-bs-dismiss="modal" data-export-tutup>Tutup</button>
+      </div>
+    </div>
+  </div>
+</div>
+<?php
+halaman_akhir(array(
+    'assets/media/js/jquery.js',
+    'assets/media/js/jquery.dataTables.js',
+    'assets/media/js/dataTables.bootstrap.js',
+    'assets/app/export_xlsx.js',
+    'assets/app/fund_tempo.js',
+));

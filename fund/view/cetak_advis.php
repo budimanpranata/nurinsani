@@ -1,42 +1,36 @@
-<?php require_once __DIR__ . '/../../php8_compat.php';
+<?php require_once __DIR__ . '/../../koneksi_db.php';
+/**
+ * Cetak Advis deposito (?kd=norek, dari view_advise.php): PDF FPDF 216x330 mm dengan logo Image/advis.png; tata letak
+ * dan isi sama dengan versi lama. Sesudah data diambil, status_print diubah ke 'Print' (hilang dari daftar Cetak Advis).
+ * Perbaikan atas perintah user 2026-11-04: prepared statement; norek tidak ada atau status_print bukan 'ADVIS' -> pesan
+ * (dulu PDF kosong / status apa pun dicetak dan diubah ke Print); query ao/branch yang hasilnya tidak dipakai dibuang;
+ * label "Janka Waktu" diperbaiki menjadi "Jangka Waktu". Alamat didekripsi (PEKERJAAN_TERTUNDA.md bagian 87).
+ */
+require_once __DIR__ . '/../../inc/tampilan.php';
 session_start();
 ob_start();
-$userid=$_SESSION['userid'];
-$tgl_jatuh_tempo=$_SESSION['jatuh'];
-$cao=$_SESSION['code_cao'];
-//cek apakah user sudah login
-if(!isset($_SESSION['userid'])){
-   header("location:index.html");
- exit; }
-
+require_once __DIR__ . '/../../inc/cek_login.php';
+wajib_login();
 //cek level user
-if($_SESSION['level']!="fund"){
-   header("location:index.html");
- exit; }
- include "../../conn2.php";
- require_once __DIR__ . '/../../inc/enkripsi.php';
- include "../../indo_tgl.php";
- $koneksi=open_connection2();	
-$kode=$_GET['kd'];
+if ((isset($_SESSION['level']) ? $_SESSION['level'] : '') != "fund") {
+    header("location:../../index.html");
+    exit;
+}
+require_once __DIR__ . '/../../inc/enkripsi.php';
+include "../../indo_tgl.php";
+$kode = isset($_GET['kd']) ? trim((string) $_GET['kd']) : '';
 
-$sql111=mysql_query("Select nama_ao FROM ao WHERE cao='$cao'");
-$ca= mysql_fetch_array($sql111);
-$nama_sales=$ca['nama_ao'];
-
-
-$sql1=mysql_query("Select nama,kode_branch FROM user WHERE userid='$userid'");
-$dsmo= mysql_fetch_array($sql1);
-$kode_branch=$dsmo['kode_branch'];
-
-$sql2=mysql_query("Select * FROM branch WHERE kode_branch='$kode_branch'");
-$br= mysql_fetch_array($sql2);
-$nama_unit=$br['unit'];
-$alamat=$br['alamat'];
-
-$sql4=mysql_query("Select contract_date,maturity_date,tenor,rasio,nominal,CUST_SHORT_NAME,HADDRESS1,norek_tujuan,aro,bilyet from deposito inner join deposan on deposito.cif = deposan.cif 
-where deposito.norek='$kode'
-");
-$cd= mysql_fetch_array($sql4);
+$cd = db_satu("Select contract_date,maturity_date,tenor,rasio,nominal,CUST_SHORT_NAME,HADDRESS1,norek_tujuan,aro,bilyet,status_print
+    from deposito inner join deposan on deposito.cif = deposan.cif where deposito.norek=?", 's', $kode);
+if (!$cd || (string) $cd['status_print'] !== 'ADVIS') {
+    halaman_awal('Cetak Advis');
+    echo '<div class="alert alert-warning">' . ($cd
+        ? 'Advis deposito ' . h($kode) . ' tidak bisa dicetak: status ' . h($cd['status_print']) . ' (hanya status ADVIS). Untuk cetak ulang gunakan menu Reprint.'
+        : 'Deposito ' . h($kode) . ' tidak ditemukan.') . '</div>';
+    echo '<a href="view_advise.php" class="btn btn-sm btn-secondary">Kembali</a>';
+    halaman_akhir();
+    exit;
+}
 $contract_date=tgl_indo ($cd['contract_date']);
 $maturity_date=tgl_indo ($cd['maturity_date']);
 $tenor=$cd['tenor'];
@@ -44,7 +38,6 @@ $rasio=$cd['rasio'];
 $aro=$cd['aro'];
 $angka=$cd['nominal'];
 $norek_tujuan=$cd['norek_tujuan'];
-$nama_bank=$cd['nama_bank'];
 $nominal=number_format (compat_num($cd['nominal']));
 $CUST_SHORT_NAME=$cd['CUST_SHORT_NAME'];
 // alamat deposan tersimpan terenkripsi (inc/enkripsi.php, PEKERJAAN_TERTUNDA.md bagian 87); data lama terbuka tetap terbaca
@@ -52,10 +45,9 @@ $HADDRESS1=dekripsi_data($cd['HADDRESS1']);
 $bilyet=$cd['bilyet'];
 $rasio_cor=100-$rasio;
 $Terbilang=ucwords (Terbilang($angka));
-$buss_date=date("y-m-d");
-//cek apakah user sudah login
 
-@mysql_query("update deposito set status_print ='Print' where norek ='$kode'");
+db_jalankan("update deposito set status_print ='Print' where norek =?", 's', $kode);
+ob_end_clean();
 
 require ('../../fpdf17/fpdf.php');
 class PDF_JavaScript extends FPDF {
@@ -141,7 +133,7 @@ $rp=" Rupiah";
 $pdf->SetFont('Arial','B',12);
 $pdf->Ln(4);
 $pdf->Cell(60,5,'Nomor Bilyet',0,0,'L');
-$pdf->Cell(74,5,'Janka Waktu',0,0,'L');
+$pdf->Cell(74,5,'Jangka Waktu',0,0,'L');
 $pdf->Cell(80,5,'Periode',0,0,'L');
 $pdf->Cell(30,5,'Nisbah',0,0,'L');
 $pdf->Ln(4);

@@ -31,6 +31,7 @@ var TREE_ITEMS = [
 		 	['Param Margin', 'view/view_margin.php'],
 			['Param Financial', 'view/view_finan.php'],
 			['Posting Parameter', 'transaksi/posting.php'],
+			['Jumlah Hari Bagi Hasil', 'view/view_hari_dep.php'],
 			['expectation', 'view/view_xpec.php'],
 			
 			],	

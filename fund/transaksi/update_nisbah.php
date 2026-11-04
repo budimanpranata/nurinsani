@@ -1,20 +1,22 @@
-<?php require_once __DIR__ . '/../../php8_compat.php';
-include "../conn.php";
-if(isset($_POST['update'])){
-				$norek	       = $_POST['norek'];
-				$rasio		   = $_POST['rasio'];
-				$eq_rate		   = $_POST['eq_rate'];
-				$cara_hitung = $_POST['cara_hitung'];
-				$nama_bank        = $_POST['nama_bank'];
-                $norek_bank        = $_POST['norek_bank'];
-			
+<?php require_once __DIR__ . '/../../koneksi_db.php';
+/**
+ * Simpan Edit nisbah deposito (dari edit_nisbah.php): eq_rate, rasio, norek_bank, nama_bank, cara_hitung, dan
+ * status_print 'ADVIS' WHERE norek; lalu alert dan kembali ke daftar, sama dengan versi lama.
+ * Dimigrasi 2026-11-04: wajib login, prepared statement (dulu or die(mysqli_error()) = Fatal error PHP 8 bila gagal).
+ * (H) gagal kini kembali ke ../view/master_trans.php (dulu ke '../view/master_fund.trans', salah ketik).
+ */
+require_once __DIR__ . '/../../inc/cek_login.php';
+wajib_login();
 
-		
-				$update = db_query($koneksi, "UPDATE deposito SET eq_rate='$eq_rate',rasio='$rasio',norek_bank='$norek_bank',nama_bank='$nama_bank',cara_hitung='$cara_hitung', status_print ='ADVIS'  WHERE norek ='$norek'") or die(mysqli_error());
-				if($update){
-					echo "<script>alert('Data Berhasil di Update!'); window.location = '../view/master_trans.php'</script>";
-				}else{
-					echo "<script>alert('Data Gagal di Update!'); window.location = '../view/master_fund.trans'</script>";
-				}
-			}
-            ?>
+if (isset($_POST['update'])) {
+    $pos = function ($k) {
+        return isset($_POST[$k]) ? trim((string) $_POST[$k]) : '';
+    };
+    $update = db_jalankan("UPDATE deposito SET eq_rate=?,rasio=?,norek_bank=?,nama_bank=?,cara_hitung=?, status_print ='ADVIS' WHERE norek =?",
+        'ssssss', $pos('eq_rate'), $pos('rasio'), $pos('norek_bank'), $pos('nama_bank'), $pos('cara_hitung'), $pos('norek'));
+    if ($update) {
+        echo "<script>alert('Data Berhasil di Update!'); window.location = '../view/master_trans.php'</script>";
+    } else {
+        echo "<script>alert('Data Gagal di Update!'); window.location = '../view/master_trans.php'</script>";
+    }
+}

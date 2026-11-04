@@ -197,10 +197,18 @@ a:active {
 		 $tahun = substr($perode_bulan,0,4);
 					$bulan=substr($perode_bulan,4,2);
 					$code_bln_f="NI$tahun-$bulan";
-	$query_jml_aset=mysql_fetch_array(mysql_query("select nomi_murab,marigin_murab,DATEDIFF(sd,dari) as hari from param_finan where code_param='NI2025-07'"));
+	// perbaikan 2026-11-04 (perintah user): periode Param Financial TERBARU (dulu ditulis mati 'NI2025-07'); jumlah harinya
+	// = DATEDIFF(sd, dari) disimpan ke hari_dep (inc/hari_dep.php) dan dipakai menghitung eq, sama dengan hari yang dipakai
+	// Realisasi Bagi Hasil. Nilai hari_dep bisa diubah lagi di Seting Parameter > Jumlah Hari Bagi Hasil.
+	require_once __DIR__ . '/../../koneksi_db.php';
+	require_once __DIR__ . '/../../inc/hari_dep.php';
+	$query_jml_aset=hari_dep_periode_terbaru();
 	$tot_fin=$query_jml_aset['nomi_murab'];
 	$margin=$query_jml_aset['marigin_murab'];
 	$hari=$query_jml_aset['hari'];
+	if ((int) $hari > 0) {
+		hari_dep_simpan((int) $hari, 'posting', $userid);
+	}
 	
 	//$query_asset=mysql_fetch_array(mysql_query("select sum(nominal) as nominal from param_deposito where ket=''"));
 	//$fund=$query_asset['nominal'];

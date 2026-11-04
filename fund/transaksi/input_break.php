@@ -1,298 +1,205 @@
-<?php require_once __DIR__ . '/../../php8_compat.php'; 
+<?php require_once __DIR__ . '/../../koneksi_db.php';
+/**
+ * Data Break > Break (?kd=norek dari ../view/view_break.php): bayar break deposito yang ada di dep_break.
+ *   Nilai bawaan (sama dengan versi lama): Margin = floor(gross) dengan gross = (nominal x eq_rate% x hari / 365) / 0.9,
+ *   hari = jumlah hari bulan sebelum tanggal break (DATEDIFF(maturity_date, maturity_date - 1 bulan)); Simpanan Umum
+ *   (hanya tampil) = saldo escrow_deposito norek, ditambah Margin bila saldo > 0; SIMKA = nominal dep_break.
+ *   Bayar (jurnal SAMA dengan yang berjalan di versi lama, perintah user 2026-11-04): jumlah = Margin + SIMKA;
+ *   tabel_transaksi 'Bukti System' tanggal break: debet sima (menurut tenor) / kredit 1010-2852000 sebesar jumlah;
+ *   jurnal_umum (tanggal hari ini); dep_realisasi BREAK (id = norek) dibayar lewat Disburse kp; baris dep_break dihapus.
+ *   sima: 1 -> 1010-2201000, 3 -> 2202000, 6 -> 2203000, 12 -> 2204000, lainnya 2206000.
+ * Dimigrasi 2026-11-04: tampilan Bootstrap 5, prepared statement, skrip assets/app/fund_break_input.js.
+ * Perbaikan atas perintah user 2026-11-04:
+ *   - wajib login level fund; var_dump() dibuang; tanggal & angka divalidasi; dikunci per norek; sesudah Bayar dialihkan
+ *   - ditolak bila norek tidak ada lagi di dep_break (dulu klik ulang/F5 mencatat jurnal lagi dengan tenor & CIF kosong)
+ *     atau sudah punya dep_realisasi (dulu insert BREAK gagal diam-diam bila PENEMPATAN belum di-Disburse, jurnal tetap
+ *     masuk dan dep_break terhapus -> break hilang)
+ *   - tabel_transaksi dalam transaksi; satu nomor bukti BU/-<unit>-<6 digit> (inc/nomor_bukti.php) dan jurnal_umum
+ *     mencatat kode itu (dulu kode kosong); dep_realisasi tgl_jatuh_tempo & norek_tujuan kini terisi (dulu kosong)
+ *   - salinan ke audit_dep_realisasi saat Break dihapus (Disburse kp sudah menyalin ke audit; dulu tercatat dua kali)
+ *   - jalur "margin > 0" versi lama tidak pernah jalan (if ($bijak = $jlbayar_rate) adalah penugasan, nilainya 0 saat
+ *     POST) dan rusak (jurnal tidak seimbang, salah ketik alues, $konesi) -> dibuang; yang dipertahankan = jalur yang
+ *     selama ini berjalan
+ */
+require_once __DIR__ . '/../../inc/tampilan.php';
+date_default_timezone_set('Asia/Jakarta');
 session_start();
 ob_start();
-        $userid=$_SESSION['userid'];
-        if(!isset($_SESSION['userid'])){
-   header("location:../index.html");
- exit; }
+require_once __DIR__ . '/../../inc/cek_login.php';
+wajib_login();
+if ((isset($_SESSION['level']) ? $_SESSION['level'] : '') != "fund") {
+    header("location:../../index.html");
+    exit;
+}
+require_once __DIR__ . '/../../inc/nomor_bukti.php';
+include_once __DIR__ . '/../../function.php';
 
-include "../conn.php";
-$code=$_GET['kd'];
-	$today=date("Ymd");
-	$buss_date=$today;
-	$k = db_query ($koneksi,"select kode_branch AS unit FROM user where userid='$userid'");
-			  $kbranch = db_fetch_array($k);
-			  $unit = $kbranch['unit'];
-	var_dump($code);		  
-	$dcount = db_query ($koneksi,"select nominal,eq_rate,maturity_date,DATE_ADD(maturity_date, INTERVAL -1 Month),
-	datediff(maturity_date,DATE_ADD(maturity_date, INTERVAL -1 Month)) as hari
-	from dep_break where norek ='$code'");
-			  $hit = db_fetch_array($dcount);
-			  $nominal_break = $hit['nominal'];
-			  $tgl_brek = $hit['maturity_date'];
-			  $hari = $hit['hari'];
-			  $eq_rate=$hit['eq_rate'];
-			  $kali_eq=$eq_rate/100;
-			  $bayar_rate=($nominal_break*$kali_eq)*$hari/365;
-			  $gross_rate=$bayar_rate/0.9;
-			  $pajak=$gross_rate-$bayar_rate;
-		      $jlbayar_rate=floor(compat_num($gross_rate-$pph4_rate));
-$saldo = db_query ($koneksi,"SELECT sum(KREDIT)-sum(DEBIT) as saldo FROM escrow_deposito where NOREK='$code' group by NOREK");
-			  $total_saldo = db_fetch_array($saldo);
-			  $saldo_tab = $total_saldo['saldo'];
-if($saldo_tab>0){
-$saldo_tab=$saldo_tab + $jlbayar_rate;
-}else{
-$saldo_tab=$saldo_tab;
+$userid = (string) $_SESSION['userid'];
+$k = db_satu("select kode_branch AS unit FROM user where userid=?", 's', $userid);
+$unit = $k ? (string) $k['unit'] : '';
+
+/** Data dep_break + nilai bawaan form (versi lama), atau null. */
+function data_break($norek)
+{
+    $hit = db_satu("select dep_break.*, CUST_SHORT_NAME, norek_tujuan,
+            datediff(maturity_date,DATE_ADD(maturity_date, INTERVAL -1 Month)) as hari
+        from dep_break left join deposan on deposan.cif = dep_break.cif where norek =?", 's', $norek);
+    if (!$hit) {
+        return null;
+    }
+    $bayar_rate = (compat_num($hit['nominal']) * (compat_num($hit['eq_rate']) / 100)) * compat_num($hit['hari']) / 365;
+    $gross_rate = $bayar_rate / 0.9;
+    // versi lama: floor($gross_rate - $pph4_rate) dengan $pph4_rate tidak pernah diisi = floor(gross)
+    $hit['margin'] = floor($gross_rate);
+    $es = db_satu("SELECT sum(KREDIT)-sum(DEBIT) as saldo FROM escrow_deposito where NOREK=? group by NOREK", 's', $norek);
+    $saldo_tab = compat_num($es ? $es['saldo'] : null);
+    $hit['simpanan'] = $saldo_tab > 0 ? $saldo_tab + $hit['margin'] : $saldo_tab;
+    return $hit;
 }
 
-			  
-			  
-			 
-			   ?>
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <head>
-        <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-            <!-- css table datatables/dataTables -->
-	    <link rel="stylesheet" href="datatables/dataTables.bootstrap.css"/>
-        
-         <link type="text/css" href="../css/bootstrap.css" rel="stylesheet">
-        <link type="text/css" href="../bootstrap/css/bootstrap.min.css" rel="stylesheet"> 
-        <link type="text/css" href="../bootstrap/css/bootstrap-responsive.min.css" rel="stylesheet">
-        <link type="text/css" href="../css/theme.css" rel="stylesheet">
-        <link type="text/css" href="../images/icons/css/font-awesome.css" rel="stylesheet">
-        <link type="text/css" href='http://fonts.googleapis.com/css?family=Open+Sans:400italic,600italic,400,600'
-            rel='stylesheet'>
-        
-        <script src="../scripts/jquery-1.9.1.min.js" type="text/javascript"></script>
-        <script src="../scripts/jquery-ui-1.10.1.custom.min.js" type="text/javascript"></script>
-    </head>
-    <body>
-                
+/** Angka rupiah dari input (titik ribuan dibuang); null bila bukan angka bulat >= 0. */
+function angka_rupiah($s)
+{
+    $s = str_replace('.', '', trim((string) $s));
+    return ctype_digit($s) ? $s : null;
+}
 
-            <div class="container">
-                <div class="row">
-                    <div class="span12">
-                        <div class="content"><div class="panel panel-default">
-                        <div class="panel-heading">
-                        <h3 class="panel-title"><i class="icon-user"></i>Input Data Break Nur Insani</h3> 
-                        </div>
-                        <div class="panel-body">
-                            <?php
-			if(isset($_POST['input'])){
+/** Proses Bayar; hasil array(berhasil, pesan). Dipanggil di dalam kunci. */
+function bayar_break($unit, $userid)
+{
+    $norek = isset($_POST['norek']) ? trim((string) $_POST['norek']) : '';
+    $tgl = isset($_POST['bulan']) ? str_replace('/', '-', substr(trim((string) $_POST['bulan']), 0, 10)) : '';
+    $bijak = angka_rupiah(isset($_POST['nominal']) ? $_POST['nominal'] : '');
+    $simka = angka_rupiah(isset($_POST['simka']) ? $_POST['simka'] : '');
 
-				$perode_bulan  = $_POST['bulan'];
-				 
-				$bijak = str_replace ('.','',$_POST['nominal']);
-				$jenis   = $_POST['jenis'];
-				$norek   = $_POST['norek'];
-				$simka = str_replace ('.','',$_POST['simka']);
-				$nominal_break= $bijak + $simka;
-				if($bijak=$jlbayar_rate){
-				$pajak=$pajak;	
-				}else{
-				$gross=$bijak/90*100;
-				$pajak=$gross-$bijak;	
-				}
-				
-             
-				$dcount = db_query ($koneksi,"select * from dep_break where norek ='$norek'");
-			  $hit = db_fetch_array($dcount);
-			  $nomi = $hit['nominal'];
-			  $tenor = $hit['tenor'];
-			  $cif= $hit['cif'];
-			  
-			  			  
-			  
-			  if ($tenor =='6'){
-					$sima="1010-2203000";
-				}elseif ($tenor =='3') {
-					$sima="1010-2202000";
-				}elseif($tenor =='12') {
-					$sima="1010-2204000";
-				}elseif($tenor =='1'){
-					$sima ="1010-2201000";
-				}else{
-					$sima ="1010-2206000";				
-				}
-			  				
-				if($bijak>0){
-				$nominal=$nomi+$bijak;
-				$jurnal=db_fetch_array(db_query($koneksi,"SELECT max(nomor_jurnal) FROM jurnal_umum where unit='$unit' ORDER BY tanggal_selesai DESC"));
-				$nomor=$jurnal[0]+1;
-				$trns="BU/".$unit .$nomor;
-				$keterangan_transaksi="Break Penempatan Dana Norek $norek";
-				$query=db_query($koneksi,"insert into jurnal_umum(nomor_jurnal,kode_transaksi,tanggal_selesai,unit) values('$trns','$kode_transaksi','$buss_date','$unit')");
-				
-				$cr_dep=db_query($koneksi,"insert  into tabel_transaksi(unit,kode_transaksi,kode_rekening,tanggal_transaksi, jenis_transaksi, keterangan_transaksi,debet,id_admin)
-				values('$unit','$trns','$sima','$perode_bulan','Bukti System','$keterangan_transaksi','$nominal_break','$userid')");
-	
-				$deb_dep=db_query($koneksi,"insert  into tabel_transaksi(unit,kode_transaksi,kode_rekening,tanggal_transaksi, jenis_transaksi, keterangan_transaksi,kredit,id_admin)
-				values('$unit','$trns','1010-2851000','$perode_bulan','Bukti System','$keterangan_transaksi','$nominal_break','$userid')");
-				
-				
-				
-				$deb_dep=db_query($koneksi,"insert  into tabel_transaksi(unit,kode_transaksi,kode_rekening,tanggal_transaksi, jenis_transaksi, keterangan_transaksi,debet,id_admin)
-				values('$unit','$trns','1010-41001','$perode_bulan','Bukti System','$keterangan_transaksi','$gross','$userid')");
-				$cr_dep=db_query($koneksi,"insert  into tabel_transaksi(unit,kode_transaksi,kode_rekening,tanggal_transaksi, jenis_transaksi, keterangan_transaksi,kredit,id_admin)
-				alues('$unit','$trns','1010-2852000','$perode_bulan','Bukti System','$keterangan_transaksi','$bijak','$userid')");
-				
-				$cr_dep=db_query($koneksi,"insert  into tabel_transaksi(unit,kode_transaksi,kode_rekening,tanggal_transaksi, jenis_transaksi, keterangan_transaksi,kredit,id_admin)
-				values('$unit','$trns','1010-2423000','$perode_bulan','Bukti System','$keterangan_transaksi','$pajak','$userid')");
-								
-				$deb_dep=db_query($koneksi,"insert  into tabel_transaksi(unit,kode_transaksi,kode_rekening,tanggal_transaksi, jenis_transaksi, keterangan_transaksi,debet,id_admin)
-				values('$unit','$trns','1010-41001','$perode_bulan','Bukti System','$keterangan_transaksi','$bijakb','$userid')");
-				$cr_dep=db_query($koneksi,"insert  into tabel_transaksi(unit,kode_transaksi,kode_rekening,tanggal_transaksi, jenis_transaksi, keterangan_transaksi,kredit,id_admin)
-				values('$unit','$trns','1010-2102000','$perode_bulan','Bukti System','$keterangan_transaksi','$bijak','$userid')");
-
-$input_es=db_query($konesi,"insert  into escrow_deposito (BUSS_DATE,NOREK,UNIT,CIF,DEBIT,TYPE,KREDIT,USERID,KET,REFF,kode_transaksi)VALUES('$perode_bulan','$norek','1010','$cif','0','03','$bijak','$userid','Bagi Hasil','','$trns')");	
-				}else{
-							
-				$nominal=$nomi+$saldo_tab+$bijak;
-				
-				$jurnal=db_fetch_array(db_query($koneksi,"SELECT max(nomor_jurnal) FROM jurnal_umum where unit='$unit' ORDER BY tanggal_selesai DESC"));
-				$nomor=$jurnal[0]+1;
-				$trns="BU/".$unit .$nomor;
-				$keterangan_transaksi="Break Penempatan Dana Norek $norek";
-				$query=db_query($koneksi,"insert into jurnal_umum(nomor_jurnal,kode_transaksi,tanggal_selesai,unit) values('$trns','$kode_transaksi','$buss_date','$unit')");
-				
-				$cr_dep=db_query($koneksi,"insert  into tabel_transaksi(unit,kode_transaksi,kode_rekening,tanggal_transaksi, jenis_transaksi, keterangan_transaksi,debet,id_admin)
-				values('$unit','$trns','$sima','$perode_bulan','Bukti System','$keterangan_transaksi','$nominal_break','$userid')");
-
-				$deb_dep=db_query($koneksi,"insert  into tabel_transaksi(unit,kode_transaksi,kode_rekening,tanggal_transaksi, jenis_transaksi, keterangan_transaksi,kredit,id_admin)
-				values('$unit','$trns','1010-2852000','$perode_bulan','Bukti System','$keterangan_transaksi','$nominal_break','$userid')");
-				
-				
-//jangan di ubah				
-$in_dep= db_query($koneksi,"insert  into dep_realisasi(id_realisasi,norek,cif,jumlah_bayar,tgl_bayar,tgl_jatuh_tempo,norek_tujuan,ket,status)VALUES('$norek','$norek','$cif','$nominal_break','$perode_bulan','$maturity_date','$norek_tujuan','EVVI','BREAK')");
-				}
-				
-				if(($in_dep)||($query)||($cr_dep)||($deb_dep)){
-					echo '<div class="alert alert-success alert-dismissable"><button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>Data Berhasil Di Simpan.</div>';
-					$del1= db_query($koneksi, "insert into audit_dep_realisasi select  * from dep_realisasi WHERE norek='$norek'");
-					$delete_realisasi= db_query($koneksi, "delete FROM dep_break WHERE norek='$norek'");
-					}else{
-						echo '<div class="alert alert-danger alert-dismissable"><button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>Ups, Data Gagal Di simpan !</div>';
-						}
-			}
-				
-			
-			?>b
-            
-            <blockquote>
-            Input Data
-            </blockquote>
-                         <form name="form1" id="form1" class="form-horizontal row-fluid" action="input_break.php" method="POST" >
-										<div class="control-group">
-											<label class="control-label" for="basicinput">Kode Transaksi</label>
-											<div class="controls">
-												<input type="text" name="norek" id="norek" placeholder="Tidak perlu di isi" value="<?php echo $code; ?>" class="form-control span8 tip" readonly="readonly">
-											</div>
-										</div>
-
-										<div class="control-group">
-											<label class="control-label" for="basicinput">Tanggal Break</label>
-											<div class="controls">
-												<input name="bulan" id="bulan" class="input-group date form-control span8 tip" type="text"  date="" placeholder="yyyy/mm/dd" value="<?php echo $tgl_brek;?>" required />
-											</div>
-										</div>
-										<div class="control-group">
-											<label class="control-label" for="basicinput">Margin </label>
-											<div class="controls">	
-												<input type="text" name="nominal" id="nominal" placeholder="Nominal Margin Kebijakan" value="<?php echo number_format (compat_num($jlbayar_rate), '0', ',', '.')?>"class="form-control span8 tip" required>
-											
-										</div>
-										</div>
-<div class="control-group">
-											<label class="control-label" for="basicinput">Simpanan Umum </label>
-											<div class="controls">	
-												<input type="text" name="simpanan" id="nominal" placeholder="Nominal Margin Kebijakan" value="<?php echo number_format (compat_num($saldo_tab), '0', ',', '.')?>"class="form-control span8 tip" required>
-											
-										</div>
-										</div>
-<div class="control-group">
-											<label class="control-label" for="basicinput">SIMKA </label>
-											<div class="controls">	
-												<input type="text" name="simka" id="nominal" placeholder="Nominal Margin Kebijakan" value="<?php echo number_format (compat_num($nominal_break), '0', ',', '.')?>"class="form-control span8 tip" required>
-											
-										</div>
-										</div>
-
-										
-										<div class="control-group">
-											<div class="controls">
-												<button type="submit" name="input" id="input" class="btn btn-sm btn-primary">Bayar</button>
-                                               <a href="../view/view_break.php" class="btn btn-sm btn-danger">Kembali</a>
-											</div>
-										</div>
-									</form>
-                        </div>
-                        <!--/.content-->
-                    </div>
-                    <!--/.span9-->
-                </div>
-            </div>
-            <!--/.container-->
-        
-        <!--/.wrapper--><br />
-       <script src="../js/bootstrap-datepicker.js"></script>
-       		
-	
-<script>
-	$('.date').datepicker({
-		format: 'yyyy-mm-dd',
-	})
-	</script>
-	
-  
-        <script src="../bootstrap/js/bootstrap.min.js" type="text/javascript"></script>
-        
-        <script src="../datatables/jquery.dataTables.js"></script>
-        <script src="../datatables/dataTables.bootstrap.js"></script>
-        <script>
-        $(document).ready(function() {
-				var dataTable = $('#lookup').DataTable( {
-					"processing": true,
-					"serverSide": true,
-					"ajax":{
-						url :"../view/break_view.php", // json datasource
-						type: "post",  // method  , by default get
-						error: function(){  // error handling
-							$(".lookup-error").html("");
-							$("#lookup").append('<tbody class="employee-grid-error"><tr><th colspan="3">No data found in the server</th></tr></tbody>');
-							$("#lookup_processing").css("display","none");
-							
-						}
-					}
-				} );
-			} );
-        </script>
-	<script type="text/javascript">
-
-    /* Tanpa Rupiah */
-    var nominal = document.getElementById('nominal');
-    nominal.addEventListener('keyup', function(e)
-    {
-        nominal.value = formatRupiah(this.value);
-    });
-   
-    /* Dengan Rupiah */
-    var dengan_rupiah = document.getElementById('dengan-rupiah');
-    dengan_rupiah.addEventListener('keyup', function(e)
-    {
-        dengan_rupiah.value = formatRupiah(this.value, 'Rp. ');
-    });
-   
-    /* Fungsi */
-    function formatRupiah(angka, prefix)
-    {
-        var number_string = angka.replace(/[^,\d]/g, '').toString(),
-            split    = number_string.split(','),
-            sisa     = split[0].length % 3,
-            rupiah     = split[0].substr(0, sisa),
-            ribuan     = split[0].substr(sisa).match(/\d{3}/gi);
-           
-        if (ribuan) {
-            separator = sisa ? '.' : '';
-            rupiah += separator + ribuan.join('.');
-        }
-       
-        rupiah = split[1] != undefined ? rupiah + ',' + split[1] : rupiah;
-        return prefix == undefined ? rupiah : (rupiah ? 'Rp. ' + rupiah : '');
+    $hit = data_break($norek);
+    if (!$hit) {
+        return array(false, "Deposito $norek tidak ada di data Break (mungkin sudah dibayar).");
     }
+    if (db_satu("select 1 as ada from dep_realisasi where id_realisasi=?", 's', $norek)) {
+        return array(false, "Deposito $norek masih punya data realisasi yang belum di-Disburse kp. Selesaikan dulu sebelum Break.");
+    }
+    $d = DateTime::createFromFormat('!Y-m-d', $tgl);
+    if (!$d || $d->format('Y-m-d') !== $tgl) {
+        return array(false, 'Tanggal Break tidak valid.');
+    }
+    if ($bijak === null || $simka === null) {
+        return array(false, 'Margin dan SIMKA harus angka.');
+    }
+    $nominal_break = (string) ((int) $bijak + (int) $simka);
+    $tenor = (string) $hit['tenor'];
+    if ($tenor == '6') {
+        $sima = "1010-2203000";
+    } elseif ($tenor == '3') {
+        $sima = "1010-2202000";
+    } elseif ($tenor == '12') {
+        $sima = "1010-2204000";
+    } elseif ($tenor == '1') {
+        $sima = "1010-2201000";
+    } else {
+        $sima = "1010-2206000";
+    }
+    $ket = "Break Penempatan Dana Norek $norek";
+    $kode = nb_baru('BU', $unit);
 
-      </script>
-    </body>
+    // dep_realisasi (MyISAM) lebih dulu: kunci utama id_realisasi = norek mencegah break dicatat dua kali
+    if (!db_jalankan("insert into dep_realisasi(id_realisasi,norek,cif,jumlah_bayar,tgl_bayar,tgl_jatuh_tempo,norek_tujuan,ket,status)
+            VALUES(?,?,?,?,?,?,?,'EVVI','BREAK')", 'sssssss',
+            $norek, $norek, (string) $hit['cif'], $nominal_break, $tgl, (string) $hit['maturity_date'], (string) $hit['norek_tujuan'])) {
+        return array(false, 'Ups, Data Gagal Di simpan ! ' . db_error_terakhir());
+    }
+    $db = db_ni();
+    $gagal_awal = db_jumlah_gagal();
+    $db->begin_transaction();
+    db_jalankan("insert into tabel_transaksi(unit,kode_transaksi,kode_rekening,tanggal_transaksi, jenis_transaksi, keterangan_transaksi,debet,id_admin)
+        values(?,?,?,?,'Bukti System',?,?,?)", 'sssssss', $unit, $kode, $sima, $tgl, $ket, $nominal_break, $userid);
+    db_jalankan("insert into tabel_transaksi(unit,kode_transaksi,kode_rekening,tanggal_transaksi, jenis_transaksi, keterangan_transaksi,kredit,id_admin)
+        values(?,?,'1010-2852000',?,'Bukti System',?,?,?)", 'ssssss', $unit, $kode, $tgl, $ket, $nominal_break, $userid);
+    if (db_jumlah_gagal() > $gagal_awal) {
+        $galat = db_error_terakhir();
+        $db->rollback();
+        db_jalankan("delete from dep_realisasi where id_realisasi=? and status='BREAK'", 's', $norek);
+        return array(false, 'Ups, Data Gagal Di simpan ! ' . $galat);
+    }
+    $db->commit();
+    db_jalankan("insert into jurnal_umum(nomor_jurnal,kode_transaksi,tanggal_selesai,unit) values('',?,?,?)", 'sss', $kode, date('Y-m-d'), $unit);
+    db_jalankan("delete FROM dep_break WHERE norek=?", 's', $norek);
+    return array(true, "Data Berhasil Di Simpan. Break $norek sebesar " . number_format((float) $nominal_break, 0, ',', '.')
+        . " menunggu Disburse kp ($kode).");
+}
+
+if (isset($_POST['input'])) {
+    $norek = isset($_POST['norek']) ? (string) $_POST['norek'] : '';
+    $kunci = db_satu("SELECT GET_LOCK(?, 15) as ok", 's', 'nurinsani_break_' . $norek);
+    if (!$kunci || (int) $kunci['ok'] !== 1 || !nb_kunci('BU', $unit)) {
+        $hasil = array(false, 'Proses lain sedang berjalan, silakan ulangi.');
+    } else {
+        $hasil = bayar_break($unit, $userid);
+        nb_lepas('BU', $unit);
+    }
+    db_satu("SELECT RELEASE_LOCK(?) as ok", 's', 'nurinsani_break_' . $norek);
+    if ($hasil[0]) {
+        $_SESSION['pesan_break'] = array('success', $hasil[1]);
+        header('Location: ../view/view_break.php');
+    } else {
+        $_SESSION['pesan_input_break'] = array('danger', $hasil[1]);
+        header('Location: input_break.php?kd=' . urlencode($norek));
+    }
+    exit;
+}
+
+$code = isset($_GET['kd']) ? trim((string) $_GET['kd']) : '';
+$hit = $code === '' ? null : data_break($code);
+$pesan = isset($_SESSION['pesan_input_break']) ? $_SESSION['pesan_input_break'] : null;
+unset($_SESSION['pesan_input_break']);
+
+halaman_awal('Input Data Break Nur Insani');
+?>
+<?php if ($pesan): ?>
+<div class="alert alert-<?php echo $pesan[0]; ?> alert-dismissible fade show" role="alert">
+  <?php echo h($pesan[1]); ?>
+  <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+</div>
+<?php endif; ?>
+<?php if (!$hit): ?>
+<div class="alert alert-warning">Deposito <?php echo h($code); ?> tidak ada di data Break (mungkin sudah dibayar).</div>
+<a href="../view/view_break.php" class="btn btn-sm btn-secondary">Kembali</a>
+<?php else: ?>
+<div class="card card-ni mw-100">
+  <div class="card-header">Break <?php echo h($hit['norek'] . ' - ' . $hit['CUST_SHORT_NAME']); ?></div>
+  <div class="card-body">
+    <dl class="row small mb-4">
+      <dt class="col-sm-2">Nominal</dt><dd class="col-sm-4"><?php echo number_format(compat_num($hit['nominal']), 0, ',', '.'); ?></dd>
+      <dt class="col-sm-2">Tenor</dt><dd class="col-sm-4"><?php echo h($hit['tenor']); ?> bulan</dd>
+      <dt class="col-sm-2">Eq Rate</dt><dd class="col-sm-4"><?php echo h($hit['eq_rate']); ?> %</dd>
+      <dt class="col-sm-2">Hari Margin</dt><dd class="col-sm-4"><?php echo h($hit['hari']); ?> hari</dd>
+    </dl>
+    <form method="post" action="input_break.php" class="row g-3">
+      <input type="hidden" name="norek" value="<?php echo h($hit['norek']); ?>">
+      <div class="col-md-3">
+        <label class="form-label" for="bulan">Tanggal Break</label>
+        <input type="date" name="bulan" id="bulan" value="<?php echo h(substr((string) $hit['maturity_date'], 0, 10)); ?>" class="form-control" required>
+      </div>
+      <div class="col-md-3">
+        <label class="form-label" for="nominal">Margin</label>
+        <input type="text" name="nominal" id="nominal" value="<?php echo number_format($hit['margin'], 0, ',', '.'); ?>" class="form-control text-end" inputmode="numeric" data-rupiah required>
+      </div>
+      <div class="col-md-3">
+        <label class="form-label" for="simpanan">Simpanan Umum</label>
+        <input type="text" id="simpanan" value="<?php echo number_format($hit['simpanan'], 0, ',', '.'); ?>" class="form-control text-end" disabled>
+      </div>
+      <div class="col-md-3">
+        <label class="form-label" for="simka">SIMKA</label>
+        <input type="text" name="simka" id="simka" value="<?php echo number_format(compat_num($hit['nominal']), 0, ',', '.'); ?>" class="form-control text-end" inputmode="numeric" data-rupiah required>
+      </div>
+      <div class="col-12 d-flex gap-2 justify-content-end align-items-center">
+        <span class="small text-muted me-auto">Dibayarkan (Margin + SIMKA): <strong id="total_break"></strong></span>
+        <a href="../view/view_break.php" class="btn btn-outline-secondary">Kembali</a>
+        <button type="submit" name="input" value="1" class="btn btn-danger px-4" data-konfirmasi="Bayar break deposito ini? Jurnal akan langsung dibukukan.">Bayar</button>
+      </div>
+    </form>
+  </div>
+</div>
+<?php endif; ?>
+<?php
+halaman_akhir(array('assets/app/fund_break_input.js'));

@@ -1,137 +1,70 @@
-﻿<?php require_once __DIR__ . '/../../php8_compat.php'; include "../conn.php"; ?>
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <head>
-        <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Nur Insani</title>
-        <!-- css table datatables/dataTables -->
-	    <link rel="stylesheet" href="../datatables/dataTables.bootstrap.css"/>
-        
-         <link type="text/css" href="../css/bootstrap.css" rel="stylesheet">
-        <link type="text/css" href="../bootstrap/css/bootstrap.min.css" rel="stylesheet"> 
-        <link type="text/css" href="../bootstrap/css/bootstrap-responsive.min.css" rel="stylesheet">
-        <link type="text/css" href="../css/theme.css" rel="stylesheet">
-        <link type="text/css" href="../images/icons/css/font-awesome.css" rel="stylesheet">
-        <link type="text/css" href='http://fonts.googleapis.com/css?family=Open+Sans:400italic,600italic,400,600'
-            rel='stylesheet'>
-        
-        <script src="../scripts/jquery-1.9.1.min.js" type="text/javascript"></script>
-        <script src="../scripts/jquery-ui-1.10.1.custom.min.js" type="text/javascript"></script>
-    </head>
-    <body>
-          <div class="container">
-                <div class="row">
-                    <div class="span12">
-                        <div class="content"><div class="panel panel-default">
-                        <div class="panel-heading">
-                        <h3 class="panel-title"><i class="icon-user"></i> Data Nisbah  Nur Insani</h3> 
-                        </div>
-                        <div class="panel-body">
-                       
-            <!-- /navbar-inner -->
-        </div><br />
+<?php require_once __DIR__ . '/../../koneksi_db.php';
+/**
+ * Data Transaksi > Edit (level fund): ubah nisbah, rate, cara hitung, bank & rekening tujuan bagi hasil satu deposito
+ * (?kd = norek); disimpan oleh update_nisbah.php.
+ * Dimigrasi 2026-11-04: tampilan Bootstrap 5, prepared statement, wajib login. Perbaikan atas perintah user 2026-11-04:
+ *   - (A) isian No Rekening bank tujuan dulu terisi norek DEPOSITO sendiri, sehingga Update menimpa deposito.norek_bank
+ *     dengan nomor deposito; kini berisi norek_bank
+ *   - (H) Nama Deposan hanya tampilan (dulu bisa diubah tetapi tidak pernah disimpan); cara hitung tersimpan langsung
+ *     terpilih; norek tidak ditemukan kembali ke daftar (dulu ke master_fund.php di folder transaksi, tidak ada)
+ */
+require_once __DIR__ . '/../../inc/tampilan.php';
+require_once __DIR__ . '/../../inc/cek_login.php';
+wajib_login();
 
-            <div class="container">
-                <div class="row">
-                    <div class="span12">
-                        <div class="content">
-                            <?php
-           $kd = $_GET['kd'];
-			$sql = db_query($koneksi, "SELECT norek,rasio,eq_rate,deposito.nama_bank,norek_bank,CUST_SHORT_NAME
-            FROM deposito 
-            left join deposan on deposan.CIF = deposito.cif
-            WHERE norek='$kd'");
-			if(db_num_rows($sql) == 0){
-				header("Location: master_fund.php");
-			}else{
-				$row = db_fetch_assoc($sql);
-			}
-			?>
-            
-            <blockquote>
-            Update Data Nisbah Nur Insani
-            </blockquote>
-                         <form name="form1" id="form1" class="form-horizontal row-fluid" action="update_nisbah.php" method="POST" >
-										<div class="control-group">
-											<label class="control-label" for="basicinput">Norek</label>
-											<div class="controls">
-												<input type="text" name="norek" id="norek" value="<?php echo $row['norek']; ?>" placeholder="Tidak perlu di isi" class="form-control span8 tip" readonly="readonly">
-											</div>
-										<div class="control-group">
-											<label class="control-label" for="basicinput">Nama Deposan</label>
-											<div class="controls">
-												<input type="text" name="nama" id="nama" value="<?php echo $row['CUST_SHORT_NAME']; ?>" placeholder="Nama Deposan" class="form-control span8 tip" required>
-											</div>
-										</div>
+$kd = isset($_GET['kd']) ? (string) $_GET['kd'] : '';
+$row = db_satu("SELECT norek,rasio,eq_rate,deposito.nama_bank,norek_bank,cara_hitung,CUST_SHORT_NAME
+    FROM deposito left join deposan on deposan.CIF = deposito.cif WHERE norek=?", 's', $kd);
+if (!$row) {
+    header("Location: ../view/master_trans.php");
+    exit;
+}
 
-										
-										<div class="control-group">
-											<label class="control-label" for="basicinput">Nisbah</label>
-											<div class="controls">
-												<input name="rasio" id="rasio" value="<?php echo $row['rasio']; ?>" class=" form-control span8 tip" type="text" placeholder="Rasio Nisbah" required />
-											</div>
-										</div>
-                                        <div class="control-group">
-											<label class="control-label" for="basicinput">Rate</label>
-											<div class="controls">
-												<input name="eq_rate" id="eq_rate" value="<?php echo $row['eq_rate']; ?>" class=" form-control span8 tip" type="text" placeholder="Eq Rate" required />
-											</div>
-										</div>
-										
-                                        <div class="control-group">
-											<label class="control-label" for="basicinput">Jenis Hitung</label>
-											<div class="controls">
-											<select name="cara_hitung" id ="cara_hitung" class="form-control span8 tip" required>
-											<option value="">Pilih Hitung</option>
-											<option value="1">Nisbah</option>
-											<option value="2">Rate</option>
-																		
-											</select> 
-											</div>
-										</div>
-                                        <div class="control-group">
-											<label class="control-label" for="basicinput">Nama Bank Tujuan</label>
-											<div class="controls">
-												<input name="nama_bank" id="nama_bank" value="<?php echo $row['nama_bank']; ?>" class=" form-control span8 tip" type="text" placeholder="Nama Bank" required />
-											</div>
-										</div>
-                                        <div class="control-group">
-											<label class="control-label" for="basicinput">Norek</label>
-											<div class="controls">
-												<input name="norek_bank" id="norek_bank" value="<?php echo $row['norek']; ?>" class=" form-control span8 tip" type="text" placeholder="No Rekening" required />
-											</div>
-										</div>
-
-                                    
-										<div class="control-group">
-											<div class="controls">
-												<input type="submit" name="update" id="update" value="Update" class="btn btn-sm btn-primary"/>
-                                               <a href="../view/master_trans.php" class="btn btn-sm btn-danger">Kembali</a>
-											</div>
-										</div>
-									</form>
-                        </div>
-                        <!--/.content-->
-                    </div>
-                    <!--/.span9-->
-                </div>
-            </div>
-		</div>
-            <!--/.container-->
-        
-        <!--/.wrapper--><br />
-       
-        <script>
-	//options method for call datepicker
-	$(".input-group.date").datepicker({ autoclose: true, todayHighlight: true });
-	
-    </script>
-        <script src="../bootstrap/js/bootstrap.min.js" type="text/javascript"></script>
-        
-        <script src="../datatables/jquery.dataTables.js"></script>
-        <script src="../datatables/dataTables.bootstrap.js"></script>
-       
-      
-    </body>
+halaman_awal('Update Data Nisbah Nur Insani');
+?>
+<div class="card card-ni">
+  <div class="card-header">Update Data Nisbah Nur Insani</div>
+  <div class="card-body">
+    <form name="form1" id="form1" action="update_nisbah.php" method="POST" class="row g-3" autocomplete="off">
+      <div class="col-sm-6">
+        <label class="form-label" for="norek">Norek</label>
+        <input type="text" name="norek" id="norek" value="<?php echo h($row['norek']); ?>" class="form-control" readonly>
+      </div>
+      <div class="col-sm-6">
+        <label class="form-label" for="nama">Nama Deposan</label>
+        <input type="text" id="nama" value="<?php echo h($row['CUST_SHORT_NAME']); ?>" class="form-control" disabled>
+      </div>
+      <div class="col-sm-4">
+        <label class="form-label" for="rasio">Nisbah</label>
+        <input type="text" name="rasio" id="rasio" value="<?php echo h($row['rasio']); ?>" placeholder="Rasio Nisbah" class="form-control" required>
+      </div>
+      <div class="col-sm-4">
+        <label class="form-label" for="eq_rate">Rate</label>
+        <input type="text" name="eq_rate" id="eq_rate" value="<?php echo h($row['eq_rate']); ?>" placeholder="Eq Rate" class="form-control" required>
+      </div>
+      <div class="col-sm-4">
+        <label class="form-label" for="cara_hitung">Jenis Hitung</label>
+        <select name="cara_hitung" id="cara_hitung" class="form-select" required>
+          <option value="">Pilih Hitung</option>
+          <?php foreach (array('1' => 'Nisbah', '2' => 'Rate') as $v => $t): ?>
+          <option value="<?php echo $v; ?>"<?php echo (string) $row['cara_hitung'] === (string) $v ? ' selected' : ''; ?>><?php echo $t; ?></option>
+          <?php endforeach; ?>
+        </select>
+      </div>
+      <div class="col-sm-6">
+        <label class="form-label" for="nama_bank">Nama Bank Tujuan</label>
+        <input type="text" name="nama_bank" id="nama_bank" value="<?php echo h($row['nama_bank']); ?>" placeholder="Nama Bank" class="form-control" required>
+      </div>
+      <div class="col-sm-6">
+        <label class="form-label" for="norek_bank">No Rekening Bank Tujuan</label>
+        <input type="text" name="norek_bank" id="norek_bank" value="<?php echo h($row['norek_bank']); ?>" placeholder="No Rekening" class="form-control" required>
+      </div>
+      <div class="col-12 text-end">
+        <a href="../view/master_trans.php" class="btn btn-outline-secondary">Kembali</a>
+        <button type="submit" name="update" id="update" value="Update" class="btn btn-ni px-4">Update</button>
+      </div>
+    </form>
+  </div>
+</div>
+<?php
+halaman_akhir();

@@ -135,7 +135,7 @@
                     <!--form ini akan brfungsi untuk mengirimkan query sql yang sekarang aktif-->
                     <!--sql diambil dari baris 28 atau 33, tergantung ada atau tidaknya kata kunci pencarian-->
                     <form action="export.php" method="post">
-                        <input type="hidden" name="sql" value="<?php echo $sql ?>" >
+                        <input type="hidden" name="laporan" value="nomi"><input type="hidden" name="keyword" value="<?php echo htmlspecialchars(isset($_REQUEST['keyword']) ? (string) $_REQUEST['keyword'] : '', ENT_QUOTES); ?>">
                         <input type="submit" value="Export Excel" class="btn btn-default" >
                     </form>
                 </div>
