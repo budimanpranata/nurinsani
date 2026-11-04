@@ -216,11 +216,11 @@ if (empty($kelompok)){
 	echo "<script>alert('Maaf,.Mohon Nomor Kelompok Yang Benar !!!');</script>";
          echo "<script language='javascript'>document.location.href='batal_tagih.php'</script>";}
 	else{
-	$select = mysql_query ("select count(no_anggota)as noa,sum(bulat) as tagihan,unit,kelompok.nama_kel,loan.cao,next_schedule from loan 
+	$select = db_hasil ("select count(no_anggota)as noa,sum(bulat) as tagihan,unit,kelompok.nama_kel,loan.cao,next_schedule from loan
 	inner join kelompok on kelompok.code_kel = loan.code_kel
-	where loan.code_kel ='$kelompok' AND loan.unit='$branch' and os >0
+	where loan.code_kel =? AND loan.unit=? and os >0
 	group by unit
-	");
+	", 'ss', $kelompok, $branch);
 		
 
 	if(mysql_num_rows($select)==0){
@@ -248,7 +248,7 @@ if (empty($kelompok)){
     <td class="style6"><?php echo $data['cao']; ?></td>
 	<td class="style6"><?php echo number_format (compat_num($data['tagihan'])); ?></td>
 	<td class="style6"><?php echo tgl_indo ($data['next_schedule']);?></td>
-	     <td><div align="center"><a href="yrs_list_batal.php?code_kel=<?php echo $_POST['kelompok'];?>"img src="image/r.PNG"  width="20" height="20"  class="style6" onClick="return confirm('Anda akan melakukan Realsasi Angsuran ?')"><strong>Realisasi</strong></a></div></td>
+	     <td><div align="center"><a href="yrs_list_batal.php?code_kel=<?php echo htmlspecialchars(urlencode($_POST['kelompok']));?>"img src="image/r.PNG"  width="20" height="20"  class="style6" onClick="return confirm('Anda akan melakukan Realsasi Angsuran ?')"><strong>Realisasi</strong></a></div></td>
   </tr>
   <?php
 		

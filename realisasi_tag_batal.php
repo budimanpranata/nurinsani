@@ -21,6 +21,8 @@ $tanggal=date("Y-m-d");
 $cekbox = $_POST['cekbox'];
 if ($cekbox) {
        foreach ($cekbox as $value) {
+				// no anggota dari form: di-escape karena dipakai langsung di query
+				$value = mysql_real_escape_string($value);
 		   		$row_sal= mysql_fetch_array(mysql_query("select(sum(KREDIT) - sum(DEBIT))as saldo from simpanan WHERE TYPE='01' AND NOREK ='" . $value . "'")) or die(mysql_error());
 				$saldo=$row_sal['saldo'];
 		$select = mysql_query("select DATE_ADD(next_schedule,INTERVAL 7 DAY) as next_schedule,unit,code_kel,no_anggota,cif,ijaroh,Plafond,pokok,os,angsuran,bulat,TIMESTAMPDIFF(WEEK,tgl_murab,next_schedule) AS RUN_TENOR1,run_tenor,TIMESTAMPDIFF(WEEK,tgl_murab,CURDATE()) AS ke1,cao,ke as next  from loan  WHERE no_anggota ='" . $value . "'");

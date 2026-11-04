@@ -275,7 +275,8 @@ a:active {
   include "../conn2.php";
   include "../function.php";
   $koneksi=open_connection2();
-  $cif_kel=$_POST['kode_rekening'];
+  // kode kelompok / cif dari form: di-escape karena dipakai langsung di query
+  $cif_kel=mysql_real_escape_string(isset($_POST['kode_rekening']) ? $_POST['kode_rekening'] : '');
   $pilih=$_POST['select'];
   $tanggal=date("Y-m-d");
   $jenis_blokir=$_POST['jenis'];

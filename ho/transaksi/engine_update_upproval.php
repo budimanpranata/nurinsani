@@ -20,14 +20,14 @@ switch ( $_GET['p'] ) {
 
 	case "update":
 	
-		$unitt = $_POST['unit'];
-		$buss_date = $_POST['jatuh'];
-		$nomi = $_POST['nomi'];
-		$ket =$_POST['ket'];
-		$tgl=$_POST['jatuh'];
-		$kode_transaksi=$_POST['kode_trn'];
-		$rek =$_POST['code'];
-$jenis_akad =$_POST['jenisAkad'];
+		$unitt = mysql_real_escape_string($_POST['unit']);
+		$buss_date = mysql_real_escape_string($_POST['jatuh']);
+		$nomi = mysql_real_escape_string($_POST['nomi']);
+		$ket = mysql_real_escape_string($_POST['ket']);
+		$tgl= mysql_real_escape_string($_POST['jatuh']);
+		$kode_transaksi= mysql_real_escape_string($_POST['kode_trn']);
+		$rek = mysql_real_escape_string($_POST['code']);
+$jenis_akad = mysql_real_escape_string($_POST['jenisAkad']);
 
 		$checkbox=$_POS['checkbox'];
 if (isset($_POST['checkbox'])){

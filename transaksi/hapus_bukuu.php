@@ -267,14 +267,14 @@ a:active {
 			//untuk menyimpan transaksi
 			if(isset($_POST['simpan'])){
 		
-				$kode_transaksi=$_POST['kode_bukti'];
-				$tanggal_transaksi=$_POST['tanggal_transaksi'];
+				$kode_transaksi= mysql_real_escape_string($_POST['kode_bukti']);
+				$tanggal_transaksi= mysql_real_escape_string($_POST['tanggal_transaksi']);
 				$keterangan_transaksi=mysql_real_escape_string($_POST['keterangan_transaksi']);
-				$cif=$_POST['kode_rekening'];
-				$ke =$_POST['ke'];
-				$jenis=$_POST['jenis'];
-				$margin=$_POST['margin'];
-				$pokok=$_POST['pokok'];
+				$cif= mysql_real_escape_string($_POST['kode_rekening']);
+				$ke = mysql_real_escape_string($_POST['ke']);
+				$jenis= mysql_real_escape_string($_POST['jenis']);
+				$margin= mysql_real_escape_string($_POST['margin']);
+				$pokok= mysql_real_escape_string($_POST['pokok']);
 				$nama=mysql_real_escape_string($_POST['nama']);
 				$tot_wo=$margin+$pokok;
 				
@@ -344,11 +344,11 @@ a:active {
 			//untuk menyelesaikan transaksi
 			if(isset($_POST['selesai'])){
 			
-				$kode_transaksi=$_POST['kode_bukti'];
-				$nomor_jurnal=$_POST['nomor_jurnal'];
-				$tanggal_selesai=$_POST['tanggal_selesai'];
-				$cif=$_POST['cif'];
-				$pokok=$_POST['pokok'];
+				$kode_transaksi= mysql_real_escape_string($_POST['kode_bukti']);
+				$nomor_jurnal= mysql_real_escape_string($_POST['nomor_jurnal']);
+				$tanggal_selesai= mysql_real_escape_string($_POST['tanggal_selesai']);
+				$cif= mysql_real_escape_string($_POST['cif']);
+				$pokok= mysql_real_escape_string($_POST['pokok']);
 				$row_sal= mysql_fetch_array(mysql_query("select(sum(KREDIT) - sum(DEBIT))as saldo from simpanan WHERE cif ='$cif'")) or die(mysql_error());
 				$sisa=$row_sal['saldo'];
 				

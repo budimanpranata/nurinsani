@@ -14,7 +14,8 @@ if($_SESSION['level']!="lead"){
 include "../../conn2.php";
 $koneksi=open_connection2(); 
 if(isset($_GET['d'])){
-     $id = $_GET['d'];
+     // kode transaksi dari link: di-escape karena dipakai langsung di query
+     $id = mysql_real_escape_string($_GET['d']);
 	 
 
  

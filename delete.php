@@ -12,26 +12,25 @@ echo'Gagal :'.mysqli_connect_error();
 }
 
 
-$cif = $_GET['cif'];
-$jenis = $_GET['jenis'];
+$cif = isset($_GET['cif']) ? (string) $_GET['cif'] : '';
+$jenis = isset($_GET['jenis']) ? $_GET['jenis'] : '';
 
-
-if ($jenis =="lima"){
-    @db_query($config_dua,"delete pull_data, tagihan_lima_persen from pull_data inner join tagihan_lima_persen on tagihan_lima_persen.cif = pull_data.cif  where pull_data.cif = '$cif' ");
-}elseif($jenis =="lebaran"){
-    @db_query($config_dua,"delete pull_data, tagihan_lebaran from pull_data inner join tagihan_lebaran on tagihan_lebaran.cif = pull_data.cif  where pull_data.cif = '$cif' ");
-}elseif($jenis =="pelunasan"){
-    @db_query($config_dua,"delete pull_data, tagihan_pelunasan from pull_data inner join tagihan_pelunasan on tagihan_pelunasan.cif = pull_data.cif  where pull_data.cif = '$cif' ");
-}elseif($jenis =="penarikan"){
-    @db_query($config_dua,"delete pull_data, tagihan_penarikan from pull_data inner join tagihan_penarikan on tagihan_penarikan.cif = pull_data.cif  where pull_data.cif = '$cif' ");
-}elseif($jenis =="pelunasan19"){
-    @db_query($config_dua,"delete pull_data, tagihan_pelunasan from pull_data inner join tagihan_pelunasan on tagihan_pelunasan.cif = pull_data.cif  where pull_data.cif = '$cif' ");
-}elseif($jenis =="pelunasanDO"){
-    @db_query($config_dua,"delete pull_data, tagihan_pelunasan from pull_data inner join tagihan_pelunasan on tagihan_pelunasan.cif = pull_data.cif  where pull_data.cif = '$cif' ");
+// tabel tagihan per jenis; cif dikirim sebagai parameter (prepared statement)
+$tabel_tagihan = array(
+    'lima' => 'tagihan_lima_persen',
+    'lebaran' => 'tagihan_lebaran',
+    'pelunasan' => 'tagihan_pelunasan',
+    'penarikan' => 'tagihan_penarikan',
+    'pelunasan19' => 'tagihan_pelunasan',
+    'pelunasanDO' => 'tagihan_pelunasan',
+);
+if (isset($tabel_tagihan[$jenis])) {
+    $t = $tabel_tagihan[$jenis];
+    @db_hasil_di($config_dua, "delete pull_data, $t from pull_data inner join $t on $t.cif = pull_data.cif  where pull_data.cif = ? ", 's', $cif);
 }
 
 
-echo "<script>alert('hapus pull data $cif sukses ');</script>";
+echo "<script>alert(" . json_encode("hapus pull data $cif sukses ", JSON_HEX_TAG) . ");</script>";
 echo "<script language='javascript'>document.location.href='mob_pull_data.php'</script>";
 
 ?>

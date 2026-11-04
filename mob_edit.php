@@ -124,7 +124,7 @@ echo'Gagal :'.mysqli_connect_error();
                 $nominal       = str_replace ('.','',$_POST['nominal']);	
                 var_dump($cif);		
                  
-                $insert= db_query($koneksi,"update cs set nominal ='$nominal', status_trans='$jenis' where cif ='$cif'");
+                $insert= db_hasil_di($koneksi,"update cs set nominal =?, status_trans=? where cif =?", 'sss', $nominal, $jenis, $cif);
 				
 		
                
@@ -151,8 +151,8 @@ echo'Gagal :'.mysqli_connect_error();
                                         <div class="control-group">
                                             <label class="control-label" for="basicinput">Nama</label>
                                             <div class="controls">
-											<input type="text" name="tipe" id="tipe" placeholder="Tidak perlu di isi" value="<?php echo $type; ?>" class="form-control span8 tip" readonly="readonly">
-                                                <input type="text" name="cif" id="cif" placeholder="Tidak perlu di isi" value="<?php echo $cif; ?>" class="form-control span8 tip" readonly="readonly">
+											<input type="text" name="tipe" id="tipe" placeholder="Tidak perlu di isi" value="<?php echo htmlspecialchars((string) $type); ?>" class="form-control span8 tip" readonly="readonly">
+                                                <input type="text" name="cif" id="cif" placeholder="Tidak perlu di isi" value="<?php echo htmlspecialchars((string) $cif); ?>" class="form-control span8 tip" readonly="readonly">
                                             </div>
                                         </div>
                                         <div class="control-group">

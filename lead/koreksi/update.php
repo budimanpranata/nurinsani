@@ -25,8 +25,10 @@ if(isset($_GET['u'])):
                echo "<script>alert('".$stmt->error."')</script>";
           endif;
      endif;
-     $res = $mysqli->query("SELECT * FROM tabel_transaksi WHERE id_transaksi=".$_GET['u']);
-     $row = $res->fetch_assoc();
+     $res = $mysqli->prepare("SELECT * FROM tabel_transaksi WHERE id_transaksi=?");
+     $res->bind_param('s', $_GET['u']);
+     $res->execute();
+     $row = $res->get_result()->fetch_assoc();
 ?>
  
    <p>

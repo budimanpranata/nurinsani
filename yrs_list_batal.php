@@ -42,8 +42,8 @@ $date=date('Y-m-d');
 $query = "Select distinct rek_loan.no_anggota,rek_loan.tgl_realisasi,rek_loan.unit,Plafond,ijaroh,bagi_hasil,bulat,pokok,Cust_Short_name,kelompok.nama_kel from rek_loan
 inner join loan on loan.no_anggota = rek_loan.no_anggota 
 inner join kelompok on kelompok.code_kel = loan.code_kel
-Where kelompok.code_kel='$code_kel' and rek_loan.unit='$unit' and os >0 group by rek_loan.no_anggota ";
-$result = mysql_query($query);
+Where kelompok.code_kel=? and rek_loan.unit=? and os >0 group by rek_loan.no_anggota ";
+$result = db_hasil($query, 'ss', $code_kel, $unit);
 ?>
 <form action="realisasi_tag_batal.php" method="post">
     <table border="1" style="margin: 10px 0px" class="table table-striped" >

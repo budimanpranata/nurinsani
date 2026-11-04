@@ -17,14 +17,14 @@ switch ( $_GET['p'] ) {
 
 	case "tambah":
 
-		$nik 	= $_POST['nik'];
-		$nama = $_POST['nama'];
-		$alamat = $_POST['alamat'];
-		$gender = $_POST['gender'];
-		$status= $_POST['status'];
-		$lahir = $_POST['lahir'];
-		$tlp = $_POST['tlp'];
-		$kota=$_POST['kota'];
+		$nik 	= mysql_real_escape_string($_POST['nik']);
+		$nama = mysql_real_escape_string($_POST['nama']);
+		$alamat = mysql_real_escape_string($_POST['alamat']);
+		$gender = mysql_real_escape_string($_POST['gender']);
+		$status= mysql_real_escape_string($_POST['status']);
+		$lahir = mysql_real_escape_string($_POST['lahir']);
+		$tlp = mysql_real_escape_string($_POST['tlp']);
+		$kota= mysql_real_escape_string($_POST['kota']);
 		empty( $nik ) 	 ? $err[] = "<h5>* NIK Masih Kosong</h5>" : "";
 		empty( $nama ) 	 ? $err[] = "<h5>* NAMA Masih Kosong</h5>" : "";
 		empty( $alamat ) ? $err[] = "<h5>* ALAMAT masih kosong</h5>" : "";
@@ -59,13 +59,13 @@ switch ( $_GET['p'] ) {
 	break;
 
 	case "update":
-		$nik 	= $_POST['nik'];
-		$nama = $_POST['nama'];
-		$alamat = $_POST['alamat'];
-		$gender = $_POST['gender'];
-		$status= $_POST['status'];
-		$lahir = $_POST['lahir'];
-		$tlp = $_POST['tlp'];
+		$nik 	= mysql_real_escape_string($_POST['nik']);
+		$nama = mysql_real_escape_string($_POST['nama']);
+		$alamat = mysql_real_escape_string($_POST['alamat']);
+		$gender = mysql_real_escape_string($_POST['gender']);
+		$status= mysql_real_escape_string($_POST['status']);
+		$lahir = mysql_real_escape_string($_POST['lahir']);
+		$tlp = mysql_real_escape_string($_POST['tlp']);
 		empty( $nama ) 	 ? $err[] = "<h5>* NAMA Masih Kosong</h5>" : "";
 		empty( $alamat ) ? $err[] = "<h5>* ALAMAT masih kosong</h5>" : "";
 		empty( $gender ) ? $err[] = "<h5>* gender Masih Kosong</h5>" : "";
@@ -101,7 +101,7 @@ if ($person){
 
 	case "hapus" :
 
-		$id = $_GET['nik'];
+		$id = mysql_real_escape_string($_GET['nik']);
 		$conn->query("DELETE FROM person WHERE NIK= '$nik'");
 		$conn->query("DELETE FROM user WHERE userid= '$nik'");
 		$conn->query("DELETE FROM user WHERE kode_ds= '$nik'");

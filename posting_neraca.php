@@ -285,7 +285,7 @@ if (empty($buss_date1)||empty($buss_date2)){
 		$_SESSION['tgl_akhir_pos']=$buss_date2;
 		$_SESSION['unit_lead']=$unit;
 		
-		 $select = mysql_query("Select sum(debet) as debet,sum(kredit) as kredit from tabel_transaksi where  tanggal_transaksi between '$buss_date1' and '$buss_date2' and unit='$unit'");
+		 $select = db_hasil("Select sum(debet) as debet,sum(kredit) as kredit from tabel_transaksi where  tanggal_transaksi between ? and ? and unit=?", 'sss', $buss_date1, $buss_date2, $unit);
 		}
 
 	
@@ -316,7 +316,7 @@ if (empty($buss_date1)||empty($buss_date2)){
 	}
 	}else{
 		 $select1 = mysql_query("SET @bal = 0;");
-		 $select = mysql_query("Select kode_rekening,DATE_FORMAT(tanggal_transaksi, '%d %M %Y') as tanggal_transaksi,keterangan_transaksi,debet,kredit,@bal:=(@bal+debet) - kredit as saldo from tabel_transaksi where kode_rekening='1120000' and tanggal_transaksi='$tgl_system'and unit='$unit'");
+		 $select = db_hasil("Select kode_rekening,DATE_FORMAT(tanggal_transaksi, '%d %M %Y') as tanggal_transaksi,keterangan_transaksi,debet,kredit,@bal:=(@bal+debet) - kredit as saldo from tabel_transaksi where kode_rekening='1120000' and tanggal_transaksi=? and unit=?", 'ss', $tgl_system, $unit);
 	while($data = mysql_fetch_array($select)){
 			
 		?>

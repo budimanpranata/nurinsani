@@ -16,12 +16,12 @@ switch ( $_GET['p'] ) {
 	break;
 
 	case "update":
-		$id = $_POST['id'];
-		$tgl_wakalah = $_POST['inn'];
-		$pla= $_POST['pla'];
-		$cif=$_POST['cif'];
-		$akad=$_POST['akad'];
-		$tenor=$_POST['tenor'];
+		$id = mysql_real_escape_string($_POST['id']);
+		$tgl_wakalah = mysql_real_escape_string($_POST['inn']);
+		$pla= mysql_real_escape_string($_POST['pla']);
+		$cif= mysql_real_escape_string($_POST['cif']);
+		$akad= mysql_real_escape_string($_POST['akad']);
+		$tenor= mysql_real_escape_string($_POST['tenor']);
 		$tgl_wakal=strtotime($tgl_wakalah);
 		$murab1 =  date("Y-m-d", strtotime("+7 day", $tgl_wakal));
 		$Newmurab = date ("Y-m-d", strtotime("+7 day" , strtotime ($tgl_wakal))) ;

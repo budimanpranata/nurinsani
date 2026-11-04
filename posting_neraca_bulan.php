@@ -23,6 +23,10 @@ if($_SESSION['level']!="lead"){
 	//untuk koneksi database
 	include "conn2.php";
 	$koneksi=open_connection2();
+	// tanggal & unit berasal dari form posting_neraca.php (disimpan di session): di-escape karena dipakai langsung di query
+	$tgl_awal=mysql_real_escape_string($tgl_awal);
+	$tgl_akhir=mysql_real_escape_string($tgl_akhir);
+	$unitt=mysql_real_escape_string($unitt);
 	
 ?>	
 <script type="text/javascript" src="jquery.js"></script>

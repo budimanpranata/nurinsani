@@ -11,8 +11,7 @@ if ($aksi == 'tambah') {
     $cif     = $_POST['cif'];
     $nominal = $_POST['nominal'];
 
-    $query = "INSERT INTO omzet (tanggal, cif, nominal) VALUES ('$tanggal', '$cif', '$nominal')";
-    db_query($conn, $query);
+    db_jalankan("INSERT INTO omzet (tanggal, cif, nominal) VALUES (?, ?, ?)", 'sss', $tanggal, $cif, $nominal);
     echo "ok";
 
 } elseif ($aksi == 'edit') {
@@ -21,19 +20,21 @@ if ($aksi == 'tambah') {
     $cif     = $_POST['cif'];
     $nominal = $_POST['nominal'];
 
-    $query = "UPDATE omzet SET tanggal='$tanggal', cif='$cif', nominal='$nominal' WHERE id='$id'";
-    db_query($conn, $query);
+    db_jalankan("UPDATE omzet SET tanggal=?, cif=?, nominal=? WHERE id=?", 'ssss', $tanggal, $cif, $nominal, $id);
     echo "ok";
 
 } elseif ($aksi == 'hapus') {
     $id = $_POST['id'];
-    db_query($conn, "DELETE FROM omzet WHERE id='$id'");
+    db_jalankan("DELETE FROM omzet WHERE id=?", 's', $id);
     echo "ok";
 
 } elseif ($aksi == 'get') {
     $id = $_POST['id'];
-    $q = db_query($conn, "SELECT * FROM omzet WHERE id='$id'");
-    $data = db_fetch_assoc($q);
+    $data = db_satu("SELECT * FROM omzet WHERE id=?", 's', $id);
+    // nilai sebagai string seperti hasil mysqli_query versi lama (JSON tetap "id":"1")
+    if ($data) {
+        $data = array_map(function ($v) { return $v === null ? null : (string) $v; }, $data);
+    }
     echo json_encode($data);
 }
 ?>

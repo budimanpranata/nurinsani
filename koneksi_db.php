@@ -163,6 +163,29 @@ function db_error_terakhir()
     return isset($GLOBALS['__db_error_terakhir']) ? $GLOBALS['__db_error_terakhir'] : '';
 }
 
+/**
+ * Hasil query baca (prepared statement) sebagai mysqli_result, untuk kode lama yang memakai
+ * mysql_fetch_array()/mysql_num_rows() pada hasil mysql_query(). false bila query gagal.
+ *   $r = db_hasil("SELECT * FROM loan WHERE code_kel = ? AND unit = ?", 'ss', $kelompok, $unit);
+ */
+function db_hasil($sql, $tipe = '', ...$param)
+{
+    return db_hasil_di(db_ni(), $sql, $tipe, ...$param);
+}
+
+/** Sama dengan db_hasil() pada koneksi $link (mis. db_mobcol()). Query tulis mengembalikan true. */
+function db_hasil_di($link, $sql, $tipe = '', ...$param)
+{
+    $st = $link->prepare($sql);
+    if (!$st || ($tipe !== '' && !$st->bind_param($tipe, ...$param)) || !$st->execute()) {
+        trigger_error('db_hasil(): ' . ($st ? $st->error : $link->error) . ' | SQL: '
+            . substr(preg_replace('/\s+/', ' ', $sql), 0, 300), E_USER_WARNING);
+        return false;
+    }
+    $hasil = $st->get_result();
+    return $hasil === false ? true : $hasil;
+}
+
 /** Baris pertama hasil query (prepared statement), atau null. */
 function db_satu($sql, $tipe = '', ...$param)
 {

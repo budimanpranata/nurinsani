@@ -20,12 +20,12 @@ switch ( $_GET['p'] ) {
 
 	case "update":
 	
-		$norek = $_POST['id'];
-		$buss_date = $_POST['jatuh'];
-		$nomi = $_POST['nomi'];
-		$rek=$_POST['code'];
-		$ket =$_POST['ket'];
-		$tgl=$_POST['jatuh'];
+		$norek = mysql_real_escape_string($_POST['id']);
+		$buss_date = mysql_real_escape_string($_POST['jatuh']);
+		$nomi = mysql_real_escape_string($_POST['nomi']);
+		$rek= mysql_real_escape_string($_POST['code']);
+		$ket = mysql_real_escape_string($_POST['ket']);
+		$tgl= mysql_real_escape_string($_POST['jatuh']);
 		
 		
 		empty( $tgl ) 	 ? $err[] = "<h5>* TANGGAL Masih Kosong</h5>" : "";
