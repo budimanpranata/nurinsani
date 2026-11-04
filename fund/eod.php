@@ -1,191 +1,143 @@
-<?php require_once __DIR__ . '/../php8_compat.php'; 
+<?php require_once __DIR__ . '/../koneksi_db.php';
+/**
+ * Menu fund > EOD (EOD deposito), tanggal = tanggal sistem (sesi stgl_system, keputusan user 2026-11-04). Hanya bisa
+ * bila tidak ada tabel_transaksi unit user yang belum diposting (sama dengan versi lama). Proses:
+ *   1. semua deposito code_bulan = '1' (dicocokkan dengan param_dep DP '1' hasil Posting Parameter; penempatan baru
+ *      baru masuk daftar Realisasi Bagi Hasil sesudah EOD) - sama dengan versi lama
+ *   2. tanggal sistem hari Jumat: jadwal bagi hasil (deposito_detail tgl_jatuh_tempo & tgl_bayar) Sabtu/Minggu berikutnya
+ *      dipindah ke Senin, kecuali bila Senin itu sudah bulan berikutnya -> dipindah ke Jumat (tetap di bulannya)
+ *   3. tanggal terakhir bulan (dari tanggal sistem) Sabtu/Minggu: jadwal di tanggal itu dipindah ke Jumat sebelumnya
+ * Perbaikan atas perintah user 2026-11-04: dulu syarat "bukan akhir bulan" membandingkan jumlah hari bulan dengan nomor
+ * bulan (selalu beda) sehingga EOD Jumat memindah jadwal akhir bulan Sabtu/Minggu ke Senin bulan berikutnya sebelum
+ * aturan akhir bulan sempat berlaku; aturan akhir bulan memakai bulan jam server, bukan tanggal EOD; tanggal diketik
+ * bebas tanpa validasi (teks rusak dibaca tanggal 1970). Kini juga: login + level fund, prepared statement, GET_LOCK,
+ * ringkasan jumlah baris yang diubah.
+ */
+require_once __DIR__ . '/../inc/tampilan.php';
 session_start();
-$userid=$_SESSION['userid'];
+ob_start();
+require_once __DIR__ . '/../inc/cek_login.php';
+wajib_login();
+if ((isset($_SESSION['level']) ? $_SESSION['level'] : '') != "fund") {
+    header("location:../index.html");
+    exit;
+}
+include_once __DIR__ . '/../function.php';
+$userid = (string) $_SESSION['userid'];
+$tgl = substr(isset($_SESSION['stgl_system']) ? (string) $_SESSION['stgl_system'] : '', 0, 10);
+$d_tgl = DateTime::createFromFormat('!Y-m-d', $tgl);
+if (!$d_tgl || $d_tgl->format('Y-m-d') !== $tgl) {
+    $d_tgl = null;
+}
+$u = db_satu("select kode_branch from user where userid=?", 's', $userid);
+$unit = $u ? (string) $u['kode_branch'] : '';
 
-include "../encryption/function.php";
-     
-    //untuk waktu
-    $tanggal=date("y-m-d");
-     
-    //untuk koneksi database
-    include "../conn2.php";
-    $koneksi=open_connection2();
-    $user=mysql_query("select kode_branch from user where userid='$userid'");
-             
-            while($id_user=mysql_fetch_array($user)){
-             
-                $unit=$id_user['kode_branch'];
-            }
-    ?>
-    <?php
-    if(isset($_POST['hitung_shu'])){
-        $tgl=$_POST['tgl'];
-
-        
-        $day = date('D', strtotime($tgl));
-        $dayList = array(
-            'Sun' => 'Minggu',
-            'Mon' => 'Senin',
-            'Tue' => 'Selasa',
-            'Wed' => 'Rabu',
-            'Thu' => 'Kamis',
-            'Fri' => 'Jumat',
-            'Sat' => 'Sabtu'
-        );
-
-        $tgl_akhir_bulan=date('t');
-        $tgl_hari_ini=date('d');
-
-       
-        $sabtu = date('Y-m-d', strtotime('+1 days', strtotime($tgl)));
-       
-        $minggu = date('Y-m-d', strtotime('+2 days', strtotime($tgl)));
-        $senin = date('Y-m-d', strtotime('+3 days', strtotime($tgl)));
-
-
-       $sekarang=substr($tgl,5,2);
-   
-
-        if($dayList[$day]=='Jumat' AND $tgl_akhir_bulan != $sekarang ){
-          
-        $update=mysql_query ("UPDATE deposito set code_bulan ='1'");
-        $update=mysql_query ("UPDATE deposito_detail set tgl_jatuh_tempo='$senin', tgl_bayar='$senin' where tgl_jatuh_tempo in ('$sabtu','$minggu')");
-
-         
-        }else{
-            
-        $update=mysql_query ("UPDATE deposito set code_bulan ='1'");
-
-        
-        }
-
-
-        $akhir =date('Y-m-d',strtotime('last day of this month'));
-        $hari = date('D', strtotime($akhir));
-        $listhari = array(
-            'Sun' => 'Minggu',
-            'Mon' => 'Senin',
-            'Tue' => 'Selasa',
-            'Wed' => 'Rabu',
-            'Thu' => 'Kamis',
-            'Fri' => 'Jumat',
-            'Sat' => 'Sabtu'
-        );
-        
-
-        if($listhari[$hari]=='Sabtu'){
-            $jumat_sabtu = date('Y-m-d', strtotime('-1 days', strtotime($akhir)));
-
-        $update=mysql_query ("UPDATE deposito_detail set tgl_jatuh_tempo='$jumat_sabtu', tgl_bayar='$jumat_sabtu' where tgl_jatuh_tempo ='$akhir'");
-        }elseif($listhari[$hari]=='Minggu'){
-            $jumat_minggu = date('Y-m-d', strtotime('-2 days', strtotime($akhir)));
-            $update=mysql_query ("UPDATE deposito_detail set tgl_jatuh_tempo='$jumat_minggu', tgl_bayar='$jumat_minggu' where tgl_jatuh_tempo ='$akhir'");
-
-        }
-    
-
- 
- 
-
-
- 
-    echo "('Porses update Tgl Bayar Sabtu Minggu dan Akhir bulan selesai ')";
- 
-        if($update){
-            //1. Tahap Penginputan
-
-        
-            echo "<script> alert ('Proses EOD Deposito Selesai ')</script>";
-            echo "<script language='javascript'>document.location.href='eod.php'</script>";
-	
-                }else{
-            echo mysql_error();
-        }
-                             
-    }else{
-        unset($_POST['hitung_shu']);
+/** Jalankan UPDATE prepared; hasil jumlah baris berubah, atau false bila gagal. */
+function ubah_eod($sql, $tipe = '', ...$param)
+{
+    $st = db_ni()->prepare($sql);
+    if (!$st || ($tipe !== '' && !$st->bind_param($tipe, ...$param)) || !$st->execute()) {
+        $GLOBALS['__db_error_terakhir'] = $st ? $st->error : db_ni()->error;
+        return false;
     }
-    ?>
-     
- 
- 
-      <link rel="stylesheet" type="text/css" href="../css/bootstrap.min.css">
- 
- <script type="text/javascript" src="../js/jquery.min.js"></script>
- <script type="text/javascript" src="../js/bootstrap.min.js"></script>
- 
-     
-    <div class="post">
-      <div class="entry">
-            <h2 align="center"><strong>Proses EOD</strong></h2>
-            <p align="center">&nbsp;</p>
-            <p align="center">
-            <p align="center" class="style1"><font color="#666666">
-            
-            <p align="center"><em><font color="#666666">Proses bisa dilakukan setelah semua data diposting.
-            <?php 
-            $cek=mysql_query("select * from tabel_transaksi where keterangan_posting='' and unit ='$unit'");
-            $cek_posting=mysql_num_rows($cek);
-            if($cek_posting!==0){
-                //echo "masih ada yang belum di posting";
-            }else{
-                ?>
-</font></em></p>
-            
-          
-           
-            </font></span></p>
-            <form action="?<?php echo paramEncrypt('page=../laporan/hitung_shu')?>" method="post" name="postform" id ="myform">
-                <div align="center">
-                <p>&nbsp;</p><p>
-                <font color="#666666">
-				 <p align="center"><span class="style1"><font color="#666666">
-              
-			 <div class="control-group">
-			  <div class="input-group-addon">
-           <span class="glyphicon glyphicon-th"></span>
-       
-                                            <label class="control-label" for="basicinput">Tanggal Transaksi</label>
-                                            <div class="controls">
-                                                <input type="text" name="tgl" id="tgl" class="input-group date form-control span8 tip" type="text"  date="" placeholder="yyyy/mm/dd" required>
-                                            </div>
-                                        </div>
-			  </div>
-			  <div class="control-group">
-                <input type="submit" onclick="return confirm('Apakah Anda Yakin?')" name="hitung_shu" value="Proses" class="btn btn-primary" />
-                 </div>
-                </font></p>
-                </div>
-        </form>
-                 
-                 
-                 
-      </div>
-                <?php
-                             
-            }
- 
-            ?>
-    </div>
-            </font>
-            <div align="center"><font color="#0066FF">
-             
-            <?php
-             
-            if($berhasil){
-            echo '<div class="alert alert-success alert-dismissible" role="alert"><button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button><strong>Sukses </strong> SHU berhasil di Hitung </div>';
- 
-            }
-            ?>          
-            </font>
-            </p>
-            </div>
-      </div>
-    </div>
-     <script src="../js/bootstrap-datepicker.js"></script>
-        <script>
-    //options method for call datepicker
-    $(".input-group.date").datepicker({ autoclose: true, todayHighlight: true, format: 'yyyy-mm-dd', });
-   
-   
-    </script>
+    return $st->affected_rows;
+}
+
+/** Pindah jadwal bagi hasil tanggal $dari ke $ke; hasil teks ringkasan atau false. */
+function pindah_jadwal($dari, $ke)
+{
+    $n = ubah_eod("UPDATE deposito_detail set tgl_jatuh_tempo=?, tgl_bayar=? where tgl_jatuh_tempo=?", 'sss', $ke, $ke, $dari);
+    return $n === false ? false : "jadwal $dari -> $ke: $n baris";
+}
+
+/** Proses EOD tanggal $d; hasil array(berhasil, daftar ringkasan). */
+function proses_eod(DateTime $d)
+{
+    $catat = array();
+    $n = ubah_eod("UPDATE deposito set code_bulan ='1'");
+    if ($n === false) {
+        return array(false, array('Gagal: ' . db_error_terakhir()));
+    }
+    $catat[] = "deposito code_bulan '1': $n baris diubah";
+    $pindah = array();
+    if ($d->format('N') === '5') {
+        // Jumat: Sabtu/Minggu -> Senin, kecuali Senin sudah bulan berikutnya -> Jumat
+        $senin = (clone $d)->modify('+3 days');
+        foreach (array(1, 2) as $tambah) {
+            $libur = (clone $d)->modify("+$tambah days");
+            $ke = $senin->format('Y-m') === $libur->format('Y-m') ? $senin : $d;
+            $pindah[$libur->format('Y-m-d')] = $ke->format('Y-m-d');
+        }
+    }
+    $akhir = (clone $d)->modify('last day of this month');
+    $hari_akhir = $akhir->format('N');
+    if (($hari_akhir === '6' || $hari_akhir === '7') && !isset($pindah[$akhir->format('Y-m-d')])) {
+        // akhir bulan Sabtu/Minggu -> Jumat sebelumnya
+        $pindah[$akhir->format('Y-m-d')] = (clone $akhir)->modify($hari_akhir === '6' ? '-1 day' : '-2 days')->format('Y-m-d');
+    }
+    foreach ($pindah as $dari => $ke) {
+        $hasil = pindah_jadwal($dari, $ke);
+        if ($hasil === false) {
+            $catat[] = 'Gagal memindah jadwal ' . $dari . ': ' . db_error_terakhir();
+            return array(false, $catat);
+        }
+        $catat[] = $hasil;
+    }
+    return array(true, $catat);
+}
+
+$belum_posting = db_satu("select count(*) as n from tabel_transaksi where keterangan_posting='' and unit =?", 's', $unit);
+$belum_posting = $belum_posting ? (int) $belum_posting['n'] : 0;
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['proses'])) {
+    if (!$d_tgl) {
+        $pesan = array('danger', 'Tanggal sistem tidak terbaca, silakan login ulang.', array());
+    } elseif ($belum_posting > 0) {
+        $pesan = array('warning', 'Masih ada ' . $belum_posting . ' transaksi unit yang belum diposting. Proses bisa dilakukan setelah semua data diposting.', array());
+    } else {
+        $kunci = db_satu("SELECT GET_LOCK('fund_eod', 10) AS ok");
+        if (!$kunci || (int) $kunci['ok'] !== 1) {
+            $pesan = array('warning', 'EOD sedang diproses user lain, coba lagi sebentar.', array());
+        } else {
+            list($ok, $catat) = proses_eod($d_tgl);
+            db_satu("SELECT RELEASE_LOCK('fund_eod') AS ok");
+            $pesan = $ok ? array('success', 'Proses EOD Deposito tanggal ' . $tgl . ' selesai.', $catat) : array('danger', 'Proses EOD Deposito gagal.', $catat);
+        }
+    }
+    $_SESSION['pesan_eod'] = $pesan;
+    header('Location: eod.php');
+    exit;
+}
+$pesan = isset($_SESSION['pesan_eod']) ? $_SESSION['pesan_eod'] : null;
+unset($_SESSION['pesan_eod']);
+$nama_hari = array('1' => 'Senin', '2' => 'Selasa', '3' => 'Rabu', '4' => 'Kamis', '5' => 'Jumat', '6' => 'Sabtu', '7' => 'Minggu');
+
+halaman_awal('Proses EOD');
+?>
+<?php if ($pesan): ?>
+<div class="alert alert-<?php echo h($pesan[0]); ?>" role="alert">
+  <?php echo h($pesan[1]); ?>
+  <?php if ($pesan[2]): ?>
+  <ul class="mb-0 mt-2 small"><?php foreach ($pesan[2] as $c): ?><li><?php echo h($c); ?></li><?php endforeach; ?></ul>
+  <?php endif; ?>
+</div>
+<?php endif; ?>
+<div class="card card-ni">
+  <div class="card-header">Proses EOD Deposito</div>
+  <div class="card-body">
+    <p class="text-muted">Proses bisa dilakukan setelah semua data diposting.</p>
+    <?php if (!$d_tgl): ?>
+    <div class="alert alert-danger mb-0">Tanggal sistem tidak terbaca, silakan login ulang.</div>
+    <?php elseif ($belum_posting > 0): ?>
+    <div class="alert alert-warning mb-0">Masih ada <?php echo $belum_posting; ?> transaksi unit yang belum diposting.</div>
+    <?php else: ?>
+    <form method="post" action="eod.php" onsubmit="if (!confirm('Apakah Anda Yakin?')) return false; this.querySelector('button').disabled = true;">
+      <p>Tanggal Transaksi (tanggal sistem): <strong><?php echo h($nama_hari[$d_tgl->format('N')] . ', ' . tgl_indo($tgl)); ?></strong></p>
+      <input type="hidden" name="proses" value="1">
+      <button type="submit" class="btn btn-ni">Proses</button>
+    </form>
+    <?php endif; ?>
+  </div>
+</div>
+<?php
+halaman_akhir();
