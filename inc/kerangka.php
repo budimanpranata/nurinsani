@@ -64,7 +64,8 @@ function kerangka_aplikasi($opsi = array())
       <strong><?php echo h($nama !== '' ? $nama : $userid); ?></strong>
       <small><?php echo h($userid . ($level !== '' ? ' · ' . $level : '')); ?></small>
     </span>
-    <a class="btn btn-keluar" href="<?php echo h($opsi['keluar']); ?>" target="_top">Keluar</a>
+    <?php /* konfirmasi sebelum membuka Logout.php (perintah user 2026-11-04): Cancel = tetap di halaman */ ?>
+    <a class="btn btn-keluar" href="<?php echo h($opsi['keluar']); ?>" target="_top" onclick="return confirm('Apakah anda akan keluar dari System ?');">Keluar</a>
   </div>
 </header>
 

@@ -5,7 +5,8 @@ include "../conn2.php";
 $koneksi=open_connection2();
 ?>
 <?php 
-echo "<script language='javascript'>confirm('Apakah adan akan keluar dari System ?')</script>";
+// konfirmasi "Apakah anda akan keluar dari System ?" kini di tombol Keluar (inc/kerangka.php) sebelum halaman logout dibuka;
+// dulu confirm() di sini muncul sesudah proses keluar berjalan sehingga Cancel tidak berpengaruh (perintah user 2026-11-04)
 $userid=$_SESSION['userid'];
 $update = mysql_query("UPDATE user SET status='0' WHERE userid='$userid'");
 $result = mysql_query("SELECT * FROM user WHERE userid='$userid'");
