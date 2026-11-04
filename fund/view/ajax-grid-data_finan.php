@@ -1,87 +1,53 @@
 <?php require_once __DIR__ . '/../../koneksi_db.php';
-/* Database connection start */
-$servername = "localhost";
-$username = "root";
-$password = "";
-$dbname = "nur_insani";
-
-$conn = db_ni() or die("Connection failed: " . mysqli_connect_error());
-include "../../indo_tgl.php";
-/* Database connection end */
-
-
-// storing  request (ie, get/post) global array to a variable  
-$requestData= $_REQUEST;
-
-
-$columns = array( 
-// datatable column index  => database column name
-	0 => 'code_param',
-    1 => 'nomi_murab', 
-	2 => 'marigin_murab',
-	3 => 'buss_date'
-   
-);
-
-// getting total number records without any search
-$sql = "SELECT code_param, nomi_murab, marigin_murab, buss_date ";
-$sql.=" FROM param_finan";
-$query=db_query($conn, $sql) or die("ajax-grid-data_finan.php: get InventoryItems");
-$totalData = db_num_rows($query);
-$totalFiltered = $totalData;  // when there is no search parameter then total number rows = total number filtered rows.
-
-
-if( !empty($requestData['search']['value']) ) {
-	// if there is a search parameter
-	$sql = "SELECT code_param, nomi_murab, marigin_murab, buss_date";
-	$sql.=" FROM param_finan";
-	$sql.=" WHERE code_param LIKE '".$requestData['search']['value']."%' ";    // $requestData['search']['value'] contains search parameter
-	$sql.=" OR nomi_murab LIKE '".$requestData['search']['value']."%' ";
-	$sql.=" OR marigin_murab LIKE '".$requestData['search']['value']."%' ";
-    $sql.=" OR buss_date LIKE '".$requestData['search']['value']."%' ";
-   
-	$query=db_query($conn, $sql) or die("../view/ajax-grid-data_finan.php: get PO");
-	$totalFiltered = db_num_rows($query); // when there is a search parameter then we have to modify total number filtered rows as per search result without limit in the query 
-
-	$sql.=" ORDER BY ". $columns[$requestData['order'][0]['column']]."   ".$requestData['order'][0]['dir']."   LIMIT ".$requestData['start']." ,".$requestData['length']."   "; // $requestData['order'][0]['column'] contains colmun index, $requestData['order'][0]['dir'] contains order such as asc/desc , $requestData['start'] contains start row number ,$requestData['length'] contains limit length.
-	$query=db_query($conn, $sql) or die("../view/ajax-grid-data_finan.php: get PO"); // again run query with limit
-	
-} else {	
-
-	$sql = "SELECT code_param, nomi_murab, marigin_murab, buss_date";
-	$sql.=" FROM param_finan";
-	$sql.=" ORDER BY ". $columns[$requestData['order'][0]['column']]."   ".$requestData['order'][0]['dir']."   LIMIT ".$requestData['start']." ,".$requestData['length']."   ";
-	$query=db_query($conn, $sql) or die("ajax-grid-data_finan.php: get PO");
-	
+/**
+ * Data daftar Param Financial (view_finan.php): param_finan per halaman (DataTables server-side, GET,
+ * inc/datatables_server.php). Kolom: Kode Bulan, Nominal Murabahah, Nominal Margin, Bulan, Periode S.d, Jumlah Hari
+ * (DATEDIFF(sd, dari)), Aksi (hapus = true hanya untuk periode terbaru / code_param terbesar).
+ * Dimigrasi 2026-11-04 (perintah user): dulu tanpa cek login, pencarian/urut/limit disusun langsung dari input, tombol
+ * Edit menuju edit deposan. Format angka (1,234,567) dan tanggal (tgl_indo) sama dengan versi lama.
+ */
+session_start();
+ob_start();
+require_once __DIR__ . '/../../inc/cek_login.php';
+require_once __DIR__ . '/../../inc/datatables_server.php';
+wajib_login('json');
+header('Content-Type: application/json; charset=utf-8');
+if ((isset($_SESSION['level']) ? $_SESSION['level'] : '') != "fund") {
+    http_response_code(403);
+    echo '[]';
+    exit;
 }
+include "../../indo_tgl.php";
+
+$hasil = dt_halaman(array(
+    'pilih' => "code_param, nomi_murab, marigin_murab, buss_date, sd, DATEDIFF(sd, dari) AS hari",
+    'dari' => "FROM param_finan WHERE 1=1",
+    'tipe' => '',
+    'nilai' => array(),
+    // angka dicari dalam bentuk tampilannya (1,234,567), tanggal sebagai yyyy-mm-dd atau dd-mm-yyyy
+    'cari' => array('code_param', 'FORMAT(nomi_murab, 0)', 'FORMAT(marigin_murab, 0)',
+        "DATE_FORMAT(buss_date, '%Y-%m-%d')", "DATE_FORMAT(buss_date, '%d-%m-%Y')", "DATE_FORMAT(sd, '%Y-%m-%d')", "DATE_FORMAT(sd, '%d-%m-%Y')"),
+    'urut' => array('code_param', 'nomi_murab', 'marigin_murab', 'buss_date', 'sd', 'DATEDIFF(sd, dari)'),
+    'urut_akhir' => 'code_param',
+));
+$terbaru = db_satu("SELECT max(code_param) AS kode FROM param_finan");
+$terbaru = $terbaru ? (string) $terbaru['kode'] : '';
 
 $data = array();
-while( $row=db_fetch_array($query) ) {  // preparing an array
-	$nestedData=array(); 
-
-	$nestedData[] = $row["code_param"];
-    $nestedData[] = number_format (compat_num($row["nomi_murab"]));
-	$nestedData[] = number_format (compat_num($row["marigin_murab"]));
-	$nestedData[] = tgl_indo ($row["buss_date"]);
-   
-    $nestedData[] = '<td><center>
-                     <a href="../transaksi/edit.php?kd='.$row['no'].'"  data-toggle="tooltip" title="Edit" class="btn btn-sm btn-warning"> <i class="menu-icon icon-pencil"></i> </a>
-                     <a href="../view/view_finan.php?hal=hapus&kd='.$row['no'].'"  data-toggle="tooltip" title="Hapus" class="btn btn-sm btn-danger"> <i class="menu-icon icon-trash"></i> </a>
-				     </center></td>';		
-	
-	$data[] = $nestedData;
-    
+foreach ($hasil['rows'] as $r) {
+    $data[] = array(
+        'kode' => (string) $r['code_param'],
+        'nominal' => number_format(compat_num($r['nomi_murab'])),
+        'margin' => number_format(compat_num($r['marigin_murab'])),
+        'bulan' => tgl_indo((string) $r['buss_date']),
+        'sd' => tgl_indo((string) $r['sd']),
+        'hari' => (string) $r['hari'],
+        'hapus' => (string) $r['code_param'] === $terbaru,
+    );
 }
-
-
-
-$json_data = array(
-			"draw"            => intval( $requestData['draw'] ),   // for every request/draw by clientside , they send a number as a parameter, when they recieve a response/data they first check the draw number, so we are sending same number in draw. 
-			"recordsTotal"    => intval( $totalData ),  // total number of records
-			"recordsFiltered" => intval( $totalFiltered ), // total number of records after searching, if there is no searching then totalFiltered = totalData
-			"data"            => $data   // total data array
-			);
-
-echo json_encode($json_data);  // send data as json format
-
-?>
+echo json_encode(array(
+    'draw' => $hasil['draw'],
+    'recordsTotal' => $hasil['recordsTotal'],
+    'recordsFiltered' => $hasil['recordsFiltered'],
+    'data' => $data,
+));

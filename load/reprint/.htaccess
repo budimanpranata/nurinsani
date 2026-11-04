@@ -1,0 +1,3 @@
+# Dokumen surat kehilangan untuk reprint bilyet/advis deposito (fund/transaksi/input_reprint.php). Data sensitif:
+# tidak boleh dibuka langsung lewat web; hanya disajikan oleh fund/view/reprint_dokumen.php untuk user fund yang login.
+Require all denied

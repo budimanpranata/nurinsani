@@ -1,109 +1,80 @@
-﻿<?php require_once __DIR__ . '/../../php8_compat.php'; include "conn.php"; ?>
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <head>
-        <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Parameter Margin Nur Insani</title>
-        <!-- css table datatables/dataTables -->
-	<link rel="stylesheet" href="../datatables/dataTables.bootstrap.css"/>
-    
-         <link type="text/css" href="../css/bootstrap.css" rel="stylesheet">
-        <link type="text/css" href="../bootstrap/css/bootstrap.min.css" rel="stylesheet"> 
-        <link type="text/css" href="../bootstrap/css/bootstrap-responsive.min.css" rel="stylesheet">
-        <link type="text/css" href="../css/theme.css" rel="stylesheet">
-        <link type="text/css" href="../images/icons/css/font-awesome.css" rel="stylesheet">
-        <link type="text/css" href='http://fonts.googleapis.com/css?family=Open+Sans:400italic,600italic,400,600'
-            rel='stylesheet'>
-            
-            
-            
-        <script src="../scripts/jquery-1.9.1.min.js" type="text/javascript"></script>
-        <script src="../scripts/jquery-ui-1.10.1.custom.min.js" type="text/javascript"></script>
-    </head>
-    <body>
+<?php require_once __DIR__ . '/../../koneksi_db.php';
+/**
+ * Menu fund > Seting Parameter > Param Margin: daftar input dana per bulan (param_deposito + jenis_dana; data per halaman
+ * dari ajax-grid-data_margin.php), Tambah Data (../transaksi/input_margin.php) dan Hapus.
+ * Hapus (keputusan user 2026-11-04): hanya kode bulan yang BELUM diposting (param_deposito.ket kosong); menghapus baris
+ * kode bulan itu di param_deposito, param_rasio dan param_dep (yang ditulis input_margin.php) selama belum diposting.
+ * Dimigrasi 2026-11-04 (perintah user): dulu tanpa cek login; tombol Edit/Hapus di daftar menuju halaman deposan
+ * (transaksi/edit.php, master_fund.php?hal=hapus) dan kode hapus di halaman ini menghapus "WHERE no=" (kolom tidak ada)
+ * sehingga tidak pernah berfungsi; kini Bootstrap 5 + DataTables lokal, prepared statement, kolom Status Posting.
+ */
+require_once __DIR__ . '/../../inc/tampilan.php';
+session_start();
+ob_start();
+require_once __DIR__ . '/../../inc/cek_login.php';
+wajib_login();
+if ((isset($_SESSION['level']) ? $_SESSION['level'] : '') != "fund") {
+    header("location:../../index.html");
+    exit;
+}
 
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['hapus'])) {
+    $kode = trim((string) $_POST['hapus']);
+    $ada = db_satu("SELECT code_bulan, ket FROM param_deposito WHERE code_bulan=?", 's', $kode);
+    if (!$ada) {
+        $pesan = array('warning', 'Data ' . $kode . ' tidak ditemukan.');
+    } elseif ((string) $ada['ket'] !== '') {
+        $pesan = array('warning', 'Data ' . $kode . ' sudah diposting (' . $ada['ket'] . '), tidak bisa dihapus.');
+    } else {
+        // tabel MyISAM (tanpa transaksi); param_deposito terakhir supaya bila gagal di tengah, data masih tampil dan bisa diulang
+        $ok = db_jalankan("DELETE FROM param_rasio WHERE code_bulan=? AND ket=''", 's', $kode)
+            && db_jalankan("DELETE FROM param_dep WHERE code_bulan=? AND IFNULL(ket, '')=''", 's', $kode)
+            && db_jalankan("DELETE FROM param_deposito WHERE code_bulan=? AND ket=''", 's', $kode);
+        $pesan = $ok ? array('success', 'Data ' . $kode . ' berhasil dihapus.') : array('danger', 'Data ' . $kode . ' gagal dihapus: ' . db_error_terakhir());
+    }
+    $_SESSION['pesan_margin'] = $pesan;
+    header('Location: view_margin.php');
+    exit;
+}
+$pesan = isset($_SESSION['pesan_margin']) ? $_SESSION['pesan_margin'] : null;
+unset($_SESSION['pesan_margin']);
 
-            <div class="container">
-                <div class="row">
-                    <div class="span12">
-                        <div class="content">
-                            <?php	
-             if(isset($_GET['hal']) == 'hapus'){
-				$kd_dept = $_GET['kd'];
-				$cek = db_query($koneksi, "SELECT * FROM param_margin WHERE code_bulan='$kd_dept'");
-				if(db_num_rows($cek) == 0){
-					echo '<div class="alert alert-success alert-dismissable"><button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button> Data tidak ditemukan.</div>';
-				}else{
-					$delete = db_query($koneksi, "DELETE FROM param_margin WHERE no='$kd_dept'");
-					if($delete){
-						echo '<div class="alert alert-primary alert-dismissable"><button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button> Data berhasil dihapus.</div>';
-					}else{
-						echo '<div class="alert alert-danger alert-dismissable"><button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button> Data gagal dihapus.</div>';
-					}
-				}
-			}
-			?>
-                                  <div class="panel panel-default">
-                        <div class="panel-heading">
-                        <h3 class="panel-title"><i class="icon-user"></i> Parameter Margin Nur Insani</h3> 
-                        </div>
-                        <div class="panel-body">
-                                    <table id="lookup" class="table table-bordered table-hover">  
-	                                   <thead bgcolor="#eeeeee" align="center">
-                                        <tr>
-	  
-                                        <th>Kode Bulan</th>
-	                                    <th>Jenis Dana</th>
-                                        <th>Nominal </th>
-										<th>Margin </th>
-                                        <th>Bulan</th>
-                                        
-	                                    
-	  
-                                       </tr>
-                                      </thead>
-                                        <tbody>
-                                        </tbody>
-                                    </table>
-                                    <div class="pull-right">
-                            <a href="../transaksi/input_margin.php" class="btn btn-sm btn-primary">Tambah Data</a>
-                            </div>
-                                </div>
-                            </div>
-                            
-                        </div>
-                        <!--/.content-->
-                    </div>
-                    <!--/.span9-->
-                </div>
-            </div>
-            <!--/.container-->
-        
-        <!--/.wrapper--><br />
-       
-        <script src="../bootstrap/js/bootstrap.min.js" type="text/javascript"></script>
-        
-        <script src="../datatables/jquery.dataTables.js"></script>
-        <script src="../datatables/dataTables.bootstrap.js"></script>
-        <script>
-        $(document).ready(function() {
-				var dataTable = $('#lookup').DataTable( {
-					"processing": true,
-					"serverSide": true,
-					"ajax":{
-						url :"../view/ajax-grid-data_margin.php", // json datasource
-						type: "post",  // method  , by default get
-						error: function(){  // error handling
-							$(".lookup-error").html("");
-							$("#lookup").append('<tbody class="employee-grid-error"><tr><th colspan="3">No data found in the server</th></tr></tbody>');
-							$("#lookup_processing").css("display","none");
-							
-						}
-					}
-				} );
-			} );
-        </script>
-      
-    </body>
+halaman_awal('Parameter Margin Nur Insani', array('assets/app/datatables-ni.css'));
+?>
+<?php if ($pesan): ?>
+<div class="alert alert-<?php echo h($pesan[0]); ?> alert-dismissible fade show" role="alert">
+  <?php echo h($pesan[1]); ?>
+  <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+</div>
+<?php endif; ?>
+<div class="card card-ni mw-100">
+  <div class="card-header">Parameter Margin Nur Insani</div>
+  <div class="card-body">
+    <table id="tabel_margin" class="table table-sm table-bordered table-ni align-middle w-100">
+      <thead>
+        <tr>
+          <th>Kode Bulan</th>
+          <th>Jenis Dana</th>
+          <th class="text-end">Nominal</th>
+          <th class="text-end">Margin</th>
+          <th>Bulan</th>
+          <th>Status Posting</th>
+          <th class="text-center">Aksi</th>
+        </tr>
+      </thead>
+    </table>
+    <div class="text-end mt-2">
+      <a href="../transaksi/input_margin.php" class="btn btn-sm btn-ni">Tambah Data</a>
+    </div>
+  </div>
+</div>
+<form method="post" action="view_margin.php" id="form_hapus" class="d-none">
+  <input type="hidden" name="hapus" id="hapus_kode">
+</form>
+<?php
+halaman_akhir(array(
+    'assets/media/js/jquery.js',
+    'assets/media/js/jquery.dataTables.js',
+    'assets/media/js/dataTables.bootstrap.js',
+    'assets/app/fund_margin.js',
+));

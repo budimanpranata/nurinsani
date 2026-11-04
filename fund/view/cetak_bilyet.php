@@ -5,6 +5,8 @@
  * Perbaikan atas perintah user 2026-11-04: prepared statement; norek tidak ada atau status_print bukan 'OK' -> pesan
  * (dulu PDF kosong dan status tetap di-update); query ao/branch yang hasilnya tidak dipakai dibuang.
  * Sebelumnya (2026-11-04): nama_bank dari deposan (dulu query 'ambiguous' -> bilyet kosong), alamat didekripsi.
+ * Cetak ulang (?kd=norek&reprint=<id dep_reprint>, dari fund/transaksi/input_reprint.php): hanya deposito berstatus
+ * 'Print' dan catatan reprint jenis Bilyet berstatus BARU (lalu DICETAK, sekali pakai); status_print tidak diubah.
  */
 require_once __DIR__ . '/../../inc/tampilan.php';
 session_start();
@@ -17,19 +19,27 @@ if ((isset($_SESSION['level']) ? $_SESSION['level'] : '') != "fund") {
     exit;
 }
 require_once __DIR__ . '/../../inc/enkripsi.php';
+require_once __DIR__ . '/../../inc/cetak_deposito.php';
 include "../../indo_tgl.php";
 $kode = isset($_GET['kd']) ? trim((string) $_GET['kd']) : '';
+$reprint = isset($_GET['reprint']) ? trim((string) $_GET['reprint']) : '';
 
 $cd = db_satu("Select contract_date,maturity_date,tenor,rasio,nominal,CUST_SHORT_NAME,HADDRESS1,norek_tujuan,deposan.nama_bank,aro,status_print
     from deposito inner join deposan on deposito.cif = deposan.cif where deposito.norek=?", 's', $kode);
-if (!$cd || (string) $cd['status_print'] !== 'OK') {
-    halaman_awal('Cetak Bilyet');
-    echo '<div class="alert alert-warning">' . ($cd
+if ($reprint !== '') {
+    $kembali = '../transaksi/input_reprint.php?kd=' . urlencode($kode);
+    if (!$cd || (string) $cd['status_print'] !== 'Print') {
+        cetak_tolak('Reprint Bilyet', $cd
+            ? 'Bilyet deposito ' . h($kode) . ' tidak bisa dicetak ulang: status ' . h($cd['status_print']) . ' (hanya status Print). Gunakan menu Cetak Bilyet / Cetak Advis.'
+            : 'Deposito ' . h($kode) . ' tidak ditemukan.', $kembali);
+    }
+    if (!reprint_pakai($reprint, $kode, '1')) {
+        cetak_tolak('Reprint Bilyet', 'Catatan reprint bilyet ' . h($reprint) . ' untuk deposito ' . h($kode) . ' tidak ditemukan atau sudah dipakai. Input reprint baru untuk mencetak lagi.', $kembali);
+    }
+} elseif (!$cd || (string) $cd['status_print'] !== 'OK') {
+    cetak_tolak('Cetak Bilyet', $cd
         ? 'Bilyet deposito ' . h($kode) . ' tidak bisa dicetak: status ' . h($cd['status_print']) . ' (hanya status OK). Untuk cetak ulang gunakan menu Reprint.'
-        : 'Deposito ' . h($kode) . ' tidak ditemukan.') . '</div>';
-    echo '<a href="view_cetak_bilyet.php" class="btn btn-sm btn-secondary">Kembali</a>';
-    halaman_akhir();
-    exit;
+        : 'Deposito ' . h($kode) . ' tidak ditemukan.', 'view_cetak_bilyet.php');
 }
 $contract_date=tgl_indo ($cd['contract_date']);
 $maturity_date=tgl_indo ($cd['maturity_date']);
@@ -46,7 +56,9 @@ $HADDRESS1=dekripsi_data($cd['HADDRESS1']);
 $rasio_cor=100-$rasio;
 $Terbilang=ucwords (Terbilang($angka));
 
-db_jalankan("update deposito set status_print ='Print' where norek =?", 's', $kode);
+if ($reprint === '') {
+    db_jalankan("update deposito set status_print ='Print' where norek =?", 's', $kode);
+}
 ob_end_clean();
 
 require ('../../fpdf17/fpdf.php');

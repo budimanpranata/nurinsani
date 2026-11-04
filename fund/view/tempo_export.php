@@ -2,8 +2,9 @@
 /**
  * Export Data Jatuh Tempo (fund/view/view_tempo.php, filter sesi tempo_filter), Data Break (?laporan=break,
  * fund/view/view_break.php, filter sesi break_filter), Cetak Bilyet (?laporan=bilyet, fund/view/view_cetak_bilyet.php,
- * filter sesi bilyet_filter) dan Cetak Advis (?laporan=advis, fund/view/view_advise.php, filter sesi advis_filter) ke
- * .xlsx secara bertahap.
+ * filter sesi bilyet_filter), Cetak Advis (?laporan=advis, fund/view/view_advise.php, filter sesi advis_filter) dan
+ * Reprint (?laporan=reprint, fund/view/view_reprint.php, filter sesi reprint_filter) dan Data Nominatif (?laporan=nomi,
+ * fund/view/view_nomi.php, filter sesi nomi_filter) ke .xlsx secara bertahap.
  *
  *   POST aksi=mulai              -> hitung jumlah deposito, hasil {job, total}
  *   POST aksi=proses&job=...     -> tulis 1000 deposito berikutnya
@@ -12,7 +13,8 @@
  *
  * Kolom sama dengan export.php versi lama (NOMINATIVE DEPOSITO). Perbaikan 2026-11-04 (perintah user): kolom ALAMAT
  * (didekripsi), START DATE, RASIO dan TABUNGAN (saldo escrow_deposito norek itu) kini terisi; dulu kosong karena query
- * halaman tidak mengambil kolom tersebut. Pengganti export.php untuk menu ini (export.php menerima teks SQL dari form).
+ * halaman tidak mengambil kolom tersebut. Pengganti export.php (menerima teks SQL dari form; dihapus 2026-11-04 setelah
+ * Data Nominatif, pemakai terakhirnya, pindah ke sini).
  */
 date_default_timezone_set('Asia/Jakarta');
 session_start();
@@ -22,6 +24,7 @@ require_once __DIR__ . '/../../inc/enkripsi.php';
 require_once __DIR__ . '/../../inc/jatuh_tempo_deposito.php';
 require_once __DIR__ . '/../../inc/break_deposito.php';
 require_once __DIR__ . '/../../inc/cetak_deposito.php';
+require_once __DIR__ . '/../../inc/nominatif_deposito.php';
 
 const TEMPO_PER_TAHAP = 1000;
 
@@ -77,7 +80,8 @@ function hapus_folder($dir)
 
 /** Laporan yang dikenal: kunci => array(nama sheet, awalan nama file). */
 const EXPORT_LAPORAN = array('tempo' => array('Jatuh Tempo', 'jatuh_tempo'), 'break' => array('Break', 'break_deposito'),
-    'bilyet' => array('Cetak Bilyet', 'cetak_bilyet'), 'advis' => array('Cetak Advis', 'cetak_advis'));
+    'bilyet' => array('Cetak Bilyet', 'cetak_bilyet'), 'advis' => array('Cetak Advis', 'cetak_advis'),
+    'reprint' => array('Reprint', 'reprint_deposito'), 'nomi' => array('Nominatif', 'nominatif_deposito'));
 
 /** Daftar baris laporan menurut filternya. */
 function export_daftar($laporan, $filter, $kolom)
@@ -90,6 +94,12 @@ function export_daftar($laporan, $filter, $kolom)
     }
     if ($laporan === 'advis') {
         return advis_daftar($filter, $kolom);
+    }
+    if ($laporan === 'reprint') {
+        return reprint_daftar($filter, $kolom);
+    }
+    if ($laporan === 'nomi') {
+        return nomi_daftar($filter, $kolom);
     }
     return tempo_daftar($filter, $kolom);
 }

@@ -1,165 +1,71 @@
 <?php require_once __DIR__ . '/../../koneksi_db.php';
-	/**
-		* Script:    DataTables server-side script for PHP 5.2+ and MySQL 4.1+
-		* Notes:     Based on a script by Allan Jardine that used the old PHP mysql_* functions.
-		*            Rewritten to use the newer object oriented mysqli extension.
-		* Copyright: 2010 - Allan Jardine (original script)
-		*            2012 - Kari Söderholm, aka Haprog (updates)
-		* License:   GPL v2 or BSD (3-point)
-	*/
-	mb_internal_encoding('UTF-8');
-	
-	/**
-		* Array of database columns which should be read and sent back to DataTables. Use a space where
-		* you want to insert a non-database field (for example a counter or static image)
-	*/
-	$aColumns = array( 'id','id_deposito','ke', 'jumlah_nisbah', 'tgl_jatuh_tempo','tgl_bayar','Cust_Short_name' ); //Kolom Pada Tabel
-	
-	// Indexed column (used for fast and accurate table cardinality)
-	$sIndexColumn = 'id';
-	
-	// DB table to use
-	$sTable = 'pinjaman_detail'; // Nama Tabel
-	
-	// Database connection information
-	$gaSql['user']     = 'root';
-	$gaSql['password'] = '';   
-	$gaSql['db']       = 'nur_insani';  //Database
-	$gaSql['server']   = 'localhost';   
-	$gaSql['port']     = 3306; // 3306 is the default MySQL port
-	
-	// Input method (use $_GET, $_POST or $_REQUEST)
-	$input =& $_POST;
+/**
+ * Data menu fund > Report > View Realisasi Baghas (view_baghas.php): jadwal bagi hasil deposito_detail + nama deposan,
+ * per halaman (DataTables server-side, GET draw/start/length/search/order, inc/datatables_server.php).
+ *   status = '' (semua, bawaan - sama dengan versi lama) | belum (ket kosong) | REALISASI | BAYAR
+ * Status dari deposito_detail.ket: kosong = jadwal belum dibayar, REALISASI = Realisasi Bagi Hasil fund
+ * (fund/realisasi_dep.php), BAYAR = Disburse kp (kp/transaksi/engine_update_dep.php).
+ * Dimigrasi 2026-11-04 (perintah user): dulu tanpa cek login, protokol lama sEcho, error MySQL dikirim mentah, peta
+ * kolom urut/cari salah (urut Nama = norek, cari Id Deposito = id internal, cari Nama = norek); kini prepared statement,
+ * satu pencarian per kata di semua kolom, kolom Status + saringan status (perintah user).
+ */
+session_start();
+ob_start();
+require_once __DIR__ . '/../../inc/cek_login.php';
+require_once __DIR__ . '/../../inc/datatables_server.php';
+wajib_login('json');
+header('Content-Type: application/json; charset=utf-8');
+if ((isset($_SESSION['level']) ? $_SESSION['level'] : '') != "fund") {
+    http_response_code(403);
+    echo '[]';
+    exit;
+}
+include_once __DIR__ . '/../../function.php';
 
-	$gaSql['charset']  = 'utf8';
-	
-	/**
-		* MySQL connection
-	*/
-	$db = db_ni();
-	if (mysqli_connect_error()) {
-		die( 'Error connecting to MySQL server (' . mysqli_connect_errno() .') '. mysqli_connect_error() );
-	}
-	
-	if (!$db->set_charset($gaSql['charset'])) {
-		die( 'Error loading character set "'.$gaSql['charset'].'": '.$db->error );
-	}
-	
-	
-	/**
-		* Paging
-	*/
-	$sLimit = "";
-	if ( isset( $input['iDisplayStart'] ) && $input['iDisplayLength'] != '-1' ) {
-		$sLimit = " LIMIT ".intval( $input['iDisplayStart'] ).", ".intval( $input['iDisplayLength'] );
-	}
-	
-	
-	/**
-		* Ordering
-	*/
-	$aOrderingRules = array();
-	if ( isset( $input['iSortCol_0'] ) ) {
-		$iSortingCols = intval( $input['iSortingCols'] );
-		for ( $i=0 ; $i<$iSortingCols ; $i++ ) {
-			if ( $input[ 'bSortable_'.intval($input['iSortCol_'.$i]) ] == 'true' ) {
-				$aOrderingRules[] =
-                "`".$aColumns[ intval( $input['iSortCol_'.$i] ) ]."` "
-                .($input['sSortDir_'.$i]==='asc' ? 'asc' : 'desc');
-			}
-		}
-	}
-	
-	if (!empty($aOrderingRules)) {
-		$sOrder = " ORDER BY ".implode(", ", $aOrderingRules);
-		} else {
-		$sOrder = "";
-	}
-	
-	
-	/**
-		* Filtering
-		* NOTE this does not match the built-in DataTables filtering which does it
-		* word by word on any field. It's possible to do here, but concerned about efficiency
-		* on very large tables, and MySQL's regex functionality is very limited
-	*/
-	$iColumnCount = count($aColumns);
-	
-	if ( isset($input['sSearch']) && $input['sSearch'] != "" ) {
-		$aFilteringRules = array();
-		for ( $i=0 ; $i<$iColumnCount ; $i++ ) {
-			if ( isset($input['bSearchable_'.$i]) && $input['bSearchable_'.$i] == 'true' ) {
-				$aFilteringRules[] = "`".$aColumns[$i]."` LIKE '%".$db->real_escape_string( $input['sSearch'] )."%'";
-			}
-		}
-		if (!empty($aFilteringRules)) {
-			$aFilteringRules = array('('.implode(" OR ", $aFilteringRules).')');
-		}
-	}
-	
-	// Individual column filtering
-	for ( $i=0 ; $i<$iColumnCount ; $i++ ) {
-		if ( isset($input['bSearchable_'.$i]) && $input['bSearchable_'.$i] == 'true' && $input['sSearch_'.$i] != '' ) {
-			$aFilteringRules[] = "`".$aColumns[$i]."` LIKE '%".$db->real_escape_string($input['sSearch_'.$i])."%'";
-		}
-	}
-	
-	if (!empty($aFilteringRules)) {
-		$sWhere = " WHERE ".implode(" AND ", $aFilteringRules);
-		} else {
-		$sWhere = "";
-	}
-	
-	
-	/**
-		* SQL queries
-		* Get data to display
-	*/
-	$aQueryColumns = array();
-	foreach ($aColumns as $col) {
-		if ($col != ' ') {
-			$aQueryColumns[] = $col;
-		}
-	}
-	
-	$sQuery = "
-    SELECT SQL_CALC_FOUND_ROWS `".implode("`, `", $aQueryColumns)."`
-    FROM  deposito_detail inner join deposan on deposan.cif=deposito_detail.cif".$sWhere.$sOrder.$sLimit;
-	
-	$rResult = $db->query( $sQuery ) or die($db->error);
-	
-	// Data set length after filtering
-	$sQuery = "SELECT FOUND_ROWS()";
-	$rResultFilterTotal = $db->query( $sQuery ) or die($db->error);
-	list($iFilteredTotal) = $rResultFilterTotal->fetch_row();
-	
-	// Total data set length
-	$sQuery = "SELECT COUNT(`".$sIndexColumn."`) FROM  deposito_detail inner join deposan on deposan.cif=deposito_detail.cif";
-	$rResultTotal = $db->query( $sQuery ) or die($db->error);
-	list($iTotal) = $rResultTotal->fetch_row();
-	
-	
-	/**
-		* Output
-	*/
-	$output = array(
-    "sEcho"                => intval($input['sEcho']),
-    "iTotalRecords"        => $iTotal,
-    "iTotalDisplayRecords" => $iFilteredTotal,
-    "aaData"               => array(),
-	);
-	
-	// Looping Data
-	while ( $aRow = $rResult->fetch_assoc() ) {
-		$row = array();
-		$btn = '<a href="#" onClick="showModals(\''.$aRow['id'].'\')">Edit</a> | <a href="#" onClick="deleteUser(\''.$aRow['id'].'\')">delete</a>';
-		for ( $i=0 ; $i<$iColumnCount ; $i++ ) {
-			$row[] = $aRow[ $aColumns[$i] ];
-		}
-		$row = array( $aRow['id_deposito'], $aRow['Cust_Short_name'], $aRow['ke'], $aRow['jumlah_nisbah'], $aRow['tgl_jatuh_tempo'], $aRow['tgl_bayar'],$btn );
-		$output['aaData'][] = $row;
-	}
-	
-	echo json_encode( $output );
-	
-?>
+const BAGHAS_STATUS = array('belum' => '', 'REALISASI' => 'REALISASI', 'BAYAR' => 'BAYAR');
+
+$status = isset($_GET['status']) ? (string) $_GET['status'] : '';
+$dari = "from deposito_detail inner join deposan on deposan.cif = deposito_detail.cif";
+$tipe = '';
+$nilai = array();
+if (isset(BAGHAS_STATUS[$status])) {
+    $dari .= " where IFNULL(deposito_detail.ket, '') = ?";
+    $tipe = 's';
+    $nilai[] = BAGHAS_STATUS[$status];
+} else {
+    $dari .= " where 1=1";
+}
+$teks_status = "IF(IFNULL(deposito_detail.ket, '') = '', 'Belum', deposito_detail.ket)";
+$hasil = dt_halaman(array(
+    'pilih' => "deposito_detail.id_deposito, deposan.CUST_SHORT_NAME, deposito_detail.ke, deposito_detail.jumlah_nisbah,
+        deposito_detail.tgl_jatuh_tempo, deposito_detail.tgl_bayar, $teks_status as status",
+    'dari' => $dari,
+    'tipe' => $tipe,
+    'nilai' => $nilai,
+    // tanggal bisa dicari sebagai dd-mm-yyyy atau yyyy-mm-dd; bagi hasil dalam bentuk tampilannya (1.234.567)
+    'cari' => array('deposito_detail.id_deposito', 'deposan.CUST_SHORT_NAME', 'deposito_detail.ke', dt_format_angka('deposito_detail.jumlah_nisbah'),
+        "DATE_FORMAT(deposito_detail.tgl_jatuh_tempo, '%d-%m-%Y')", "DATE_FORMAT(deposito_detail.tgl_jatuh_tempo, '%Y-%m-%d')",
+        "DATE_FORMAT(deposito_detail.tgl_bayar, '%d-%m-%Y')", "DATE_FORMAT(deposito_detail.tgl_bayar, '%Y-%m-%d')", $teks_status),
+    'urut' => array('deposito_detail.id_deposito', 'deposan.CUST_SHORT_NAME', 'deposito_detail.ke', 'deposito_detail.jumlah_nisbah',
+        'deposito_detail.tgl_jatuh_tempo', 'deposito_detail.tgl_bayar', $teks_status),
+    'urut_akhir' => 'deposito_detail.ke, deposito_detail.id',
+));
+
+$data = array();
+foreach ($hasil['rows'] as $r) {
+    $data[] = array(
+        'norek' => (string) $r['id_deposito'],
+        'nama' => (string) $r['CUST_SHORT_NAME'],
+        'ke' => (string) $r['ke'],
+        'nisbah' => number_format(compat_num($r['jumlah_nisbah']), 0, ',', '.'),
+        'tempo' => tgl_indo($r['tgl_jatuh_tempo']),
+        'bayar' => tgl_indo($r['tgl_bayar']),
+        'status' => (string) $r['status'],
+    );
+}
+echo json_encode(array(
+    'draw' => $hasil['draw'],
+    'recordsTotal' => $hasil['recordsTotal'],
+    'recordsFiltered' => $hasil['recordsFiltered'],
+    'data' => $data,
+));

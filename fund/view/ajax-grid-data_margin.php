@@ -1,89 +1,55 @@
 <?php require_once __DIR__ . '/../../koneksi_db.php';
-/* Database connection start */
-$servername = "localhost";
-$username = "root";
-$password = "";
-$dbname = "nur_insani";
-
-$conn = db_ni() or die("Connection failed: " . mysqli_connect_error());
-include "../../indo_tgl.php";
-/* Database connection end */
-
-
-// storing  request (ie, get/post) global array to a variable  
-$requestData= $_REQUEST;
-
-
-$columns = array( 
-// datatable column index  => database column name
-	0 => 'code_bulan',
-    1 => 'nama_jenis', 
-	2 => 'nominal',
-	3 => 'margin_murab',
-	3 => ' 	buss_date'
-   
-);
-
-// getting total number records without any search
-$sql = "SELECT code_bulan, nama_jenis, nominal,margin_murab,buss_date ";
-$sql.=" FROM param_deposito inner join jenis_dana on jenis_dana.code_jenis = param_deposito.code_jenis";
-$query=db_query($conn, $sql) or die("ajax-grid-data_margin.php: get InventoryItems");
-$totalData = db_num_rows($query);
-$totalFiltered = $totalData;  // when there is no search parameter then total number rows = total number filtered rows.
-
-
-if( !empty($requestData['search']['value']) ) {
-	// if there is a search parameter
-	$sql = "SELECT code_bulan, nama_jenis ,nominal, buss_date ";
-	$sql.=" FROM param_deposito inner join jenis_dana on jenis_dana.code_jenis = param_deposito.code_jenis";
-	$sql.=" WHERE code_bulan LIKE '".$requestData['search']['value']."%' ";    // $requestData['search']['value'] contains search parameter
-	$sql.=" OR nama_jenis LIKE '".$requestData['search']['value']."%' ";
-	$sql.=" OR nominal LIKE '".$requestData['search']['value']."%' ";
-    $sql.=" OR buss_date LIKE '".$requestData['search']['value']."%' ";
-   
-	$query=db_query($conn, $sql) or die("../view/ajax-grid-data_margin.php: get PO");
-	$totalFiltered = db_num_rows($query); // when there is a search parameter then we have to modify total number filtered rows as per search result without limit in the query 
-
-	$sql.=" ORDER BY ". $columns[$requestData['order'][0]['column']]."   ".$requestData['order'][0]['dir']."   LIMIT ".$requestData['start']." ,".$requestData['length']."   "; // $requestData['order'][0]['column'] contains colmun index, $requestData['order'][0]['dir'] contains order such as asc/desc , $requestData['start'] contains start row number ,$requestData['length'] contains limit length.
-	$query=db_query($conn, $sql) or die("../view/ajax-grid-data_margin.php: get PO"); // again run query with limit
-	
-} else {	
-
-	$sql = "SELECT code_bulan, nama_jenis, nominal,margin_murab,buss_date ";
-	$sql.=" FROM param_deposito inner join jenis_dana on jenis_dana.code_jenis = param_deposito.code_jenis";
-	$sql.=" ORDER BY ". $columns[$requestData['order'][0]['column']]."   ".$requestData['order'][0]['dir']."   LIMIT ".$requestData['start']." ,".$requestData['length']."   ";
-	$query=db_query($conn, $sql) or die("ajax-grid-data_margin.php: get PO");
-	
+/**
+ * Data daftar Param Margin (view_margin.php): param_deposito + jenis_dana per halaman (DataTables server-side, GET,
+ * inc/datatables_server.php). Kolom: Kode Bulan, Jenis Dana, Nominal, Margin, Bulan, Status Posting (ket), Aksi
+ * (hapus = true bila belum diposting).
+ * Dimigrasi 2026-11-04 (perintah user): dulu tanpa cek login, pencarian/urut/limit disusun langsung dari input, peta
+ * urut dobel indeks 3 (urut Margin = Bulan, urut Bulan error), Margin 0 saat mencari (kolom tidak diambil), tombol
+ * Edit/Hapus menuju halaman deposan. Format tampilan angka (1,234,567) dan tanggal (tgl_indo) sama dengan versi lama.
+ */
+session_start();
+ob_start();
+require_once __DIR__ . '/../../inc/cek_login.php';
+require_once __DIR__ . '/../../inc/datatables_server.php';
+wajib_login('json');
+header('Content-Type: application/json; charset=utf-8');
+if ((isset($_SESSION['level']) ? $_SESSION['level'] : '') != "fund") {
+    http_response_code(403);
+    echo '[]';
+    exit;
 }
+include "../../indo_tgl.php";
+
+$status = "IF(param_deposito.ket = '', 'Belum', param_deposito.ket)";
+$hasil = dt_halaman(array(
+    'pilih' => "param_deposito.code_bulan, jenis_dana.nama_jenis, param_deposito.nominal, param_deposito.margin_murab,
+        param_deposito.buss_date, param_deposito.ket",
+    'dari' => "FROM param_deposito inner join jenis_dana on jenis_dana.code_jenis = param_deposito.code_jenis WHERE 1=1",
+    'tipe' => '',
+    'nilai' => array(),
+    // angka dicari dalam bentuk tampilannya (1,234,567), tanggal sebagai yyyy-mm-dd atau dd-mm-yyyy
+    'cari' => array('param_deposito.code_bulan', 'jenis_dana.nama_jenis', 'FORMAT(param_deposito.nominal, 0)', 'FORMAT(param_deposito.margin_murab, 0)',
+        "DATE_FORMAT(param_deposito.buss_date, '%Y-%m-%d')", "DATE_FORMAT(param_deposito.buss_date, '%d-%m-%Y')", $status),
+    'urut' => array('param_deposito.code_bulan', 'jenis_dana.nama_jenis', 'param_deposito.nominal', 'param_deposito.margin_murab',
+        'param_deposito.buss_date', $status),
+    'urut_akhir' => 'param_deposito.code_bulan',
+));
 
 $data = array();
-while( $row=db_fetch_array($query) ) {  // preparing an array
-	$nestedData=array(); 
-
-	$nestedData[] = $row["code_bulan"];
-    $nestedData[] = $row["nama_jenis"];
-	$nestedData[] = number_format (compat_num($row["nominal"]));
-	$nestedData[] = number_format (compat_num($row["margin_murab"]));
-	$nestedData[] = tgl_indo ($row["buss_date"]);
-   
-    $nestedData[] = '<td><center>
-                     <a href="../transaksi/edit.php?kd='.$row['no'].'"  data-toggle="tooltip" title="Edit" class="btn btn-sm btn-warning"> <i class="menu-icon icon-pencil"></i> </a>
-                     <a href="../view/master_fund.php?hal=hapus&kd='.$row['no'].'"  data-toggle="tooltip" title="Hapus" class="btn btn-sm btn-danger"> <i class="menu-icon icon-trash"></i> </a>
-				     </center></td>';		
-	
-	$data[] = $nestedData;
-    
+foreach ($hasil['rows'] as $r) {
+    $data[] = array(
+        'kode' => (string) $r['code_bulan'],
+        'jenis' => (string) $r['nama_jenis'],
+        'nominal' => number_format(compat_num($r['nominal'])),
+        'margin' => number_format(compat_num($r['margin_murab'])),
+        'bulan' => tgl_indo((string) $r['buss_date']),
+        'status' => (string) $r['ket'] === '' ? 'Belum' : (string) $r['ket'],
+        'hapus' => (string) $r['ket'] === '',
+    );
 }
-
-
-
-$json_data = array(
-			"draw"            => intval( $requestData['draw'] ),   // for every request/draw by clientside , they send a number as a parameter, when they recieve a response/data they first check the draw number, so we are sending same number in draw. 
-			"recordsTotal"    => intval( $totalData ),  // total number of records
-			"recordsFiltered" => intval( $totalFiltered ), // total number of records after searching, if there is no searching then totalFiltered = totalData
-			"data"            => $data   // total data array
-			);
-
-echo json_encode($json_data);  // send data as json format
-
-?>
+echo json_encode(array(
+    'draw' => $hasil['draw'],
+    'recordsTotal' => $hasil['recordsTotal'],
+    'recordsFiltered' => $hasil['recordsFiltered'],
+    'data' => $data,
+));

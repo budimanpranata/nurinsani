@@ -1,11 +1,12 @@
-/* Cetak Bilyet / Cetak Advis level fund (fund/view/view_cetak_bilyet.php, view_advise.php): DataTables di sisi browser;
+/* Cetak Bilyet / Cetak Advis / Reprint level fund (fund/view/view_cetak_bilyet.php, view_advise.php, view_reprint.php):
+   DataTables di sisi browser (kolom Aksi = kolom terakhir);
    sesudah tombol Print (PDF di tab baru) daftar dimuat ulang saat user kembali ke tab ini, karena deposito yang sudah
    dicetak berstatus 'Print' dan tidak lagi masuk daftar. */
 $(function () {
     $('#tabel_cetak').DataTable({
         pageLength: 10,
         columnDefs: [
-            { orderable: false, targets: [0, 8] }
+            { orderable: false, targets: [0, -1] }
         ],
         order: [[1, 'asc']],
         language: {

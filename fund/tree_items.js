@@ -24,7 +24,6 @@ var TREE_ITEMS = [
 			['Data Jatuh Tempo', 'view/view_tempo.php'],
 			['View Realisasi Baghas', 'view/view_baghas.php'],
 			['View Baghas & Eq Rate', 'view/eq_rate.php'],
-			['Mutasi ', 'rek_koran.php'],
 			
 		],		
 		['Seting Parameter',0,

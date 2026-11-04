@@ -1,358 +1,127 @@
-<?php require_once __DIR__ . '/../../php8_compat.php';
+<?php require_once __DIR__ . '/../../koneksi_db.php';
+/**
+ * Menu fund > Report > View Baghas & Eq Rate: pilih periode tanggal jatuh tempo jadwal bagi hasil, tampil ringkasan per
+ * unit (NOA deposito, total pokok) dan Export .xlsx bertahap laporan Bagi Hasil dan Eq Rate (eqrate_export.php,
+ * periode di sesi eqrate_filter). Hitungan di inc/eqrate_deposito.php.
+ * Dimigrasi 2026-11-04 (perintah user): dulu cek level tidak ada, mysql_* dengan tanggal langsung di SQL, ringkasan
+ * tanpa group by (satu baris, unit acak) dan join jadwal per CIF (NOA = jumlah jadwal x deposito, nominal terhitung
+ * berulang, kolom Unit berisi NOA), tampilan awal menjalankan query mutasi kas sisa salinan; Detail (baghas_eqrate.php,
+ * tabel HTML bernama neraca.xls, hari ditulis mati 31, baris TOTAL kosong) diganti eqrate_export.php.
+ */
+require_once __DIR__ . '/../../inc/tampilan.php';
+date_default_timezone_set('Asia/Jakarta');
 session_start();
 ob_start();
- include "../../conn2.php";
-  include "../../function.php";
-  $koneksi=open_connection2();
-$userid=$_SESSION['userid'];
-$tgl_system=$_SESSION['stgl_system'];
-//cek apakah user sudah login
-if(!isset($_SESSION['userid'])){
-   header("location:index.html");
- exit; }
+require_once __DIR__ . '/../../inc/cek_login.php';
+wajib_login();
+if ((isset($_SESSION['level']) ? $_SESSION['level'] : '') != "fund") {
+    header("location:../../index.html");
+    exit;
+}
+include_once __DIR__ . '/../../function.php';
+require_once __DIR__ . '/../../inc/eqrate_deposito.php';
 
-?>
-
-	
-	<script>
-	function suggest(inputString){
-		if(inputString.length == 0) {
-			$('#suggestions').fadeOut();
-		} else {
-		$('#country').addClass('load');
-			$.post("autosuggesst_rek.php", {queryString: ""+inputString+""}, function(data){
-				if(data.length >0) {
-					$('#suggestions').fadeIn();
-					$('#suggestionsList').html(data);
-					$('#country').removeClass('load');
-				}
-			});
-		}
-	}
-	
-	function fill(thisValue) {
-		$('#country').val(thisValue);
-		setTimeout("$('#suggestions').fadeOut();", 100);
-	}
-	
-	function fill2(thisValue) {
-		$('#kode').val(thisValue);
-		setTimeout("$('#suggestions').fadeOut();", 100);
-	}
-	
-	</script>
-<script>
-	function formatCurrency(num) {
-    num = num.toString().replace(/\$|\,/g,'');
-	num = num.toString().replace(/[^0-9]/g,'');
-    if(isNaN(num))
-    num = "0";
-    sign = (num == (num = Math.abs(num)));
-    num = Math.floor(num*100+0.50000000001);
-    cents = num%100;
-    num = Math.floor(num/100).toString();
-    if(cents<10)
-    cents = "0" + cents;
-    for (var i = 0; i < Math.floor((num.length-(1+i))/3); i++)
-    num = num.substring(0,num.length-(4*i+3))+'.'+
-    num.substring(num.length-(4*i+3));
-    return (((sign)?'':'-') + 'Rp. ' + num + '');
-    }
-	</script>
-	
-</script>
-
-
-<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
-"http://www.w3.org/TR/html4/loose.dtd">
-<html>
-<head>
-<title>Transaksi NI</title>
-<link rel="stylesheet" href="../../tabel.css" />
-<meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
-<style type="text/css">
-<script type="text/javascript" src="../../jquery.js"></script>
-		<link href="../../style.css" rel="stylesheet" type="text/css" media="screen" />
-		<link rel="stylesheet" href="../../css/bootstrap.min.css"/>
-<script>
-
-<!--
-.style3 {	color: #FFFFFF;
-	font-size: 13px;
-	font-weight: bold;
-}
-.header1 {color: #ffffff; background: #4682B4; font-weight: bold; font-family: Tahoma, Verdana; font-size: 13px; margin: 0px;}
-body {
-	background-image: url();
-}
-a:link {
-	text-decoration: none;
-}
-a:visited {
-	text-decoration: none;
-}
-a:hover {
-	text-decoration: none;
-}
-a:active {
-	text-decoration: none;
-}
-.style5 {font-family: Verdana, Arial, Helvetica, sans-serif}
-.style6 {font-size: 12px}
-.style7 {font-family: Verdana, Arial, Helvetica, sans-serif; font-size: 12px; }
-.style8 {font-size: 14px}
-a {
-	font-size: 12px;
-}
-.style9 {
-	font-size: 16px;
-	font-family: Verdana, Arial, Helvetica, sans-serif;
-}
--->
-
-	#result {
-		height:20px;
-		font-size:12px;
-		font-family:Arial, Helvetica, sans-serif;
-		color:#333;
-		padding:5px;
-		margin-bottom:10px;
-		background-color:#FFFF99;
-	}
-	#country{
-		padding:3px;
-		border:1px #CCC solid;
-		font-size:12px;
-	}
-	.suggestionsBox {
-		position: absolute;
-		left: 0px;
-		top:40px;
-		margin: 26px 0px 0px 0px;
-		width: 200px;
-		padding:0px;
-		background-color:#999999;
-		border-top: 3px solid #999999;
-		color: #fff;
-	}
-	.suggestionList {
-		margin: 0px;
-		padding: 0px;
-	}
-	.suggestionList ul li {
-		list-style:none;
-		margin: 0px;
-		padding: 6px;
-		border-bottom:1px dotted #666;
-		cursor: pointer;
-	}
-	.suggestionList ul li:hover {
-		background-color: #FC3;
-		color:#000;
-	}
-	ul {
-		font-family:Arial, Helvetica, sans-serif;
-		font-size:11px;
-		color:#FFF;
-		padding:0;
-		margin:0;
-	}
-	
-	.load{
-	background-image:url(loader.gif);
-	background-position:right;
-	background-repeat:no-repeat;
-	}
-	
-	#suggest {
-		position:relative;
-	}
-	.style9 {
-	font-size: 16px;
-	font-family: Verdana, Arial, Helvetica, sans-serif;
-}
-.style3 {	color: #FFFFFF;
-	font-size: 13px;
-	font-weight: bold;
-}
-.header1 {color: #ffffff; background: #4682B4; font-weight: bold; font-family: Tahoma, Verdana; font-size: 13px; margin: 0px;}
-body {
-	background-image: url();
-}
-a:link {
-	text-decoration: none;
-}
-a:visited {
-	text-decoration: none;
-}
-a:hover {
-	text-decoration: none;
-}
-a:active {
-	text-decoration: none;
-}
-	.style10 {
-	font-family: Verdana, Arial, Helvetica, sans-serif;
-	font-size: 12px;
-}
-
-    .style11 {font-size: small}
-    </style>
-</head>
-
-<table width="100%" cellpadding="1" bgcolor="#2F6B4F">
-  <tr>
-    <td height="10" class="style3 style9">Report Baghas dan Eq Rate
-      <div align="right"></div></td>
-  </tr>
-</table>
-
-<table width="428" border="1" align="center">
-</table>
-  <form method="post" action="<?php echo $_SERVER['PHP_SELF']; ?>" name="postform">  <table width="502" border="0" align="center">
-<tr bgcolor="#2F6B4F">
-  <td height="10" colspan="4" nowrap><div align="center" class="style3 style9"> Pencarian Berdasarkan Tanggal </div></td>
-  </tr>
-<tr>
-  <td height="10" nowrap bgcolor="#B3B3FF"><span class="style7">Tangggal Awal </span></td>
-  <td nowrap><div align="center"><strong>:</strong></div></td>
-  <td colspan="2" nowrap><input name="buss_date1" type="text" id="tgl_lahir" value="" size="20"/>
-    <a href="javascript:void(0)" onClick="if(self.gfPop)gfPop.fPopCalendar(document.postform.tgl_lahir);return true;" ><img src="../../images/calendarIcon.jpg" alt="" name="popcal" width="17" height="17" border="0" align="absmiddle" id="popcal" /></a></td>
-</tr>
-<tr>
-  <td height="10" nowrap bgcolor="#B3B3FF"><span class="style7">Tanggal Akhir </span></td>
-  <td nowrap><div align="center"><strong>:</strong></div></td>
-  <td colspan="2" nowrap><input name="buss_date2" type="text" id="tgl_trn" value="" size="20"/>
-    <a href="javascript:void(0)" onClick="if(self.gfPop)gfPop.fPopCalendar(document.postform.tgl_trn);return true;" ><img src="../../images/calendarIcon.jpg" alt="" name="popcal" width="17" height="17" border="0" align="absmiddle" id="popcal" /></a></td>
-</tr>
-
-
-<tr>
-  <td height="10" colspan="4">&nbsp;</td>
-  </tr>
-<tr bgcolor="#B3B3FF">
-  <td height="10">&nbsp; </td>
-  <td><div align="center"></div></td>
-  <td colspan="2"><input name="search" type="submit" id="submit2" value="Search" size="40"></td>
-</tr>
-</table>
-
-</form>
-<iframe width=174 height=189 name="gToday:normal:../../calender/normal.js" id="gToday:normal:../../calender/normal.js" src="../../calender/ipopeng.htm" scrolling="no" frameborder="0" style="visibility:visible; z-index:999; position:absolute; top:-500px; left:-500px;">
-</iframe>
-
-<table border="4" bgcolor="" width="100%" class="table1">
-  <tr class="table1">
-    <th>Unit</th>
-    <th>Tgl Awal Transaksi</th>
-	<th>Tgl Akhir Transaksi</th>
-	<th>Total Noa</th>
-    <th>Totak Pokok</th>
-	<th>Detail </th>
-  
-  </tr>
-  <?php
- 
-  $tanggal=date("Y-m-d");
-  $buss_date1=$_POST['buss_date1'];
-  $buss_date2=$_POST['buss_date2'];
-  $unit=$_POST['unit'];
-  
-
-  If (isset($_POST ['search']))
+/** Tanggal Y-m-d yang sah, atau ''. */
+function tanggal_sah($v)
 {
-if (empty($buss_date1)||empty($buss_date2)){
-	echo "<script>alert('Maaf,.isi Tanggal Pencarian');</script>";
-         echo "<script language='javascript'>document.location.href='eq_rate.php'</script>";}
-	
-	else{
-		$_SESSION['tgl_awal_pos']=$buss_date1;
-		$_SESSION['tgl_akhir_pos']=$buss_date2;
-				
-		 $select = mysql_query("Select unit,count(deposito.cif) as noa,sum(nominal) as nominal from deposito left join deposito_detail on deposito_detail.cif = deposito.cif where  deposito_detail.tgl_jatuh_tempo between '$buss_date1' and '$buss_date2'");
-		}
-
-	
-  ?>
-  
-  <?php
-	
-	//menampilkan data
-	while($data = mysql_fetch_array($select)){
-
-//menghitung hitung
-//$birthdate = $data['Birth_date'];
-//$age = ((time() - strtotime($birthdate))/(60*60*24*365.2425));
-
-		?>
-  <tr>
-    <td class="style6"><?php echo $data['noa']; ?></td>
-	<td class="style6"><?php echo $buss_date1;  ?></td>
-    <td class="style6"><?php echo $buss_date2;?></td>
-	<td class="style6"><?php echo number_format (compat_num($data['noa'])); ?></td>
-    <td class="style6"><?php echo number_format (compat_num($data['nominal'])); ?></td>
-	<td><div align="center"><a href="baghas_eqrate.php?unit=<?php echo $unit;?>" class="style6" onClick="return confirm('Apakah adan Yakin ?')"><strong>Detail</strong></a></div></td>
-
-    
-  </tr>
-  <?php
-		
-	}
-	}else{
-		 $select1 = mysql_query("SET @bal = 0;");
-		 $select = mysql_query("Select kode_rekening,DATE_FORMAT(tanggal_transaksi, '%d %M %Y') as tanggal_transaksi,keterangan_transaksi,debet,kredit,@bal:=(@bal+debet) - kredit as saldo from tabel_transaksi where kode_rekening='1120000' and tanggal_transaksi='$tgl_system'and unit='$unit'");
-	while($data = mysql_fetch_array($select)){
-			
-		?>
-  <tr>
-    <td class="style6"><?php echo $data['kode_rekening']; ?></td>
-	<td class="style6"><?php echo $data['keterangan_transaksi'];  ?></td>
-    <td class="style6"><?php echo $data['tanggal_transaksi'];?></td>
-	<td class="style6"><?php echo number_format (compat_num($data['debet'])); ?></td>
-    <td class="style6"><?php echo number_format (compat_num($data['kredit'])); ?></td>
-    <td class="style6"><?php echo number_format (compat_num($data['saldo'])); ?></td>
-    
-  </tr>
-  <?php
-	}
-	}
-	?>
-  
-</table>
-<p>&nbsp;</p>
-
- <iframe width=174 height=189 name="gToday:normal:calender/normal.js" id="gToday:normal:calender/normal.js" src="calender/ipopeng.htm" scrolling="no" frameborder="0" style="visibility:visible; z-index:999; position:absolute; top:-500px; left:-500px;">
-</iframe>
-<script>
-$(document).ready(function(){
-$('.hasil').hide();
-$('#tombol').hide();
-$('#baki').hide();
-$('#simpan').hide();
-$('#select').change(function(){
-if($('#select').val()=='01'){
-$('.hasil').hide();	
-$('#tombol').hide();
-$('#baki').hide();
-$('#simpan').hide();
-}else if($('#select').val()=='02'){
-$('.hasil').hide();
-$('#tombol').hide();
-$('#baki').hide();
-$('#simpan').hide();
-}else if($('#select').val()=='03'){
-$('.hasil').hide();
-$('#tombol').hide();
-$('#baki').hide();
-$('#simpan').hide();
-}else if($('#select').val()=='04'){
-$('.hasil').show();
-$('#tombol').show();
-$('#baki').show();
-$('#simpan').show();
+    $d = DateTime::createFromFormat('!Y-m-d', $v);
+    return $d && $d->format('Y-m-d') === $v ? $v : '';
 }
-});
-});
-</script>
-</body>
-</html>
+
+$awal = isset($_GET['awal']) ? tanggal_sah(trim((string) $_GET['awal'])) : '';
+$akhir = isset($_GET['akhir']) ? tanggal_sah(trim((string) $_GET['akhir'])) : '';
+$dicari = isset($_GET['cari']);
+$pesan = '';
+$data = null;
+if ($dicari) {
+    if ($awal === '' || $akhir === '') {
+        $pesan = 'Maaf, isi Tanggal Awal dan Tanggal Akhir pencarian.';
+    } elseif ($awal > $akhir) {
+        $pesan = 'Tanggal Awal tidak boleh sesudah Tanggal Akhir.';
+    } else {
+        $_SESSION['eqrate_filter'] = array('awal' => $awal, 'akhir' => $akhir);
+        $data = eqrate_ringkasan($awal, $akhir);
+    }
+}
+list($hari, $dari_hari_dep) = bhd_hari();
+
+halaman_awal('Report Baghas dan Eq Rate');
+?>
+<div class="card card-ni mw-100">
+  <div class="card-header">Report Baghas dan Eq Rate</div>
+  <div class="card-body">
+    <form method="get" action="eq_rate.php" class="row g-2 align-items-end mb-3">
+      <div class="col-sm-3">
+        <label class="form-label" for="awal">Tanggal Awal</label>
+        <input type="date" name="awal" id="awal" value="<?php echo h($awal); ?>" class="form-control" required>
+      </div>
+      <div class="col-sm-3">
+        <label class="form-label" for="akhir">Tanggal Akhir</label>
+        <input type="date" name="akhir" id="akhir" value="<?php echo h($akhir); ?>" class="form-control" required>
+      </div>
+      <div class="col-sm-6 d-flex gap-2">
+        <button type="submit" name="cari" value="1" class="btn btn-ni">Search</button>
+        <?php if ($data): ?>
+        <button type="button" class="btn btn-outline-success ms-auto" data-export-xlsx data-export-url="eqrate_export.php" data-export-satuan="deposito">Export Excel (.xlsx)</button>
+        <?php endif; ?>
+      </div>
+    </form>
+    <?php if ($dari_hari_dep): ?>
+    <p class="small text-muted">Jumlah hari bagi hasil: <?php echo (int) $hari; ?> hari (Seting Parameter &gt; Jumlah Hari Bagi Hasil).</p>
+    <?php else: ?>
+    <div class="alert alert-warning py-2">Jumlah hari bagi hasil belum diisi; dipakai <?php echo (int) $hari; ?> hari. Isi di Seting Parameter &gt; Jumlah Hari Bagi Hasil.</div>
+    <?php endif; ?>
+    <?php if ($pesan !== ''): ?>
+    <div class="alert alert-warning"><?php echo h($pesan); ?></div>
+    <?php endif; ?>
+    <?php if ($data !== null): ?>
+    <table class="table table-sm table-bordered table-ni align-middle w-100">
+      <thead>
+        <tr>
+          <th>Unit</th>
+          <th>Tgl Awal Transaksi</th>
+          <th>Tgl Akhir Transaksi</th>
+          <th class="text-end">Total Noa</th>
+          <th class="text-end">Total Pokok</th>
+        </tr>
+      </thead>
+      <tbody>
+        <?php if (!$data): ?>
+        <tr><td colspan="5" class="text-center text-muted">Tidak ada jadwal bagi hasil dalam periode ini</td></tr>
+        <?php endif; ?>
+        <?php foreach ($data as $r): ?>
+        <tr>
+          <td><?php echo h($r['unit']); ?></td>
+          <td><?php echo h(tgl_indo($awal)); ?></td>
+          <td><?php echo h(tgl_indo($akhir)); ?></td>
+          <td class="text-end"><?php echo number_format(compat_num($r['noa'])); ?></td>
+          <td class="text-end"><?php echo number_format(compat_num($r['nominal'])); ?></td>
+        </tr>
+        <?php endforeach; ?>
+      </tbody>
+    </table>
+    <?php endif; ?>
+  </div>
+</div>
+
+<div class="modal fade" id="modal-export" tabindex="-1" aria-labelledby="judul-export" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2 class="modal-title fs-6" id="judul-export">Export Laporan Bagi Hasil dan Eq Rate</h2>
+      </div>
+      <div class="modal-body">
+        <div class="progress" role="progressbar" aria-label="Progres export" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" style="height: 1.25rem;">
+          <div class="progress-bar progress-bar-striped progress-bar-animated" style="width: 0%">0%</div>
+        </div>
+        <div class="small text-muted mt-2" data-export-teks aria-live="polite">Menyiapkan data…</div>
+        <div data-export-ringkasan></div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary btn-sm d-none" data-bs-dismiss="modal" data-export-tutup>Tutup</button>
+      </div>
+    </div>
+  </div>
+</div>
+<?php
+halaman_akhir(array('assets/app/export_xlsx.js'));
