@@ -23,7 +23,11 @@ $jenis = isset($_POST['jenis']) ? (string) $_POST['jenis'] : '';
 $pesan = array();
 $hasil = array();
 if (isset($_POST['search'])) {
-    if (empty($buss_date1)) {
+    $d_cari = DateTime::createFromFormat('!Y-m-d', $buss_date1);
+    if (!$d_cari || $d_cari->format('Y-m-d') !== $buss_date1) {
+        // 2026-11-04: hanya tanggal sah yang disimpan ke sesi, karena laporan lanjutan (neraca_konsol.php, laba_konsol.php)
+        // masih menempel tanggal ini ke teks SQL
+        $buss_date1 = '';
         $pesan[] = "<script>alert('Maaf,.isi Tanggal Pencarian  !!!');</script>";
         $pesan[] = "<script language='javascript'>document.location.href='konsolidasi.php'</script>";
     } else {
@@ -94,12 +98,35 @@ halaman_awal('Neraca');
         <td class="text-end"><?php echo number_format(compat_num($data['debet'])); ?></td>
         <td class="text-end"><?php echo number_format(compat_num($data['kredit'])); ?></td>
         <td class="text-center">
+          <?php if ((string) $data['posisi'] === 'Neraca'): ?>
+          <a href="../konsolidasi.php?consol=Neraca" class="btn btn-outline-primary btn-sm" data-konsol-export="neraca_konsol_export.php" data-pesan="Apakah adan Yakin akan melakukan Posting Neraca ?">Neraca</a>
+          <?php else: ?>
           <a href="../konsolidasi.php?consol=<?php echo h(urlencode((string) $data['posisi'])); ?>" class="btn btn-outline-primary btn-sm" data-konfirmasi="Apakah adan Yakin akan melakukan Posting Neraca ?"><?php echo h($data['posisi']); ?></a>
+          <?php endif; ?>
         </td>
       </tr>
     <?php endforeach; ?>
     </tbody>
   </table>
 </div>
+
+<div class="modal fade" id="modal-konsol" tabindex="-1" aria-labelledby="judul-konsol" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2 class="modal-title fs-6" id="judul-konsol">Export Neraca Konsolidasi</h2>
+      </div>
+      <div class="modal-body">
+        <div class="progress" role="progressbar" aria-label="Progres export" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" style="height: 1.25rem;">
+          <div class="progress-bar progress-bar-striped progress-bar-animated" style="width: 0%">0%</div>
+        </div>
+        <div class="small text-muted mt-2" data-konsol-teks aria-live="polite">Menyiapkan laporan…</div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary btn-sm d-none" data-bs-dismiss="modal" data-konsol-tutup>Tutup</button>
+      </div>
+    </div>
+  </div>
+</div>
 <?php
-halaman_akhir();
+halaman_akhir(array('assets/app/kp_konsol_export.js'));

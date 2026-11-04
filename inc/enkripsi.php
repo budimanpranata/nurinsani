@@ -107,6 +107,12 @@ function normal_nik($nik)
     return strtoupper(preg_replace('/[^0-9A-Za-z]/', '', (string) $nik));
 }
 
+/** NIK isian Data Master Deposan sah: hanya angka, 1-16 digit (perintah user 2026-11-04). */
+function nik_angka_sah($nik)
+{
+    return (bool) preg_match('/^\d{1,16}$/', (string) $nik);
+}
+
 /** Indeks buta NIK (HMAC-SHA256 hex, 64 karakter) untuk pencarian persis / cek dobel; '' bila NIK kosong. */
 function indeks_nik($nik)
 {

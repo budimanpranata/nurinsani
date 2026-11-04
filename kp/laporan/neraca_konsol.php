@@ -1,11 +1,17 @@
 <?php require_once __DIR__ . '/../../php8_compat.php';
+// Mode export bertahap (KONSOL_EXPORT_JOB, dari neraca_konsol_export.php, perintah user 2026-11-04): sesi sudah dibaca dan
+// ditutup oleh pemanggil (agar permintaan status progres tidak terkunci) dan header unduhan dikirim pemanggil.
+if (!defined('KONSOL_EXPORT_JOB')) {
 session_start();
+}
 ob_start();
 $_SESSION['units']=$unit;
 $tgl_cari=$_SESSION['tgl_cari_konsols'];
 
+if (!defined('KONSOL_EXPORT_JOB')) {
 header("Content-type: application/vnd-ms-excel");
 header("Content-Disposition: attachment; filename=consol.xls");
+}
  include"../../indo_tgl.php";
 
 $jenis=$_SESSION['jenis'];
@@ -18,7 +24,7 @@ $sumber = "tabel_master_hari";
 else{
 $sumber = "tabel_master_eoy";
 }
-var_dump($jenis);
+// var_dump($jenis) dibuang 2026-11-04: teks string(3) "eom" tertulis di baris pertama file Excel
 //membuat header HTML
 echo "<html>
 		<head>
@@ -3474,7 +3480,8 @@ $totalp=$pendapatan_p;
 //parameter pajak 
 $param_pajak=4800000000;
 //persentase
-$persen =($param_pajak/$totalp);
+// compat_bagi 2026-11-04: pendapatan 0 (tidak ada data periode/jenis itu) dulu DivisionByZeroError di PHP 8; kini 0 seperti PHP 5
+$persen =compat_bagi($param_pajak,$totalp);
 //var_dump($persen);
 
 

@@ -38,13 +38,16 @@ if (isset($_POST['input'])) {
     $pos = function ($k) {
         return isset($_POST[$k]) ? trim((string) $_POST[$k]) : '';
     };
-    $ktp = potong_data($pos('ktp'), 40);
+    $ktp = $pos('ktp');
     $ktp_idx = indeks_nik($ktp);
     $ktp_enc = enkripsi_data($ktp);
-    if (!db_satu("SELECT 1 as ada FROM deposan WHERE ID_NUMBER_IDX=? OR ID_NUMBER=?", 'ss', $ktp_idx, $ktp)) {
+    if (!nik_angka_sah($ktp) || !nik_angka_sah($pos('ktp_dua'))) {
+        // perintah user 2026-11-04: NIK pengurus 1 dan 2 hanya angka, maksimal 16 digit
+        $_SESSION['pesan_deposan_per'] = array('danger', 'NIK pengurus harus angka, maksimal 16 digit.');
+    } elseif (!db_satu("SELECT 1 as ada FROM deposan WHERE ID_NUMBER_IDX=? OR ID_NUMBER=?", 'ss', $ktp_idx, $ktp)) {
         $ok = db_jalankan("INSERT INTO deposan(no,CIF,unit,CUST_SHORT_NAME,NAMA_SATU,NAMA_DUA,KTP_SATU,KTP_DUA,HADDRESS1,HADDRESS2,HADDRESS3,norek_tujuan,nama_bank,ID_NUMBER,ID_NUMBER_IDX,JENIS,NPWP)
             VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,'PERUSAHAAN',?)", 'ssssssssssssssss',
-            $nim, $cif, $unit, $pos('nama'), $pos('nama_satu'), $pos('nama_dua'), $ktp_enc, enkripsi_data(potong_data($pos('ktp_dua'), 40)),
+            $nim, $cif, $unit, $pos('nama'), $pos('nama_satu'), $pos('nama_dua'), $ktp_enc, enkripsi_data($pos('ktp_dua')),
             enkripsi_data(potong_data($pos('alamat'), 100)), enkripsi_data(potong_data($pos('alamat_satu'), 100)),
             enkripsi_data(potong_data($pos('alamat_dua'), 100)),
             $pos('norek'), $pos('bank'), $ktp_enc, $ktp_idx, $pos('npwp'));
@@ -106,7 +109,7 @@ halaman_awal('Data Deposan Nur Insani');
         <div class="card-body row g-3">
           <div class="col-12">
             <label class="form-label" for="ktp<?php echo $p[0]; ?>">NIK</label>
-            <input type="text" name="ktp<?php echo $p[0]; ?>" id="ktp<?php echo $p[0]; ?>" placeholder="Nomor KTP" class="form-control" maxlength="40" required>
+            <input type="text" name="ktp<?php echo $p[0]; ?>" id="ktp<?php echo $p[0]; ?>" placeholder="Nomor KTP" class="form-control" maxlength="16" inputmode="numeric" pattern="\d{1,16}" title="Hanya angka, maksimal 16 digit" oninput="this.value = this.value.replace(/\D/g, '')" required>
           </div>
           <div class="col-12">
             <label class="form-label" for="nama_<?php echo $p[1]; ?>">Nama</label>

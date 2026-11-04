@@ -35,11 +35,14 @@ if (isset($_POST['input'])) {
     $pos = function ($k) {
         return isset($_POST[$k]) ? (string) $_POST[$k] : '';
     };
-    $ktp = potong_data($pos('ktp'), 40);
+    $ktp = trim($pos('ktp'));
     $ktp_idx = indeks_nik($ktp);
     $ktp_enc = enkripsi_data($ktp);
     $alamat_enc = enkripsi_data(potong_data($pos('alamat'), 100));
-    if (!db_satu("SELECT 1 as ada FROM deposan WHERE ID_NUMBER_IDX=? OR ID_NUMBER=?", 'ss', $ktp_idx, $ktp)) {
+    if (!nik_angka_sah($ktp)) {
+        // perintah user 2026-11-04: Nomor KTP hanya angka, maksimal 16 digit
+        $_SESSION['pesan_deposan'] = array('danger', 'Nomor KTP harus angka, maksimal 16 digit.');
+    } elseif (!db_satu("SELECT 1 as ada FROM deposan WHERE ID_NUMBER_IDX=? OR ID_NUMBER=?", 'ss', $ktp_idx, $ktp)) {
         $db = db_ni();
         $gagal_awal = db_jumlah_gagal();
         $db->begin_transaction();
@@ -95,7 +98,7 @@ halaman_awal('Data Deposan Nur Insani');
       </div>
       <div class="col-sm-6">
         <label class="form-label" for="ktp">Nomor KTP</label>
-        <input type="text" name="ktp" id="ktp" placeholder="Nomor KTP" class="form-control" maxlength="40" required>
+        <input type="text" name="ktp" id="ktp" placeholder="Nomor KTP" class="form-control" maxlength="16" inputmode="numeric" pattern="\d{1,16}" title="Hanya angka, maksimal 16 digit" oninput="this.value = this.value.replace(/\D/g, '')" required>
       </div>
       <div class="col-sm-6">
         <label class="form-label" for="nama">Nama</label>

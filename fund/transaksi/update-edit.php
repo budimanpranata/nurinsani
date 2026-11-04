@@ -16,7 +16,12 @@ if (isset($_POST['update'])) {
         return isset($_POST[$k]) ? (string) $_POST[$k] : '';
     };
     $nim = $pos('nim');
-    $ktp = potong_data($pos('ktp'), 40);
+    $ktp = trim($pos('ktp'));
+    if (!nik_angka_sah($ktp)) {
+        // perintah user 2026-11-04: Nomor KTP hanya angka, maksimal 16 digit; kembali ke form (isian tidak hilang)
+        echo "<script>alert('Nomor KTP harus angka, maksimal 16 digit.'); history.back();</script>";
+        exit;
+    }
     $ktp_enc = enkripsi_data($ktp);
     $ktp_idx = indeks_nik($ktp);
     $alamat_enc = enkripsi_data(potong_data($pos('alamat'), 100));

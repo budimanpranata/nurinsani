@@ -33,7 +33,7 @@ halaman_awal('Data Deposan Nur Insani');
       </div>
       <div class="col-sm-6">
         <label class="form-label" for="ktp">KTP/SIM</label>
-        <input type="text" name="ktp" id="ktp" value="<?php echo h($row['ID_NUMBER']); ?>" placeholder="KTP" class="form-control" maxlength="40" required>
+        <input type="text" name="ktp" id="ktp" value="<?php echo h($row['ID_NUMBER']); ?>" placeholder="KTP" class="form-control" maxlength="16" inputmode="numeric" pattern="\d{1,16}" title="Hanya angka, maksimal 16 digit" oninput="this.value = this.value.replace(/\D/g, '')" required>
       </div>
       <div class="col-sm-6">
         <label class="form-label" for="nama">Nama Deposan</label>

@@ -208,6 +208,10 @@ if (!function_exists('mysql_connect') && extension_loaded('mysqli')) {
 
     function mysql_query($query, $link_identifier = null)
     {
+        // kait penghitung query untuk indikator progres export (mis. kp/laporan/neraca_konsol_export.php); hanya aktif bila diset
+        if (isset($GLOBALS['__compat_kait_query'])) {
+            ($GLOBALS['__compat_kait_query'])();
+        }
         $link = __compat_mysql_link($link_identifier, 'mysql_query');
         if (!$link) return false;
         try {
