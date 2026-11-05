@@ -104,7 +104,7 @@ if (empty($tgl)||empty($select)){
    
     case "03":
       $jenis='Non Cs Lebaran';
-    //$cek_saldo= mysql_fetch_array(mysql_query("SELECT sum(nominal) as saldo, datediff('$tgl', tgl_tunggak) as selisih from tunggakan where datediff('$tgl', tgl_tunggak) between 121 AND 365 AND unit  ='$unit' group by cif "));
+    //$cek_saldo= mysql_fetch_array(mysql_query("SELECT sum(nominal) as saldo, datediff('$tgl', tgl_tunggak) as selisih from tunggakan where datediff('$tgl', tgl_tunggak) between 121 AND 365 AND unit  ='$unit' group by cif order by cif "));
     $data_noa= mysql_fetch_array(mysql_query("SELECT count(cif) as noa, sum(bulat) as tagihan,sum(bayar) as tertagih from eod_tagihan_lebaran where unit ='$userid' and tgl_tagih ='$tgl'"));
     $noa=$data_noa['noa'];
     $tagihan=$data_noa['tagihan'];
@@ -113,7 +113,7 @@ if (empty($tgl)||empty($select)){
    
     case "04":
       $jenis='Non Cs Penarikan';
-    //$cek_saldo= mysql_fetch_array(mysql_query("SELECT sum(nominal) as saldo, datediff('$tgl', tgl_tunggak) as selisih from tunggakan where datediff('$tgl', tgl_tunggak) >365 AND unit  ='$unit' group by cif "));
+    //$cek_saldo= mysql_fetch_array(mysql_query("SELECT sum(nominal) as saldo, datediff('$tgl', tgl_tunggak) as selisih from tunggakan where datediff('$tgl', tgl_tunggak) >365 AND unit  ='$unit' group by cif order by cif "));
     $data_noa= mysql_fetch_array(mysql_query("SELECT count(cif) as noa, sum(bulat) as tagihan,sum(bayar) as tertagih from eod_tagihan_penarikan where unit ='$userid' and tgl_tagih ='$tgl'"));
     $noa=$data_noa['noa'];
     $tagihan=$data_noa['tagihan'];
@@ -122,7 +122,7 @@ if (empty($tgl)||empty($select)){
 
      case "05":
       $jenis='Non Cs Tunggakan';
-      //$cek_saldo= mysql_fetch_array(mysql_query("SELECT sum(nominal) as saldo, datediff('$tgl', tgl_tunggak) as selisih from tunggakan where datediff('$tgl', tgl_tunggak) >365 AND unit  ='$unit' group by cif "));
+      //$cek_saldo= mysql_fetch_array(mysql_query("SELECT sum(nominal) as saldo, datediff('$tgl', tgl_tunggak) as selisih from tunggakan where datediff('$tgl', tgl_tunggak) >365 AND unit  ='$unit' group by cif order by cif "));
       $data_noa= mysql_fetch_array(mysql_query("SELECT count(cif) as noa, sum(bulat) as tagihan,sum(bayar) as tertagih from eod_tagihan_tunggakan where unit ='$userid' and tgl_tagih ='$tgl'"));
       $noa=$data_noa['noa'];
       $tagihan=$data_noa['tagihan'];
@@ -130,7 +130,7 @@ if (empty($tgl)||empty($select)){
        break;
     case "06":
       $jenis='Non Cs Pelunasan';
-        //$cek_saldo= mysql_fetch_array(mysql_query("SELECT sum(nominal) as saldo, datediff('$tgl', tgl_tunggak) as selisih from tunggakan where datediff('$tgl', tgl_tunggak) >365 AND unit  ='$unit' group by cif "));
+        //$cek_saldo= mysql_fetch_array(mysql_query("SELECT sum(nominal) as saldo, datediff('$tgl', tgl_tunggak) as selisih from tunggakan where datediff('$tgl', tgl_tunggak) >365 AND unit  ='$unit' group by cif order by cif "));
         $data_noa= mysql_fetch_array(mysql_query("SELECT count(cif) as noa, sum(bulat) as tagihan,sum(bayar) as tertagih from eod_tagihan_pelunasan where unit ='$userid' and tgl_tagih ='$tgl'"));
         $noa=$data_noa['noa'];
         $tagihan=$data_noa['tagihan'];
@@ -138,7 +138,7 @@ if (empty($tgl)||empty($select)){
          break;
  case "07":
       $jenis='Non Cs Wo';
-        //$cek_saldo= mysql_fetch_array(mysql_query("SELECT sum(nominal) as saldo, datediff('$tgl', tgl_tunggak) as selisih from tunggakan where datediff('$tgl', tgl_tunggak) >365 AND unit  ='$unit' group by cif "));
+        //$cek_saldo= mysql_fetch_array(mysql_query("SELECT sum(nominal) as saldo, datediff('$tgl', tgl_tunggak) as selisih from tunggakan where datediff('$tgl', tgl_tunggak) >365 AND unit  ='$unit' group by cif order by cif "));
         $data_noa= mysql_fetch_array(mysql_query("SELECT count(cif) as noa, sum(os) as os,sum(nominal) as tertagih from eod_wo left join ao on ao.cao = eod_wo.cao where kode_unit ='$userid' and tgl_tagih ='$tgl'"));
         $noa=$data_noa['noa'];
         $tagihan=$data_noa['os'];
@@ -146,7 +146,7 @@ if (empty($tgl)||empty($select)){
          break;
  case "08":
       $jenis='Non Cs Wo';
-        //$cek_saldo= mysql_fetch_array(mysql_query("SELECT sum(nominal) as saldo, datediff('$tgl', tgl_tunggak) as selisih from tunggakan where datediff('$tgl', tgl_tunggak) >365 AND unit  ='$unit' group by cif "));
+        //$cek_saldo= mysql_fetch_array(mysql_query("SELECT sum(nominal) as saldo, datediff('$tgl', tgl_tunggak) as selisih from tunggakan where datediff('$tgl', tgl_tunggak) >365 AND unit  ='$unit' group by cif order by cif "));
         $data_noa= mysql_fetch_array(mysql_query("SELECT count(cif) as noa, '0' as os, sum(omzet) as tertagih from eod_omzet left join ao on ao.cao = eod_omzet.cao where kode_unit ='$userid' and tgl_tagih ='$tgl'"));
         $noa=$data_noa['noa'];
         $tagihan=$data_noa['os'];

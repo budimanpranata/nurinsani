@@ -191,7 +191,7 @@ a {
   
 $data = mysql_query ("select code_area,area,param_tgl from branch  
 inner join param_tgl on branch.kode_branch = param_tgl.unit where
-code_area ='$userid' group by code_area");
+code_area ='$userid' group by code_area order by code_area");
 $r = mysql_fetch_array($data);
 $branch=$r['area'];
 $param_tgl=$r['param_tgl'];

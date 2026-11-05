@@ -1,5 +1,24 @@
 <?php require_once __DIR__ . '/../../php8_compat.php';
- 
+session_start();
+require_once __DIR__ . '/../../inc/cek_login.php';
+wajib_login();
+if ($_SESSION['level'] != "kp") {
+    header("location:../../index.html");
+    exit;
+}
+$tgl_cari = mysql_real_escape_string(isset($_SESSION['tgl_cari_konsols']) ? (string) $_SESSION['tgl_cari_konsols'] : '');
+// sumber data sesuai jenis report di menu Konsolidasi (sama dengan neraca_konsol.php): eom = tabel_master_konsol,
+// current = tabel_master_hari (Proses Konsolidasi Harian), selain itu (eoy) = tabel_master_eoy (perbaikan 2026-11-05;
+// versi lama selalu tabel_master_konsol)
+$jenis = isset($_SESSION['jenis']) ? (string) $_SESSION['jenis'] : '';
+if ($jenis == 'eom') {
+    $sumber = "tabel_master_konsol";
+} elseif ($jenis == 'current') {
+    $sumber = "tabel_master_hari";
+} else {
+    $sumber = "tabel_master_eoy";
+}
+
 //membuat header HTML
 echo '<html>
 		<head>
@@ -38,16 +57,17 @@ SUM( IF( unit = '010', saldo_akhir, 0) ) AS '010',
 SUM( IF( unit = '1010', saldo_akhir, 0) ) AS '1010',
 SUM(saldo_akhir) AS total_trx 
 FROM
-tabel_master_konsol where gr_neraca='rugi-laba'
+{$sumber} where gr_neraca='rugi-laba' and tanggal_awal='$tgl_cari'
 group by kode_rekening order by kode_rekening";
  
 //jalankan query dan akan menghasilkan mysqli result object
 $query = mysql_query($sql);
 $sql1 = "SELECT
-branch.unit as unit from tabel_master_konsol
+branch.unit as unit from {$sumber}
 inner join branch 
-on branch.kode_branch = tabel_master_konsol.unit
-group by tabel_master_konsol.unit order by tabel_master_konsol.unit";
+on branch.kode_branch = {$sumber}.unit
+where {$sumber}.tanggal_awal='$tgl_cari'
+group by {$sumber}.unit order by {$sumber}.unit";
 $query1 = mysql_query($sql1);
 
 $total_pendapan=mysql_query("select unit,
@@ -63,7 +83,7 @@ SUM( IF( unit = '009', saldo_akhir, 0) ) AS '009',
 SUM( IF( unit = '010', saldo_akhir, 0) ) AS '010',
 SUM( IF( unit = '1010', saldo_akhir, 0) ) AS '1010',
 SUM(saldo_akhir) AS total_trx
-from tabel_master_konsol where gr_neraca='rugi-laba'
+from {$sumber} where gr_neraca='rugi-laba' and tanggal_awal='$tgl_cari'
 and kode_rekening='40000' group by gr_head order by gr_head");
 
 $total_biaya=mysql_query("select 
@@ -79,7 +99,7 @@ SUM( IF( unit = '009', saldo_akhir, 0) ) AS '009',
 SUM( IF( unit = '010', saldo_akhir, 0) ) AS '010',
 SUM( IF( unit = '1010', saldo_akhir, 0) ) AS '1010',
 SUM(saldo_akhir) AS total_trx
-from tabel_master_konsol where gr_neraca='rugi-laba'
+from {$sumber} where gr_neraca='rugi-laba' and tanggal_awal='$tgl_cari'
 and kode_rekening='50000' group by gr_head order by gr_head");
 
 $total_pendapan_n=mysql_query("select unit,
@@ -95,7 +115,7 @@ SUM( IF( unit = '009', saldo_akhir, 0) ) AS '009',
 SUM( IF( unit = '010', saldo_akhir, 0) ) AS '010',
 SUM( IF( unit = '1010', saldo_akhir, 0) ) AS '1010',
 SUM(saldo_akhir) AS total_trx
-from tabel_master_konsol where gr_neraca='rugi-laba'
+from {$sumber} where gr_neraca='rugi-laba' and tanggal_awal='$tgl_cari'
 and kode_rekening='57000' group by gr_head order by gr_head");
 
 $total_beban=mysql_query("select 
@@ -111,7 +131,7 @@ SUM( IF( unit = '009', saldo_akhir, 0) ) AS '009',
 SUM( IF( unit = '010', saldo_akhir, 0) ) AS '010',
 SUM( IF( unit = '1010', saldo_akhir, 0) ) AS '1010',
 SUM(saldo_akhir) AS total_trx
-from tabel_master_konsol where gr_neraca='rugi-laba'
+from {$sumber} where gr_neraca='rugi-laba' and tanggal_awal='$tgl_cari'
 and kode_rekening='58000' group by gr_head order by gr_head");
 
 
@@ -295,12 +315,12 @@ echo '<tr class="grey">
 //Estimasi Perhitungan Pajak
 //sumbangan dan Jamuan 
 //SHU_SEBELUMPAJAK
-$sbg_jamu=mysql_fetch_array(mysql_query("select sum(saldo_akhir) as saldo_akhir from tabel_master_konsol where kode_rekening in('56211','56212','56311','56312')"));
+$sbg_jamu=mysql_fetch_array(mysql_query("select sum(saldo_akhir) as saldo_akhir from {$sumber} where kode_rekening in('56211','56212','56311','56312') and tanggal_awal='$tgl_cari'"));
 
 $smb_jamu=$sbg_jamu['saldo_akhir'];
 
 
-$pendapatan=mysql_fetch_array(mysql_query("select sum(saldo_akhir) as saldo_akhir from tabel_master_konsol where kode_rekening in('40000')"));
+$pendapatan=mysql_fetch_array(mysql_query("select sum(saldo_akhir) as saldo_akhir from {$sumber} where kode_rekening in('40000') and tanggal_awal='$tgl_cari'"));
 $pendapatan_p=$pendapatan['saldo_akhir'];
 //var_dump($shutot_sb);
 
@@ -315,7 +335,8 @@ $totalp=$pendapatan_p;
 //parameter pajak 
 $param_pajak='4800000000';
 //persentase
-$persen =($param_pajak/$totalp);
+// compat_bagi 2026-11-05: pendapatan 0 dulu DivisionByZeroError di PHP 8
+$persen =compat_bagi($param_pajak,$totalp);
 
 
 

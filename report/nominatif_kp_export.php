@@ -85,7 +85,7 @@ maturity_date,last_payment,hari,cao,USERID,status,status_usia,status_app,gol';
     db_jalankan("TRUNCATE TABLE loan_accrual");
     switch ($status) {
         case "CURRENT":
-            db_jalankan("insert into loan_accrual select $kolom, '' as day, '' as accrual from loan where os > 0 group by loan.cif");
+            db_jalankan("insert into loan_accrual select $kolom, '' as day, '' as accrual from loan where os > 0 group by loan.cif order by loan.cif");
             break;
         case "EOM":
             db_jalankan("insert into loan_accrual select $kolom, '' as day, '' as accrual from data_loan where os > 0 and buss_date = ?", 's', $buss_date);

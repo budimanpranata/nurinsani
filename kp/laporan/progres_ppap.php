@@ -32,7 +32,7 @@ $tgl = isset($_SESSION['stgl_system']) ? (string) $_SESSION['stgl_system'] : '';
 if ($_SERVER['REQUEST_METHOD'] == 'POST' && $tgl !== '') {
     db_jalankan("TRUNCATE TABLE report_ppap");
     $gagal = array();
-    foreach (db_semua("select unit from loan where os > 0 group by unit") as $row_hit_mut) {
+    foreach (db_semua("select unit from loan where os > 0 group by unit order by unit") as $row_hit_mut) {
         $unit = (string) $row_hit_mut['unit'];
         if (!hitung_kolektabilitas($unit, $tgl)) {
             $gagal[] = $unit;
@@ -42,7 +42,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && $tgl !== '') {
         $sdh_dibentuk = compat_num($coa ? $coa['saldo_awal'] : null);
         $saldo = array();
         foreach (db_semua("SELECT gol, sum(os-saldo_margin) as saldo from loan where loan.unit =? and os>0 and status_app not in ('MUSYAROKAH')
-            and gol in ('1','2','3','4') group by gol", 's', $unit) as $g) {
+            and gol in ('1','2','3','4') group by gol order by gol", 's', $unit) as $g) {
             $saldo[(string) $g['gol']] = compat_num($g['saldo']);
         }
         $akan_dibentuk = 0.5 / 100 * (isset($saldo['1']) ? $saldo['1'] : 0)

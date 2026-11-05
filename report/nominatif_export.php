@@ -118,7 +118,7 @@ if ($aksi === 'proses') {
     if ($data) {
         $cif = array_map(function ($d) { return (string) $d['cif']; }, $data);
         $tanda = implode(',', array_fill(0, count($cif), '?'));
-        foreach (db_semua("select cif, type, sum(KREDIT-DEBIT) as n from tunggakan where type in ('01','02') and cif in ($tanda) group by cif, type",
+        foreach (db_semua("select cif, type, sum(KREDIT-DEBIT) as n from tunggakan where type in ('01','02') and cif in ($tanda) group by cif, type order by cif, type",
             str_repeat('s', count($cif)), ...$cif) as $t) {
             $tunggak[(string) $t['cif']][(string) $t['type']] = $t['n'];
         }

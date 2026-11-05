@@ -34,7 +34,7 @@ if ($dicari && $tanggal !== '') {
         LEFT JOIN kelompok ON kelompok.code_kel = calon_loan.code_kel
         LEFT JOIN branch ON branch.kode_branch = calon_loan.unit
         WHERE calon_loan.USERID = ? AND status_usia <> 'YA' AND calon_loan.tgl_murab = ?
-        GROUP BY calon_loan.unit", 'ss', $userid, $tanggal);
+        GROUP BY calon_loan.unit ORDER BY calon_loan.unit", 'ss', $userid, $tanggal);
     if (!$data) {
         $pesan = 'Maaf, data tidak ditemukan.';
     }
@@ -45,7 +45,7 @@ if ($dicari && $tanggal !== '') {
         INNER JOIN branch ON branch.kode_branch = calon_loan.unit
         INNER JOIN ao ON ao.cao = calon_loan.cao
         WHERE calon_loan.USERID = ? AND status_usia <> 'YA'
-        GROUP BY calon_loan.unit", 's', $userid);
+        GROUP BY calon_loan.unit ORDER BY calon_loan.unit", 's', $userid);
 }
 $per_tanggal = $dicari && $tanggal !== '';
 

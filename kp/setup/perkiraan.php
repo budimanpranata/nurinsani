@@ -50,7 +50,7 @@ if (isset($_POST['kode_rekening'])) {
         header('Location: perkiraan.php');
         exit;
     }
-    foreach (db_semua("select unit from tabel_master group by unit") as $data) {
+    foreach (db_semua("select unit from tabel_master group by unit order by unit") as $data) {
         $unit = (string) $data['unit'];
         db_jalankan("insert into tabel_master(rekening_gl,kode_rekening,nama_rekening,tanggal_awal,awal_debet,awal_kredit,posisi,normal,unit,gr_sub,gr_neraca,LINE_BALANCE)
             values(?,?,?,'','','',?,?,?,?,?,'DETAIL')", 'ssssssss',
@@ -65,7 +65,7 @@ if (isset($_POST['kode_rekening'])) {
 
 $pesan = isset($_SESSION['pesan_coa']) ? $_SESSION['pesan_coa'] : null;
 unset($_SESSION['pesan_coa']);
-$grup = db_semua("select gr_sub,nama_rek from coa where gr_sub > 1 group by gr_sub");
+$grup = db_semua("select gr_sub,nama_rek from coa where gr_sub > 1 group by gr_sub order by gr_sub");
 $coa = db_semua("select kode_rek,nama_rek,posisi,normal from coa order by kode_rek asc");
 
 halaman_awal('Setup Coa', array('assets/app/datatables-ni.css'));

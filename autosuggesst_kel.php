@@ -27,7 +27,7 @@ left join kelompok on kelompok.code_kel = loan.CODE_KEL WHERE loan.CIF LIKE '$qu
     }
     if(db_num_rows($query) == 0){
                 $query = $db->query(" SELECT anggota.code_kel as CIF ,nama_kel as CUST_SHORT_NAME FROM anggota
-left join kelompok on kelompok.code_kel = anggota.CODE_KEL WHERE anggota.code_kel LIKE '$queryString%' and anggota.unit='$unit' or kelompok.nama_kel LIKE '$queryString%' and anggota.unit='$unit' group by anggota.code_kel ");
+left join kelompok on kelompok.code_kel = anggota.CODE_KEL WHERE anggota.code_kel LIKE '$queryString%' and anggota.unit='$unit' or kelompok.nama_kel LIKE '$queryString%' and anggota.unit='$unit' group by anggota.code_kel order by anggota.code_kel ");
                    
 
     }

@@ -113,7 +113,7 @@ if (isset($_POST['search'])) {
             $_SESSION['stenor'] = $tenor;
             $baris = db_semua("select count(loan.cif) as noa, tenor, loan.CODE_KEL, nama_kel, loan.CAO as ao, sum(os) as pembiayaan FROM loan
  left join kelompok on kelompok.code_kel = loan.code_kel
- where  loan.code_kel=? and os > 0 group by loan.code_kel", 's', (string) $norek);
+ where  loan.code_kel=? and os > 0 group by loan.code_kel order by loan.code_kel", 's', (string) $norek);
         }
     }
 }

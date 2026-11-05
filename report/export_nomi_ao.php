@@ -104,7 +104,7 @@ $year_rel=$max_rel['lama_tahun'];
 
 $query = "Select loan.cao,nama_ao,sum(os)-sum(saldo_margin) as saldo_akhir,count(cif) as noa,sum(plafond) as pokok_akhir,sum(bagi_hasil) as margin_akhir from loan 
 inner join ao on ao.cao=loan.cao where os>0 and loan.unit='$unit'
-group by cao";
+group by cao order by cao";
 $hasil = mysql_query($query);
 $baris = 1;
 while ($data = mysql_fetch_array($hasil))

@@ -21,7 +21,7 @@ $userid=$_SESSION['userid'];
 				FROM anggota
 				left join loan on anggota.CIF=loan.cif
 				inner join kelompok on loan.code_kel = kelompok.code_kel
-				WHERE anggota.CIF LIKE '$queryString%' and anggota.UNIT='$unit' or anggota.CUST_SHORT_NAME  LIKE '$queryString%' and anggota.UNIT='$unit' group by cif");
+				WHERE anggota.CIF LIKE '$queryString%' and anggota.UNIT='$unit' or anggota.CUST_SHORT_NAME  LIKE '$queryString%' and anggota.UNIT='$unit' group by cif order by cif");
 				
 				
 				

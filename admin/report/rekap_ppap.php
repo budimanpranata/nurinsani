@@ -83,7 +83,7 @@ $tot_saldo=($data_noa['saldo']);
 
 		
 //query dan arraying coll 2 
-	//$cek_saldo2= mysql_fetch_array(mysql_query("SELECT sum(pokok)+sum(margin) as saldo, datediff('$tgl', tgl_tunggak) as selisih from tunggakan where datediff('$tgl', tgl_tunggak) between 91 and 120 AND unit  ='$kode_branch' group by cif "));
+	//$cek_saldo2= mysql_fetch_array(mysql_query("SELECT sum(pokok)+sum(margin) as saldo, datediff('$tgl', tgl_tunggak) as selisih from tunggakan where datediff('$tgl', tgl_tunggak) between 91 and 120 AND unit  ='$kode_branch' group by cif order by cif "));
 	$data_noa2= mysql_fetch_array(mysql_query("SELECT count(cif) as noa, sum(Plafond) as pla,sum(os-saldo_margin) as saldo from loan where gol='2' AND loan.unit ='$kode_branch' and os>0"));
 	$noa2=$data_noa2['noa'];
 	$saldo2=number_format (compat_num($data_noa2['saldo']));
@@ -93,7 +93,7 @@ $bulat2=floor(compat_num(10/100 * $data_noa2['saldo']));
 	$ppap2= number_format (compat_num($bulat2));
 	$tot_ppap2= (10/100 * $data_noa2['saldo']);
 //query dan arraying coll 3 
-	//$cek_saldo3= mysql_fetch_array(mysql_query("SELECT sum(pokok)+sum(margin) as saldo, datediff('$tgl', tgl_tunggak) as selisih from tunggakan where datediff('$tgl', tgl_tunggak) between 121 AND 365 AND unit  ='$kode_branch' group by cif "));
+	//$cek_saldo3= mysql_fetch_array(mysql_query("SELECT sum(pokok)+sum(margin) as saldo, datediff('$tgl', tgl_tunggak) as selisih from tunggakan where datediff('$tgl', tgl_tunggak) between 121 AND 365 AND unit  ='$kode_branch' group by cif order by cif "));
 	$data_noa3= mysql_fetch_array(mysql_query("SELECT count(cif) as noa, sum(Plafond) as pla ,sum(os-saldo_margin) as saldo from loan where gol='3' AND loan.unit ='$kode_branch'and os>0"));
 	$noa3=$data_noa3['noa'];
 	$saldo3=number_format (compat_num($data_noa3['saldo']));
@@ -103,7 +103,7 @@ $bulat3=floor(compat_num(50/100 * $data_noa3['saldo']));
 	$ppap3= number_format(compat_num($bulat3));
 	$tot_ppap3= (50/100 * $data_noa3['saldo']);
 //query dan arraying coll 4
-	//$cek_saldo4= mysql_fetch_array(mysql_query("SELECT sum(pokok)+sum(margin) as saldo, datediff('$tgl', tgl_tunggak) as selisih from tunggakan where datediff('$tgl', tgl_tunggak) >365 AND unit  ='$kode_branch' group by cif "));
+	//$cek_saldo4= mysql_fetch_array(mysql_query("SELECT sum(pokok)+sum(margin) as saldo, datediff('$tgl', tgl_tunggak) as selisih from tunggakan where datediff('$tgl', tgl_tunggak) >365 AND unit  ='$kode_branch' group by cif order by cif "));
 	$data_noa4= mysql_fetch_array(mysql_query("SELECT count(cif) as noa, sum(Plafond) as pla ,sum(os-saldo_margin) as saldo from loan where gol='4' AND loan.unit ='$kode_branch' and os>0"));
 	$noa4=$data_noa4['noa'];
 	$saldo4=number_format (compat_num($data_noa4['saldo']));

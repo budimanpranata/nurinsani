@@ -94,7 +94,7 @@ $year_rel=$max_rel['lama_tahun'];
 
 $query = "Select loan.cao,nama_ao,sum(os)-sum(saldo_margin) as saldo_akhir,count(cif) as noa from loan 
 inner join ao on ao.cao=loan.cao where os>0 and loan.unit='$unit'
-group by cao";
+group by cao order by cao";
 $hasil = mysql_query($query);
 $baris = 1;
 while ($data = mysql_fetch_array($hasil))
@@ -108,9 +108,9 @@ $sal_lama= mysql_fetch_array(mysql_query("select count(cif) as noa_awal, sum(os)
 $noa_awal=$sal_lama['noa_awal'];
 $saldo_awal=$sal_lama['os_awal'];
 
-$cek_pokok= mysql_fetch_array(mysql_query("select sum(debet) as pokok from rek_loan WHERE  AO='$cao' and month(tgl_realisasi)='$bln_rel' and YEAR(tgl_realisasi)='$year_rel' and tipe='03' group by ao"));
+$cek_pokok= mysql_fetch_array(mysql_query("select sum(debet) as pokok from rek_loan WHERE  AO='$cao' and month(tgl_realisasi)='$bln_rel' and YEAR(tgl_realisasi)='$year_rel' and tipe='03' group by ao order by ao"));
 $pokok=$cek_pokok['pokok'];
-$cek_margin= mysql_fetch_array(mysql_query("select sum(debet) as margin from rek_loan WHERE AO='$cao' and month(tgl_realisasi)='$bln_rel' and YEAR(tgl_realisasi)='$year_rel' and tipe='04' group by ao"));
+$cek_margin= mysql_fetch_array(mysql_query("select sum(debet) as margin from rek_loan WHERE AO='$cao' and month(tgl_realisasi)='$bln_rel' and YEAR(tgl_realisasi)='$year_rel' and tipe='04' group by ao order by ao"));
 $margin=$cek_margin['margin'];
 $real= mysql_fetch_array(mysql_query("select sum(Plafond) as real_pinjam  from loan WHERE cao='$cao' and month(tgl_murab)= MONTH(NOW()) and YEAR(tgl_murab)=YEAR(NOW())"));
 $real_pinjam=$real['real_pinjam'];

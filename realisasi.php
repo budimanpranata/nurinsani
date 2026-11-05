@@ -30,7 +30,7 @@ if (!empty($_POST['search'])) {
             FROM calon_loan
             INNER JOIN kelompok ON kelompok.code_kel = calon_loan.code_kel
             WHERE calon_loan.code_kel = ? AND calon_loan.unit = ? AND status_app = 'MURAB' AND tgl_akad = ?
-            GROUP BY unit", 'sss', $kelompok, $branch, $tanggal);
+            GROUP BY unit ORDER BY unit", 'sss', $kelompok, $branch, $tanggal);
     }
     if (!$hasil) {
         // versi lama tidak pindah halaman di sini (redirect dikomentari), halaman tetap tampil

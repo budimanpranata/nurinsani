@@ -183,7 +183,7 @@ LEFT join anggota on anggota.CIF = loan.cif
 inner join kelompok on kelompok.code_kel=loan.code_kel
 INNER join simpanan on simpanan.cif=loan.cif
 LEFT join pinjaman_detail on loan.no_anggota=pinjaman_detail.id_pinjam
-LEFT join ao on ao.cao=loan.cao where loan.code_kel='$code_kel' AND pinjaman_detail.tgl_jatuh_tempo='$tgl_jatuh_tempo' and loan.cao='$cao' and os > 0 group by loan.cif");
+LEFT join ao on ao.cao=loan.cao where loan.code_kel='$code_kel' AND pinjaman_detail.tgl_jatuh_tempo='$tgl_jatuh_tempo' and loan.cao='$cao' and os > 0 group by loan.cif order by loan.cif");
 
 if(mysql_num_rows($sql)==0){
 $sql=mysql_query("select loan.Plafond as tot_pla,sum(bulat)as tot_bulat,loan.unit,ao.nama_ao, loan.cif,ke,run_tenor,sum(KREDIT)-sum(DEBIT) as saldo,nama_kel,loan.cao, loan.cust_Short_name,loan.Plafond,loan.bagi_hasil,sum(loan.bagi_hasil) as baghas,bulat,os,loan.angsuran,sum(loan.angsuran)tot_angsur,loan.bulat
@@ -192,7 +192,7 @@ LEFT join anggota on anggota.CIF = loan.cif
 inner join kelompok on kelompok.code_kel=loan.code_kel
 INNER join simpanan on simpanan.cif=loan.cif
 LEFT join pinjaman_detail_jatpo on loan.no_anggota=pinjaman_detail_jatpo.id_pinjam
-LEFT join ao on ao.cao=loan.cao where loan.code_kel='$code_kel' AND pinjaman_detail_jatpo.tgl_jatuh_tempo='$tgl_jatuh_tempo' and loan.cao='$cao' and os > 0 group by loan.cif");
+LEFT join ao on ao.cao=loan.cao where loan.code_kel='$code_kel' AND pinjaman_detail_jatpo.tgl_jatuh_tempo='$tgl_jatuh_tempo' and loan.cao='$cao' and os > 0 group by loan.cif order by loan.cif");
 		
 		 }
 
@@ -251,7 +251,7 @@ $pdf->Ln();
 }
 $sql2=mysql_query("select sum(os) as biaya,sum(Plafond) as totpla,sum(loan.bagi_hasil) as baghas,sum(loan.angsuran)tot_angsur,sum(bulat)as tot_bulat
 from loan
-where code_kel='$code_kel' and cao='$cao' and os > 1 group by code_kel");
+where code_kel='$code_kel' and cao='$cao' and os > 1 group by code_kel order by code_kel");
 while($result1= mysql_fetch_array($sql2)){
 
 $tot_angsur+=$result1['tot_angsur'];

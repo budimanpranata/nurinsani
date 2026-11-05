@@ -3,8 +3,8 @@
  * Export Neraca Konsolidasi (kp/laporan/konsolidasi.php, tombol Neraca) dengan indikator progres, perintah user 2026-11-04.
  * Isi file sama persis dengan laporan lama: neraca_konsol.php dijalankan dalam mode KONSOL_EXPORT_JOB (tanpa header
  * unduhan dan tanpa kunci sesi), keluarannya disimpan ke file sementara, lalu diunduh sebagai consol.xls.
- * Progres = jumlah query yang sudah dijalankan / 294 (jumlah query satu laporan), dihitung lewat kait mysql_query
- * di php8_compat.php.
+ * Progres = jumlah query yang sudah dijalankan / 17 (jumlah query satu laporan; 294 sebelum neraca_konsol.php dibuat
+ * dinamis 2026-11-05), dihitung lewat kait mysql_query di php8_compat.php.
  *
  *   POST aksi=mulai              -> buat pekerjaan dari tanggal & jenis di sesi (tgl_cari_konsols, jenis), hasil {job, total}
  *   POST aksi=buat&job=...       -> jalankan laporan (lama), hasil {selesai, ukuran} atau {pesan}
@@ -14,7 +14,7 @@
 session_start();
 require_once __DIR__ . '/../../inc/cek_login.php';
 
-const KONSOL_TOTAL_QUERY = 294;
+const KONSOL_TOTAL_QUERY = 17;
 
 function jawab_json($data, $kode = 200)
 {

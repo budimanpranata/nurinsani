@@ -39,7 +39,7 @@ if (!empty($_POST['search'])) {
         FROM calon_loan
         INNER JOIN kelompok ON kelompok.code_kel = calon_loan.code_kel
         WHERE calon_loan.code_kel = ? AND calon_loan.unit = ? AND status_usia <> 'YA'
-        GROUP BY unit", 'ss', $kelompok, $branch);
+        GROUP BY unit ORDER BY unit", 'ss', $kelompok, $branch);
     if (!$hasil) {
         // versi lama menampilkan variabel $nopen yang tidak pernah diisi, sehingga nama kelompok kosong
         alert_kembali('Maaf...,Kelompok  tidak ditemukan!!!');

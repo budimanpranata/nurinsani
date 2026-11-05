@@ -214,7 +214,7 @@ $pdf->Ln();
 }
 $sql2 = db_semua("select sum(Plafond) as totpla, sum(Plafond *(5/100)) as persen
 from calon_loan
-where code_kel=? and status_app in ('MURAB','MUSYAROKAH') group by code_kel", 's', (string) $code_kel);
+where code_kel=? and status_app in ('MURAB','MUSYAROKAH') group by code_kel order by code_kel", 's', (string) $code_kel);
 foreach ($sql2 as $result1){
 
 $tot_angsur+=$result1['tot_angsur'];
@@ -226,7 +226,7 @@ $tot_blt +=$result1['tot_bulat'];
 
 }
 $sql3 = db_semua("select sum(KREDIT - DEBIT) as saldo from simpanan
-where code_kel=? and type not in ('04','05') and cif in (select cif from calon_loan) group by code_kel", 's', (string) $code_kel);
+where code_kel=? and type not in ('04','05') and cif in (select cif from calon_loan) group by code_kel order by code_kel", 's', (string) $code_kel);
 foreach ($sql3 as $result3){
 
 $saldo1+=$result3['saldo'];

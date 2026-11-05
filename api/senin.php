@@ -26,7 +26,7 @@ loan.angsuran as angsuran
 from simpanan
 join loan on loan.cif = simpanan.cif
 where TYPE not in ('04','05') and os > 0 and hari ='Senin' 
-group by loan.cif
+group by loan.cif order by loan.cif
 
 
 ");	

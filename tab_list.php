@@ -106,7 +106,7 @@ $result = mysql_query($query);
     ?>
 <?php
        
-        $total=mysql_query("select sum(Plafond) as tot_pla,sum(bagi_hasil) as margin,sum(angsuran) as angsuran,sum(pokok) as pokok,sum(bulat) as bulat from loan where code_kel ='$code_kel' and unit ='$unit' and status_app in ('MURAB','REST','COVID') and os > 0 group by code_kel ");
+        $total=mysql_query("select sum(Plafond) as tot_pla,sum(bagi_hasil) as margin,sum(angsuran) as angsuran,sum(pokok) as pokok,sum(bulat) as bulat from loan where code_kel ='$code_kel' and unit ='$unit' and status_app in ('MURAB','REST','COVID') and os > 0 group by code_kel order by code_kel ");
         while($row_tran=mysql_fetch_array($total)){
             $tot_pla=$row_tran['tot_pla'];
             $margin=$row_tran['margin'];

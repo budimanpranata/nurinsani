@@ -45,7 +45,7 @@ if (!empty($_POST['search'])) {
         FROM loan
         INNER JOIN kelompok ON kelompok.code_kel = loan.code_kel
         WHERE loan.code_kel = ? AND loan.unit = ? AND os > 0
-        GROUP BY unit", 'ss', $kelompok, $branch);
+        GROUP BY unit ORDER BY unit", 'ss', $kelompok, $branch);
     if (!$hasil) {
         // versi lama menampilkan variabel $nopen yang tidak pernah diisi
         alert_pindah('Maaf...,Kelompok  tidak ditemukan atau sudah lunas!!!', 'tab.php');
@@ -59,7 +59,7 @@ if (!empty($_POST['search'])) {
         LEFT JOIN kelompok ON kelompok.code_kel = tagihan_cs.code_kel
         LEFT JOIN ao ON ao.cao = tagihan_cs.cao
         WHERE tagihan_cs.unit = ? AND tgl_tagih = ? AND status_realisasi = 'PENDING'
-        GROUP BY tagihan_cs.code_kel", 'ss', $branch, (string) $tgl_system);
+        GROUP BY tagihan_cs.code_kel ORDER BY tagihan_cs.code_kel", 'ss', $branch, (string) $tgl_system);
     foreach ($hasil as $d) {
         $status = $d['status_realisasi'] == 'PENDING' ? 'Pending' : 'Done';
         $baris[] = array($d['unit'], $d['nama_kel'], $d['noa'], $d['nama_ao'], $d['tagihan'], $d['tgl_tagih'], $d['code_kel'], $status);

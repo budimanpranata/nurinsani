@@ -33,7 +33,7 @@ mysql_select_db('nur_insani');
 
 //ambil query dari sql yang dikirim oleh form
 $sql = "SELECT snorek,scif,sunit, CUST_SHORT_NAME,type, sum(KREDIT - DEBIT) as SALDO
-FROM simpanan_kp left join anggota on simpanan_kp.scif = anggota.CIF where TYPE ='06' GROUP BY SNOREK,TYPE
+FROM simpanan_kp left join anggota on simpanan_kp.scif = anggota.CIF where TYPE ='06' GROUP BY SNOREK,TYPE ORDER BY SNOREK,TYPE
 ";
 
 

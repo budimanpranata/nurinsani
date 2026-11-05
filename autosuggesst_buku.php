@@ -22,7 +22,7 @@ $userid=$_SESSION['userid'];
 				left join loan on anggota.CIF=loan.cif
 				left join simpanan on anggota.CIF=simpanan.cif
 				
-				WHERE anggota.CIF LIKE '$queryString%' and anggota.UNIT='$unit' and TYPE not in ('04','05') or anggota.CUST_SHORT_NAME  LIKE '$queryString%' and anggota.UNIT='$unit' and TYPE not in ('04','05') group by anggota.cif ");
+				WHERE anggota.CIF LIKE '$queryString%' and anggota.UNIT='$unit' and TYPE not in ('04','05') or anggota.CUST_SHORT_NAME  LIKE '$queryString%' and anggota.UNIT='$unit' and TYPE not in ('04','05') group by anggota.cif order by anggota.cif ");
 				
 				
 				if($query) {

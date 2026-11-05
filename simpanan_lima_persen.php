@@ -26,7 +26,7 @@ if (!empty($_POST['search'])) {
         $hasil = db_semua("select count(no_anggota)as noa,unit,kelompok.nama_kel,calon_loan.cao,tgl_wakalah from calon_loan
             left join kelompok on kelompok.code_kel = calon_loan.code_kel
             where calon_loan.code_kel =? AND calon_loan.unit=? AND os > 0 and status_app ='MURAB'
-            group by unit", 'ss', $kelompok, (string) $branch);
+            group by unit order by unit", 'ss', $kelompok, (string) $branch);
     }
     // versi lama juga memeriksa hasil saat kelompok kosong, sehingga pesan kedua ini ikut tampil
     if (!$hasil) {

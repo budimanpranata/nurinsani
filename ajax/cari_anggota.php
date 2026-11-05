@@ -38,14 +38,14 @@ $sumber = array(
         LEFT JOIN barang ON barang.cif = calon_loan.cif
         INNER JOIN simpanan ON simpanan.cif = anggota.cif
         WHERE anggota.UNIT = ? AND (anggota.CIF LIKE ? OR anggota.CUST_SHORT_NAME LIKE ?)
-        GROUP BY anggota.CIF LIMIT 10",
+        GROUP BY anggota.CIF ORDER BY anggota.CIF LIMIT 10",
     "SELECT $kolom FROM anggota
         LEFT JOIN loan ON loan.cif = anggota.cif
         LEFT JOIN barang ON barang.cif = loan.cif
         INNER JOIN simpanan ON simpanan.cif = anggota.cif
         INNER JOIN kelompok ON loan.code_kel = kelompok.code_kel
         WHERE anggota.UNIT = ? AND (anggota.CIF LIKE ? OR anggota.CUST_SHORT_NAME LIKE ?)
-        GROUP BY anggota.CIF LIMIT 10",
+        GROUP BY anggota.CIF ORDER BY anggota.CIF LIMIT 10",
 );
 $baris = array();
 foreach (array('calon_loan', 'loan') as $i => $tabel) {

@@ -28,12 +28,12 @@ $anggota = db_semua("SELECT loan.no_anggota, loan.cif, loan.unit, Plafond, angsu
     LEFT JOIN anggota ON loan.cif = anggota.cif
     LEFT JOIN kelompok ON kelompok.code_kel = loan.code_kel
     WHERE kelompok.code_kel = ? AND loan.unit = ? AND os > 0
-    GROUP BY loan.cif", 'ss', $code_kel, (string) $unit);
+    GROUP BY loan.cif ORDER BY loan.cif", 'ss', $code_kel, (string) $unit);
 
 $total = db_satu("SELECT SUM(Plafond) AS tot_pla, SUM(bagi_hasil) AS margin, SUM(angsuran) AS angsuran, SUM(pokok) AS pokok, SUM(bulat) AS bulat, SUM(ijaroh) AS ijaroh
     FROM loan
     WHERE code_kel = ? AND unit = ? AND status_app IN ('MURAB','REST','COVID') AND os > 0
-    GROUP BY code_kel", 'ss', $code_kel, (string) $unit);
+    GROUP BY code_kel ORDER BY code_kel", 'ss', $code_kel, (string) $unit);
 
 halaman_awal('Realisasi Tagihan Kelompok');
 ?>

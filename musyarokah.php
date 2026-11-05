@@ -43,7 +43,7 @@ if ($per_tanggal) {
         LEFT JOIN kelompok ON kelompok.code_kel = calon_loan.code_kel
         LEFT JOIN branch ON branch.kode_branch = calon_loan.unit
         WHERE calon_loan.USERID = ? AND status_usia <> 'YA' AND calon_loan.tgl_akad = ? AND status_app = 'MUSYAROKAH'
-        GROUP BY calon_loan.unit, nama_unit", 'ss', $userid, $tanggal);
+        GROUP BY calon_loan.unit, nama_unit ORDER BY calon_loan.unit, nama_unit", 'ss', $userid, $tanggal);
     if (!$data) {
         alert_kembali('Maaf,Data tidak ditemukan!!!');
     }
@@ -55,7 +55,7 @@ if ($per_tanggal) {
         INNER JOIN branch ON branch.kode_branch = calon_loan.unit
         INNER JOIN ao ON ao.cao = calon_loan.cao
         WHERE calon_loan.USERID = ? AND status_usia <> 'YA' AND status_app = 'MUSYAROKAH'
-        GROUP BY calon_loan.unit, nama_unit", 's', $userid);
+        GROUP BY calon_loan.unit, nama_unit ORDER BY calon_loan.unit, nama_unit", 's', $userid);
 }
 
 halaman_awal('Cari Data Musyarakah');

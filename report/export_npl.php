@@ -117,7 +117,7 @@ from loan
 left join tunggakan on tunggakan.cif = loan.cif
 left join kelompok on loan.code_kel=kelompok.code_kel 
 left join ao on ao.cao = loan.cao
-where loan.unit ='$unit' and os > 0 and gol='1' group by loan.cif ";
+where loan.unit ='$unit' and os > 0 and gol='1' group by loan.cif order by loan.cif ";
 
 $hasil = mysql_query($query);
 $baris = 1;
@@ -235,7 +235,7 @@ from loan
 left join tunggakan on tunggakan.cif = loan.cif
 left join kelompok on loan.code_kel=kelompok.code_kel 
 left join ao on ao.cao = loan.cao
-where loan.unit ='$unit' and os > 0 and gol='2' group by loan.cif ";
+where loan.unit ='$unit' and os > 0 and gol='2' group by loan.cif order by loan.cif ";
 
 $hasil = mysql_query($query);
 $baris = 1;
@@ -354,7 +354,7 @@ from loan
 left join tunggakan on tunggakan.cif = loan.cif
 left join kelompok on loan.code_kel=kelompok.code_kel 
 left join ao on ao.cao = loan.cao
-where loan.unit ='$unit' and os > 0 and gol='3' group by loan.cif ";
+where loan.unit ='$unit' and os > 0 and gol='3' group by loan.cif order by loan.cif ";
 
 $hasil = mysql_query($query);
 $baris = 1;
@@ -472,7 +472,7 @@ from loan
 left join tunggakan on tunggakan.cif = loan.cif
 left join kelompok on loan.code_kel=kelompok.code_kel 
 left join ao on ao.cao = loan.cao
-where loan.unit ='$unit' and os > 0 and gol='4' group by loan.cif ";
+where loan.unit ='$unit' and os > 0 and gol='4' group by loan.cif order by loan.cif ";
 
 $hasil = mysql_query($query);
 $baris = 1;

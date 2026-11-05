@@ -51,7 +51,7 @@ function data_break($norek)
     $gross_rate = $bayar_rate / 0.9;
     // versi lama: floor($gross_rate - $pph4_rate) dengan $pph4_rate tidak pernah diisi = floor(gross)
     $hit['margin'] = floor($gross_rate);
-    $es = db_satu("SELECT sum(KREDIT)-sum(DEBIT) as saldo FROM escrow_deposito where NOREK=? group by NOREK", 's', $norek);
+    $es = db_satu("SELECT sum(KREDIT)-sum(DEBIT) as saldo FROM escrow_deposito where NOREK=? group by NOREK order by NOREK", 's', $norek);
     $saldo_tab = compat_num($es ? $es['saldo'] : null);
     $hit['simpanan'] = $saldo_tab > 0 ? $saldo_tab + $hit['margin'] : $saldo_tab;
     return $hit;

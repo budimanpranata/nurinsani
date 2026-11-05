@@ -48,7 +48,7 @@ if ($cari) {
         FROM loan
         LEFT JOIN branch ON branch.kode_branch = loan.unit
         LEFT JOIN kelompok ON kelompok.code_kel = loan.code_kel
-        WHERE loan.cao = ? AND loan.unit = ? AND loan.hari = ? AND os > 0 GROUP BY loan.code_kel",
+        WHERE loan.cao = ? AND loan.unit = ? AND loan.hari = ? AND os > 0 GROUP BY loan.code_kel ORDER BY loan.code_kel",
         'sss', $nopen, (string) $userid, $dayList[$day]);
     // 2. bila kosong: kelompok dengan jadwal JATPO pada Tanggal CS
     if (count($baris) == 0) {
@@ -59,7 +59,7 @@ if ($cari) {
             LEFT JOIN kelompok ON kelompok.code_kel = loan.code_kel
             LEFT JOIN pinjaman_detail_jatpo ON pinjaman_detail_jatpo.id_pinjam = loan.no_anggota
             WHERE loan.cao = ? AND loan.unit = ? AND pinjaman_detail_jatpo.tgl_jatuh_tempo = ? AND os > 0
-            GROUP BY loan.code_kel", 'sss', $nopen, (string) $userid, $tanggl);
+            GROUP BY loan.code_kel ORDER BY loan.code_kel", 'sss', $nopen, (string) $userid, $tanggl);
     }
 } else {
     // tampilan awal (versi lama): data loan_detail untuk kode kelompok = Kode AO yang dipilih (kosong) pada hari ini
@@ -69,7 +69,7 @@ if ($cari) {
         INNER JOIN branch ON branch.kode_branch = loan_detail.unit
         INNER JOIN loan ON loan.no_anggota = loan_detail.no_anggota
         INNER JOIN kelompok ON kelompok.code_kel = loan_detail.code_kel
-        WHERE loan_detail.code_kel = ? AND loan_detail.USERID = ? AND loan.tgl_murab = ? GROUP BY loan_detail.unit",
+        WHERE loan_detail.code_kel = ? AND loan_detail.USERID = ? AND loan.tgl_murab = ? GROUP BY loan_detail.unit ORDER BY loan_detail.unit",
         'sss', $nopen, (string) $userid, $buss_date);
 }
 

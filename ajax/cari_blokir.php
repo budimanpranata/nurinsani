@@ -27,7 +27,7 @@ if (count($baris) == 0) {
 }
 if (count($baris) == 0) {
     $baris = db_semua(" SELECT anggota.code_kel as CIF ,nama_kel as CUST_SHORT_NAME FROM anggota
-        left join kelompok on kelompok.code_kel = anggota.CODE_KEL WHERE anggota.code_kel LIKE ? or kelompok.nama_kel LIKE ? group by anggota.code_kel ",
+        left join kelompok on kelompok.code_kel = anggota.CODE_KEL WHERE anggota.code_kel LIKE ? or kelompok.nama_kel LIKE ? group by anggota.code_kel order by anggota.code_kel ",
         'ss', $awalan, $awalan);
 }
 

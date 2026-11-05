@@ -130,7 +130,7 @@ a:active {
 			<th>Tanggal</th><th>Kode Rekening</th><th>Nama Rekening</th><th>Keterangan</th><th>Debet</th><th>Kredit</th>
 		</tr>
 		<?php
-		$query_transaksi=mysql_query("select tanggal_transaksi,tabel_transaksi.kode_rekening,sum(debet) as debet,sum(kredit) as kredit,nama_rek,keterangan_transaksi from tabel_transaksi inner join coa on coa.kode_rek = SUBSTR(kode_rekening,6)  where  keterangan_posting='' and tabel_transaksi.id_admin ='$userid'   Group By kode_rekening");
+		$query_transaksi=mysql_query("select tanggal_transaksi,tabel_transaksi.kode_rekening,sum(debet) as debet,sum(kredit) as kredit,nama_rek,keterangan_transaksi from tabel_transaksi inner join coa on coa.kode_rek = SUBSTR(kode_rekening,6)  where  keterangan_posting='' and tabel_transaksi.id_admin ='$userid'   Group By kode_rekening Order By kode_rekening");
 		$total=mysql_fetch_array(mysql_query("select sum(debet) as tot_debet, sum(kredit) as tot_kredit from tabel_transaksi where  keterangan_posting='' and id_admin ='$userid' order by kode_rekening  asc"));
 		while($row_tran=mysql_fetch_array($query_transaksi)){
 			$debet=$row_tran['debet'];

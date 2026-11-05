@@ -31,7 +31,7 @@ $unitt = (string) $unitt;
 
 // daftar dan total dibaca sebelum proses posting (versi lama menampilkan daftar dulu, baru memproses)
 // left join: rekening yang belum ada di COA tetap tampil (nama kosong) supaya daftar cocok dengan TOTAL
-$baris_transaksi = db_semua("select tanggal_transaksi,tabel_transaksi.kode_rekening,sum(debet) as debet,sum(kredit) as kredit,nama_rek,keterangan_transaksi from tabel_transaksi left join coa on coa.kode_rek = SUBSTR(kode_rekening,6)  where  keterangan_posting='' and tabel_transaksi.unit =? and id_admin not in('userf')  Group By kode_rekening",
+$baris_transaksi = db_semua("select tanggal_transaksi,tabel_transaksi.kode_rekening,sum(debet) as debet,sum(kredit) as kredit,nama_rek,keterangan_transaksi from tabel_transaksi left join coa on coa.kode_rek = SUBSTR(kode_rekening,6)  where  keterangan_posting='' and tabel_transaksi.unit =? and id_admin not in('userf')  Group By kode_rekening Order By kode_rekening",
     's', $unitt);
 $total = db_satu("select sum(debet) as tot_debet, sum(kredit) as tot_kredit from tabel_transaksi where  keterangan_posting='' and unit =? and id_admin not in('userf') order by kode_rekening  asc", 's', $unitt);
 $cek = db_satu("select count(*) as n from tabel_transaksi where keterangan_posting='' and unit =? and id_admin not in ('userf')", 's', $unitt);

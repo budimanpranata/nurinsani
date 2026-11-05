@@ -76,7 +76,7 @@ $worksheet1->write_string(0, 7, "SALDO AKHIR", $format);
 
 if ($status ='CURRENT'){
 
-//$qdate="select LAST_DAY(MAX(BUSS_DATE)) as ddata from simpanan where buss_date<> '0000-00-00' group by buss_date";
+//$qdate="select LAST_DAY(MAX(BUSS_DATE)) as ddata from simpanan where buss_date<> '0000-00-00' group by buss_date order by buss_date";
 $qdate="select param_tgl as ddata from param_tgl  where nama_param_tgl ='EOM'"; 
 $dhasil = mysql_query($qdate);
 $baris = 1;
@@ -104,7 +104,7 @@ SUM(if(date(simpanan.BUSS_DATE)>'$dat',DEBIT,0)) mutasi_debet,
 + SUM(if(date(simpanan.BUSS_DATE)>'$dat',kredit,0)))- SUM(if(date(simpanan.BUSS_DATE)>'$dat',DEBIT,0)) as saldo_akhir
 FROM simpanan
 LEFT JOIN anggota USING(CIF)
-where simpanan.unit='$unit' and TYPE not in ('04','05') group By simpanan.CIF";
+where simpanan.unit='$unit' and TYPE not in ('04','05') group By simpanan.CIF order by simpanan.CIF";
 $hasil = mysql_query($query);
 $baris = 1;
 while ($data = mysql_fetch_array($hasil))
@@ -195,7 +195,7 @@ SUM(if(MONTH(simpanan_wajib.BUSS_DATE)>'$dat',DEBIT,0)) mutasi_debet,
 (SUM(if(MONTH(simpanan_wajib.BUSS_DATE)<='$dat',kredit,0))-SUM(if(MONTH(simpanan_wajib.BUSS_DATE)<='$dat',DEBIT,0)) + SUM(if(MONTH(simpanan_wajib.BUSS_DATE)>'$dat',kredit,0)))- SUM(if(MONTH(simpanan_wajib.BUSS_DATE)>'$dat',DEBIT,0)) as saldo_akhir
 FROM simpanan_wajib
 LEFT JOIN anggota USING(cif)
-where simpanan_wajib.unit='$unit' group By simpanan_wajib.cif ";
+where simpanan_wajib.unit='$unit' group By simpanan_wajib.cif order by simpanan_wajib.cif ";
 $hasil = mysql_query($query);
 $baris = 1;
 while ($data = mysql_fetch_array($hasil))
@@ -275,7 +275,7 @@ SUM(if(MONTH(simpanan_pokok.BUSS_DATE)>'$dat',DEBIT,0)) mutasi_debet,
 (SUM(if(MONTH(simpanan_pokok.BUSS_DATE)<='$dat',kredit,0))-SUM(if(MONTH(simpanan_pokok.BUSS_DATE)<='$dat',DEBIT,0)) + SUM(if(MONTH(simpanan_pokok.BUSS_DATE)>'$dat',kredit,0)))- SUM(if(MONTH(simpanan_pokok.BUSS_DATE)>'$dat',DEBIT,0)) as saldo_akhir
 FROM simpanan_pokok
 LEFT JOIN anggota USING(cif)
-where simpanan_pokok.unit='$unit' group By simpanan_pokok.cif ";
+where simpanan_pokok.unit='$unit' group By simpanan_pokok.cif order by simpanan_pokok.cif ";
 $hasil = mysql_query($query);
 $baris = 1;
 while ($data = mysql_fetch_array($hasil))

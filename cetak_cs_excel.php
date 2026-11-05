@@ -67,7 +67,7 @@ $dayList = array(
 LEFT join anggota on anggota.CIF = loan.cif
 inner join kelompok on kelompok.code_kel=loan.code_kel
 INNER join simpanan on simpanan.cif=loan.cif
-LEFT join ao on ao.cao=loan.cao where loan.code_kel=? AND loan.hari=? and loan.cao=? and os > 0 group by loan.cif", 'sss', (string) $code_kel, (string) $dayList[$day], (string) $cao);
+LEFT join ao on ao.cao=loan.cao where loan.code_kel=? AND loan.hari=? and loan.cao=? and os > 0 group by loan.cif order by loan.cif", 'sss', (string) $code_kel, (string) $dayList[$day], (string) $cao);
 
 if(count($sql)==0){
 $sql = db_semua("select loan.Plafond as tot_pla,sum(bulat)as tot_bulat,loan.unit,ao.nama_ao, loan.cif,ke,run_tenor,sum(KREDIT)-sum(DEBIT) as saldo,nama_kel,loan.cao, loan.cust_Short_name,loan.Plafond,loan.bagi_hasil,sum(loan.bagi_hasil) as baghas,bulat,os,loan.angsuran,sum(loan.angsuran)tot_angsur,loan.bulat
@@ -76,7 +76,7 @@ LEFT join anggota on anggota.CIF = loan.cif
 inner join kelompok on kelompok.code_kel=loan.code_kel
 INNER join simpanan on simpanan.cif=loan.cif
 LEFT join pinjaman_detail_jatpo on loan.no_anggota=pinjaman_detail_jatpo.id_pinjam
-LEFT join ao on ao.cao=loan.cao where loan.code_kel=? AND pinjaman_detail_jatpo.tgl_jatuh_tempo=? and loan.cao=? and os > 0 group by loan.cif", 'sss', (string) $code_kel, (string) $tgl_jatuh_tempo, (string) $cao);
+LEFT join ao on ao.cao=loan.cao where loan.code_kel=? AND pinjaman_detail_jatpo.tgl_jatuh_tempo=? and loan.cao=? and os > 0 group by loan.cif order by loan.cif", 'sss', (string) $code_kel, (string) $tgl_jatuh_tempo, (string) $cao);
 		
 		 }
 

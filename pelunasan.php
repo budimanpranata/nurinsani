@@ -29,7 +29,7 @@ if (!empty($_POST['search'])) {
             from loan
             left join simpanan on simpanan.cif=loan.cif and simpanan.TYPE not in ('04','05')
             left join branch on branch.kode_branch=loan.unit
-            where loan.cif =? and os > 0 group by no_anggota", 's', (string) $ciff);
+            where loan.cif =? and os > 0 group by no_anggota order by no_anggota", 's', (string) $ciff);
     }
     // versi lama: juga muncul saat NOREK kosong (alert kedua)
     if (!$hasil) {

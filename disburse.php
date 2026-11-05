@@ -20,7 +20,7 @@ if (isset($_POST['search'])) {
         $pesan = 'Maaf, isi tanggal pencarian yang benar!';
     } else {
         $baris = db_semua("select unit, SUM(Plafond) AS PLA, Count(cif) AS NOA
- FROM loan_detail where buss_date BETWEEN ? AND ? and unit=? Group By unit", 'sss', $tgl1, $tgl2, (string) $userid);
+ FROM loan_detail where buss_date BETWEEN ? AND ? and unit=? Group By unit Order By unit", 'sss', $tgl1, $tgl2, (string) $userid);
     }
 }
 

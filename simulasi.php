@@ -36,7 +36,7 @@ if ($dicari) {
             INNER JOIN kelompok ON kelompok.code_kel = loan.code_kel
             LEFT JOIN ao ON ao.cao = loan.cao
             WHERE loan.code_kel = ? AND loan.unit = ?
-            GROUP BY loan.unit');
+            GROUP BY loan.unit ORDER BY loan.unit');
         $st->bind_param('ss', $kelompok, $branch);
         $st->execute();
         $hasil = $st->get_result()->fetch_all(MYSQLI_ASSOC);

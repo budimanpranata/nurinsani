@@ -18,7 +18,7 @@ $tgl_awal = $cek_awal['param_tgl'];
 $cek_akhir= db_fetch_array(db_query($con,"select param_tgl from param_tgl WHERE nama_param_tgl ='EOD_MOB'"));
 $tgl_akhir = $cek_akhir['param_tgl']; 
 var_dump($tgl_akhir);
-$ambilunit=db_query($con,"select unit from tabel_transaksi where  tanggal_transaksi between '$tgl_awal' and '$tgl_akhir' Group By unit");
+$ambilunit=db_query($con,"select unit from tabel_transaksi where  tanggal_transaksi between '$tgl_awal' and '$tgl_akhir' Group By unit Order By unit");
 while($row_hit_mut=db_fetch_array($ambilunit)){
     $unitt=$row_hit_mut['unit'];	
 
@@ -27,7 +27,7 @@ while($row_hit_mut=db_fetch_array($ambilunit)){
 
     ///////////////////////// HITUNG MUTASI /////////////////////
     $update_mutasi=db_query($con,"update tabel_master set mut_kredit=0,mut_debet=0  where unit ='$unitt'");
-    $query_hitung_mutasi=db_query($con,"select kode_rekening,sum(debet) as debet,sum(kredit) as kredit,unit from tabel_transaksi where unit ='$unitt' and tanggal_transaksi between '$tgl_awal' and '$tgl_akhir' Group By kode_rekening");
+    $query_hitung_mutasi=db_query($con,"select kode_rekening,sum(debet) as debet,sum(kredit) as kredit,unit from tabel_transaksi where unit ='$unitt' and tanggal_transaksi between '$tgl_awal' and '$tgl_akhir' Group By kode_rekening Order By kode_rekening");
     while($row_hit_mut=db_fetch_array($query_hitung_mutasi)){
         $kode_rekening=$row_hit_mut['kode_rekening'];	
         $debet=$row_hit_mut['debet'];
@@ -131,7 +131,7 @@ if($update){
     }
             
     $select = db_query ($con,"Select gr_head as kode_rekening,sum(mut_debet) as mut_debet, sum(mut_kredit) as mut_kredit, 
-    sum(saldo_awal) as saldo_awal, sum(saldo_akhir) as saldo_akhir from tabel_master where unit ='$unitt' and gr_head > 0 group by gr_head ");
+    sum(saldo_awal) as saldo_awal, sum(saldo_akhir) as saldo_akhir from tabel_master where unit ='$unitt' and gr_head > 0 group by gr_head order by gr_head ");
     while($data = db_fetch_array($select)){
     
     $saldo_awal=$data['saldo_awal'];
@@ -144,7 +144,7 @@ if($update){
                 }
     
     $select = db_query ($con,"Select gr_sub as kode_rekening,sum(mut_debet) as mut_debet, sum(mut_kredit) as mut_kredit, 
-    sum(saldo_awal) as saldo_awal, sum(saldo_akhir) as saldo_akhir from tabel_master where unit ='$unitt' and gr_sub > 0  group by gr_sub ");
+    sum(saldo_awal) as saldo_awal, sum(saldo_akhir) as saldo_akhir from tabel_master where unit ='$unitt' and gr_sub > 0  group by gr_sub order by gr_sub ");
     while($data = db_fetch_array($select)){
     
     $saldo_awal=$data['saldo_awal'];

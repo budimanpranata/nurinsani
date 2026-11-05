@@ -197,7 +197,7 @@ where loan.cif=tunggakan.CIF
 	break;
 	
 	case "03":
-	//$cek_saldo= mysql_fetch_array(mysql_query("SELECT sum(nominal) as saldo, datediff('$tgl', tgl_tunggak) as selisih from tunggakan where datediff('$tgl', tgl_tunggak) between 121 AND 365 AND unit  ='$unit' group by cif "));
+	//$cek_saldo= mysql_fetch_array(mysql_query("SELECT sum(nominal) as saldo, datediff('$tgl', tgl_tunggak) as selisih from tunggakan where datediff('$tgl', tgl_tunggak) between 121 AND 365 AND unit  ='$unit' group by cif order by cif "));
 	$data_noa= mysql_fetch_array(mysql_query("SELECT count(cif) as noa, sum(Plafond) as pla,sum(os-saldo_margin) as saldo  from loan where loan.unit ='$unit' and OS >0 and gol='3'"));
 	$noa=$data_noa['noa'];
 	$saldo=$data_noa['saldo'];
@@ -205,7 +205,7 @@ where loan.cif=tunggakan.CIF
 	break;
 	
 	case "04":
-	//$cek_saldo= mysql_fetch_array(mysql_query("SELECT sum(nominal) as saldo, datediff('$tgl', tgl_tunggak) as selisih from tunggakan where datediff('$tgl', tgl_tunggak) >365 AND unit  ='$unit' group by cif "));
+	//$cek_saldo= mysql_fetch_array(mysql_query("SELECT sum(nominal) as saldo, datediff('$tgl', tgl_tunggak) as selisih from tunggakan where datediff('$tgl', tgl_tunggak) >365 AND unit  ='$unit' group by cif order by cif "));
 	$data_noa= mysql_fetch_array(mysql_query("SELECT count(cif) as noa, sum(Plafond) as pla,sum(os-saldo_margin) as saldo from loan where loan.unit ='$unit' and OS > 0 and gol='4'"));
 	$noa=$data_noa['noa'];
 	$saldo=$data_noa['saldo'];

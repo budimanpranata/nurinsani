@@ -1,8 +1,25 @@
 <?php require_once __DIR__ . '/../../php8_compat.php';
 session_start();
+require_once __DIR__ . '/../../inc/cek_login.php';
+wajib_login();
+if ($_SESSION['level'] != "kp") {
+    header("location:../../index.html");
+    exit;
+}
 ob_start();
 $_SESSION['units']=$unit;
-$tgl_cari=$_SESSION['tgl_cari_konsols'];
+$tgl_cari=mysql_real_escape_string((string) $_SESSION['tgl_cari_konsols']);
+// sumber data sesuai jenis report di menu Konsolidasi (sama dengan neraca_konsol.php): eom = tabel_master_konsol,
+// current = tabel_master_hari (Proses Konsolidasi Harian), selain itu (eoy) = tabel_master_eoy (perbaikan 2026-11-05;
+// versi lama selalu tabel_master_konsol)
+$jenis = isset($_SESSION['jenis']) ? (string) $_SESSION['jenis'] : '';
+if ($jenis == 'eom') {
+    $sumber = "tabel_master_konsol";
+} elseif ($jenis == 'current') {
+    $sumber = "tabel_master_hari";
+} else {
+    $sumber = "tabel_master_eoy";
+}
  header("Content-type: application/vnd-ms-excel");
 header("Content-Disposition: attachment; filename=consol.xls");
  include"../../indo_tgl.php";
@@ -36,54 +53,54 @@ include "../conn2.php";
 	$koneksi=open_connection2();
 	
 $total_ak_001=mysql_fetch_array(mysql_query("select sum(mut_debet) as tot_mut_debet,  sum(mut_kredit) as tot_mut_kredit,
-								sum(saldo_awal) as tot_saldo_awal, sum(saldo_akhir) as tot_saldo_akhir from tabel_master_konsol where unit ='001' and tanggal_awal='$tgl_cari' and gr_neraca='AKTIVA' and LINE_BALANCE='HEADING'  "));
+								sum(saldo_awal) as tot_saldo_awal, sum(saldo_akhir) as tot_saldo_akhir from {$sumber} where unit ='001' and tanggal_awal='$tgl_cari' and gr_neraca='AKTIVA' and LINE_BALANCE='HEADING'  "));
 $total_ak_002=mysql_fetch_array(mysql_query("select sum(mut_debet) as tot_mut_debet,  sum(mut_kredit) as tot_mut_kredit,
-								sum(saldo_awal) as tot_saldo_awal, sum(saldo_akhir) as tot_saldo_akhir from tabel_master_konsol where unit ='002' and tanggal_awal='$tgl_cari' and gr_neraca='AKTIVA' and LINE_BALANCE='HEADING'  "));
+								sum(saldo_awal) as tot_saldo_awal, sum(saldo_akhir) as tot_saldo_akhir from {$sumber} where unit ='002' and tanggal_awal='$tgl_cari' and gr_neraca='AKTIVA' and LINE_BALANCE='HEADING'  "));
 $total_ak_003=mysql_fetch_array(mysql_query("select sum(mut_debet) as tot_mut_debet,  sum(mut_kredit) as tot_mut_kredit,
-								sum(saldo_awal) as tot_saldo_awal, sum(saldo_akhir) as tot_saldo_akhir from tabel_master_konsol where unit ='003' and tanggal_awal='$tgl_cari' and gr_neraca='AKTIVA' and LINE_BALANCE='HEADING'  "));
+								sum(saldo_awal) as tot_saldo_awal, sum(saldo_akhir) as tot_saldo_akhir from {$sumber} where unit ='003' and tanggal_awal='$tgl_cari' and gr_neraca='AKTIVA' and LINE_BALANCE='HEADING'  "));
 $total_ak_004=mysql_fetch_array(mysql_query("select sum(mut_debet) as tot_mut_debet,  sum(mut_kredit) as tot_mut_kredit,
-								sum(saldo_awal) as tot_saldo_awal, sum(saldo_akhir) as tot_saldo_akhir from tabel_master_konsol where unit ='004' and tanggal_awal='$tgl_cari' and gr_neraca='AKTIVA' and LINE_BALANCE='HEADING'  "));
+								sum(saldo_awal) as tot_saldo_awal, sum(saldo_akhir) as tot_saldo_akhir from {$sumber} where unit ='004' and tanggal_awal='$tgl_cari' and gr_neraca='AKTIVA' and LINE_BALANCE='HEADING'  "));
 $total_ak_005=mysql_fetch_array(mysql_query("select sum(mut_debet) as tot_mut_debet,  sum(mut_kredit) as tot_mut_kredit,
-								sum(saldo_awal) as tot_saldo_awal, sum(saldo_akhir) as tot_saldo_akhir from tabel_master_konsol where unit ='005' and tanggal_awal='$tgl_cari' and gr_neraca='AKTIVA' and LINE_BALANCE='HEADING'  "));
+								sum(saldo_awal) as tot_saldo_awal, sum(saldo_akhir) as tot_saldo_akhir from {$sumber} where unit ='005' and tanggal_awal='$tgl_cari' and gr_neraca='AKTIVA' and LINE_BALANCE='HEADING'  "));
 $total_ak_006=mysql_fetch_array(mysql_query("select sum(mut_debet) as tot_mut_debet,  sum(mut_kredit) as tot_mut_kredit,
-								sum(saldo_awal) as tot_saldo_awal, sum(saldo_akhir) as tot_saldo_akhir from tabel_master_konsol where unit ='006' and tanggal_awal='$tgl_cari' and gr_neraca='AKTIVA' and LINE_BALANCE='HEADING'  "));
+								sum(saldo_awal) as tot_saldo_awal, sum(saldo_akhir) as tot_saldo_akhir from {$sumber} where unit ='006' and tanggal_awal='$tgl_cari' and gr_neraca='AKTIVA' and LINE_BALANCE='HEADING'  "));
 $total_ak_007=mysql_fetch_array(mysql_query("select sum(mut_debet) as tot_mut_debet,  sum(mut_kredit) as tot_mut_kredit,
-								sum(saldo_awal) as tot_saldo_awal, sum(saldo_akhir) as tot_saldo_akhir from tabel_master_konsol where unit ='007' and tanggal_awal='$tgl_cari' and gr_neraca='AKTIVA' and LINE_BALANCE='HEADING'  "));
+								sum(saldo_awal) as tot_saldo_awal, sum(saldo_akhir) as tot_saldo_akhir from {$sumber} where unit ='007' and tanggal_awal='$tgl_cari' and gr_neraca='AKTIVA' and LINE_BALANCE='HEADING'  "));
 $total_ak_008=mysql_fetch_array(mysql_query("select sum(mut_debet) as tot_mut_debet,  sum(mut_kredit) as tot_mut_kredit,
-								sum(saldo_awal) as tot_saldo_awal, sum(saldo_akhir) as tot_saldo_akhir from tabel_master_konsol where unit ='008' and tanggal_awal='$tgl_cari' and gr_neraca='AKTIVA' and LINE_BALANCE='HEADING'  "));
+								sum(saldo_awal) as tot_saldo_awal, sum(saldo_akhir) as tot_saldo_akhir from {$sumber} where unit ='008' and tanggal_awal='$tgl_cari' and gr_neraca='AKTIVA' and LINE_BALANCE='HEADING'  "));
 $total_ak_009=mysql_fetch_array(mysql_query("select sum(mut_debet) as tot_mut_debet,  sum(mut_kredit) as tot_mut_kredit,
-								sum(saldo_awal) as tot_saldo_awal, sum(saldo_akhir) as tot_saldo_akhir from tabel_master_konsol where unit ='009' and tanggal_awal='$tgl_cari' and gr_neraca='AKTIVA' and LINE_BALANCE='HEADING'  "));
+								sum(saldo_awal) as tot_saldo_awal, sum(saldo_akhir) as tot_saldo_akhir from {$sumber} where unit ='009' and tanggal_awal='$tgl_cari' and gr_neraca='AKTIVA' and LINE_BALANCE='HEADING'  "));
 $total_ak_010=mysql_fetch_array(mysql_query("select sum(mut_debet) as tot_mut_debet,  sum(mut_kredit) as tot_mut_kredit,
-								sum(saldo_awal) as tot_saldo_awal, sum(saldo_akhir) as tot_saldo_akhir from tabel_master_konsol where unit ='010' and tanggal_awal='$tgl_cari' and gr_neraca='AKTIVA' and LINE_BALANCE='HEADING'  "));
+								sum(saldo_awal) as tot_saldo_awal, sum(saldo_akhir) as tot_saldo_akhir from {$sumber} where unit ='010' and tanggal_awal='$tgl_cari' and gr_neraca='AKTIVA' and LINE_BALANCE='HEADING'  "));
 $total_ak_1010=mysql_fetch_array(mysql_query("select sum(mut_debet) as tot_mut_debet,  sum(mut_kredit) as tot_mut_kredit,
-								sum(saldo_awal) as tot_saldo_awal, sum(saldo_akhir) as tot_saldo_akhir from tabel_master_konsol where unit ='1010' and tanggal_awal='$tgl_cari' and gr_neraca='AKTIVA' and LINE_BALANCE='HEADING'  "));
+								sum(saldo_awal) as tot_saldo_awal, sum(saldo_akhir) as tot_saldo_akhir from {$sumber} where unit ='1010' and tanggal_awal='$tgl_cari' and gr_neraca='AKTIVA' and LINE_BALANCE='HEADING'  "));
 $total_ak_tot=mysql_fetch_array(mysql_query("select sum(mut_debet) as tot_mut_debet,  sum(mut_kredit) as tot_mut_kredit,
-								sum(saldo_awal) as tot_saldo_awal, sum(saldo_akhir) as tot_saldo_akhir from tabel_master_konsol where gr_neraca='AKTIVA' and tanggal_awal='$tgl_cari' and LINE_BALANCE='HEADING'  "));
+								sum(saldo_awal) as tot_saldo_awal, sum(saldo_akhir) as tot_saldo_akhir from {$sumber} where gr_neraca='AKTIVA' and tanggal_awal='$tgl_cari' and LINE_BALANCE='HEADING'  "));
 
 $total_pa_001=mysql_fetch_array(mysql_query("select sum(mut_debet) as tot_mut_debet,  sum(mut_kredit) as tot_mut_kredit,
-								sum(saldo_awal) as tot_saldo_awal, sum(saldo_akhir) as tot_saldo_akhir from tabel_master_konsol where unit ='001' and tanggal_awal='$tgl_cari' and gr_neraca='PASIVA' and LINE_BALANCE='HEADING'  "));
+								sum(saldo_awal) as tot_saldo_awal, sum(saldo_akhir) as tot_saldo_akhir from {$sumber} where unit ='001' and tanggal_awal='$tgl_cari' and gr_neraca='PASIVA' and LINE_BALANCE='HEADING'  "));
 $total_pa_002=mysql_fetch_array(mysql_query("select sum(mut_debet) as tot_mut_debet,  sum(mut_kredit) as tot_mut_kredit,
-								sum(saldo_awal) as tot_saldo_awal, sum(saldo_akhir) as tot_saldo_akhir from tabel_master_konsol where unit ='002' and tanggal_awal='$tgl_cari' and gr_neraca='PASIVA' and LINE_BALANCE='HEADING'  "));
+								sum(saldo_awal) as tot_saldo_awal, sum(saldo_akhir) as tot_saldo_akhir from {$sumber} where unit ='002' and tanggal_awal='$tgl_cari' and gr_neraca='PASIVA' and LINE_BALANCE='HEADING'  "));
 $total_pa_003=mysql_fetch_array(mysql_query("select sum(mut_debet) as tot_mut_debet,  sum(mut_kredit) as tot_mut_kredit,
-								sum(saldo_awal) as tot_saldo_awal, sum(saldo_akhir) as tot_saldo_akhir from tabel_master_konsol where unit ='003' and tanggal_awal='$tgl_cari' and gr_neraca='PASIVA' and LINE_BALANCE='HEADING'  "));
+								sum(saldo_awal) as tot_saldo_awal, sum(saldo_akhir) as tot_saldo_akhir from {$sumber} where unit ='003' and tanggal_awal='$tgl_cari' and gr_neraca='PASIVA' and LINE_BALANCE='HEADING'  "));
 $total_pa_004=mysql_fetch_array(mysql_query("select sum(mut_debet) as tot_mut_debet,  sum(mut_kredit) as tot_mut_kredit,
-								sum(saldo_awal) as tot_saldo_awal, sum(saldo_akhir) as tot_saldo_akhir from tabel_master_konsol where unit ='004' and tanggal_awal='$tgl_cari' and gr_neraca='PASIVA' and LINE_BALANCE='HEADING'  "));
+								sum(saldo_awal) as tot_saldo_awal, sum(saldo_akhir) as tot_saldo_akhir from {$sumber} where unit ='004' and tanggal_awal='$tgl_cari' and gr_neraca='PASIVA' and LINE_BALANCE='HEADING'  "));
 $total_pa_005=mysql_fetch_array(mysql_query("select sum(mut_debet) as tot_mut_debet,  sum(mut_kredit) as tot_mut_kredit,
-								sum(saldo_awal) as tot_saldo_awal, sum(saldo_akhir) as tot_saldo_akhir from tabel_master_konsol where unit ='005' and tanggal_awal='$tgl_cari' and gr_neraca='PASIVA' and LINE_BALANCE='HEADING'  "));
+								sum(saldo_awal) as tot_saldo_awal, sum(saldo_akhir) as tot_saldo_akhir from {$sumber} where unit ='005' and tanggal_awal='$tgl_cari' and gr_neraca='PASIVA' and LINE_BALANCE='HEADING'  "));
 $total_pa_006=mysql_fetch_array(mysql_query("select sum(mut_debet) as tot_mut_debet,  sum(mut_kredit) as tot_mut_kredit,
-								sum(saldo_awal) as tot_saldo_awal, sum(saldo_akhir) as tot_saldo_akhir from tabel_master_konsol where unit ='006' and tanggal_awal='$tgl_cari' and gr_neraca='PASIVA' and LINE_BALANCE='HEADING'  "));
+								sum(saldo_awal) as tot_saldo_awal, sum(saldo_akhir) as tot_saldo_akhir from {$sumber} where unit ='006' and tanggal_awal='$tgl_cari' and gr_neraca='PASIVA' and LINE_BALANCE='HEADING'  "));
 $total_pa_007=mysql_fetch_array(mysql_query("select sum(mut_debet) as tot_mut_debet,  sum(mut_kredit) as tot_mut_kredit,
-								sum(saldo_awal) as tot_saldo_awal, sum(saldo_akhir) as tot_saldo_akhir from tabel_master_konsol where unit ='007' and tanggal_awal='$tgl_cari' and gr_neraca='PASIVA' and LINE_BALANCE='HEADING'  "));
+								sum(saldo_awal) as tot_saldo_awal, sum(saldo_akhir) as tot_saldo_akhir from {$sumber} where unit ='007' and tanggal_awal='$tgl_cari' and gr_neraca='PASIVA' and LINE_BALANCE='HEADING'  "));
 $total_pa_008=mysql_fetch_array(mysql_query("select sum(mut_debet) as tot_mut_debet,  sum(mut_kredit) as tot_mut_kredit,
-								sum(saldo_awal) as tot_saldo_awal, sum(saldo_akhir) as tot_saldo_akhir from tabel_master_konsol where unit ='008' and tanggal_awal='$tgl_cari' and gr_neraca='PASIVA' and LINE_BALANCE='HEADING'  "));
+								sum(saldo_awal) as tot_saldo_awal, sum(saldo_akhir) as tot_saldo_akhir from {$sumber} where unit ='008' and tanggal_awal='$tgl_cari' and gr_neraca='PASIVA' and LINE_BALANCE='HEADING'  "));
 $total_pa_009=mysql_fetch_array(mysql_query("select sum(mut_debet) as tot_mut_debet,  sum(mut_kredit) as tot_mut_kredit,
-								sum(saldo_awal) as tot_saldo_awal, sum(saldo_akhir) as tot_saldo_akhir from tabel_master_konsol where unit ='009' and tanggal_awal='$tgl_cari' and gr_neraca='PASIVA' and LINE_BALANCE='HEADING'  "));
+								sum(saldo_awal) as tot_saldo_awal, sum(saldo_akhir) as tot_saldo_akhir from {$sumber} where unit ='009' and tanggal_awal='$tgl_cari' and gr_neraca='PASIVA' and LINE_BALANCE='HEADING'  "));
 $total_pa_010=mysql_fetch_array(mysql_query("select sum(mut_debet) as tot_mut_debet,  sum(mut_kredit) as tot_mut_kredit,
-								sum(saldo_awal) as tot_saldo_awal, sum(saldo_akhir) as tot_saldo_akhir from tabel_master_konsol where unit ='010' and tanggal_awal='$tgl_cari' and gr_neraca='PASIVA' and LINE_BALANCE='HEADING'  "));
+								sum(saldo_awal) as tot_saldo_awal, sum(saldo_akhir) as tot_saldo_akhir from {$sumber} where unit ='010' and tanggal_awal='$tgl_cari' and gr_neraca='PASIVA' and LINE_BALANCE='HEADING'  "));
 $total_pa_1010=mysql_fetch_array(mysql_query("select sum(mut_debet) as tot_mut_debet,  sum(mut_kredit) as tot_mut_kredit,
-								sum(saldo_awal) as tot_saldo_awal, sum(saldo_akhir) as tot_saldo_akhir from tabel_master_konsol where unit ='1010' and tanggal_awal='$tgl_cari' and gr_neraca='PASIVA' and LINE_BALANCE='HEADING'  "));
+								sum(saldo_awal) as tot_saldo_awal, sum(saldo_akhir) as tot_saldo_akhir from {$sumber} where unit ='1010' and tanggal_awal='$tgl_cari' and gr_neraca='PASIVA' and LINE_BALANCE='HEADING'  "));
 $total_pa_tot=mysql_fetch_array(mysql_query("select sum(mut_debet) as tot_mut_debet,  sum(mut_kredit) as tot_mut_kredit,
-								sum(saldo_awal) as tot_saldo_awal, sum(saldo_akhir) as tot_saldo_akhir from tabel_master_konsol where gr_neraca='PASIVA' and tanggal_awal='$tgl_cari' and LINE_BALANCE='HEADING'  "));
+								sum(saldo_awal) as tot_saldo_awal, sum(saldo_akhir) as tot_saldo_akhir from {$sumber} where gr_neraca='PASIVA' and tanggal_awal='$tgl_cari' and LINE_BALANCE='HEADING'  "));
 
 //query yang telah dibuat
 $sql = "SELECT
@@ -103,7 +120,7 @@ SUM( IF( unit = '010', saldo_akhir, 0) ) AS '010',
 SUM( IF( unit = '1010', saldo_akhir, 0) ) AS '1010',
 SUM(saldo_akhir) AS total_trx
 FROM
-tabel_master_konsol where gr_neraca='AKTIVA' and tanggal_awal='$tgl_cari'
+{$sumber} where gr_neraca='AKTIVA' and tanggal_awal='$tgl_cari'
 group by kode_rekening order by kode_rekening";
 
 $sql_pa = "SELECT
@@ -123,7 +140,7 @@ SUM( IF( unit = '010', saldo_akhir, 0) ) AS '010',
 SUM( IF( unit = '1010', saldo_akhir, 0) ) AS '1010',
 SUM(saldo_akhir) AS total_trx
 FROM
-tabel_master_konsol where gr_neraca='PASIVA' and tanggal_awal='$tgl_cari'
+{$sumber} where gr_neraca='PASIVA' and tanggal_awal='$tgl_cari'
 group by kode_rekening order by kode_rekening";
 
 $sql_laba = "SELECT
@@ -143,7 +160,7 @@ SUM( IF( unit = '010', saldo_akhir, 0) ) AS '010',
 SUM( IF( unit = '1010', saldo_akhir, 0) ) AS '1010',
 SUM(saldo_akhir) AS total_trx
 FROM
-tabel_master_konsol where gr_neraca='rugi-laba' and tanggal_awal='$tgl_cari'
+{$sumber} where gr_neraca='rugi-laba' and tanggal_awal='$tgl_cari'
 group by kode_rekening order by kode_rekening";
 
 
@@ -155,10 +172,11 @@ $query = mysql_query($sql);
 $query_laba = mysql_query($sql_laba);
 
 $sql1 = "SELECT
-branch.unit as unit from tabel_master_konsol
+branch.unit as unit from {$sumber}
 inner join branch 
-on branch.kode_branch = tabel_master_konsol.unit
-group by tabel_master_konsol.unit order by tabel_master_konsol.unit";
+on branch.kode_branch = {$sumber}.unit
+where {$sumber}.tanggal_awal='$tgl_cari'
+group by {$sumber}.unit order by {$sumber}.unit";
 $query1 = mysql_query($sql1);
 
 $total_pendapan=mysql_query("select unit,
@@ -174,8 +192,8 @@ SUM( IF( unit = '009', saldo_akhir, 0) ) AS '009',
 SUM( IF( unit = '010', saldo_akhir, 0) ) AS '010',
 SUM( IF( unit = '1010', saldo_akhir, 0) ) AS '1010',
 SUM(saldo_akhir) AS total_trx
-from tabel_master_konsol 
-where kode_rekening='40000' group by gr_head and tanggal_awal='$tgl_cari'");
+from {$sumber} 
+where kode_rekening='40000' and tanggal_awal='$tgl_cari' group by gr_head order by gr_head");
 
 $total_biaya=mysql_query("select 
 SUM( IF( unit = '001', saldo_akhir, 0) ) AS '001',
@@ -190,8 +208,8 @@ SUM( IF( unit = '009', saldo_akhir, 0) ) AS '009',
 SUM( IF( unit = '010', saldo_akhir, 0) ) AS '010',
 SUM( IF( unit = '1010', saldo_akhir, 0) ) AS '1010',
 SUM(saldo_akhir) AS total_trx
-from tabel_master_konsol 
-where kode_rekening='50000' group by gr_head and tanggal_awal='$tgl_cari'");
+from {$sumber} 
+where kode_rekening='50000' and tanggal_awal='$tgl_cari' group by gr_head order by gr_head");
 
 $total_pendapan_n=mysql_query("select unit,
 SUM( IF( unit = '001', saldo_akhir, 0) ) AS '001',
@@ -206,8 +224,8 @@ SUM( IF( unit = '009', saldo_akhir, 0) ) AS '009',
 SUM( IF( unit = '010', saldo_akhir, 0) ) AS '010',
 SUM( IF( unit = '1010', saldo_akhir, 0) ) AS '1010',
 SUM(saldo_akhir) AS total_trx
-from tabel_master_konsol 
-where kode_rekening='57000' group by gr_head and tanggal_awal='$tgl_cari'");
+from {$sumber} 
+where kode_rekening='57000' and tanggal_awal='$tgl_cari' group by gr_head order by gr_head");
 
 $total_beban=mysql_query("select 
 SUM( IF( unit = '001', saldo_akhir, 0) ) AS '001',
@@ -222,8 +240,8 @@ SUM( IF( unit = '009', saldo_akhir, 0) ) AS '009',
 SUM( IF( unit = '010', saldo_akhir, 0) ) AS '010',
 SUM( IF( unit = '1010', saldo_akhir, 0) ) AS '1010',
 SUM(saldo_akhir) AS total_trx
-from tabel_master_konsol 
-where kode_rekening='58000' group by gr_head and tanggal_awal='$tgl_cari'");
+from {$sumber} 
+where kode_rekening='58000' and tanggal_awal='$tgl_cari' group by gr_head order by gr_head");
 
 
 
@@ -548,12 +566,12 @@ echo '<tr class="grey">
 //Estimasi Perhitungan Pajak
 //sumbangan dan Jamuan 
 //SHU_SEBELUMPAJAK
-$sbg_jamu=mysql_fetch_array(mysql_query("select sum(saldo_akhir) as saldo_akhir from tabel_master_konsol where kode_rekening in('56211','56212','56311','56312')"));
+$sbg_jamu=mysql_fetch_array(mysql_query("select sum(saldo_akhir) as saldo_akhir from {$sumber} where kode_rekening in('56211','56212','56311','56312') and tanggal_awal='$tgl_cari'"));
 
 $smb_jamu=$sbg_jamu['saldo_akhir'];
 
 
-$pendapatan=mysql_fetch_array(mysql_query("select sum(saldo_akhir) as saldo_akhir from tabel_master_konsol where kode_rekening in('40000')"));
+$pendapatan=mysql_fetch_array(mysql_query("select sum(saldo_akhir) as saldo_akhir from {$sumber} where kode_rekening in('40000') and tanggal_awal='$tgl_cari'"));
 $pendapatan_p=$pendapatan['saldo_akhir'];
 //var_dump($shutot_sb);
 
@@ -568,7 +586,8 @@ $totalp=$pendapatan_p;
 //parameter pajak 
 $param_pajak='4800000000';
 //persentase
-$persen =($param_pajak/$totalp);
+// compat_bagi 2026-11-05: pendapatan 0 dulu DivisionByZeroError di PHP 8
+$persen =compat_bagi($param_pajak,$totalp);
 
 
 

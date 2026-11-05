@@ -17,11 +17,23 @@ if (!isset($_SESSION['userid'])) {
     header("location:index.html");
     exit;
 }
+// 2026-11-05: wajib level kp
+if ($_SESSION['level'] != "kp") {
+    header("location:../../index.html");
+    exit;
+}
 
 $buss_date1 = isset($_POST['buss_date1']) ? trim((string) $_POST['buss_date1']) : '';
 $jenis = isset($_POST['jenis']) ? (string) $_POST['jenis'] : '';
 $pesan = array();
 $hasil = array();
+// 2026-11-05: tanggal data jenis current yang tersedia (tabel_master_hari, diisi Proses Konsolidasi Harian dengan tanggal
+// sistem unit 001), ditampilkan sebagai petunjuk karena pencarian harus memakai tanggal itu persis
+$tgl_current = '';
+if (db_satu("select 1 from information_schema.tables where table_schema = database() and table_name = 'tabel_master_hari'")) {
+    $r = db_satu("select max(tanggal_awal) as t from tabel_master_hari");
+    $tgl_current = $r && $r['t'] !== null ? substr((string) $r['t'], 0, 10) : '';
+}
 if (isset($_POST['search'])) {
     $d_cari = DateTime::createFromFormat('!Y-m-d', $buss_date1);
     if (!$d_cari || $d_cari->format('Y-m-d') !== $buss_date1) {
@@ -40,7 +52,12 @@ if (isset($_POST['search'])) {
                 break;
             }
         }
-        if (!$hasil) {
+        if (!$hasil && $jenis === 'current') {
+            $pesan[] = '<script>alert(' . json_encode('Maaf,.data tidak ditemukan. ' . ($tgl_current !== ''
+                ? 'Data current tersedia untuk tanggal ' . $tgl_current . '.'
+                : 'Data current belum ada, jalankan menu Proses Konsolidasi Harian dulu.')) . ');</script>';
+            $pesan[] = "<script language='javascript'>document.location.href='konsolidasi.php'</script>";
+        } elseif (!$hasil) {
             $pesan[] = "<script>alert('Maaf,.data tidak ditemukan');</script>";
             $pesan[] = "<script language='javascript'>document.location.href='konsolidasi.php'</script>";
         }
@@ -68,6 +85,9 @@ halaman_awal('Neraca');
             <option value="<?php echo $j; ?>"<?php echo $jenis === $j ? ' selected' : ''; ?>><?php echo $j; ?></option>
             <?php endforeach; ?>
           </select>
+          <div class="form-text">Current = hasil Proses Konsolidasi Harian<?php echo $tgl_current !== ''
+              ? ', tersedia untuk tanggal <strong>' . h($tgl_current) . '</strong>'
+              : ' (belum ada data, jalankan menu Proses Konsolidasi Harian)'; ?>.</div>
         </div>
       </div>
       <div class="text-end">

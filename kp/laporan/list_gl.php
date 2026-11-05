@@ -34,7 +34,7 @@ if (isset($_POST['search'])) {
         $_SESSION['tgl_akhir_pos'] = $buss_date2;
         // (versi lama mencetak var_dump tanggal awal di sini, sisa debug)
         // versi kp lama: total selalu unit '1010' (tertulis langsung)
-        $hasil = db_semua("Select sum(debet) as debet,sum(kredit) as kredit from tabel_transaksi where  tanggal_transaksi between ? and ? and unit='1010' group by unit",
+        $hasil = db_semua("Select sum(debet) as debet,sum(kredit) as kredit from tabel_transaksi where  tanggal_transaksi between ? and ? and unit='1010' group by unit order by unit",
             'ss', $buss_date1, $buss_date2);
     }
 }

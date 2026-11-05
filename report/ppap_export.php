@@ -87,7 +87,7 @@ if ($aksi === 'mulai') {
     $u = db_satu("select kode_branch from user where userid=?", 's', $userid);
     $unit = $u ? (string) $u['kode_branch'] : '';
     $jumlah = array(1 => 0, 2 => 0, 3 => 0, 4 => 0);
-    foreach (db_semua("select gol, count(*) as n from loan where unit=? and os > 0 and gol in ('1','2','3','4') group by gol", 's', $unit) as $r) {
+    foreach (db_semua("select gol, count(*) as n from loan where unit=? and os > 0 and gol in ('1','2','3','4') group by gol order by gol", 's', $unit) as $r) {
         $jumlah[(int) $r['gol']] = (int) $r['n'];
     }
     $job = bin2hex(random_bytes(12));
@@ -135,7 +135,7 @@ if ($aksi === 'proses') {
         if ($data) {
             $cif = array_map(function ($d) { return (string) $d['cif']; }, $data);
             $tanda = implode(',', array_fill(0, count($cif), '?'));
-            foreach (db_semua("select CIF, sum(KREDIT-DEBIT) as n from tunggakan where CIF in ($tanda) group by CIF", str_repeat('s', count($cif)), ...$cif) as $t) {
+            foreach (db_semua("select CIF, sum(KREDIT-DEBIT) as n from tunggakan where CIF in ($tanda) group by CIF order by CIF", str_repeat('s', count($cif)), ...$cif) as $t) {
                 $tunggak[(string) $t['CIF']] = $t['n'];
             }
         }

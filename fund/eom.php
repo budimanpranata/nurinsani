@@ -19,7 +19,7 @@ $userid=$_SESSION['userid'];
 		$master=mysql_query("select id_deposito,norek,tgl_jatuh_tempo,aro,tenor,deposito.nominal as nomi,maturity_date,rasio,deposito.code_bulan,norek_tujuan,param_deposito.nominal,margin_murab 	 from deposito
 		inner join deposito_detail on deposito.norek= deposito_detail.id_deposito 
 		inner join param_deposito on param_deposito.code_bulan= deposito.code_bulan 
-		left join deposan on deposan.cif= deposito.cif where tgl_jatuh_tempo ='$tanggal' group by deposito.cif");
+		left join deposan on deposan.cif= deposito.cif where tgl_jatuh_tempo ='$tanggal' group by deposito.cif order by deposito.cif");
 		while($row=mysql_fetch_array($master)){
 		$aro=$row['aro'];
 		$norek=$row['id_deposito'];

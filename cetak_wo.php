@@ -44,7 +44,7 @@ if ($cari) {
         FROM loan_wo
         LEFT JOIN branch ON branch.kode_branch = loan_wo.unit
         LEFT JOIN kelompok ON kelompok.code_kel = loan_wo.code_kel
-        WHERE loan_wo.cao = ? AND loan_wo.USERID = ? AND loan_wo.hari = ? AND os > 0 GROUP BY loan_wo.hari";
+        WHERE loan_wo.cao = ? AND loan_wo.USERID = ? AND loan_wo.hari = ? AND os > 0 GROUP BY loan_wo.hari ORDER BY loan_wo.hari";
     $baris = db_semua($sql, 'sss', $ao, (string) $userid, $hari);
     if (count($baris) == 0) {
         // versi lama menjalankan query yang sama sekali lagi
@@ -58,7 +58,7 @@ if ($cari) {
         INNER JOIN branch ON branch.kode_branch = loan_detail.unit
         INNER JOIN loan_wo ON loan_wo.no_anggota = loan_detail.no_anggota
         INNER JOIN kelompok ON kelompok.code_kel = loan_detail.code_kel
-        WHERE loan_detail.code_kel = ? AND loan_detail.USERID = ? AND loan_wo.tgl_murab = ? GROUP BY loan_detail.unit",
+        WHERE loan_detail.code_kel = ? AND loan_detail.USERID = ? AND loan_wo.tgl_murab = ? GROUP BY loan_detail.unit ORDER BY loan_detail.unit",
         'sss', '', (string) $userid, $buss_date);
 }
 

@@ -30,11 +30,11 @@ if ($cari) {
     if ($pilih == '01') {
         $baris = db_semua("SELECT COUNT(no_anggota) AS noa, SUM(bulat) AS tagihan, unit, kelompok.nama_kel, loan.cao, maturity_date
             FROM loan LEFT JOIN kelompok ON kelompok.code_kel = loan.code_kel
-            WHERE loan.cif = ? AND loan.unit = ? AND os > 0 GROUP BY loan.cif", 'ss', $kode_rekening, $branch);
+            WHERE loan.cif = ? AND loan.unit = ? AND os > 0 GROUP BY loan.cif ORDER BY loan.cif", 'ss', $kode_rekening, $branch);
     } else {
         $baris = db_semua("SELECT COUNT(no_anggota) AS noa, SUM(bulat) AS tagihan, unit, kelompok.nama_kel, loan.cao, maturity_date
             FROM loan LEFT JOIN kelompok ON kelompok.code_kel = loan.code_kel
-            WHERE loan.code_kel = ? AND loan.unit = ? AND os > 0 GROUP BY unit", 'ss', $kode_rekening, $branch);
+            WHERE loan.code_kel = ? AND loan.unit = ? AND os > 0 GROUP BY unit ORDER BY unit", 'ss', $kode_rekening, $branch);
     }
     if (count($baris) == 0) {
         // versi lama menampilkan variabel $nopen yang tidak pernah diisi, sehingga nama kelompok kosong
@@ -46,7 +46,7 @@ if ($cari) {
     $baris = db_semua("SELECT COUNT(no_anggota) AS noa, SUM(bulat) AS tagihan, unit, kelompok.nama_kel, loan.cao, maturity_date,
             loan.code_kel
         FROM loan LEFT JOIN kelompok ON kelompok.code_kel = loan.code_kel
-        WHERE loan.status = 'CETAK' AND loan.unit = ? AND os > 0 GROUP BY loan.code_kel", 's', $branch);
+        WHERE loan.status = 'CETAK' AND loan.unit = ? AND os > 0 GROUP BY loan.code_kel ORDER BY loan.code_kel", 's', $branch);
 }
 
 halaman_awal('Cetak Kartu Angsuran');

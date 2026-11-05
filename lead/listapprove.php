@@ -89,7 +89,7 @@ if ($a == 'process' && $idlist) {
         $data = db_semua("SELECT calon_loan.unit as unit,cif,buss_date,no_anggota,plafond,Cust_Short_name as nama FROM calon_loan inner join branch on branch.kode_branch = calon_loan.unit WHERE  status_usia ='YA' and branch.code_area =? AND calon_loan.cif=?",
             'ss', $code_area, $value);
         if (count($data) == 0) {
-            $data = db_semua("SELECT temp_tarik.unit as unit ,temp_tarik.cif,temp_tarik.buss_date,temp_tarik.norek as no_anggota, sum(debit) as plafond, type as Usia,CUST_SHORT_NAME as nama FROM temp_tarik inner join anggota on anggota.cif=temp_tarik.cif inner join branch on branch.kode_branch = temp_tarik.unit WHERE branch.code_area =? and temp_tarik.cif =? group by temp_tarik.norek",
+            $data = db_semua("SELECT temp_tarik.unit as unit ,temp_tarik.cif,temp_tarik.buss_date,temp_tarik.norek as no_anggota, sum(debit) as plafond, type as Usia,CUST_SHORT_NAME as nama FROM temp_tarik inner join anggota on anggota.cif=temp_tarik.cif inner join branch on branch.kode_branch = temp_tarik.unit WHERE branch.code_area =? and temp_tarik.cif =? group by temp_tarik.norek order by temp_tarik.norek",
                 'ss', $code_area, $value);
         }
         foreach ($data as $row) {
@@ -138,7 +138,7 @@ if (!$a || $cancel || !$idlist) {
     $result = db_semua("SELECT calon_loan.unit as unit ,cif,buss_date,no_anggota,plafond,Cust_Short_name as nama FROM calon_loan inner join branch on branch.kode_branch = calon_loan.unit WHERE tgl_wakalah=? AND status_usia='YA' and code_area =? OR cif=? AND status_usia='YA' and code_area=?",
         'ssss', $tgl_trn, $code_area, $nopen, $code_area);
     if (count($result) == 0) {
-        $result = db_semua("SELECT temp_tarik.unit,temp_tarik.cif,temp_tarik.buss_date,temp_tarik.norek as no_anggota, sum(debit) as plafond, type as Usia,CUST_SHORT_NAME as nama FROM temp_tarik left join anggota on anggota.cif=temp_tarik.cif WHERE temp_tarik.buss_date=? and blok=? OR temp_tarik.cif=? and blok=? group by temp_tarik.cif",
+        $result = db_semua("SELECT temp_tarik.unit,temp_tarik.cif,temp_tarik.buss_date,temp_tarik.norek as no_anggota, sum(debit) as plafond, type as Usia,CUST_SHORT_NAME as nama FROM temp_tarik left join anggota on anggota.cif=temp_tarik.cif WHERE temp_tarik.buss_date=? and blok=? OR temp_tarik.cif=? and blok=? group by temp_tarik.cif order by temp_tarik.cif",
             'ssss', $tgl_trn, $code_area, $nopen, $code_area);
     }
     ?>

@@ -175,7 +175,7 @@ SUM(if(MONTH(simpanan_wajib.BUSS_DATE)='$dat',DEBIT,0)) mutasi_debet,
 (SUM(if(MONTH(simpanan_wajib.BUSS_DATE)<'$dat',kredit,0))-SUM(if(MONTH(simpanan_wajib.BUSS_DATE)<'$dat',DEBIT,0)) + SUM(if(MONTH(simpanan_wajib.BUSS_DATE)='$dat',kredit,0)))- SUM(if(MONTH(simpanan_wajib.BUSS_DATE)='$dat',DEBIT,0)) as saldo_akhir
 FROM simpanan_wajib
 LEFT JOIN anggota USING(cif)
-where simpanan_wajib.unit='$unit' group By simpanan_wajib.cif ";
+where simpanan_wajib.unit='$unit' group By simpanan_wajib.cif order by simpanan_wajib.cif ";
 $hasil = mysql_query($query);
 $baris = 1;
 while ($data = mysql_fetch_array($hasil))
@@ -255,7 +255,7 @@ SUM(if(MONTH(simpanan_pokok.BUSS_DATE)='$dat',DEBIT,0)) mutasi_debet,
 (SUM(if(MONTH(simpanan_pokok.BUSS_DATE)<'$dat',kredit,0))-SUM(if(MONTH(simpanan_pokok.BUSS_DATE)<'$dat',DEBIT,0)) + SUM(if(MONTH(simpanan_pokok.BUSS_DATE)='$dat',kredit,0)))- SUM(if(MONTH(simpanan_pokok.BUSS_DATE)='$dat',DEBIT,0)) as saldo_akhir
 FROM simpanan_pokok
 LEFT JOIN anggota USING(cif)
-where simpanan_pokok.unit='$unit' group By simpanan_pokok.cif ";
+where simpanan_pokok.unit='$unit' group By simpanan_pokok.cif order by simpanan_pokok.cif ";
 $hasil = mysql_query($query);
 $baris = 1;
 while ($data = mysql_fetch_array($hasil))

@@ -168,7 +168,7 @@ $sql = db_semua("select loan_wo.Plafond as tot_pla,sum(bulat)as tot_bulat,loan_w
 LEFT join anggota on anggota.CIF = loan_wo.cif
 left join kelompok on kelompok.code_kel=loan_wo.code_kel
 left join simpanan on simpanan.cif=loan_wo.cif
-LEFT join ao on ao.cao=loan_wo.cao where  loan_wo.hari=? and loan_wo.cao=? and os > 0 group by loan_wo.cif", 'ss', (string) $hari, (string) $cao);
+LEFT join ao on ao.cao=loan_wo.cao where  loan_wo.hari=? and loan_wo.cao=? and os > 0 group by loan_wo.cif order by loan_wo.cif", 'ss', (string) $hari, (string) $cao);
 
 if(count($sql)==0){
     $sql = db_semua("select loan_wo.Plafond as tot_pla,sum(bulat)as tot_bulat,loan_wo.unit,ao.nama_ao, loan_wo.cif,ke,run_tenor,sum(KREDIT)-sum(DEBIT) as saldo,nama_kel,loan_wo.cao, loan_wo.cust_Short_name,loan_wo.Plafond,loan_wo.bagi_hasil,sum(loan_wo.bagi_hasil) as baghas,bulat,os,loan_wo.angsuran,sum(loan_wo.angsuran)tot_angsur,loan_wo.bulat
@@ -176,7 +176,7 @@ if(count($sql)==0){
    LEFT join anggota on anggota.CIF = loan_wo.cif
    left join kelompok on kelompok.code_kel=loan_wo.code_kel
    left join simpanan on simpanan.cif=loan_wo.cif
-   LEFT join ao on ao.cao=loan_wo.cao where  loan_wo.hari=? and loan_wo.cao=? and os > 0 group by loan_wo.cif", 'ss', (string) $hari, (string) $cao);
+   LEFT join ao on ao.cao=loan_wo.cao where  loan_wo.hari=? and loan_wo.cao=? and os > 0 group by loan_wo.cif order by loan_wo.cif", 'ss', (string) $hari, (string) $cao);
            
 		 }
 
@@ -251,7 +251,7 @@ $pdf->Ln();
 }
 $sql2 = db_semua("select sum(os) as biaya,sum(Plafond) as totpla,sum(loan_wo.bagi_hasil) as baghas,sum(loan_wo.angsuran)tot_angsur,sum(bulat)as tot_bulat
 from loan_wo
-where hari=? and cao=? and os > 1 group by hari", 'ss', (string) $hari, (string) $cao);
+where hari=? and cao=? and os > 1 group by hari order by hari", 'ss', (string) $hari, (string) $cao);
 foreach ($sql2 as $result1){
 
 $tot_angsur+=$result1['tot_angsur'];

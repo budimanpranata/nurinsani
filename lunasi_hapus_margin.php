@@ -53,7 +53,7 @@ $gagal_awal = db_jumlah_gagal();
 
 		$param = db_semua("select anggota.cif,loan.code_kel,loan.unit,angsuran,loan.Cust_Short_name,loan.cif,os,loan.cao,saldo_margin,status_app from loan 
 		left join anggota on anggota.cif=loan.cif
-		where loan.no_anggota =? group by no_anggota", 's', (string) $anggota);
+		where loan.no_anggota =? group by no_anggota order by no_anggota", 's', (string) $anggota);
 		$data = $param ? $param[0] : false;
 		$os=$data['os'];
 		$saldo_margin=$data['saldo_margin'];

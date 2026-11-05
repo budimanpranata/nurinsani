@@ -25,7 +25,7 @@ $userid=$_SESSION['userid'];
 				left join barang on barang.cif=calon_loan.cif
 				left join kelompok on calon_loan.code_kel = kelompok.code_kel
 				inner join simpanan on simpanan.cif = anggota.cif
-				WHERE anggota.CIF LIKE '$queryString%' and anggota.UNIT='$unit' or anggota.CUST_SHORT_NAME  LIKE '$queryString%' and anggota.UNIT='$unit' group by anggota.cif");
+				WHERE anggota.CIF LIKE '$queryString%' and anggota.UNIT='$unit' or anggota.CUST_SHORT_NAME  LIKE '$queryString%' and anggota.UNIT='$unit' group by anggota.cif order by anggota.cif");
 				
 				if(db_num_rows($query) == 0){
 				$query = $db->query(" SELECT nama_kel,loan.no_anggota,tgl_wakalah, anggota.CIF,anggota.CUST_SHORT_NAME,anggota.CODE_KEL,anggota.NOREK,anggota.UNIT,loan.DEAL_TYPE,HADDRESS1,HADDRESS2,HADDRESS3,HADDRESS4,HADDRESS5,HPOST_CODE,MOBILE_PHONE,HOME_PHONE,GENDER,BIRTH_DATE,

@@ -63,7 +63,7 @@ $date=date('Y-m-d');
 $query = "Select loan.no_anggota,loan.cif,loan.unit,Plafond,angsuran,ijaroh,bagi_hasil,bulat,pokok,loan.Cust_Short_name,kelompok.nama_kel from loan
 left join anggota on loan.cif = anggota.cif 
 left join kelompok on kelompok.code_kel = loan.code_kel
-Where kelompok.code_kel='$code_kel' and loan.unit='$unit' and os >0 group by loan.cif ";
+Where kelompok.code_kel='$code_kel' and loan.unit='$unit' and os >0 group by loan.cif order by loan.cif ";
 $result = mysql_query($query);
 ?>
 <form action="realisasi_tag.php" method="post">
@@ -111,7 +111,7 @@ $no ++;
     ?>
 <?php
        
-        $total=mysql_query("select sum(Plafond) as tot_pla,sum(bagi_hasil) as margin,sum(angsuran) as angsuran,sum(pokok) as pokok,sum(bulat) as bulat,sum(ijaroh) as ijaroh from loan where code_kel ='$code_kel' and unit ='$unit' and status_app in ('MURAB','REST','COVID') and os  > 0 group by code_kel ");
+        $total=mysql_query("select sum(Plafond) as tot_pla,sum(bagi_hasil) as margin,sum(angsuran) as angsuran,sum(pokok) as pokok,sum(bulat) as bulat,sum(ijaroh) as ijaroh from loan where code_kel ='$code_kel' and unit ='$unit' and status_app in ('MURAB','REST','COVID') and os  > 0 group by code_kel order by code_kel ");
         while($row_tran=mysql_fetch_array($total)){
             $tot_pla=$row_tran['tot_pla'];
             $margin=$row_tran['margin'];

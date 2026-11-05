@@ -82,7 +82,7 @@ if ($status ='CURRENT'){
 
 $query = "select loan.no_anggota,loan.unit,Cust_Short_name,Plafond,os,code_kel,tenor,run_tenor,Deal_type,tgl_murab,next_schedule,maturity_date,cao ,sum(saldo_kredit) - sum(angsuran_pokok) as saldo from loan
 
-inner join rek_loan on rek_loan.no_anggota = loan.no_anggota where loan.unit ='$unit' group by no_anggota  ";
+inner join rek_loan on rek_loan.no_anggota = loan.no_anggota where loan.unit ='$unit' group by no_anggota order by no_anggota  ";
 $hasil = mysql_query($query);
 $baris = 1;
 while ($data = mysql_fetch_array($hasil))

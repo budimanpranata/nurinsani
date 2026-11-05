@@ -33,7 +33,7 @@ $pilih = "SELECT snorek,scif,sunit, CUST_SHORT_NAME,type, sum(KREDIT - DEBIT) as
     FROM simpanan_kp left join anggota on simpanan_kp.scif = anggota.CIF";
 
 // jumlah seluruh data tanpa pencarian (jumlah kelompok norek+jenis)
-$totalData = count(db_semua($pilih . " GROUP BY SNOREK,TYPE"));
+$totalData = count(db_semua($pilih . " GROUP BY SNOREK,TYPE ORDER BY SNOREK,TYPE"));
 $totalFiltered = $totalData;
 
 if ($cari !== '') {

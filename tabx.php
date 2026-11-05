@@ -222,7 +222,7 @@ if (empty($kelompok)){
 	$select = mysql_query ("select count(no_anggota)as noa,sum(bulat) as tagihan,unit,kelompok.nama_kel,loan.cao,maturity_date from loan 
 	inner join kelompok on kelompok.code_kel = loan.code_kel
 	where loan.code_kel ='$kelompok' AND loan.unit='$branch' and os >0
-	group by unit
+	group by unit order by unit
 	");
 		
 
@@ -261,7 +261,7 @@ if (empty($kelompok)){
 	else{
 $pilih = mysql_query ("select count(NOREK)as noa,sum(DEBIT) as tagihan,simpanan.unit,kelompok.nama_kel,nama_ao,simpanan.BUSS_DATE from simpanan 
 inner join kelompok on kelompok.code_kel = simpanan.code_kel
-Inner join ao on ao.cao = simpanan.CAO where simpanan.unit='$branch' AND simpanan.BUSS_DATE='$tgl_system' group by simpanan.code_kel");
+Inner join ao on ao.cao = simpanan.CAO where simpanan.unit='$branch' AND simpanan.BUSS_DATE='$tgl_system' group by simpanan.code_kel order by simpanan.code_kel");
 		while($data = mysql_fetch_array($pilih)){
 		if ($data['tagihan']==0){
 			$status="Belum Realisasi";

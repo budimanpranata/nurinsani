@@ -167,13 +167,13 @@ $sql = db_semua("select cif,no_anggota,Plafond as tot_pla,cust_Short_name,tgl_wa
 where code_kel=? and status_app ='PENDING'", 's', (string) $code_kel);
 $jenis ="Murabahah";
 $sql2 = db_semua("select sum(Plafond) as totpla, sum(Plafond *(5/100)) as persen from calon_loan
-where code_kel=? and status_app ='PENDING' group by code_kel", 's', (string) $code_kel);
+where code_kel=? and status_app ='PENDING' group by code_kel order by code_kel", 's', (string) $code_kel);
 }else{
 $sql = db_semua("select cif,no_anggota,Plafond as tot_pla,cust_Short_name,tgl_wakalah from calon_loan
 where code_kel=? and status_app ='MUSYAROKAH'", 's', (string) $code_kel);
 $jenis ="Musyarakah";
 $sql2 = db_semua("select sum(Plafond) as totpla, sum(Plafond *(5/100)) as persen from calon_loan
-where code_kel=? and status_app ='MUSYAROKAH' group by code_kel", 's', (string) $code_kel);
+where code_kel=? and status_app ='MUSYAROKAH' group by code_kel order by code_kel", 's', (string) $code_kel);
 }
 		
 		 
@@ -229,7 +229,7 @@ $tot_blt +=$result1['tot_bulat'];
 
 }
 $sql3 = db_semua("select sum(KREDIT - DEBIT) as saldo from simpanan
-where code_kel=? and type not in ('04','05') and cif in (select cif from calon_loan) group by code_kel", 's', (string) $code_kel);
+where code_kel=? and type not in ('04','05') and cif in (select cif from calon_loan) group by code_kel order by code_kel", 's', (string) $code_kel);
 foreach ($sql3 as $result3){
 
 $saldo1+=$result3['saldo'];

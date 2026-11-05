@@ -36,7 +36,7 @@ function bhd_daftar($tanggal, $norek = null)
     if ($norek === null) {
         return db_semua($sql . " group by norek order by norek", 's', $tanggal);
     }
-    return db_semua($sql . " and deposito_detail.id_deposito=? group by norek", 'ss', $tanggal, $norek);
+    return db_semua($sql . " and deposito_detail.id_deposito=? group by norek order by norek", 'ss', $tanggal, $norek);
 }
 
 /**

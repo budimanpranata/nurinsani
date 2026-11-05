@@ -76,7 +76,7 @@ $worksheet1->write_string(0, 10, "TUNGGAKAN", $format);
 
 
 if ($npl ='01'){
-$query = "SELECT loan.no_anggota,loan.Cust_Short_name,Tenor,HADDRESS1,Plafond as pla,sum(saldo_kredit) - sum(angsuran_pokok) as saldo,maturity_date from loan left join rek_loan on rek_loan.no_anggota=loan.no_anggota inner join anggota on anggota.cif = loan.cif where loan.cif not in (select tunggakan.cif from tunggakan where datediff('$tgl', tgl_tunggak) < 30 AND unit  ='$unit') AND loan.unit ='$unit' group by loan.cif";
+$query = "SELECT loan.no_anggota,loan.Cust_Short_name,Tenor,HADDRESS1,Plafond as pla,sum(saldo_kredit) - sum(angsuran_pokok) as saldo,maturity_date from loan left join rek_loan on rek_loan.no_anggota=loan.no_anggota inner join anggota on anggota.cif = loan.cif where loan.cif not in (select tunggakan.cif from tunggakan where datediff('$tgl', tgl_tunggak) < 30 AND unit  ='$unit') AND loan.unit ='$unit' group by loan.cif order by loan.cif";
 $hasil = mysql_query($query);
 $baris = 1;
 	$no=0;
@@ -102,7 +102,7 @@ $worksheet1->write_string($baris, 10,$data['nomi'] );
 $baris++;
 }
 }elseif ($npl ='02'){
-$query = "SELECT loan.no_anggota,Cust_Short_name,Tenor,HADDRESS1,Plafond as pla,sum(saldo_kredit) - sum(angsuran_pokok) as saldo,maturity_date, sum(nomianl) as nomi from loan left join rek_loan on rek_loan.no_anggota=loan.no_anggota inner join anggota on anggota.cif = loan.cif where cif not in (select cif from tunggakan where datediff('$tgl', tgl_tunggak) between 90 and 120 AND unit  ='$unit') AND loan.unit ='$unit' group by cif";
+$query = "SELECT loan.no_anggota,Cust_Short_name,Tenor,HADDRESS1,Plafond as pla,sum(saldo_kredit) - sum(angsuran_pokok) as saldo,maturity_date, sum(nomianl) as nomi from loan left join rek_loan on rek_loan.no_anggota=loan.no_anggota inner join anggota on anggota.cif = loan.cif where cif not in (select cif from tunggakan where datediff('$tgl', tgl_tunggak) between 90 and 120 AND unit  ='$unit') AND loan.unit ='$unit' group by cif order by cif";
 $hasil = mysql_query($query);
 $baris = 1;
 while ($data = mysql_fetch_array($hasil))
@@ -125,7 +125,7 @@ $worksheet1->write_string($baris, 10,$data['nomi']);
 $baris++;
 }	
 }elseif ($npl ='03'){
-$query = "SELECT loan.no_anggota,Cust_Short_name,Tenor,HADDRESS1,Plafond as pla,sum(saldo_kredit) - sum(angsuran_pokok) as saldo,maturity_date,sum(nomianl) as nomi  from loan left join rek_loan on rek_loan.no_anggota=loan.no_anggota inner join anggota on anggota.cif = loan.cif where cif not in (select cif from tunggakan where datediff('$tgl', tgl_tunggak) between 90 and 120 AND unit  ='$unit') AND loan.unit ='$unit' group by cif";
+$query = "SELECT loan.no_anggota,Cust_Short_name,Tenor,HADDRESS1,Plafond as pla,sum(saldo_kredit) - sum(angsuran_pokok) as saldo,maturity_date,sum(nomianl) as nomi  from loan left join rek_loan on rek_loan.no_anggota=loan.no_anggota inner join anggota on anggota.cif = loan.cif where cif not in (select cif from tunggakan where datediff('$tgl', tgl_tunggak) between 90 and 120 AND unit  ='$unit') AND loan.unit ='$unit' group by cif order by cif";
 $hasil = mysql_query($query);
 $baris = 1;
 while ($data = mysql_fetch_array($hasil))
@@ -148,7 +148,7 @@ $worksheet1->write_string($baris, 10,$data['nomi']);
 $baris++;
 }	
 }elseif ($npl ='04'){
-$query = "SELECT loan.no_anggota,Cust_Short_name,Tenor,HADDRESS1,Plafond as pla,sum(saldo_kredit) - sum(angsuran_pokok) as saldo, maturity_date, sum(nominal) as nomi from loan left join rek_loan on rek_loan.no_anggota=loan.no_anggota inner join anggota on anggota.cif = loan.cif where cif in (select cif from tunggakan where datediff('$tgl', tgl_tunggak) between 90 and 120 AND unit  ='$unit') AND loan.unit ='$unit' group by cif";
+$query = "SELECT loan.no_anggota,Cust_Short_name,Tenor,HADDRESS1,Plafond as pla,sum(saldo_kredit) - sum(angsuran_pokok) as saldo, maturity_date, sum(nominal) as nomi from loan left join rek_loan on rek_loan.no_anggota=loan.no_anggota inner join anggota on anggota.cif = loan.cif where cif in (select cif from tunggakan where datediff('$tgl', tgl_tunggak) between 90 and 120 AND unit  ='$unit') AND loan.unit ='$unit' group by cif order by cif";
 $hasil = mysql_query($query);
 $baris = 1;
 while ($data = mysql_fetch_array($hasil))

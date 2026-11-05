@@ -312,7 +312,7 @@ if (empty($status)){
 
 	$select = mysql_query ("Select COUNT(loan.cif) AS NOA,SUM(os) AS os, unit From loan where unit ='$unit'
 
-	Group By unit");
+	Group By unit Order By unit");
 
  //Where Month (buss_date)='$bulan1' AND Year (buss_date)='$tahun1'
 
@@ -322,7 +322,7 @@ if (empty($status)){
 
 			$select = mysql_query ("Select COUNT(data_loan.cif) AS NOA,SUM(os) AS os, unit From data_loan
 
-		 Where Month(data_loan.buss_date)='$bulan1' AND Year(data_loan.buss_date)='$tahun1'Group By unit");
+		 Where Month(data_loan.buss_date)='$bulan1' AND Year(data_loan.buss_date)='$tahun1'Group By unit Order By unit");
 
 			
 

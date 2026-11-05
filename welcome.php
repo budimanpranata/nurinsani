@@ -31,7 +31,7 @@ function neraca_home($kode_rekening)
 $user = db_satu("SELECT * FROM user WHERE userid=?", 's', (string) $userid);
 $baris_cek = array();
 if ($user) {
-    $cek_os = db_satu("SELECT sum(os) as os ,sum(saldo_margin) as saldo_margin FROM loan  WHERE unit  =? group by unit", 's', (string) $userid);
+    $cek_os = db_satu("SELECT sum(os) as os ,sum(saldo_margin) as saldo_margin FROM loan  WHERE unit  =? group by unit order by unit", 's', (string) $userid);
     $os = $cek_os && $cek_os['os'] !== null ? (string) $cek_os['os'] : null;
     $margin = $cek_os && $cek_os['saldo_margin'] !== null ? (string) $cek_os['saldo_margin'] : null;
     $coa_os = compat_num(neraca_home('1411000')) + compat_num(neraca_home('1413000'));
@@ -44,7 +44,7 @@ if ($user) {
     $coa_pokok = neraca_home('3102000');
     $coa_wajib = neraca_home('3202000');
 
-    $simpanan = nilai_home("SELECT sum(KREDIT-DEBIT) as simpanan  FROM simpanan  WHERE unit  =? group by unit", 'simpanan');
+    $simpanan = nilai_home("SELECT sum(KREDIT-DEBIT) as simpanan  FROM simpanan  WHERE unit  =? group by unit order by unit", 'simpanan');
     $coa_wadiah = neraca_home('2101000');
 
     // urutan baris tabel sama dengan versi lama

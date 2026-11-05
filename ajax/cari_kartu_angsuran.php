@@ -36,7 +36,7 @@ if (!$hasil) {
     $hasil = db_semua("SELECT anggota.code_kel AS CIF, nama_kel AS CUST_SHORT_NAME FROM anggota
         LEFT JOIN kelompok ON kelompok.code_kel = anggota.CODE_KEL
         WHERE anggota.code_kel LIKE ? AND anggota.unit = ? OR kelompok.nama_kel LIKE ? AND anggota.unit = ?
-        GROUP BY anggota.code_kel", 'ssss', $awalan, $unit, $awalan, $unit);
+        GROUP BY anggota.code_kel ORDER BY anggota.code_kel", 'ssss', $awalan, $unit, $awalan, $unit);
 }
 
 $keluar = array();

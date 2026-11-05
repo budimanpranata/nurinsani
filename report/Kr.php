@@ -42,13 +42,13 @@ if (isset($_POST['search'])) {
         $_SESSION['unt'] = $unit;
     }
     if ($status == 'CURRENT') {
-        $hasil = db_semua("Select COUNT(loan.cif) AS NOA,SUM(os) AS os, unit From loan where unit =? Group By unit", 's', (string) $unit);
+        $hasil = db_semua("Select COUNT(loan.cif) AS NOA,SUM(os) AS os, unit From loan where unit =? Group By unit Order By unit", 's', (string) $unit);
         // neraca pembanding (permintaan user 2026-10-31), pemetaan sama dengan Home: OS <-> 1411000+1413000
         $nr = db_satu("select sum(saldo_akhir) as n, count(*) as ada from tabel_master where unit=? and kode_rekening in ('1411000','1413000')", 's', (string) $unit);
         $neraca_os = $nr && $nr['ada'] > 0 ? compat_num($nr['n']) : null;
     } else {
         $hasil = db_semua("Select COUNT(data_loan.cif) AS NOA,SUM(os) AS os, unit From data_loan
-            Where Month(data_loan.buss_date)=? AND Year(data_loan.buss_date)=? Group By unit", 'ss', $bulan1, $tahun1);
+            Where Month(data_loan.buss_date)=? AND Year(data_loan.buss_date)=? Group By unit Order By unit", 'ss', $bulan1, $tahun1);
     }
     if (!$hasil) {
         $pesan[] = "<script>alert('Maaf...data tidak ditemukan!!!');</script>";

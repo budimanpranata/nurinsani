@@ -127,7 +127,7 @@ $(document).ready(function() {
 			<select class="form-control" name="gr_sub" id="gr_sub">		
 				 <option selected>Pilih Salah satu</option>
 				 <?php
-              		$query = "select gr_sub,nama_rek from coa where gr_sub > 1 group by gr_sub  ";
+              		$query = "select gr_sub,nama_rek from coa where gr_sub > 1 group by gr_sub order by gr_sub  ";
 					$result = mysql_query($query);
 					while ($kanwil=mysql_fetch_array($result))
 					{
@@ -250,7 +250,7 @@ $(document).ready(function() {
 		}
 
 		
-		$query=mysql_query("select unit from tabel_master group by unit");
+		$query=mysql_query("select unit from tabel_master group by unit order by unit");
 while($data = mysql_fetch_array($query)){
 $unit = $data['unit'];
 		$rek_gl="$unit-$kode_rekening";

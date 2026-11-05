@@ -310,7 +310,7 @@ if (empty($status)){
 
 	}if ($status =='CURRENT'){
 
-	$select = mysql_query ("Select count(distinct(cif)) AS NOA,SUM(kredit - debit) AS saldo, unit From simpanan where unit ='$unit'group by unit");
+	$select = mysql_query ("Select count(distinct(cif)) AS NOA,SUM(kredit - debit) AS saldo, unit From simpanan where unit ='$unit'group by unit order by unit");
 
  //Where Month (buss_date)='$bulan1' AND Year (buss_date)='$tahun1'
 
@@ -320,7 +320,7 @@ if (empty($status)){
 
 			$select = mysql_query ("Select COUNT(data_simpanan.cif) AS NOA,SUM(KREDIT) AS os, unit From data_simpanan
 
-		 Where Month(data_loan.buss_date)='$bulan1' AND Year(data_loan.buss_date)='$tahun1'Group By unit");
+		 Where Month(data_loan.buss_date)='$bulan1' AND Year(data_loan.buss_date)='$tahun1'Group By unit Order By unit");
 
 			
 

@@ -25,7 +25,7 @@ sum(KREDIT-DEBIT) as nominal
 from simpanan_pokok
 join loan on loan.cif = simpanan_pokok.cif
 where  os > 0  
-group by loan.cif
+group by loan.cif order by loan.cif
 
 
 ");	

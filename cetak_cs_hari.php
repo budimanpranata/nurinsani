@@ -180,7 +180,7 @@ $sql = db_semua("select loan.Plafond as tot_pla,sum(bulat)as tot_bulat,loan.unit
 LEFT join anggota on anggota.CIF = loan.cif
 LEFT join kelompok on kelompok.code_kel=loan.code_kel
 
-LEFT join ao on ao.cao=loan.cao where loan.code_kel=? AND loan.hari=? and loan.cao=? and os > 0 group by loan.cif", 'sss', (string) $code_kel, (string) $dayList[$day], (string) $cao);
+LEFT join ao on ao.cao=loan.cao where loan.code_kel=? AND loan.hari=? and loan.cao=? and os > 0 group by loan.cif order by loan.cif", 'sss', (string) $code_kel, (string) $dayList[$day], (string) $cao);
 
 if(count($sql)==0){
 $sql = db_semua("select loan.Plafond as tot_pla,sum(bulat)as tot_bulat,loan.unit,ao.nama_ao, loan.cif,ke,run_tenor,sum(KREDIT)-sum(DEBIT) as saldo,nama_kel,loan.cao, loan.cust_Short_name,loan.Plafond,loan.bagi_hasil,sum(loan.bagi_hasil) as baghas,bulat,os,loan.angsuran,sum(loan.angsuran)tot_angsur,loan.bulat
@@ -189,7 +189,7 @@ LEFT join anggota on anggota.CIF = loan.cif
 left join kelompok on kelompok.code_kel=loan.code_kel
 left join simpanan on simpanan.cif=loan.cif
 LEFT join pinjaman_detail_jatpo on loan.no_anggota=pinjaman_detail_jatpo.id_pinjam
-LEFT join ao on ao.cao=loan.cao where loan.code_kel=? AND pinjaman_detail_jatpo.tgl_jatuh_tempo=? and loan.cao=? and os > 0 group by loan.cif", 'sss', (string) $code_kel, (string) $tgl_jatuh_tempo, (string) $cao);
+LEFT join ao on ao.cao=loan.cao where loan.code_kel=? AND pinjaman_detail_jatpo.tgl_jatuh_tempo=? and loan.cao=? and os > 0 group by loan.cif order by loan.cif", 'sss', (string) $code_kel, (string) $tgl_jatuh_tempo, (string) $cao);
 		
 		 }
 
@@ -267,7 +267,7 @@ $pdf->Ln();
 }
 $sql2 = db_semua("select sum(os) as biaya,sum(Plafond) as totpla,sum(loan.bagi_hasil) as baghas,sum(loan.angsuran)tot_angsur,sum(bulat)as tot_bulat, count(cif) as noa
 from loan
-where code_kel=? and cao=? and os > 1 AND hari=? group by code_kel", 'sss', (string) $code_kel, (string) $cao, (string) $dayList[$day]);
+where code_kel=? and cao=? and os > 1 AND hari=? group by code_kel order by code_kel", 'sss', (string) $code_kel, (string) $cao, (string) $dayList[$day]);
 foreach ($sql2 as $result1){
 $noa = compat_num($result1['noa'])*2500;
 $tot_angsur=compat_num(isset($tot_angsur) ? $tot_angsur : null) + compat_num($result1['tot_angsur']);

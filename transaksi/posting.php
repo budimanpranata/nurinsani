@@ -41,7 +41,7 @@ foreach (db_semua("select kode_branch from user where userid=?", 's', (string) $
 }
 
 // daftar dan total dibaca sebelum proses posting (versi lama menampilkan daftar dulu, baru memproses)
-$baris_transaksi = db_semua("select tanggal_transaksi,tabel_transaksi.kode_rekening,sum(debet) as debet,sum(kredit) as kredit,nama_rek,keterangan_transaksi from tabel_transaksi inner join coa on coa.kode_rek = tabel_transaksi.kode_rekening  where  keterangan_posting='' and tabel_transaksi.unit =? and tanggal_transaksi=?  Group By kode_rekening",
+$baris_transaksi = db_semua("select tanggal_transaksi,tabel_transaksi.kode_rekening,sum(debet) as debet,sum(kredit) as kredit,nama_rek,keterangan_transaksi from tabel_transaksi inner join coa on coa.kode_rek = tabel_transaksi.kode_rekening  where  keterangan_posting='' and tabel_transaksi.unit =? and tanggal_transaksi=?  Group By kode_rekening Order By kode_rekening",
     'ss', (string) $unitt, (string) $tgl_system);
 $total = db_satu("select sum(debet) as tot_debet, sum(kredit) as tot_kredit from tabel_transaksi where  keterangan_posting='' and unit =? and tanggal_transaksi=? order by kode_rekening  asc",
     'ss', (string) $unitt, (string) $tgl_system);

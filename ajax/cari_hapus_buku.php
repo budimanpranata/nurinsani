@@ -30,7 +30,7 @@ $baris = db_semua("SELECT anggota.CIF, anggota.CUST_SHORT_NAME, os, saldo_margin
     LEFT JOIN simpanan ON anggota.CIF = simpanan.cif
     WHERE anggota.CIF LIKE ? AND anggota.UNIT = ? AND TYPE NOT IN ('04','05')
        OR anggota.CUST_SHORT_NAME LIKE ? AND anggota.UNIT = ? AND TYPE NOT IN ('04','05')
-    GROUP BY anggota.cif", 'ssss', $awalan, $unit, $awalan, $unit);
+    GROUP BY anggota.cif ORDER BY anggota.cif", 'ssss', $awalan, $unit, $awalan, $unit);
 
 $hasil = array();
 foreach ($baris as $b) {

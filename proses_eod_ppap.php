@@ -61,7 +61,7 @@ $update_count++;
 //mysqli_autocommit($con,FALSE);
  
 
-$ambilunit=db_query($con,"select unit from loan where os > 0 group by unit");
+$ambilunit=db_query($con,"select unit from loan where os > 0 group by unit order by unit");
 while($row_hit_mut=db_fetch_array($ambilunit)){
     $unit=$row_hit_mut['unit'];	
 

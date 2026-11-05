@@ -68,7 +68,7 @@ from rek_loan
 inner JOIN loan on loan.cif=rek_loan.cif
 INNER JOIN kelompok on kelompok.code_kel=loan.code_kel
 where rek_loan.unit='$unit' and tgl_realisasi='$tgl_system'
-group by rek_loan.cif ";
+group by rek_loan.cif order by rek_loan.cif ";
 	$sqlTot .= $sql;
 	$sqlRec .= $sql;
 

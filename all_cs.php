@@ -58,7 +58,7 @@ $dayList = array(
  from loan
 LEFT join anggota on anggota.CIF = loan.cif
 inner join kelompok on kelompok.code_kel=loan.code_kel
-LEFT join ao on ao.cao=loan.cao where group by loan.cif");
+LEFT join ao on ao.cao=loan.cao where group by loan.cif order by loan.cif");
 
 if(mysql_num_rows($sql)==0){
 $sql=mysql_query("select loan.Plafond as tot_pla,sum(bulat)as tot_bulat,loan.unit,ao.nama_ao, loan.cif,ke,run_tenor,sum(KREDIT)-sum(DEBIT) as saldo,nama_kel,loan.cao, loan.cust_Short_name,loan.Plafond,loan.bagi_hasil,sum(loan.bagi_hasil) as baghas,bulat,os,loan.angsuran,sum(loan.angsuran)tot_angsur,loan.bulat,hari
@@ -67,7 +67,7 @@ LEFT join anggota on anggota.CIF = loan.cif
 inner join kelompok on kelompok.code_kel=loan.code_kel
 INNER join simpanan on simpanan.cif=loan.cif
 LEFT join pinjaman_detail_jatpo on loan.no_anggota=pinjaman_detail_jatpo.id_pinjam
-LEFT join ao on ao.cao=loan.cao group by loan.cif");
+LEFT join ao on ao.cao=loan.cao group by loan.cif order by loan.cif");
 		
 		 }
 

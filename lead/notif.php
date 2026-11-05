@@ -68,7 +68,7 @@ if ($smsblast) $sukses++;
   else $gagal++;
 }
 if ($sukses){
-$query="select count(noa) as jumlah, sum(vol) as Volume, psr.kode_ds as smo, smo.no_tlp as tlp from psr inner join smo on psr.kode_ds = smo.kode_ds group by psr.kode_ds";
+$query="select count(noa) as jumlah, sum(vol) as Volume, psr.kode_ds as smo, smo.no_tlp as tlp from psr inner join smo on psr.kode_ds = smo.kode_ds group by psr.kode_ds order by psr.kode_ds";
 $hasil = mysql_query($query);
 	  while ($data = mysql_fetch_array($hasil))
 	  {

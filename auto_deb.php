@@ -220,7 +220,7 @@ if (empty($kelompok)){
 	$select = mysql_query ("select count(no_anggota)as noa,unit,kelompok.nama_kel,loan.cao,next_schedule from loan 
 	inner join kelompok on kelompok.code_kel = loan.code_kel
 	where loan.code_kel ='$kelompok' AND loan.unit='$branch'
-	group by unit
+	group by unit order by unit
 	");
 		}
 

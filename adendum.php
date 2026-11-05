@@ -49,7 +49,7 @@ if (!empty($_POST['search'])) {
         INNER JOIN kelompok ON kelompok.code_kel = loan.code_kel
         LEFT JOIN rest_covid ON loan.cif = rest_covid.cif
         WHERE loan.code_kel = ? AND loan.unit = ? AND status_app = ?
-        GROUP BY unit");
+        GROUP BY unit ORDER BY unit");
     $select = $st && $st->bind_param('sss', $kelompok, $branch, $jenis) && $st->execute();
 
     // versi lama: diproses setiap kali query di atas berhasil (walaupun hasilnya kosong)
