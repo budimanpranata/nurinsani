@@ -35,6 +35,14 @@ $GLOBALS['DB_CONFIG'] = array(
         'pass' => '',
         'name' => 'mobcol',
     ),
+    // Server PIP (pip.php). Password diisi di koneksi_db.lokal.php; dulu tertulis di pip.php (2026-11-05).
+    'pip' => array(
+        'host' => '192.168.88.71',
+        'port' => 3306,
+        'user' => 'root',
+        'pass' => '',
+        'name' => 'pipsync',
+    ),
 );
 
 // Kredensial server (user/password asli) ditulis di koneksi_db.lokal.php yang TIDAK ikut git (lihat contoh di

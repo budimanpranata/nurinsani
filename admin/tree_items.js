@@ -5,6 +5,7 @@ var TREE_ITEMS = [
 		['Parameter User',0,
 		 	['Tambah User', 'tambah_user.php'],
 			['Tambah AO', 'ao.php'],
+			['Reset Password', 'reset_password.php'],
 						
 		],
 		['Pembukaan Unit',0,

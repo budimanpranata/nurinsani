@@ -9,8 +9,10 @@ if(!isset($_SESSION['userid'])){
  exit; }
 ?>
 <?php
+require_once __DIR__ . '/../inc/password.php';
 $pass = $_POST['pass'];
-$password = md5($pass);
+// bcrypt dari md5 isian (inc/password.php); dulu md5 polos. md5 tetap dari isian mentah seperti versi lama.
+$password = password_buat_dari_md5(md5($pass));
 $username = $_POST['username'];
 $nama = $_POST['nama'];
 $level =$_POST ['level'];

@@ -15,6 +15,10 @@ return array(
         'user' => 'nurinsani_app',
         'pass' => 'GANTI_DENGAN_PASSWORD_KUAT',
     ),
+    // Server PIP (pip.php, 192.168.88.71/pipsync)
+    'pip' => array(
+        'pass' => 'GANTI_DENGAN_PASSWORD_PIP',
+    ),
     // Kunci enkripsi NIK/alamat (inc/enkripsi.php). Buat dengan: php inc/enkripsi.php buat-kunci
     // SIMPAN CADANGAN kunci ini terpisah dari backup database: tanpa kunci, data terenkripsi tidak dapat dibuka lagi.
     // Jangan pernah mengganti kunci yang sudah dipakai tanpa proses enkripsi ulang.

@@ -6,19 +6,13 @@
  * - sesudah berhasil, session diakhiri dan user login ulang
  */
 require_once __DIR__ . '/koneksi_db.php';
+require_once __DIR__ . '/inc/password.php';
 
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
 define('PANJANG_MIN_PASSWORD', 8);
-
-/** Hash password dengan cara yang sama seperti log.php (antiinjection lalu md5). */
-function hash_password_login($password)
-{
-    $db = db_ni();
-    return md5(mysqli_real_escape_string($db, stripslashes(strip_tags(htmlspecialchars($password, ENT_QUOTES)))));
-}
 
 function selesai_ganti_password($pesan, $tujuan)
 {
@@ -59,16 +53,17 @@ if (strcasecmp($passbaru, $userid) === 0) {
 
 $db = db_ni();
 $uid = mysqli_real_escape_string($db, $userid);
-$hash_lama = hash_password_login($passlama);
-$cek = db_query($db, "SELECT userid FROM user WHERE userid='$uid' AND pass='$hash_lama'");
-if (db_num_rows($cek) != 1) {
+// password dicocokkan di PHP (bcrypt, inc/password.php); dulu pass='md5' di WHERE
+$cek = db_query($db, "SELECT userid, pass FROM user WHERE userid='$uid'");
+$baris = db_num_rows($cek) == 1 ? db_fetch_assoc($cek) : null;
+if (!$baris || !password_cocok($passlama, $baris['pass'])) {
     selesai_ganti_password('Password lama salah', $kembali);
 }
-if (hash_password_login($passbaru) === $hash_lama) {
+if (password_md5_lama($passbaru) === password_md5_lama($passlama)) {
     selesai_ganti_password('Password baru tidak boleh sama dengan password lama', $kembali);
 }
 
-$hash_baru = hash_password_login($passbaru);
+$hash_baru = mysqli_real_escape_string($db, password_buat($passbaru));
 if (!db_query($db, "UPDATE user SET pass='$hash_baru', last_update=NOW() WHERE userid='$uid'")) {
     selesai_ganti_password('Maaf periksa kembali password anda', $kembali);
 }

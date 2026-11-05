@@ -10,10 +10,7 @@ if(!isset($_SESSION['userid'])){
    header("location:index.html");
  exit; }
 /* Database connection start */
-$servername = "76.13.20.176";
-$username = "admin";
-$password = "";
-$dbname = "mobcol";
+// host/user/password mobcol hanya di koneksi_db.php (variabel lama yang tidak terpakai dibuang 2026-11-05)
 include "indo_tgl.php";
 
 $conn = db_mobcol() or die("Connection failed: " . mysqli_connect_error());

@@ -138,6 +138,9 @@ function penjaga_sesi()
         if ($aktif === '') {
             // sesi yang dibuat sebelum penjaga ini dipasang: jadikan sesi aktif user
             @file_put_contents($berkas, session_id(), LOCK_EX);
+        } elseif (strncmp($aktif, 'reset-', 6) === 0) {
+            // ditandai admin/reset_password.php
+            $pesan = 'Password akun Anda di-reset oleh admin. Silakan login dengan password sementara dari admin.';
         } elseif ($aktif !== session_id()) {
             $pesan = 'Akun Anda sudah login di perangkat atau browser lain. Silakan login kembali.';
         }

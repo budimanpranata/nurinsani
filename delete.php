@@ -1,10 +1,6 @@
 <?php require_once __DIR__ . '/koneksi_db.php';
 
-$host_dua   ="76.13.20.176";
-$user_dua ="admin";
-$password_dua ="";
-$db_dua ="mobcol";
-
+// host/user/password mobcol hanya di koneksi_db.php (variabel lama yang tidak terpakai dibuang 2026-11-05)
 $config_dua =  db_mobcol();
 if(mysqli_connect_errno())
 {

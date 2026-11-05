@@ -85,7 +85,12 @@ function kerangka_aplikasi($opsi = array())
 
 <footer class="kerangka-bawah">Copyright Nur Insani &copy; 2016</footer>
 
-<script src="<?php echo h($opsi['menu']); ?>"></script>
+<?php
+// ?v=waktu ubah file: menu baru langsung terbaca tanpa browser memakai tree_items.js lama dari cache
+$berkas_menu = dirname($_SERVER['SCRIPT_FILENAME']) . '/' . $opsi['menu'];
+$versi_menu = is_file($berkas_menu) ? '?v=' . filemtime($berkas_menu) : '';
+?>
+<script src="<?php echo h($opsi['menu'] . $versi_menu); ?>"></script>
 <script src="<?php echo h(url_app('assets/app/menu.js')); ?>"></script>
 </body>
 </html>

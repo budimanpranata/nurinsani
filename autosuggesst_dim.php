@@ -3,7 +3,6 @@ session_start();
 $userid=$_SESSION['userid'];
    $db = db_ni();
 
-//$db2 = new mysqli('192.168.88.144', 'adminni' ,'147Teriyak!', 'system');
 
 	
 	if(!$db) {

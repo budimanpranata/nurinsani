@@ -12,12 +12,7 @@ $type =$_GET['type'];
 
 
 
-$host_dua   ="185.201.9.210";
-//$host_dua   ="192.168.88.144";
-$user_dua ="adminni";
-$password_dua ="";
-$db_dua ="mobcol";
-
+// host/user/password mobcol hanya di koneksi_db.php (variabel lama yang tidak terpakai dibuang 2026-11-05)
 $koneksi =  db_mobcol();
 if(mysqli_connect_errno())
 {

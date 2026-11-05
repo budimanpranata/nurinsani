@@ -46,7 +46,9 @@ switch ( $_GET['p'] ) {
 
 		} else {
 		$pass = $nik;
-		$password = md5($pass);
+		// bcrypt dari md5 (inc/password.php); dulu md5 polos
+		require_once __DIR__ . '/../inc/password.php';
+		$password = password_buat_dari_md5(md5($pass));
 
 			$conn->query("INSERT INTO person VALUES ('$nik','$nama','$alamat','$lahir','Sales Marketing','$userid','$tlp','$buss_date','$gender','$status')");
 			$conn->query("INSERT INTO user VALUES ('$nik','0','$password','smo','$nama','0')");

@@ -1,5 +1,6 @@
 <?php require_once __DIR__ . '/php8_compat.php';
 include "conn2.php";
+require_once __DIR__ . '/inc/password.php';
 $koneksi=open_connection2();
 function antiinjection($data){
   $filter_sql = mysql_real_escape_string(stripslashes(strip_tags(htmlspecialchars($data,ENT_QUOTES))));
@@ -46,13 +47,14 @@ if($op=="in"){
     if (data_gagal_login($userid)['jumlah'] >= MAKS_GAGAL) {
         kembali_ke_login('Terlalu banyak percobaan login gagal. Coba lagi dalam ' . (LAMA_KUNCI / 60) . ' menit.');
     }
-    $cek = mysql_query("SELECT datediff(current_date(), last_update) as selisih,level,userid FROM user WHERE userid='$userid' AND pass='$pass'");
-    if(mysql_num_rows($cek)!=1){//jika berhasil akan bernilai 1
+    // password dicocokkan di PHP (bcrypt, inc/password.php); dulu pass='md5' di WHERE
+    $cek = mysql_query("SELECT datediff(current_date(), last_update) as selisih,level,userid,pass FROM user WHERE userid='$userid'");
+    $c = mysql_num_rows($cek) == 1 ? mysql_fetch_array($cek) : null;
+    if(!$c || !password_cocok_md5($pass, $c['pass'])){
         catat_gagal_login($userid);
         kembali_ke_login('Maaf User name atau password salah');
     }
     @unlink(file_gagal_login($userid));
-    $c = mysql_fetch_array($cek);
 
     $cek_tgl = mysql_fetch_array(mysql_query("SELECT param_tgl FROM param_tgl WHERE unit ='$userid'")) or die(mysql_error());
     $cek_eod = mysql_fetch_array(mysql_query("SELECT param_tgl FROM param_tgl WHERE nama_param_tgl ='EOD_MOB'")) or die(mysql_error());
