@@ -140,7 +140,7 @@ function totalPerUnit($gr, $sumber, $tgl_cari) {
         WHERE gr_neraca='$gr'
         AND tanggal_awal='$tgl_cari'
 	AND LINE_BALANCE ='HEADING'
-        GROUP BY unit
+        GROUP BY unit ORDER BY unit
     ");
     while ($r = mysql_fetch_assoc($q)) {
         $data[$r['unit']] = $r['total'];
@@ -158,7 +158,7 @@ $qPaKhusus = mysql_query("
     FROM $sumber
     WHERE kode_rekening IN ('3901000','3902000','2500000')
     AND tanggal_awal='$tgl_cari'
-    GROUP BY unit
+    GROUP BY unit ORDER BY unit
 ") or die(mysql_error());
 
 while ($r = mysql_fetch_assoc($qPaKhusus)) {
@@ -180,7 +180,7 @@ $qPendapatan = mysql_query("
     FROM $sumber
     WHERE kode_rekening = '40000'
     AND tanggal_awal = '$tgl_cari'
-    GROUP BY unit
+    GROUP BY unit ORDER BY unit
 ") or die(mysql_error());
 
 while ($r = mysql_fetch_assoc($qPendapatan)) {
@@ -199,7 +199,7 @@ $qBiaya = mysql_query("
     FROM $sumber
     WHERE kode_rekening = '50000'
     AND tanggal_awal = '$tgl_cari'
-    GROUP BY unit
+    GROUP BY unit ORDER BY unit
 ") or die(mysql_error());
 
 while ($r = mysql_fetch_assoc($qBiaya)) {
@@ -234,7 +234,7 @@ $qPendapatan_non_ops = mysql_query("
     FROM $sumber
     WHERE kode_rekening = '57000'
     AND tanggal_awal = '$tgl_cari'
-    GROUP BY unit
+    GROUP BY unit ORDER BY unit
 ") or die(mysql_error());
 
 while ($r = mysql_fetch_assoc($qPendapatan_non_ops)) {
@@ -253,7 +253,7 @@ $qBiaya_non_ops = mysql_query("
     FROM $sumber
     WHERE kode_rekening = '58000'
     AND tanggal_awal = '$tgl_cari'
-    GROUP BY unit
+    GROUP BY unit ORDER BY unit
 ") or die(mysql_error());
 
 while ($r = mysql_fetch_assoc($qBiaya_non_ops)) {

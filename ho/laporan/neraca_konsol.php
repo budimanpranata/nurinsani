@@ -104,7 +104,7 @@ SUM( IF( unit = '1010', saldo_akhir, 0) ) AS '1010',
 SUM(saldo_akhir) AS total_trx
 FROM
 tabel_master_konsol where gr_neraca='AKTIVA' and tanggal_awal='$tgl_cari'
-group by kode_rekening";
+group by kode_rekening order by kode_rekening";
 
 $sql_pa = "SELECT
 kode_rekening,
@@ -124,7 +124,7 @@ SUM( IF( unit = '1010', saldo_akhir, 0) ) AS '1010',
 SUM(saldo_akhir) AS total_trx
 FROM
 tabel_master_konsol where gr_neraca='PASIVA' and tanggal_awal='$tgl_cari'
-group by kode_rekening";
+group by kode_rekening order by kode_rekening";
 
 $sql_laba = "SELECT
 kode_rekening,
@@ -144,7 +144,7 @@ SUM( IF( unit = '1010', saldo_akhir, 0) ) AS '1010',
 SUM(saldo_akhir) AS total_trx
 FROM
 tabel_master_konsol where gr_neraca='rugi-laba' and tanggal_awal='$tgl_cari'
-group by kode_rekening";
+group by kode_rekening order by kode_rekening";
 
 
  $query_pa = mysql_query($sql_pa);
@@ -158,7 +158,7 @@ $sql1 = "SELECT
 branch.unit as unit from tabel_master_konsol
 inner join branch 
 on branch.kode_branch = tabel_master_konsol.unit
-group by tabel_master_konsol.unit";
+group by tabel_master_konsol.unit order by tabel_master_konsol.unit";
 $query1 = mysql_query($sql1);
 
 $total_pendapan=mysql_query("select unit,

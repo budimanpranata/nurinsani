@@ -106,7 +106,7 @@ function totalPerUnit($gr, $sumber, $tgl_cari) {
         FROM $sumber
         WHERE gr_neraca='$gr'
         AND tanggal_awal='$tgl_cari'
-        GROUP BY unit
+        GROUP BY unit ORDER BY unit
     ");
     while ($r = mysql_fetch_assoc($q)) {
         $data[$r['unit']] = $r['total'];
@@ -124,7 +124,7 @@ $qPaKhusus = mysql_query("
     FROM $sumber
     WHERE kode_rekening IN ('3901000','3902000','2500000')
     AND tanggal_awal='$tgl_cari'
-    GROUP BY unit
+    GROUP BY unit ORDER BY unit
 ") or die(mysql_error());
 
 while ($r = mysql_fetch_assoc($qPaKhusus)) {
@@ -146,7 +146,7 @@ $qShu = mysql_query("
     FROM $sumber
     WHERE gr_neraca='rugi-laba'
     AND tanggal_awal='$tgl_cari'
-    GROUP BY unit
+    GROUP BY unit ORDER BY unit
 ") or die(mysql_error());
 
 while ($r = mysql_fetch_assoc($qShu)) {

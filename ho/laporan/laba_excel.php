@@ -40,7 +40,7 @@ $koneksi=open_connection2();
 $sql = mysql_query("SELECT kode_rekening,nama_rekening,saldo_awal,saldo_akhir,saldo_jalan,LINE_BALANCE
 FROM `tabel_rugi_laba` 
 where unit ='$unit' and posisi='rugi-laba' and gr_neraca='rugi-laba' and kode_rekening not in ('59999')
-GROUP BY gr_neraca,kode_rekening ");
+GROUP BY gr_neraca,kode_rekening ORDER BY gr_neraca,kode_rekening ");
 
 
 $total_pendapan=mysql_fetch_array(mysql_query("select mut_debet,mut_kredit,saldo_awal,saldo_akhir from tabel_rugi_laba where unit ='$unit' and kode_rekening='40000'"));

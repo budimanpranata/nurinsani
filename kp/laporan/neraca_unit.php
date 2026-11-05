@@ -29,10 +29,10 @@ if (isset($_POST['search'])) {
         $_SESSION['tgl_caris'] = $buss_date1;
         $_SESSION['units'] = $unit;
         $hasil = db_semua("Select unit,sum(sisa_debet) as debet,sum(sisa_kredit) as kredit,posisi from tabel_master_konsol
-            where tanggal_awal = ? and unit =? group By posisi", 'ss', $buss_date1, $unit);
+            where tanggal_awal = ? and unit =? group By posisi order by posisi", 'ss', $buss_date1, $unit);
         if (!$hasil) {
             $hasil = db_semua("Select unit,sum(sisa_debet) as debet,sum(sisa_kredit) as kredit,posisi from tabel_master
-                where tanggal_awal = ? and unit =? group By posisi", 'ss', $buss_date1, $unit);
+                where tanggal_awal = ? and unit =? group By posisi order by posisi", 'ss', $buss_date1, $unit);
         }
         if (!$hasil) {
             $pesan[] = "<script>alert('Maaf,.data tidak ditemukan');</script>";

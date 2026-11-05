@@ -39,7 +39,7 @@ SUM( IF( unit = '1010', saldo_akhir, 0) ) AS '1010',
 SUM(saldo_akhir) AS total_trx 
 FROM
 tabel_master_konsol where gr_neraca='rugi-laba'
-group by kode_rekening";
+group by kode_rekening order by kode_rekening";
  
 //jalankan query dan akan menghasilkan mysqli result object
 $query = mysql_query($sql);
@@ -47,7 +47,7 @@ $sql1 = "SELECT
 branch.unit as unit from tabel_master_konsol
 inner join branch 
 on branch.kode_branch = tabel_master_konsol.unit
-group by tabel_master_konsol.unit";
+group by tabel_master_konsol.unit order by tabel_master_konsol.unit";
 $query1 = mysql_query($sql1);
 
 $total_pendapan=mysql_query("select unit,
@@ -64,7 +64,7 @@ SUM( IF( unit = '010', saldo_akhir, 0) ) AS '010',
 SUM( IF( unit = '1010', saldo_akhir, 0) ) AS '1010',
 SUM(saldo_akhir) AS total_trx
 from tabel_master_konsol where gr_neraca='rugi-laba'
-and kode_rekening='40000' group by gr_head");
+and kode_rekening='40000' group by gr_head order by gr_head");
 
 $total_biaya=mysql_query("select 
 SUM( IF( unit = '001', saldo_akhir, 0) ) AS '001',
@@ -80,7 +80,7 @@ SUM( IF( unit = '010', saldo_akhir, 0) ) AS '010',
 SUM( IF( unit = '1010', saldo_akhir, 0) ) AS '1010',
 SUM(saldo_akhir) AS total_trx
 from tabel_master_konsol where gr_neraca='rugi-laba'
-and kode_rekening='50000' group by gr_head");
+and kode_rekening='50000' group by gr_head order by gr_head");
 
 $total_pendapan_n=mysql_query("select unit,
 SUM( IF( unit = '001', saldo_akhir, 0) ) AS '001',
@@ -96,7 +96,7 @@ SUM( IF( unit = '010', saldo_akhir, 0) ) AS '010',
 SUM( IF( unit = '1010', saldo_akhir, 0) ) AS '1010',
 SUM(saldo_akhir) AS total_trx
 from tabel_master_konsol where gr_neraca='rugi-laba'
-and kode_rekening='57000' group by gr_head");
+and kode_rekening='57000' group by gr_head order by gr_head");
 
 $total_beban=mysql_query("select 
 SUM( IF( unit = '001', saldo_akhir, 0) ) AS '001',
@@ -112,7 +112,7 @@ SUM( IF( unit = '010', saldo_akhir, 0) ) AS '010',
 SUM( IF( unit = '1010', saldo_akhir, 0) ) AS '1010',
 SUM(saldo_akhir) AS total_trx
 from tabel_master_konsol where gr_neraca='rugi-laba'
-and kode_rekening='58000' group by gr_head");
+and kode_rekening='58000' group by gr_head order by gr_head");
 
 
 

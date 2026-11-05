@@ -39,7 +39,7 @@ $user=mysql_query("select kode_branch from user where userid='$userid'");
 			$sql = mysql_query("SELECT kode_rekening,nama_rekening,saldo_awal,saldo_akhir,mut_debet,mut_kredit,LINE_BALANCE
 FROM `tabel_master` 
 where unit ='$unit' and gr_neraca='AKTIVA'
-GROUP BY gr_neraca,kode_rekening ");
+GROUP BY gr_neraca,kode_rekening ORDER BY gr_neraca,kode_rekening ");
 
 $total_ak=mysql_fetch_array(mysql_query("select sum(mut_debet) as tot_mut_debet,  sum(mut_kredit) as tot_mut_kredit,
 								sum(saldo_awal) as tot_saldo_awal, sum(saldo_akhir) as tot_saldo_akhir from tabel_master where unit ='$unit' and gr_neraca='AKTIVA' and LINE_BALANCE='HEADING'  "));
@@ -156,7 +156,7 @@ echo '<tr class="grey">
 $sql2 = mysql_query("SELECT kode_rekening,nama_rekening,saldo_awal,saldo_akhir,mut_debet,mut_kredit,LINE_BALANCE
 FROM `tabel_master` 
 where unit ='$unit' and gr_neraca='PASIVA'
-GROUP BY gr_neraca,kode_rekening ");
+GROUP BY gr_neraca,kode_rekening ORDER BY gr_neraca,kode_rekening ");
 while($row=mysql_fetch_array($sql2))
 {
 	$class = '';
@@ -218,7 +218,7 @@ if ($awal < 0){
  $sql3 = mysql_query("SELECT kode_rekening,nama_rekening,saldo_awal,saldo_akhir,mut_debet,mut_kredit,LINE_BALANCE
 FROM `tabel_master` 
 where unit ='$unit' and posisi='rugi-laba' and gr_neraca='rugi-laba'
-GROUP BY gr_neraca,kode_rekening ");
+GROUP BY gr_neraca,kode_rekening ORDER BY gr_neraca,kode_rekening ");
 while($row=mysql_fetch_array($sql3))
 {
 	$class = '';
@@ -266,7 +266,7 @@ if ($awal < 0){
  $sql4 = mysql_query("SELECT kode_rekening,nama_rekening,saldo_awal,saldo_akhir,mut_debet,mut_kredit,LINE_BALANCE
 FROM `tabel_master` 
 where unit ='$unit' and posisi='admin' and gr_neraca='admin'
-GROUP BY gr_neraca,kode_rekening ");
+GROUP BY gr_neraca,kode_rekening ORDER BY gr_neraca,kode_rekening ");
 while($row=mysql_fetch_array($sql4))
 {
 	$class = '';
@@ -315,7 +315,7 @@ if ($awal < 0){
 	 $sql = mysql_query("SELECT kode_rekening,nama_rekening,saldo_awal,saldo_akhir,saldo_jalan,LINE_BALANCE
 FROM `tabel_rugi_laba` 
 where unit ='$unit' and posisi='rugi-laba' and gr_neraca='rugi-laba' and kode_rekening not in ('59999')
-GROUP BY gr_neraca,kode_rekening ");
+GROUP BY gr_neraca,kode_rekening ORDER BY gr_neraca,kode_rekening ");
 
 $total_pendapan=mysql_fetch_array(mysql_query("select mut_debet,mut_kredit,saldo_awal,saldo_akhir from tabel_rugi_laba where unit ='$unit' and kode_rekening='40000'"));
 $total_biaya=mysql_fetch_array(mysql_query("select mut_debet,mut_kredit,saldo_awal,saldo_akhir from tabel_rugi_laba where unit ='$unit' and kode_rekening='50000'"));

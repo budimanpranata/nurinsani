@@ -140,7 +140,7 @@ a:active {
 			<th>Kode Rekening</th><th>Nama Rekening</th><th>Debet</th><th>Kredit</th>
 		</tr>
 		<?php
-		$query_transaksi=mysql_query("select tanggal_transaksi,tabel_transaksi.kode_rekening,sum(debet) as debet,sum(kredit) as kredit,nama_rek from tabel_transaksi inner join coa on coa.kode_rek = tabel_transaksi.kode_rekening  where  tabel_transaksi.unit ='$unitt' and tanggal_transaksi between '$tgl_awal' and '$tgl_akhir'  Group By kode_rekening");
+		$query_transaksi=mysql_query("select tanggal_transaksi,tabel_transaksi.kode_rekening,sum(debet) as debet,sum(kredit) as kredit,nama_rek from tabel_transaksi inner join coa on coa.kode_rek = tabel_transaksi.kode_rekening  where  tabel_transaksi.unit ='$unitt' and tanggal_transaksi between '$tgl_awal' and '$tgl_akhir'  Group By kode_rekening Order By kode_rekening");
 		$total=mysql_fetch_array(mysql_query("select sum(debet) as tot_debet, sum(kredit) as tot_kredit from tabel_transaksi where  tabel_transaksi.unit ='$unitt' and tanggal_transaksi between '$tgl_awal' and '$tgl_akhir' order by kode_rekening  asc"));
 		while($row_tran=mysql_fetch_array($query_transaksi)){
 			$debet=$row_tran['debet'];
@@ -212,7 +212,7 @@ a:active {
 	if(isset($_POST['posting'])){
 	$update_mutasi=mysql_query("update tabel_master set mut_kredit=0,mut_debet=0  where unit ='$unitt'");
 		///////////////////////// HITUNG MUTASI /////////////////////
-		$query_hitung_mutasi=mysql_query("select kode_rekening,sum(debet) as debet,sum(kredit) as kredit,unit from tabel_transaksi where unit ='$unitt' and tanggal_transaksi between '$tgl_awal' and '$tgl_akhir' Group By kode_rekening");
+		$query_hitung_mutasi=mysql_query("select kode_rekening,sum(debet) as debet,sum(kredit) as kredit,unit from tabel_transaksi where unit ='$unitt' and tanggal_transaksi between '$tgl_awal' and '$tgl_akhir' Group By kode_rekening Order By kode_rekening");
 		while($row_hit_mut=mysql_fetch_array($query_hitung_mutasi)){
 			$kode_rekening=$row_hit_mut['kode_rekening'];	
 			$debet=$row_hit_mut['debet'];

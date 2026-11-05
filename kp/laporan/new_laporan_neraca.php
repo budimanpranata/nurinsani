@@ -31,7 +31,7 @@ $unit = (string) $unit;
 $sql_rek = "SELECT kode_rekening,nama_rekening,saldo_awal,saldo_akhir,mut_debet,mut_kredit,LINE_BALANCE
     FROM `tabel_master`
     where unit =? and posisi='Neraca' and gr_neraca=?
-    GROUP BY gr_neraca,kode_rekening ";
+    GROUP BY gr_neraca,kode_rekening ORDER BY gr_neraca,kode_rekening ";
 $sql_total = "select sum(mut_debet) as tot_mut_debet, sum(mut_kredit) as tot_mut_kredit,
     sum(saldo_awal) as tot_saldo_awal, sum(saldo_akhir) as tot_saldo_akhir from tabel_master where unit =? and gr_neraca=? and LINE_BALANCE='HEADING'";
 $aktiva = db_semua($sql_rek, 'ss', $unit, 'AKTIVA');

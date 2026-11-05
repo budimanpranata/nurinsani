@@ -35,7 +35,7 @@ if (isset($_POST['search'])) {
         $_SESSION['unit_konsols'] = null;
         $_SESSION['jenis'] = $jenis;
         foreach (array('tabel_master_konsol', 'tabel_master_eoy', 'tabel_master_hari') as $tabel) {
-            $hasil = db_semua("Select unit,sum(saldo_awal) as debet,sum(saldo_akhir) as kredit,posisi from $tabel where tanggal_awal = ? group by posisi", 's', $buss_date1);
+            $hasil = db_semua("Select unit,sum(saldo_awal) as debet,sum(saldo_akhir) as kredit,posisi from $tabel where tanggal_awal = ? group by posisi order by posisi", 's', $buss_date1);
             if ($hasil) {
                 break;
             }

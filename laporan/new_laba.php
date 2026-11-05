@@ -30,7 +30,7 @@ $unit = (string) $unit;
 $rekening = db_semua("SELECT kode_rekening,nama_rekening,saldo_awal,saldo_akhir,saldo_jalan,LINE_BALANCE
     FROM `tabel_rugi_laba`
     where unit =? and posisi='rugi-laba' and kode_rekening not in ('59999')
-    GROUP BY gr_neraca,kode_rekening ", 's', $unit);
+    GROUP BY gr_neraca,kode_rekening ORDER BY gr_neraca,kode_rekening ", 's', $unit);
 
 /** Saldo satu rekening ringkasan rugi laba unit (null bila tidak ada). */
 function saldo_rl($unit, $kode)

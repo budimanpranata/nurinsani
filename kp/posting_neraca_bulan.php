@@ -32,7 +32,7 @@ if ($_SESSION['level'] != "kp") {
 if (isset($_POST['posting'])) {
     db_jalankan("update tabel_master set mut_kredit=0,mut_debet=0 where unit ='1010'");
     $mutasi = db_semua("select kode_rekening,sum(debet) as debet,sum(kredit) as kredit,unit from tabel_transaksi
-        where unit ='1010' and tanggal_transaksi between ? and ? Group By kode_rekening", 'ss', $tgl_awal, $tgl_akhir);
+        where unit ='1010' and tanggal_transaksi between ? and ? Group By kode_rekening Order By kode_rekening", 'ss', $tgl_awal, $tgl_akhir);
     foreach ($mutasi as $m) {
         db_jalankan("update tabel_master set mut_debet=mut_debet+?, mut_kredit=mut_kredit+? where rekening_gl=? and unit ='1010'", 'sss',
             (string) $m['debet'], (string) $m['kredit'], (string) $m['kode_rekening']);
@@ -64,7 +64,7 @@ if (isset($_POST['posting'])) {
 
 $rekening = db_semua("select tanggal_transaksi,tabel_transaksi.kode_rekening,sum(debet) as debet,sum(kredit) as kredit,nama_rek from tabel_transaksi
     inner join coa on coa.kode_rek = SUBSTR(kode_rekening,6)
-    where tabel_transaksi.unit ='1010' and tanggal_transaksi between ? and ? Group By kode_rekening", 'ss', $tgl_awal, $tgl_akhir);
+    where tabel_transaksi.unit ='1010' and tanggal_transaksi between ? and ? Group By kode_rekening Order By kode_rekening", 'ss', $tgl_awal, $tgl_akhir);
 $total = db_satu("select sum(debet) as tot_debet, sum(kredit) as tot_kredit from tabel_transaksi
     where tabel_transaksi.unit ='1010' and tanggal_transaksi between ? and ?", 'ss', $tgl_awal, $tgl_akhir);
 

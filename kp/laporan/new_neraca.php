@@ -31,9 +31,9 @@ foreach (db_semua("select kode_branch from user where userid=?", 's', (string) $
 $unit = (string) $unit;
 
 $kolom_rek = "SELECT kode_rekening,nama_rekening,saldo_awal,saldo_akhir,mut_debet,mut_kredit,LINE_BALANCE FROM `tabel_master` ";
-$aktiva = db_semua($kolom_rek . "where unit =? and posisi='Neraca' and gr_neraca='AKTIVA' GROUP BY gr_neraca,kode_rekening", 's', $unit);
-$pasiva = db_semua($kolom_rek . "where unit =? and gr_neraca='PASIVA' GROUP BY gr_neraca,kode_rekening", 's', $unit);
-$rugi_laba = db_semua($kolom_rek . "where unit =? and posisi='rugi-laba' and gr_neraca='rugi-laba' GROUP BY gr_neraca,kode_rekening", 's', $unit);
+$aktiva = db_semua($kolom_rek . "where unit =? and posisi='Neraca' and gr_neraca='AKTIVA' GROUP BY gr_neraca,kode_rekening ORDER BY gr_neraca,kode_rekening", 's', $unit);
+$pasiva = db_semua($kolom_rek . "where unit =? and gr_neraca='PASIVA' GROUP BY gr_neraca,kode_rekening ORDER BY gr_neraca,kode_rekening", 's', $unit);
+$rugi_laba = db_semua($kolom_rek . "where unit =? and posisi='rugi-laba' and gr_neraca='rugi-laba' GROUP BY gr_neraca,kode_rekening ORDER BY gr_neraca,kode_rekening", 's', $unit);
 
 $kolom_total = "select sum(mut_debet) as tot_mut_debet, sum(mut_kredit) as tot_mut_kredit,
     sum(saldo_awal) as tot_saldo_awal, sum(saldo_akhir) as tot_saldo_akhir from tabel_master ";

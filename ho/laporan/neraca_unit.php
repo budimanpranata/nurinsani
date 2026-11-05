@@ -276,11 +276,11 @@ if (empty($buss_date1)){
 		$tgl=$_SESSION['tgl_caris'];
 		$u=$_SESSION['units'];
 
-		 $select = mysql_query("Select unit,sum(sisa_debet) as debet,sum(sisa_kredit) as kredit,posisi from tabel_master_konsol where  tanggal_awal = '$buss_date1' group By posisi");
+		 $select = mysql_query("Select unit,sum(sisa_debet) as debet,sum(sisa_kredit) as kredit,posisi from tabel_master_konsol where  tanggal_awal = '$buss_date1' group By posisi order by posisi");
 		}
 
 	if(mysql_num_rows($select)==0){
-			 $select = mysql_query("Select unit,sum(sisa_debet) as debet,sum(sisa_kredit) as kredit,posisi from tabel_master where  tanggal_awal = '$buss_date1' group By posisi");
+			 $select = mysql_query("Select unit,sum(sisa_debet) as debet,sum(sisa_kredit) as kredit,posisi from tabel_master where  tanggal_awal = '$buss_date1' group By posisi order by posisi");
 		 }
 		 if(mysql_num_rows($select)==0){
 			echo "<script>alert('Maaf,.data tidak ditemukan');</script>";

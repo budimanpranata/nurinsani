@@ -282,13 +282,13 @@ if (empty($buss_date1)){
 
 
 		
-		 $select = mysql_query("Select unit,sum(saldo_awal) as debet,sum(saldo_akhir) as kredit,posisi from tabel_master_konsol where  tanggal_awal = '$buss_date1' group by posisi");
+		 $select = mysql_query("Select unit,sum(saldo_awal) as debet,sum(saldo_akhir) as kredit,posisi from tabel_master_konsol where  tanggal_awal = '$buss_date1' group by posisi order by posisi");
 		}
 if(mysql_num_rows($select)==0){
-			 $select = mysql_query("Select unit,sum(saldo_awal) as debet,sum(saldo_akhir) as kredit,posisi from tabel_master_eoy where  tanggal_awal = '$buss_date1' group by posisi");
+			 $select = mysql_query("Select unit,sum(saldo_awal) as debet,sum(saldo_akhir) as kredit,posisi from tabel_master_eoy where  tanggal_awal = '$buss_date1' group by posisi order by posisi");
 		 }
 		 if(mysql_num_rows($select)==0){
-			 $select = mysql_query("Select unit,sum(saldo_awal) as debet,sum(saldo_akhir) as kredit,posisi from tabel_master_hari_ah where  tanggal_awal = '$buss_date1' group by posisi");
+			 $select = mysql_query("Select unit,sum(saldo_awal) as debet,sum(saldo_akhir) as kredit,posisi from tabel_master_hari_ah where  tanggal_awal = '$buss_date1' group by posisi order by posisi");
 		 }
 if(mysql_num_rows($select)==0){
 			echo "<script>alert('Maaf,.data tidak ditemukan');</script>";

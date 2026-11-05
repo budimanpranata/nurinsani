@@ -35,7 +35,7 @@ $koneksi=open_connection2();
 header("Content-type: application/vnd-ms-excel");
 header("Content-Disposition: attachment; filename=neraca.xls");
 
- $select = mysql_query("Select unit,sum(sisa_debet) as debet,sum(sisa_kredit) as kredit,posisi from tabel_master_konsol where  tanggal_awal = '$tgl_cari' and unit ='$unit' group By posisi");
+ $select = mysql_query("Select unit,sum(sisa_debet) as debet,sum(sisa_kredit) as kredit,posisi from tabel_master_konsol where  tanggal_awal = '$tgl_cari' and unit ='$unit' group By posisi order by posisi");
 		$tabel='tabel_master_konsol';
 		
 
@@ -48,7 +48,7 @@ header("Content-Disposition: attachment; filename=neraca.xls");
 $sql = mysql_query("SELECT kode_rekening,nama_rekening,saldo_awal,saldo_akhir,mut_debet,mut_kredit,LINE_BALANCE
 FROM ".$tabel." 
 where unit ='$unit' and posisi='Neraca' and gr_neraca='AKTIVA' and tanggal_awal = '$tgl_cari'
-GROUP BY gr_neraca,kode_rekening ");
+GROUP BY gr_neraca,kode_rekening ORDER BY gr_neraca,kode_rekening ");
 
 $total_ak=mysql_fetch_array(mysql_query("select sum(mut_debet) as tot_mut_debet,  sum(mut_kredit) as tot_mut_kredit,
 sum(saldo_awal) as tot_saldo_awal, sum(saldo_akhir) as tot_saldo_akhir from ".$tabel." where unit ='$unit' and gr_neraca='AKTIVA' and LINE_BALANCE='HEADING' and tanggal_awal = '$tgl_cari'  "));
@@ -63,7 +63,7 @@ sum(saldo_awal) as tot_saldo_awal, sum(saldo_akhir) as tot_saldo_akhir from tabe
 $sql2 = mysql_query("SELECT kode_rekening,nama_rekening,saldo_awal,saldo_akhir,mut_debet,mut_kredit,LINE_BALANCE
 FROM ".$tabel."
 where unit ='$unit' and gr_neraca='PASIVA' and tanggal_awal = '$tgl_cari'
-GROUP BY gr_neraca,kode_rekening ");
+GROUP BY gr_neraca,kode_rekening ORDER BY gr_neraca,kode_rekening ");
 
 								
 								echo "<html>
@@ -228,7 +228,7 @@ if ($awal < 0){
  $sql3 = mysql_query("SELECT kode_rekening,nama_rekening,saldo_awal,saldo_akhir,mut_debet,mut_kredit,LINE_BALANCE
 FROM `tabel_rugi_laba` 
 where unit ='$unit' and posisi='rugi-laba' and gr_neraca='rugi-laba'
-GROUP BY gr_neraca,kode_rekening ");
+GROUP BY gr_neraca,kode_rekening ORDER BY gr_neraca,kode_rekening ");
 while($row=mysql_fetch_array($sql3))
 {
 	$class = '';
@@ -277,7 +277,7 @@ if ($awal < 0){
 	// $sql = mysql_query("SELECT kode_rekening,nama_rekening,saldo_awal,saldo_akhir,saldo_jalan,LINE_BALANCE
 //FROM ".$tabel."
 //where unit ='$unit' and posisi='rugi-laba' and gr_neraca='rugi-laba' and kode_rekening not in ('59999')
-//GROUP BY gr_neraca,kode_rekening ");
+//GROUP BY gr_neraca,kode_rekening ORDER BY gr_neraca,kode_rekening ");
 
 $total_pendapan=mysql_fetch_array(mysql_query("select mut_debet,mut_kredit,saldo_awal,saldo_akhir from ".$tabel." where unit ='$unit' and kode_rekening='40000' and tanggal_awal = '$tgl_cari'"));
 $total_biaya=mysql_fetch_array(mysql_query("select mut_debet,mut_kredit,saldo_awal,saldo_akhir from ".$tabel." where unit ='$unit' and kode_rekening='50000' and tanggal_awal = '$tgl_cari'"));

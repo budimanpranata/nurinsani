@@ -819,7 +819,7 @@ SUM( IF( unit = '5001', saldo_akhir, 0) ) AS '5001',
 SUM(saldo_akhir) AS total_trx
 FROM
 ".$sumber." where gr_neraca='AKTIVA' and tanggal_awal='$tgl_cari' 
-group by kode_rekening";
+group by kode_rekening order by kode_rekening";
 
 $sql_pa = "SELECT
 kode_rekening,
@@ -928,7 +928,7 @@ SUM( IF( unit = '5001', saldo_akhir, 0) ) AS '5001',
 SUM(saldo_akhir) AS total_trx
 FROM
 ".$sumber." where gr_neraca='PASIVA' and tanggal_awal='$tgl_cari'
-group by kode_rekening";
+group by kode_rekening order by kode_rekening";
 
 $sql_laba = "SELECT
 kode_rekening,
@@ -1034,7 +1034,7 @@ SUM( IF( unit = '5001', saldo_akhir, 0) ) AS '5001',
 SUM(saldo_akhir) AS total_trx
 FROM
 ".$sumber." where gr_neraca='rugi-laba' and tanggal_awal='$tgl_cari' and kode_rekening not in ('59999')
-group by kode_rekening";
+group by kode_rekening order by kode_rekening";
 
 
 
@@ -1142,7 +1142,7 @@ SUM( IF( unit = '5001', saldo_akhir, 0) ) AS '5001',
 SUM(saldo_akhir) AS total_trx
 FROM
 ".$sumber." where gr_neraca='admin' and tanggal_awal='$tgl_cari' 
-group by kode_rekening";
+group by kode_rekening order by kode_rekening";
 $query_admin = mysql_query($sql_admin);
 
  $query_pa = mysql_query($sql_pa);

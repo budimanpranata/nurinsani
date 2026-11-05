@@ -33,7 +33,7 @@ if (isset($_POST['hitung_shu'])) {
         //1. Tahap Penginputan
         $ok = db_jalankan("INSERT INTO tabel_master_kp SELECT * FROM tabel_master where unit ='1010'")
             && db_jalankan("UPDATE tabel_master_kp set unit ='0000',tanggal_awal=?", 's', $tgl_system)
-            && db_jalankan("insert into tabel_master_konsol select * from tabel_master_kp group by rekening_gl");
+            && db_jalankan("insert into tabel_master_konsol select * from tabel_master_kp group by rekening_gl order by rekening_gl");
     }
     $_SESSION['pesan_konsol'] = $ok ? array('success', 'Proses Konsolidasi Sukses')
         : array('danger', 'Proses Konsolidasi gagal: ' . db_error_terakhir());
