@@ -1,3 +1,7 @@
+# Jangan tampilkan daftar isi folder yang tidak punya index (upload, load/, Image/, ...). Hanya berlaku untuk
+# aplikasi ini; <Directory /var/www/> di apache2.conf tetap Options Indexes untuk aplikasi lain (2026-11-05).
+Options -Indexes
+
 # Tolak akses ke file backup editor / salinan lama.
 # Apache menampilkan file ini sebagai teks biasa (kode sumber & password database ikut terbaca).
 <FilesMatch "(~|\.bak|\.old|\.orig|\.save|\.swp|\.sql|\.md)$">
