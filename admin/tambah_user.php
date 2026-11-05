@@ -1,88 +1,123 @@
-<?php require_once __DIR__ . '/../php8_compat.php'; require_once __DIR__ . '/cek_admin.php';
-session_start();
-include "../conn2.php";
-$userid=$_SESSION['userid'];
- $koneksi=open_connection2();
- $buss_date=date("y-m-d");
+<?php require_once __DIR__ . '/../koneksi_db.php';
+/**
+ * Menu admin > Parameter User > Tambah User: user name, password + konfirmasi, level, nama, kode unit -> tabel user.
+ * Dimigrasi 2026-11-05 (perintah user): dulu form ini mengirim ke adduser.php (INSERT dengan teks SQL tempel, pesan
+ * "User berhasil/gagal ditambahkan" di halaman kosong); kini proses di halaman ini (prepared statement), lalu kembali
+ * ke formulir dengan pesan yang sama. Password tetap disimpan bcrypt(md5(isian)) (inc/password.php).
+ * Disetujui user ("ok lanjut"):
+ *   - konfirmasi password wajib sama dengan password (dulu tidak dicek)
+ *   - user name yang sudah ada ditolak dengan pesan jelas (dulu hanya "gagal")
+ *   - pilihan level = level yang dibuka log.php: admin, unit, lead, fund, kp, ho (dulu admin/user/lead/smo/spvs/kp;
+ *     user/smo/spvs tidak bisa login)
+ *   - user name maksimal 9 karakter sesuai kolom user.userid (dulu 50, terpotong diam-diam)
+ * Hanya level admin (cek_admin.php).
+ */
+require_once __DIR__ . '/cek_admin.php';
+require_once __DIR__ . '/../inc/cek_login.php';
+wajib_login();
+require_once __DIR__ . '/../inc/tampilan.php';
+require_once __DIR__ . '/../inc/password.php';
 
-//cek apakah user sudah login
-if(!isset($_SESSION['userid'])){
-   header("location:../index.html");//jika belum login jangan lanjut..
- exit; }
-if($_SESSION['level']!="admin"){
-  echo "<script>alert('Anda Buka Admin');</script>";
-         echo "<script language='javascript'>document.location.href='../index.html'</script>";
- exit; }
+$daftar_level = array('admin', 'unit', 'lead', 'fund', 'kp', 'ho');
+
+if (empty($_SESSION['token_tambah_user'])) {
+    $_SESSION['token_tambah_user'] = bin2hex(random_bytes(16));
+}
+
+$isi = array('username' => '', 'level' => 'admin', 'nama' => '', 'branch' => '');
+$pesan = isset($_SESSION['pesan_tambah_user']) ? $_SESSION['pesan_tambah_user'] : null;
+unset($_SESSION['pesan_tambah_user']);
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    foreach ($isi as $k => $v) {
+        $isi[$k] = isset($_POST[$k]) ? trim((string) $_POST[$k]) : '';
+    }
+    $pass = isset($_POST['pass']) ? (string) $_POST['pass'] : '';
+    $conf = isset($_POST['conf_pass']) ? (string) $_POST['conf_pass'] : '';
+    $galat = '';
+    if (!hash_equals($_SESSION['token_tambah_user'], isset($_POST['token']) ? (string) $_POST['token'] : '')) {
+        $galat = 'Formulir kedaluwarsa, silakan ulangi.';
+    } elseif ($isi['username'] === '' || $pass === '' || $isi['nama'] === '' || $isi['branch'] === '') {
+        $galat = 'Semua isian bertanda * wajib diisi.';
+    } elseif (strlen($isi['username']) > 9) {
+        $galat = 'User name maksimal 9 karakter.';
+    } elseif ($pass !== $conf) {
+        $galat = 'Konfirmasi password tidak sama dengan password.';
+    } elseif (!in_array($isi['level'], $daftar_level, true)) {
+        $galat = 'Level tidak dikenal.';
+    } elseif (db_satu("select userid from user where userid = ?", 's', $isi['username'])) {
+        $galat = 'User name ' . $isi['username'] . ' sudah dipakai.';
+    }
+    if ($galat === '') {
+        // bcrypt dari md5 isian (inc/password.php); md5 dari isian mentah seperti versi lama
+        $password = password_buat_dari_md5(md5($pass));
+        $ok = db_jalankan("insert into user set userid = ?, pass = ?, level = ?, nama = ?, kode_branch = ?", 'sssss',
+            $isi['username'], $password, $isi['level'], $isi['nama'], $isi['branch']);
+        if ($ok) {
+            $_SESSION['pesan_tambah_user'] = array('success', 'User berhasil ditambahkan: ' . $isi['username'] . ' (' . $isi['level'] . ').');
+            $_SESSION['token_tambah_user'] = bin2hex(random_bytes(16));
+            header('Location: tambah_user.php');
+            exit;
+        }
+        $galat = 'User gagal ditambahkan' . (db_error_terakhir() !== '' ? ': ' . db_error_terakhir() : '.');
+    }
+    $pesan = array('danger', $galat);
+}
+
+$unit = db_semua("select kode_branch, unit from branch order by kode_branch");
+
+halaman_awal('Tambah User');
 ?>
-<html>
-<head>
-<title>Tambah User</title>
-<style type="text/css">
-<!--
-.header1 {color: #ffffff; background: #2F6B4F; font-weight: bold; font-family: Tahoma, Verdana; font-size: 13px; margin: 0px;}
-.style5 {color: #FF0000}
-.style9 {color: #FF0000; font-size: 14px; }
-.style13 {font-family: Verdana, Arial, Helvetica, sans-serif; font-size: 14px; }
--->
-</style>
-</head>
-<body>
-	<form action="adduser.php" method="POST" name="Gantipass" target="_self" id="Gantipass">
-  <table border='1' width='65%' cellpadding='2'  cellspacing='2' bgcolor="#FFFFFF">
-  </table>
-  <table width="100%" border="0" cellpadding="3" cellspacing="0" bgcolor="#4682B4">
-    <tr>
-      <td class="header1" width="100%">Tambah User </td>
-    </tr>
-  </table>
-  <table border='0' width='65%' cellpadding='2'  cellspacing='2' bgcolor="#FFFFFF">
-    <caption>&nbsp;
-    </caption>
-  </table>
-  <table width='100%' border='0' cellpadding='2'  cellspacing='2' bordercolor="#ECE9D8" bgcolor="#EAEAEA">
-    <tr>
-      <td width="25%" bgcolor="#CCCCCC"><span class="style13">User Name</span><span class="style9">* </span></td>
-      <td width="75%" bgcolor="#CCCCCC"><input name="username" type="text" id="username" size="30" maxlength="50"/></td>
-    </tr>
-    <tr>
-      <td><span class="style13">Password <span class="style5">* </span></span></td>
-      <td><input name="pass" type="password" id="pass" size="30" maxlength="15"/></td>
-    </tr>
-    <tr>
-      <td bgcolor="#CCCCCC"><span class="style13"><strong>Confirmasi</strong> Password <span class="style5">*</span></span></td>
-      <td bgcolor="#CCCCCC"><input name="conf_pass" type="text" id="conf_pass" size="30" maxlength="15"/></td>
-    </tr>
-    <tr>
-      <td><span class="style13">Level <span class="style5">*</span></span></td>
-      <td><select name="level" id="level">
-        <option value="admin" selected>admin</option>
-        <option value="user">user</option>
-        <option value="lead">lead</option>
-        <option value="smo">mr</option>
-        <option value="spvs">ao</option>
-        <option value="kp">kp</option>
-      </select></td>
-    
-<tr>
-      <td bgcolor="#CCCCCC"><span class="style13">Name<span class="style5">* </span></span></td>
-      <td bgcolor="#CCCCCC"><input name="nama" type="text" id="nama" size="30"/></td>
-    </tr>
-
-  <tr>
-      <td><span class="style13">Branch Code <span class="style5">* </span></span></td>
-      <td><input name="branch" type="text" id="branch" size="30" maxlength="4"/></td>
-    </tr>
-</tr>
-    <tr>
-      <td bgcolor="#CCCCCC"></td>
-      <td bgcolor="#CCCCCC"><input name="kirim" type="submit" class="header1" id="kirim" value="Add User">
-          <label>
-          <input type="reset" name="Reset" id="button" value="Batal">
-        </label></td>
-    </tr>
-  </table>
-</form>
-</body>
-</html>
-
-
+<div class="card card-ni">
+  <div class="card-header">Tambah User</div>
+  <div class="card-body">
+    <?php if ($pesan): ?>
+      <div class="alert alert-<?php echo h($pesan[0]); ?> py-2"><?php echo h($pesan[1]); ?></div>
+    <?php endif; ?>
+    <form action="tambah_user.php" method="POST" name="Gantipass" id="Gantipass" class="form-ni" autocomplete="off">
+      <input type="hidden" name="token" value="<?php echo h($_SESSION['token_tambah_user']); ?>">
+      <div class="row g-2 mb-2">
+        <label for="username" class="col-sm-4 col-form-label">User Name <span class="text-danger">*</span></label>
+        <div class="col-sm-8"><input name="username" type="text" id="username" class="form-control form-control-sm" maxlength="9" value="<?php echo h($isi['username']); ?>" required></div>
+      </div>
+      <div class="row g-2 mb-2">
+        <label for="pass" class="col-sm-4 col-form-label">Password <span class="text-danger">*</span></label>
+        <div class="col-sm-8"><input name="pass" type="password" id="pass" class="form-control form-control-sm" maxlength="50" autocomplete="new-password" required></div>
+      </div>
+      <div class="row g-2 mb-2">
+        <label for="conf_pass" class="col-sm-4 col-form-label"><strong>Konfirmasi</strong> Password <span class="text-danger">*</span></label>
+        <div class="col-sm-8"><input name="conf_pass" type="password" id="conf_pass" class="form-control form-control-sm" maxlength="50" autocomplete="new-password" required></div>
+      </div>
+      <div class="row g-2 mb-2">
+        <label for="level" class="col-sm-4 col-form-label">Level <span class="text-danger">*</span></label>
+        <div class="col-sm-8">
+          <select name="level" id="level" class="form-select form-select-sm">
+            <?php foreach ($daftar_level as $lv): ?>
+              <option value="<?php echo h($lv); ?>"<?php echo $isi['level'] === $lv ? ' selected' : ''; ?>><?php echo h($lv); ?></option>
+            <?php endforeach; ?>
+          </select>
+        </div>
+      </div>
+      <div class="row g-2 mb-2">
+        <label for="nama" class="col-sm-4 col-form-label">Nama <span class="text-danger">*</span></label>
+        <div class="col-sm-8"><input name="nama" type="text" id="nama" class="form-control form-control-sm" maxlength="50" value="<?php echo h($isi['nama']); ?>" required></div>
+      </div>
+      <div class="row g-2 mb-3">
+        <label for="branch" class="col-sm-4 col-form-label">Kode Unit <span class="text-danger">*</span></label>
+        <div class="col-sm-8">
+          <input name="branch" type="text" id="branch" class="form-control form-control-sm" maxlength="4" list="daftar_unit" value="<?php echo h($isi['branch']); ?>" required>
+          <datalist id="daftar_unit">
+            <?php foreach ($unit as $u): ?><option value="<?php echo h($u['kode_branch']); ?>"><?php echo h($u['unit']); ?></option><?php endforeach; ?>
+          </datalist>
+          <div class="form-text">4 karakter, pilih dari daftar unit atau ketik (mis. 9999 untuk admin).</div>
+        </div>
+      </div>
+      <div class="text-end">
+        <button type="reset" class="btn btn-outline-secondary btn-sm">Batal</button>
+        <button name="kirim" type="submit" id="kirim" value="Add User" class="btn btn-ni btn-sm px-4">Tambah User</button>
+      </div>
+    </form>
+  </div>
+</div>
+<?php
+halaman_akhir();

@@ -1,10 +1,15 @@
-<?php require_once __DIR__ . '/../php8_compat.php'; require_once __DIR__ . '/cek_admin.php';
+<?php require_once __DIR__ . '/../koneksi_db.php';
 /**
  * Data AO (tabel `ao`): daftar, tambah, ubah, hapus.
  * cao dipakai sebagai kunci di loan, calon_loan, simpanan, dll., jadi tidak bisa diubah
  * dan AO yang masih dipakai tidak bisa dihapus.
+ * Tampilan dimigrasi ke Bootstrap 5 (inc/tampilan.php) 2026-11-05, perintah user; proses tidak berubah.
+ * Hanya level admin (cek_admin.php).
  */
-require_once __DIR__ . '/../koneksi_db.php';
+require_once __DIR__ . '/cek_admin.php';
+require_once __DIR__ . '/../inc/cek_login.php';
+wajib_login();
+require_once __DIR__ . '/../inc/tampilan.php';
 
 $db = db_ni();
 $per_halaman = 20;
@@ -13,11 +18,6 @@ $tabel_pemakai = array('loan', 'calon_loan', 'simpanan', 'anggota', 'kelompok', 
 
 if (empty($_SESSION['csrf_ao'])) {
     $_SESSION['csrf_ao'] = bin2hex(random_bytes(16));
-}
-
-function h($s)
-{
-    return htmlspecialchars((string) $s, ENT_QUOTES, 'UTF-8');
 }
 
 function ambil_ao($db, $cao)
@@ -164,139 +164,126 @@ while ($r && ($row = $r->fetch_assoc())) {
 $pesan = isset($_SESSION['pesan_ao']) ? $_SESSION['pesan_ao'] : null;
 unset($_SESSION['pesan_ao']);
 $url_cari = 'ao.php?cari=' . urlencode($cari);
+halaman_awal('Data AO');
 ?>
-<!DOCTYPE html>
-<html>
-<head>
-<meta charset="utf-8">
-<title>Data AO</title>
-<link href="css/bootstrap.min.css" rel="stylesheet">
-<style>
-body { padding: 0 0 20px; font-size: 13px; }
-.judul { background: #2F6B4F; color: #fff; font-weight: bold; font-size: 14px; padding: 4px 8px; margin-bottom: 12px; }
-.isi { padding: 0 12px; }
-.table > thead > tr > th { background: #e9f2dc; white-space: nowrap; }
-.table td form { display: inline; }
-.panel-heading { font-weight: bold; }
-</style>
-</head>
-<body>
-<div class="judul">Data AO</div>
-<div class="isi">
-
 <?php if ($pesan): ?>
-  <div class="alert alert-<?php echo h($pesan[0]); ?>"><?php echo h($pesan[1]); ?></div>
+  <div class="alert alert-<?php echo h($pesan[0]); ?> py-2"><?php echo h($pesan[1]); ?></div>
 <?php endif; ?>
 
-<div class="panel panel-default">
-  <div class="panel-heading"><?php echo $mode === 'ubah' ? 'Ubah AO ' . h($form['cao']) : 'Tambah AO'; ?></div>
-  <div class="panel-body">
+<div class="card card-ni mb-3">
+  <div class="card-header"><?php echo $mode === 'ubah' ? 'Ubah AO ' . h($form['cao']) : 'Tambah AO'; ?></div>
+  <div class="card-body">
     <?php if ($error): ?>
-      <div class="alert alert-danger"><?php echo implode('<br>', array_map('h', $error)); ?></div>
+      <div class="alert alert-danger py-2"><?php echo implode('<br>', array_map('h', $error)); ?></div>
     <?php endif; ?>
-    <form method="post" action="ao.php" class="form-horizontal" autocomplete="off">
+    <form method="post" action="ao.php" class="form-ni" autocomplete="off">
       <input type="hidden" name="csrf" value="<?php echo h($_SESSION['csrf_ao']); ?>">
       <input type="hidden" name="aksi" value="<?php echo h($mode); ?>">
-      <div class="form-group">
-        <label class="col-sm-2 control-label">Kode AO *</label>
-        <div class="col-sm-3">
-          <input type="text" name="cao" class="form-control" maxlength="8" required pattern="[A-Za-z0-9]{1,8}"
+      <div class="row g-2 mb-2">
+        <label class="col-sm-3 col-form-label" for="cao">Kode AO <span class="text-danger">*</span></label>
+        <div class="col-sm-4">
+          <input type="text" name="cao" id="cao" class="form-control form-control-sm" maxlength="8" required pattern="[A-Za-z0-9]{1,8}"
                  value="<?php echo h($form['cao']); ?>" <?php echo $mode === 'ubah' ? 'readonly' : ''; ?>>
-          <?php if ($mode === 'ubah'): ?><span class="help-block">Kode AO tidak bisa diubah.</span><?php endif; ?>
+          <?php if ($mode === 'ubah'): ?><div class="form-text">Kode AO tidak bisa diubah.</div><?php endif; ?>
         </div>
       </div>
-      <div class="form-group">
-        <label class="col-sm-2 control-label">Nama AO *</label>
-        <div class="col-sm-5"><input type="text" name="nama_ao" class="form-control" maxlength="50" required value="<?php echo h($form['nama_ao']); ?>"></div>
+      <div class="row g-2 mb-2">
+        <label class="col-sm-3 col-form-label" for="nama_ao">Nama AO <span class="text-danger">*</span></label>
+        <div class="col-sm-7"><input type="text" name="nama_ao" id="nama_ao" class="form-control form-control-sm" maxlength="50" required value="<?php echo h($form['nama_ao']); ?>"></div>
       </div>
-      <div class="form-group">
-        <label class="col-sm-2 control-label">NIK AO</label>
-        <div class="col-sm-4"><input type="text" name="nik_ao" class="form-control" maxlength="30" value="<?php echo h($form['nik_ao']); ?>"></div>
+      <div class="row g-2 mb-2">
+        <label class="col-sm-3 col-form-label" for="nik_ao">NIK AO</label>
+        <div class="col-sm-5"><input type="text" name="nik_ao" id="nik_ao" class="form-control form-control-sm" maxlength="30" value="<?php echo h($form['nik_ao']); ?>"></div>
       </div>
-      <div class="form-group">
-        <label class="col-sm-2 control-label">No. Telepon</label>
-        <div class="col-sm-3"><input type="text" name="no_tlp" class="form-control" maxlength="14" value="<?php echo h($form['no_tlp']); ?>"></div>
+      <div class="row g-2 mb-2">
+        <label class="col-sm-3 col-form-label" for="no_tlp">No. Telepon</label>
+        <div class="col-sm-4"><input type="text" name="no_tlp" id="no_tlp" class="form-control form-control-sm" maxlength="14" value="<?php echo h($form['no_tlp']); ?>"></div>
       </div>
-      <div class="form-group">
-        <label class="col-sm-2 control-label">Unit *</label>
-        <div class="col-sm-5">
+      <div class="row g-2 mb-2">
+        <label class="col-sm-3 col-form-label" for="kode_unit">Unit <span class="text-danger">*</span></label>
+        <div class="col-sm-7">
           <?php if ($unit): ?>
-            <select name="kode_unit" class="form-control" required>
+            <select name="kode_unit" id="kode_unit" class="form-select form-select-sm" required>
               <option value="">- pilih unit -</option>
               <?php foreach ($unit as $kode => $nama): ?>
                 <option value="<?php echo h($kode); ?>" <?php echo $form['kode_unit'] === (string) $kode ? 'selected' : ''; ?>><?php echo h($kode . ' - ' . $nama); ?></option>
               <?php endforeach; ?>
             </select>
           <?php else: ?>
-            <input type="text" name="kode_unit" class="form-control" maxlength="4" required value="<?php echo h($form['kode_unit']); ?>">
-            <span class="help-block">Tabel branch masih kosong; isi kode unit (4 karakter).</span>
+            <input type="text" name="kode_unit" id="kode_unit" class="form-control form-control-sm" maxlength="4" required value="<?php echo h($form['kode_unit']); ?>">
+            <div class="form-text">Tabel branch masih kosong; isi kode unit (4 karakter).</div>
           <?php endif; ?>
         </div>
       </div>
-      <div class="form-group">
-        <label class="col-sm-2 control-label">NIK Atasan</label>
-        <div class="col-sm-4">
-          <input type="text" name="atasan" class="form-control" maxlength="16" list="daftar_atasan" value="<?php echo h($form['atasan']); ?>">
+      <div class="row g-2 mb-3">
+        <label class="col-sm-3 col-form-label" for="atasan">NIK Atasan</label>
+        <div class="col-sm-5">
+          <input type="text" name="atasan" id="atasan" class="form-control form-control-sm" maxlength="16" list="daftar_atasan" value="<?php echo h($form['atasan']); ?>">
           <datalist id="daftar_atasan">
             <?php foreach ($atasan as $nik => $nama): ?><option value="<?php echo h($nik); ?>"><?php echo h($nama); ?></option><?php endforeach; ?>
           </datalist>
         </div>
       </div>
-      <div class="form-group">
-        <div class="col-sm-offset-2 col-sm-6">
-          <button type="submit" class="btn btn-success"><?php echo $mode === 'ubah' ? 'Simpan Perubahan' : 'Tambah'; ?></button>
-          <?php if ($mode === 'ubah' || $error): ?><a href="ao.php" class="btn btn-default">Batal</a><?php endif; ?>
-        </div>
+      <div class="text-end">
+        <?php if ($mode === 'ubah' || $error): ?><a href="ao.php" class="btn btn-outline-secondary btn-sm">Batal</a><?php endif; ?>
+        <button type="submit" class="btn btn-ni btn-sm px-4"><?php echo $mode === 'ubah' ? 'Simpan Perubahan' : 'Tambah'; ?></button>
       </div>
     </form>
   </div>
 </div>
 
-<form method="get" action="ao.php" class="form-inline" style="margin-bottom:10px">
-  <input type="text" name="cari" class="form-control input-sm" placeholder="kode / nama / NIK / unit" value="<?php echo h($cari); ?>">
-  <button type="submit" class="btn btn-default btn-sm">Cari</button>
-  <?php if ($cari !== ''): ?><a href="ao.php" class="btn btn-link btn-sm">Tampilkan semua</a><?php endif; ?>
-  <span class="text-muted" style="margin-left:10px"><?php echo $total; ?> AO</span>
-</form>
-
-<table class="table table-bordered table-condensed table-hover">
-  <thead>
-    <tr><th>Kode AO</th><th>Nama AO</th><th>NIK AO</th><th>No. Telepon</th><th>Unit</th><th>NIK Atasan</th><th style="width:110px">Aksi</th></tr>
-  </thead>
-  <tbody>
-  <?php if (!$daftar): ?>
-    <tr><td colspan="7" class="text-center text-muted"><?php echo $cari !== '' ? 'Tidak ada AO yang cocok.' : 'Belum ada data AO.'; ?></td></tr>
-  <?php endif; ?>
-  <?php foreach ($daftar as $row): ?>
-    <tr>
-      <td><?php echo h($row['cao']); ?></td>
-      <td><?php echo h($row['nama_ao']); ?></td>
-      <td><?php echo h($row['nik_ao']); ?></td>
-      <td><?php echo h($row['no_tlp']); ?></td>
-      <td><?php echo h($row['kode_unit'] . ($row['nama_unit'] !== null ? ' - ' . $row['nama_unit'] : '')); ?></td>
-      <td><?php echo h($row['atasan'] . (isset($atasan[$row['atasan']]) ? ' - ' . $atasan[$row['atasan']] : '')); ?></td>
-      <td>
-        <a href="ao.php?ubah=<?php echo urlencode($row['cao']); ?>" class="btn btn-primary btn-xs">Ubah</a>
-        <form method="post" action="ao.php" onsubmit="return confirm('Hapus AO <?php echo h(addslashes($row['cao'] . ' - ' . $row['nama_ao'])); ?>?');">
-          <input type="hidden" name="csrf" value="<?php echo h($_SESSION['csrf_ao']); ?>">
-          <input type="hidden" name="aksi" value="hapus">
-          <input type="hidden" name="cao" value="<?php echo h($row['cao']); ?>">
-          <button type="submit" class="btn btn-danger btn-xs">Hapus</button>
-        </form>
-      </td>
-    </tr>
-  <?php endforeach; ?>
-  </tbody>
-</table>
-
-<?php if ($jml_hal > 1): ?>
-<ul class="pagination pagination-sm">
-  <?php for ($i = 1; $i <= $jml_hal; $i++): ?>
-    <li class="<?php echo $i === $hal ? 'active' : ''; ?>"><a href="<?php echo h($url_cari . '&hal=' . $i); ?>"><?php echo $i; ?></a></li>
-  <?php endfor; ?>
-</ul>
-<?php endif; ?>
-
+<div class="card card-ni mw-100">
+  <div class="card-header d-flex flex-wrap align-items-center gap-2">
+    <span>Daftar AO</span>
+    <span class="ms-auto small"><?php echo $total; ?> AO</span>
+  </div>
+  <div class="card-body">
+    <form method="get" action="ao.php" class="d-flex flex-wrap gap-2 align-items-center mb-2">
+      <input type="search" name="cari" class="form-control form-control-sm" style="max-width:20rem" placeholder="kode / nama / NIK / unit" value="<?php echo h($cari); ?>">
+      <button type="submit" class="btn btn-outline-secondary btn-sm">Cari</button>
+      <?php if ($cari !== ''): ?><a href="ao.php" class="btn btn-link btn-sm">Tampilkan semua</a><?php endif; ?>
+    </form>
+    <div class="table-responsive">
+      <table class="table table-sm table-bordered table-hover table-ni align-middle mb-0">
+        <thead>
+          <tr><th>Kode AO</th><th>Nama AO</th><th>NIK AO</th><th>No. Telepon</th><th>Unit</th><th>NIK Atasan</th><th style="width:120px">Aksi</th></tr>
+        </thead>
+        <tbody>
+        <?php if (!$daftar): ?>
+          <tr><td colspan="7" class="text-center text-muted"><?php echo $cari !== '' ? 'Tidak ada AO yang cocok.' : 'Belum ada data AO.'; ?></td></tr>
+        <?php endif; ?>
+        <?php foreach ($daftar as $row): ?>
+          <tr>
+            <td><?php echo h($row['cao']); ?></td>
+            <td><?php echo h($row['nama_ao']); ?></td>
+            <td><?php echo h($row['nik_ao']); ?></td>
+            <td><?php echo h($row['no_tlp']); ?></td>
+            <td><?php echo h($row['kode_unit'] . ($row['nama_unit'] !== null ? ' - ' . $row['nama_unit'] : '')); ?></td>
+            <td><?php echo h($row['atasan'] . (isset($atasan[$row['atasan']]) ? ' - ' . $atasan[$row['atasan']] : '')); ?></td>
+            <td class="text-nowrap">
+              <a href="ao.php?ubah=<?php echo urlencode($row['cao']); ?>" class="btn btn-outline-primary btn-sm py-0">Ubah</a>
+              <form method="post" action="ao.php" class="d-inline" onsubmit="return confirm(<?php echo h(json_encode('Hapus AO ' . $row['cao'] . ' - ' . $row['nama_ao'] . '?')); ?>);">
+                <input type="hidden" name="csrf" value="<?php echo h($_SESSION['csrf_ao']); ?>">
+                <input type="hidden" name="aksi" value="hapus">
+                <input type="hidden" name="cao" value="<?php echo h($row['cao']); ?>">
+                <button type="submit" class="btn btn-outline-danger btn-sm py-0">Hapus</button>
+              </form>
+            </td>
+          </tr>
+        <?php endforeach; ?>
+        </tbody>
+      </table>
+    </div>
+    <?php if ($jml_hal > 1): ?>
+    <nav class="mt-2">
+      <ul class="pagination pagination-sm flex-wrap mb-0">
+        <?php for ($i = 1; $i <= $jml_hal; $i++): ?>
+          <li class="page-item<?php echo $i === $hal ? ' active' : ''; ?>"><a class="page-link" href="<?php echo h($url_cari . '&hal=' . $i); ?>"><?php echo $i; ?></a></li>
+        <?php endfor; ?>
+      </ul>
+    </nav>
+    <?php endif; ?>
+  </div>
 </div>
-</body>
-</html>
+<?php
+halaman_akhir();

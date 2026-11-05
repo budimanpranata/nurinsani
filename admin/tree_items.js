@@ -12,15 +12,8 @@ var TREE_ITEMS = [
 		 	['Tambah Unit', 'add_unit.php'],
 			
 		],
-		['Report',0,
-		 	['Nominative Pembiayaan', 'report/Kr.php'],
-			['Nominative Simpanan', 'report/krt.php'],
-			['TUnggakan', 'tunggak.php'],
-
-		],
 		['Koreksi Pembiayaan','koreksi_loan.php'],
 
-		['EOM','hitung_shu.php'],
 		['Ganti Password','Gantipass.php'],
 	
 	]

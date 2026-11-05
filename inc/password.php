@@ -1,7 +1,7 @@
 <?php
 /**
- * Password login user (tabel user, kolom pass). Dipakai log.php, ganti_password.php, admin/adduser.php,
- * admin/engine_smo.php, admin/reset_password.php.
+ * Password login user (tabel user, kolom pass). Dipakai log.php, ganti_password.php, admin/tambah_user.php,
+ * admin/reset_password.php.
  *
  * Format simpan (2026-11-05, PEKERJAAN_TERTUNDA.md bagian 93): bcrypt dari hash md5 lama, password_hash(md5(isian)).
  * Isian dinormalkan sama seperti dulu (antiinjection log.php: htmlspecialchars, strip_tags, stripslashes, escape) lalu

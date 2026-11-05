@@ -1,73 +1,48 @@
-<?php require_once __DIR__ . '/../php8_compat.php'; require_once __DIR__ . '/cek_admin.php';
-session_start();
-include "../conn2.php";
-$koneksi=open_connection2();
-$userid=$_SESSION['userid'];
-$result = mysql_query("SELECT * FROM user WHERE userid='$userid'");
-while($row = mysql_fetch_array($result)){
-	$user = $row['userId'] ;
-	$nama =$row['nama'] ;
-	$password= $row ['pass'];
-}
+<?php require_once __DIR__ . '/../koneksi_db.php';
+/**
+ * Menu admin > Ganti Password: formulir ganti password user yang login; proses di changepass.php (ganti_password.php:
+ * password lama benar, baru = konfirmasi, minimal 8 karakter, lalu login ulang).
+ * Dimigrasi 2026-11-05 (perintah user), pola fund/Gantipass.php: hanya tampilan (Bootstrap 5); query user (membaca
+ * hash password) yang tidak dipakai dibuang; judul lama "Cari Data Disbursement" (salah salin) diganti "Ganti Password".
+ * Nama field dan tujuan form sama dengan versi lama. Hanya level admin (cek_admin.php).
+ */
+require_once __DIR__ . '/cek_admin.php';
+require_once __DIR__ . '/../inc/cek_login.php';
+wajib_login();
+require_once __DIR__ . '/../inc/tampilan.php';
+$userid = (string) $_SESSION['userid'];
+
+halaman_awal('Ganti Password');
 ?>
-<html>
-<head>
-<title>Change Password</title>
-<style type="text/css">
-<!--
-.header1 {color: #ffffff; background: #4682B4; font-weight: bold; font-family: Tahoma, Verdana; font-size: 13px; margin: 0px;}
-.style5 {color: #FF0000}
-.style9 {color: #FF0000; font-size: 14px; }
-.style13 {font-family: Verdana, Arial, Helvetica, sans-serif; font-size: 14px; }
-.style14 {
-	color: #FFFFFF;
-	font-weight: bold;
-}
--->
-</style>
-</head>
-<body>
-	<form action="changepass.php" method="POST" name="Gantipass" target="_self" id="Gantipass">
-  <table border='1' width='65%' cellpadding='2'  cellspacing='2' bgcolor="#FFFFFF">
-  </table>
-  <table width="100%" cellpadding="1" bordercolor="#CCCCCC" bgcolor="#CCCCCC">
-    <tr>
-      <td height="20" bordercolor="#FFFFFF" bgcolor="#2F6B4F" class="style3 style8"><span class="style14">Cari Data Disbursement
-          </span>
-      <div align="right"></div></td>
-    </tr>
-  </table>
-  <table border='0' width='65%' cellpadding='2'  cellspacing='2' bgcolor="#FFFFFF">
-    <caption>&nbsp;
-    </caption>
-  </table>
-  <table width='100%' border='0' cellpadding='2'  cellspacing='2' bordercolor="#ECE9D8" bgcolor="#EAEAEA">
-    <tr>
-      <td width="25%" bgcolor="#CCCCCC"><span class="style13">User Name</span><span class="style9">* </span></td>
-      <td width="75%" bgcolor="#CCCCCC"><input name="userid" type="text" id="userid" value="<?php echo $userid; ?>" size="30" disabled="disabled" maxlength="50"/></td>
-    </tr>
-    <tr>
-      <td><span class="style13">Password <strong>Lama</strong>   <span class="style5">* </span></span></td>
-      <td><input name="passlama" type="password" id="passlama" size="30" maxlength="50" autocomplete="current-password"/></td>
-    </tr>
-    <tr>
-      <td bgcolor="#CCCCCC"><span class="style13">Password <strong>Baru</strong>  <span class="style5">* </span></span></td>
-      <td bgcolor="#CCCCCC"><input name="passbaru" type="password" id="passbaru" size="30" maxlength="50" autocomplete="new-password"/> <small>minimal 8 karakter</small></td>
-    </tr>
-    <tr>
-      <td><span class="style13"><strong>Confirmasi</strong> Password  <span class="style5">* </span></span></td>
-      <td><input name="passlagi" type="password" id="passlagi" size="30" maxlength="50" autocomplete="new-password"/></td>
-    </tr>
-    <tr>
-      <td bgcolor="#CCCCCC"></td>
-      <td bgcolor="#CCCCCC"><input name="kirim" type="submit" id="kirim" value="change">
-          <label>
-          <input type="reset" name="Reset" id="button" value="Batal">
-        </label></td>
-    </tr>
-  </table>
-</form>
-</body>
-</html>
-
-
+<div class="card card-ni">
+  <div class="card-header">Ganti Password</div>
+  <div class="card-body">
+    <form action="changepass.php" method="POST" name="Gantipass" target="_self" id="Gantipass" class="form-ni">
+      <div class="row g-2 mb-2">
+        <label for="userid" class="col-sm-4 col-form-label">User Name <span class="text-danger">*</span></label>
+        <div class="col-sm-8"><input name="userid" type="text" id="userid" class="form-control form-control-sm" value="<?php echo h($userid); ?>" disabled maxlength="50"></div>
+      </div>
+      <div class="row g-2 mb-2">
+        <label for="passlama" class="col-sm-4 col-form-label">Password <strong>Lama</strong> <span class="text-danger">*</span></label>
+        <div class="col-sm-8"><input name="passlama" type="password" id="passlama" class="form-control form-control-sm" maxlength="50" autocomplete="current-password" required></div>
+      </div>
+      <div class="row g-2 mb-2">
+        <label for="passbaru" class="col-sm-4 col-form-label">Password <strong>Baru</strong> <span class="text-danger">*</span></label>
+        <div class="col-sm-8">
+          <input name="passbaru" type="password" id="passbaru" class="form-control form-control-sm" maxlength="50" minlength="8" autocomplete="new-password" required>
+          <div class="form-text">minimal 8 karakter</div>
+        </div>
+      </div>
+      <div class="row g-2 mb-3">
+        <label for="passlagi" class="col-sm-4 col-form-label"><strong>Konfirmasi</strong> Password <span class="text-danger">*</span></label>
+        <div class="col-sm-8"><input name="passlagi" type="password" id="passlagi" class="form-control form-control-sm" maxlength="50" autocomplete="new-password" required></div>
+      </div>
+      <div class="text-end">
+        <button type="reset" class="btn btn-outline-secondary btn-sm">Batal</button>
+        <button name="kirim" type="submit" id="kirim" value="change" class="btn btn-ni btn-sm px-4">Ganti</button>
+      </div>
+    </form>
+  </div>
+</div>
+<?php
+halaman_akhir();

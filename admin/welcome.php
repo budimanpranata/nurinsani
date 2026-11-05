@@ -1,42 +1,25 @@
-<?php require_once __DIR__ . '/../php8_compat.php'; require_once __DIR__ . '/cek_admin.php';
-session_start();
-include "../conn2.php";
+<?php require_once __DIR__ . '/../koneksi_db.php';
+/**
+ * Menu Home (level admin): sambutan untuk user yang login.
+ * Dimigrasi 2026-11-05 (perintah user), pola kp/welcome.php: isi sama dengan versi lama; hanya tampilan (Bootstrap 5)
+ * dan query (prepared statement) yang berubah. Hanya level admin (cek_admin.php).
+ */
+require_once __DIR__ . '/cek_admin.php';
+require_once __DIR__ . '/../inc/cek_login.php';
+wajib_login();
+require_once __DIR__ . '/../inc/tampilan.php';
+
+$users = db_semua("SELECT * FROM user WHERE userid=?", 's', (string) $_SESSION['userid']);
+
+halaman_awal('Home');
 ?>
-<html>
-<head>
-
-<style type="text/css">
-<!--
-.header1 {color: #ffffff; background: #4682B4; font-weight: bold; font-family: Tahoma, Verdana; font-size: 13px; margin: 0px;}
-.style1 {
-	color: #FFFFFF;
-	font-weight: bold;
-}
--->
-</style>
-<body>
-<table width="100%" border="0" cellpadding="3" cellspacing="0" bgcolor="#4682B4">
-  <tr>
-    <td width="100%" bgcolor="#776a56"><span class="style1">Home</span></td>
-  </tr>
-</table>
-</body>
-</html>
+<?php foreach ($users as $row): ?>
+<div class="card card-ni mb-3">
+  <div class="card-body">
+    <h1 class="h5 mb-1">Selamat Datang <?php echo h($row['nama']); ?></h1>
+    <div class="text-muted small">Aplikasi Nurinsani</div>
+  </div>
+</div>
+<?php endforeach; ?>
 <?php
-$koneksi=open_connection2();
-$userid=$_SESSION['userid'];
-$result = mysql_query("SELECT * FROM user WHERE userid='$userid'");
-while($row = mysql_fetch_array($result)){
-echo "<h>Selamat Datang ".$row['nama']. " Aplikasi Nurinsani</h>";
-}
-//cek apakah user sudah login
-if(!isset($_SESSION['userid'])){
-    die("Anda belum login");//jika belum login jangan lanjut..
-}
-
-//cek level user
-if($_SESSION['level']!="admin"){
-    die("Anda bukan user");//jika bukan user jangan lanjut
-}
-?>	
-
+halaman_akhir();
