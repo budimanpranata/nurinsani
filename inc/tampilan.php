@@ -58,7 +58,8 @@ function halaman_akhir($script = array())
 <script src="<?php echo h(url_app('assets/vendor/bootstrap-5.3.3/js/bootstrap.bundle.min.js')); ?>"></script>
 <script src="<?php echo h(url_app('assets/app/app.js')); ?>"></script>
 <?php foreach ($script as $js): ?>
-<script src="<?php echo h(url_app($js)); ?>"></script>
+<?php // ?v=waktu ubah file: perbaikan JS langsung terbaca tanpa browser memakai salinan lama dari cache ?>
+<script src="<?php echo h(url_app($js) . (is_file(dirname(__DIR__) . '/' . $js) ? '?v=' . filemtime(dirname(__DIR__) . '/' . $js) : '')); ?>"></script>
 <?php endforeach; ?>
 </body>
 </html>

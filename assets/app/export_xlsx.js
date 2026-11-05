@@ -122,7 +122,8 @@
             }).then(function (r) {
                 setel(100, 'Selesai: ' + angka(r.jumlah || jumlah || total || 0) + ' ' + satuan + '. File sedang diunduh.', 'bg-success');
                 tampilRingkasan(r.ringkasan, r.ringkasan_kolom);
-                window.location.href = r.unduh;
+                // link unduh relatif ke folder endpoint, bukan ke halaman (kp/laporan/list_gl.php memakai report/list_gl_export.php)
+                window.location.href = new URL(r.unduh, new URL(url, window.location.href)).href;
                 berjalan = false;
                 tombol.disabled = false;
                 tutup.classList.remove('d-none');
