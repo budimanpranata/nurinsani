@@ -9,3 +9,6 @@ if (php_sapi_name() !== 'cli') {
     http_response_code(403);
     exit('Access denied: CLI execution only.');
 }
+// php.ini CLI bisa tanpa date.timezone (bawaan UTC): cron antara 00.00-07.00 WIB akan memakai tanggal kemarin di date().
+// Disamakan ke WIB untuk semua proses cron (2026-11-05, perintah user); file yang sudah menyetel sendiri tetap sama.
+date_default_timezone_set('Asia/Jakarta');

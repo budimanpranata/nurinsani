@@ -42,7 +42,7 @@ $kode_tran="EOD".$unit.$kodetrs;
 
 $cek_tunggak= db_fetch_array(db_query($con,"select sum(KREDIT)- sum(DEBIT) as tunggak from tunggakan WHERE cif ='$cif"));
         $ada_tunggak=$cek_tunggak['tunggak']; 
-		$ft=round(compat_num($ada_tunggak/$angsuran));  
+		$ft=round(compat_num(compat_bagi($ada_tunggak, $angsuran))); // PHP 5: pembagi 0/kosong -> false, bukan error  
 
 
 
@@ -131,8 +131,8 @@ if($ft>0){
             db_query($con,"insert  into tunggakan (tgl_tunggak,NOREK,UNIT,CIF,CODE_KEL,DEBIT,TYPE,KREDIT,USERID,REFF,CAO,blok)VALUES('$tanggal','$norek','$unit','$cif','$code_kel','$angsuran_pokok','01','0','$userid','$ket','$cao','') ") ;
             db_query($con,"insert  into tunggakan (tgl_tunggak,NOREK,UNIT,CIF,CODE_KEL,DEBIT,TYPE,KREDIT,USERID,REFF,CAO,blok)VALUES('$tanggal','$norek','$unit','$cif','$code_kel','$ijaroh','02','0','$userid','$ket','$cao','') ");           
               
-            db_query($con,"insert into rek_loan(ref,tgl_realisasi,unit,no_anggota,saldo_kredit,debet,tipe,ket,USERID,STATUS,cif,AO)VALUES('','$tanggal','$unit','\$norek','0','$angsuran_pokok','03','$ket2','$userid','REALISASI POKOK','$cif',(select cao from loan where cif='$cif' limit 1))");
-                db_query($con,"insert into rek_loan(ref,tgl_realisasi,unit,no_anggota,saldo_kredit,debet,tipe,ket,USERID,STATUS,cif,AO)VALUES('','$tanggal','$unit','\$norek','0','$ijaroh','03','$ket2','$userid','REALISASI BAGHAS','$cif',(select cao from loan where cif='$cif' limit 1))");
+            db_query($con,"insert into rek_loan(ref,tgl_realisasi,unit,no_anggota,saldo_kredit,debet,tipe,ket,USERID,STATUS,cif,AO)VALUES('','$tanggal','$unit','$norek','0','$angsuran_pokok','03','$ket2','$userid','REALISASI POKOK','$cif',(select cao from loan where cif='$cif' limit 1))");
+                db_query($con,"insert into rek_loan(ref,tgl_realisasi,unit,no_anggota,saldo_kredit,debet,tipe,ket,USERID,STATUS,cif,AO)VALUES('','$tanggal','$unit','$norek','0','$ijaroh','03','$ket2','$userid','REALISASI BAGHAS','$cif',(select cao from loan where cif='$cif' limit 1))");
                 
                 db_query($con,"Update  loan set next_schedule ='$next_schedule',os =os-'$angsuran',saldo_margin=saldo_margin-'$ijaroh',run_tenor='$pb',ke='$ke_tenor'+1,last_payment='$tanggal' where cif  ='$cif'");
                 db_query($con,"insert  into simpanan (BUSS_DATE,NOREK,UNIT,CIF,CODE_KEL,DEBIT,TYPE,KREDIT,USERID,REFF,CAO,tgl_input,kode_transaksi)VALUES('$tanggal','$norek','$unit','$cif','$code_kel','$angsuran','03','0','$userid','$ket2','$cao','$tgl_input','$kode_tran') ") ;
