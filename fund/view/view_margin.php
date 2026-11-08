@@ -1,6 +1,6 @@
 <?php require_once __DIR__ . '/../../koneksi_db.php';
 /**
- * Menu fund > Seting Parameter > Param Margin: daftar input dana per bulan (param_deposito + jenis_dana; data per halaman
+ * Menu admin > Seting Parameter > Param Margin: daftar input dana per bulan (param_deposito + jenis_dana; data per halaman
  * dari ajax-grid-data_margin.php), Tambah Data (../transaksi/input_margin.php) dan Hapus.
  * Hapus (keputusan user 2026-11-04): hanya kode bulan yang BELUM diposting (param_deposito.ket kosong); menghapus baris
  * kode bulan itu di param_deposito, param_rasio dan param_dep (yang ditulis input_margin.php) selama belum diposting.
@@ -13,7 +13,7 @@ session_start();
 ob_start();
 require_once __DIR__ . '/../../inc/cek_login.php';
 wajib_login();
-if ((isset($_SESSION['level']) ? $_SESSION['level'] : '') != "fund") {
+if ((isset($_SESSION['level']) ? $_SESSION['level'] : '') != "admin") {
     header("location:../../index.html");
     exit;
 }

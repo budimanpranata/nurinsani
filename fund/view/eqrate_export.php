@@ -29,7 +29,7 @@ function jawab_json($data, $kode = 200)
 
 $aksi = isset($_REQUEST['aksi']) ? (string) $_REQUEST['aksi'] : '';
 wajib_login($aksi === 'unduh' ? 'halaman' : 'json');
-if ((isset($_SESSION['level']) ? $_SESSION['level'] : '') != "fund") {
+if ((isset($_SESSION['level']) ? $_SESSION['level'] : '') != "admin") {
     jawab_json(array('pesan' => 'Anda bukan user'), 403);
 }
 $userid = (string) $_SESSION['userid'];

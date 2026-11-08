@@ -11,7 +11,8 @@ session_start();
 ob_start();
 require_once __DIR__ . '/../../inc/cek_login.php';
 wajib_login();
-if ((isset($_SESSION['level']) ? $_SESSION['level'] : '') != "fund") {
+// menu ada di fund; juga ditautkan dari halaman Posting level admin
+if (!in_array(isset($_SESSION['level']) ? $_SESSION['level'] : '', array('fund', 'admin'), true)) {
     header("location:../../index.html");
     exit;
 }

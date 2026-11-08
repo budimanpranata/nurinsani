@@ -1,6 +1,6 @@
 <?php require_once __DIR__ . '/../../koneksi_db.php';
 /**
- * Menu fund > Seting Parameter > Param Financial: daftar param_finan (data per halaman dari ajax-grid-data_finan.php),
+ * Menu admin > Seting Parameter > Param Financial: daftar param_finan (data per halaman dari ajax-grid-data_finan.php),
  * Tambah Data (../transaksi/input_finan.php) dan Hapus.
  * Hapus (keputusan user 2026-11-04): hanya periode TERBARU (code_param terbesar, yang dipakai Posting Parameter
  * berikutnya - inc/hari_dep.php hari_dep_periode_terbaru); periode lama tetap sebagai riwayat.
@@ -13,7 +13,7 @@ session_start();
 ob_start();
 require_once __DIR__ . '/../../inc/cek_login.php';
 wajib_login();
-if ((isset($_SESSION['level']) ? $_SESSION['level'] : '') != "fund") {
+if ((isset($_SESSION['level']) ? $_SESSION['level'] : '') != "admin") {
     header("location:../../index.html");
     exit;
 }

@@ -38,7 +38,7 @@ function jawab_json($data, $kode = 200)
 
 $aksi = isset($_REQUEST['aksi']) ? (string) $_REQUEST['aksi'] : '';
 wajib_login($aksi === 'unduh' ? 'halaman' : 'json');
-if ((isset($_SESSION['level']) ? $_SESSION['level'] : '') != "fund") {
+if (!in_array(isset($_SESSION['level']) ? $_SESSION['level'] : '', array('fund', 'admin'), true)) {
     jawab_json(array('pesan' => 'Anda bukan user'), 403);
 }
 $userid = (string) $_SESSION['userid'];
@@ -127,6 +127,10 @@ if ($aksi === 'mulai') {
         }
     }
     $laporan = isset($_REQUEST['laporan']) && isset(EXPORT_LAPORAN[(string) $_REQUEST['laporan']]) ? (string) $_REQUEST['laporan'] : 'tempo';
+    // Cetak Bilyet & Reprint pindah ke level admin (2026-11-07); laporan lain tetap fund. Tahap sesudahnya memakai job milik user ini.
+    if ($_SESSION['level'] !== (in_array($laporan, array('bilyet', 'reprint'), true) ? 'admin' : 'fund')) {
+        jawab_json(array('pesan' => 'Anda bukan user'), 403);
+    }
     if ($laporan !== 'tempo') {
         $filter = isset($_SESSION[$laporan . '_filter']) ? $_SESSION[$laporan . '_filter'] : array('cari' => '');
     } else {

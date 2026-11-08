@@ -25,7 +25,7 @@ session_start();
 ob_start();
 require_once __DIR__ . '/../inc/cek_login.php';
 wajib_login();
-if ((isset($_SESSION['level']) ? $_SESSION['level'] : '') != "fund") {
+if ((isset($_SESSION['level']) ? $_SESSION['level'] : '') != "admin") {
     header("location:../../index.html");
     exit;
 }
@@ -33,8 +33,8 @@ require_once __DIR__ . '/../inc/nomor_bukti.php';
 require_once __DIR__ . '/../inc/bagi_hasil_deposito.php';
 
 $userid = (string) $_SESSION['userid'];
-$r = db_satu("select kode_branch from user where userid =?", 's', $userid);
-$unit = $r ? (string) $r['kode_branch'] : '';
+// menu Posting pindah ke level admin (2026-11-07, perintah user): unit jurnal tetap unit fund, bukan unit user yang login
+$unit = '1010';
 
 /** Bukukan realisasi satu deposito (dipanggil di dalam nb_kunci); hasil null bila berhasil, atau pesan galat. */
 function realisasi_satu($norek, $tanggal, $unit, $userid)

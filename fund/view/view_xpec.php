@@ -1,6 +1,6 @@
 <?php require_once __DIR__ . '/../../koneksi_db.php';
 /**
- * Menu fund > Seting Parameter > expectation (Perhitungan Nisbah): simulasi, hanya membaca.
+ * Menu admin > Seting Parameter > expectation (Perhitungan Nisbah): simulasi, hanya membaca.
  *   - pilih Tanggal Periode (tanggal Param Margin yang ada di param_rasio); tabel 1 = hasil Posting Parameter per dana
  *     (porsi investor: rasio, nominal, eq %; porsi koperasi: rasio, nominal)
  *   - isi ekspektasi rate per nisbah (20% .. 12%); tabel 2 (khusus DP) = harapan = ekspektasi% x nominal x hari / 365
@@ -20,7 +20,7 @@ session_start();
 ob_start();
 require_once __DIR__ . '/../../inc/cek_login.php';
 wajib_login();
-if ((isset($_SESSION['level']) ? $_SESSION['level'] : '') != "fund") {
+if ((isset($_SESSION['level']) ? $_SESSION['level'] : '') != "admin") {
     header("location:../../index.html");
     exit;
 }

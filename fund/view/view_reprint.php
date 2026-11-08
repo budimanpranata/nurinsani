@@ -1,6 +1,6 @@
 <?php require_once __DIR__ . '/../../koneksi_db.php';
 /**
- * Menu fund > Cetak > Reprint: semua deposito (cari CIF/nama) dengan status cetaknya; tombol Reprint untuk deposito
+ * Menu admin > Cetak > Reprint: semua deposito (cari CIF/nama) dengan status cetaknya; tombol Reprint untuk deposito
  * berstatus 'Print' (sudah pernah dicetak) ke ../transaksi/input_reprint.php, serta Export .xlsx bertahap
  * (tempo_export.php?laporan=reprint). Filter di sesi reprint_filter.
  * Dibangun ulang 2026-11-04 (perintah user): versi lama tanpa cek login, mysql_* dengan kata kunci langsung di SQL,
@@ -13,7 +13,7 @@ session_start();
 ob_start();
 require_once __DIR__ . '/../../inc/cek_login.php';
 wajib_login();
-if ((isset($_SESSION['level']) ? $_SESSION['level'] : '') != "fund") {
+if ((isset($_SESSION['level']) ? $_SESSION['level'] : '') != "admin") {
     header("location:../../index.html");
     exit;
 }

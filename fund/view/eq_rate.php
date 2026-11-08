@@ -1,6 +1,6 @@
 <?php require_once __DIR__ . '/../../koneksi_db.php';
 /**
- * Menu fund > Report > View Baghas & Eq Rate: pilih periode tanggal jatuh tempo jadwal bagi hasil, tampil ringkasan per
+ * Menu admin > Report > View Baghas & Eq Rate: pilih periode tanggal jatuh tempo jadwal bagi hasil, tampil ringkasan per
  * unit (NOA deposito, total pokok) dan Export .xlsx bertahap laporan Bagi Hasil dan Eq Rate (eqrate_export.php,
  * periode di sesi eqrate_filter). Hitungan di inc/eqrate_deposito.php.
  * Dimigrasi 2026-11-04 (perintah user): dulu cek level tidak ada, mysql_* dengan tanggal langsung di SQL, ringkasan
@@ -14,7 +14,7 @@ session_start();
 ob_start();
 require_once __DIR__ . '/../../inc/cek_login.php';
 wajib_login();
-if ((isset($_SESSION['level']) ? $_SESSION['level'] : '') != "fund") {
+if ((isset($_SESSION['level']) ? $_SESSION['level'] : '') != "admin") {
     header("location:../../index.html");
     exit;
 }

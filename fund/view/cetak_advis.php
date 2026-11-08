@@ -14,7 +14,8 @@ ob_start();
 require_once __DIR__ . '/../../inc/cek_login.php';
 wajib_login();
 //cek level user
-if ((isset($_SESSION['level']) ? $_SESSION['level'] : '') != "fund") {
+// cetak advis = fund; cetak ulang (?reprint=) = admin, menu Reprint pindah ke level admin (2026-11-07)
+if ((isset($_SESSION['level']) ? $_SESSION['level'] : '') != (isset($_GET['reprint']) && $_GET['reprint'] !== '' ? "admin" : "fund")) {
     header("location:../../index.html");
     exit;
 }

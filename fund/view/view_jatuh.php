@@ -1,6 +1,6 @@
 <?php require_once __DIR__ . '/../../koneksi_db.php';
 /**
- * Menu fund > Realisasi Bagi Hasil dan Posting: jadwal bagi hasil deposito yang jatuh tempo pada tanggal terpilih
+ * Menu admin > Posting > Posting (dipindah dari level fund 2026-11-07): jadwal bagi hasil deposito yang jatuh tempo pada tanggal terpilih
  * (bawaan hari ini) dan belum direalisasi, dengan pilihan deposito dan tombol Realisasi (../realisasi_dep.php).
  * Hitungan dari inc/bagi_hasil_deposito.php, sama dengan yang dibukukan.
  * Dimigrasi 2026-11-04: tampilan Bootstrap 5, prepared statement; daftar pilihan (dulu ../depo_list.php, dibuka lewat
@@ -17,7 +17,7 @@ session_start();
 ob_start();
 require_once __DIR__ . '/../../inc/cek_login.php';
 wajib_login();
-if ((isset($_SESSION['level']) ? $_SESSION['level'] : '') != "fund") {
+if ((isset($_SESSION['level']) ? $_SESSION['level'] : '') != "admin") {
     header("location:../../index.html");
     exit;
 }

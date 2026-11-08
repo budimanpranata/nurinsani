@@ -12,6 +12,10 @@ echo "<script>alert('Maaf,.tanggal system belum di setup');</script>";
 if(!isset($_SESSION['userid'])){
    header("location:index.html");
  exit; }
+if ((isset($_SESSION['level']) ? $_SESSION['level'] : '') != "admin") {
+    header("location:../../index.html");
+    exit;
+}
 
 ?>
 <script type="text/javascript">

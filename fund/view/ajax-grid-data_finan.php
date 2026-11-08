@@ -12,7 +12,7 @@ require_once __DIR__ . '/../../inc/cek_login.php';
 require_once __DIR__ . '/../../inc/datatables_server.php';
 wajib_login('json');
 header('Content-Type: application/json; charset=utf-8');
-if ((isset($_SESSION['level']) ? $_SESSION['level'] : '') != "fund") {
+if ((isset($_SESSION['level']) ? $_SESSION['level'] : '') != "admin") {
     http_response_code(403);
     echo '[]';
     exit;

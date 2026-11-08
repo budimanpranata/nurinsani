@@ -1,6 +1,6 @@
 <?php require_once __DIR__ . '/../../koneksi_db.php';
 /**
- * Menu fund > Cetak > Cetak Bilyet: deposito dengan status_print 'OK' dan tombol Print (cetak_bilyet.php, PDF di tab
+ * Menu admin > Cetak > Cetak Bilyet: deposito dengan status_print 'OK' dan tombol Print (cetak_bilyet.php, PDF di tab
  * baru; daftar dimuat ulang saat kembali ke tab ini karena deposito yang dicetak berstatus 'Print'), serta Export .xlsx
  * bertahap (tempo_export.php?laporan=bilyet). Filter di sesi bilyet_filter.
  * Dimigrasi 2026-11-04 (perintah user): tampilan Bootstrap 5, DataTables lokal, prepared statement, wajib login level
@@ -13,7 +13,7 @@ session_start();
 ob_start();
 require_once __DIR__ . '/../../inc/cek_login.php';
 wajib_login();
-if ((isset($_SESSION['level']) ? $_SESSION['level'] : '') != "fund") {
+if ((isset($_SESSION['level']) ? $_SESSION['level'] : '') != "admin") {
     header("location:../../index.html");
     exit;
 }

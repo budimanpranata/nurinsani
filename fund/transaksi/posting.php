@@ -1,6 +1,6 @@
 <?php require_once __DIR__ . '/../../koneksi_db.php';
 /**
- * Menu fund > Seting Parameter > Posting Parameter: hitung parameter bagi hasil periode berjalan dari Param Financial
+ * Menu admin > Seting Parameter > Posting Parameter (dipindah dari level fund 2026-11-07): hitung parameter bagi hasil periode berjalan dari Param Financial
  * terbaru (param_finan) dan Param Margin yang belum diposting (param_deposito / param_rasio ket kosong), lalu isi ulang
  * param_dep (dibaca Realisasi Bagi Hasil dan laporan Baghas & Eq Rate) dan tandai semuanya 'Post'.
  *
@@ -30,7 +30,7 @@ session_start();
 ob_start();
 require_once __DIR__ . '/../../inc/cek_login.php';
 wajib_login();
-if ((isset($_SESSION['level']) ? $_SESSION['level'] : '') != "fund") {
+if ((isset($_SESSION['level']) ? $_SESSION['level'] : '') != "admin") {
     header("location:../../index.html");
     exit;
 }

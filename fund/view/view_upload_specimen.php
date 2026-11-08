@@ -1,6 +1,6 @@
 <?php require_once __DIR__ . '/../../koneksi_db.php';
 /**
- * Menu fund > Input Data Master > Upload Specimen: specimen (contoh tanda tangan) 1 dan 2 per deposan.
+ * Menu admin > Input Data Master > Upload Specimen: specimen (contoh tanda tangan) 1 dan 2 per deposan.
  *   - pilih deposan (saran dari ../ajax_cari_deposan.php), tampil specimen yang sudah ada, unggah/ganti
  *   - hanya JPG/PNG maks 2 MB (jenis dicek dari isi file); disimpan di load/specimen/ (ditolak untuk akses web langsung)
  *     dengan nama specimen_<CIF>_<slot>_<waktu>.<jpg|png>; dicatat di tabel image (NOPEN = CIF, name = 'SPECIMEN 1|2',
@@ -12,6 +12,11 @@
 require_once __DIR__ . '/../../inc/tampilan.php';
 require_once __DIR__ . '/../../inc/cek_login.php';
 wajib_login();
+//cek level user
+if ((isset($_SESSION['level']) ? $_SESSION['level'] : '') != "admin") {
+    header("location:../../index.html");
+    exit;
+}
 ob_start();
 
 const SPECIMEN_MAKS_BYTE = 2097152;
