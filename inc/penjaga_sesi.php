@@ -62,7 +62,7 @@ function penjaga_sesi_skrip()
 function penjaga_sesi_publik($rel)
 {
     $tetap = array(
-        'log.php',
+        'log.php', 'mfa.php',
         'logout.php', 'admin/logout.php', 'lead/logout.php',
         'gantipass.php', 'changepass.php', 'ganti_password.php',
     );

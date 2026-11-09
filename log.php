@@ -56,7 +56,28 @@ if($op=="in"){
     }
     @unlink(file_gagal_login($userid));
 
-    $cek_tgl = mysql_fetch_array(mysql_query("SELECT param_tgl FROM param_tgl WHERE unit ='$userid'")) or die(mysql_error());
+    // MFA wajib untuk semua user (2026-11-09, PEKERJAAN_TERTUNDA.md bagian 101): password benar BELUM berarti login.
+    // Sesi login baru dibuat di op=lanjut sesudah kode 6 digit benar di mfa.php.
+    session_regenerate_id(true);
+    unset($_SESSION['mfa_lolos']);
+    $_SESSION['mfa_tunggu'] = array('userid' => $c['userid'], 'waktu' => time());
+    header("location:mfa.php");
+    exit;
+}else if($op=="lanjut"){
+    // kembali dari mfa.php (kode MFA benar): pemeriksaan dan pengalihan per level tetap sama seperti sebelum ada MFA
+    $lolos = isset($_SESSION['mfa_lolos']['userid']) ? $_SESSION['mfa_lolos'] : null;
+    unset($_SESSION['mfa_lolos']);
+    if (!$lolos || time() - (int) $lolos['waktu'] > 60) {
+        kembali_ke_login('Silakan login ulang.');
+    }
+    $userid = mysql_real_escape_string($lolos['userid']);
+    $cek = mysql_query("SELECT datediff(current_date(), last_update) as selisih,level,userid,pass FROM user WHERE userid='$userid'");
+    $c = mysql_num_rows($cek) == 1 ? mysql_fetch_array($cek) : null;
+    if (!$c) {
+        kembali_ke_login('Maaf User name atau password salah');
+    }
+
+    $cek_tgl =mysql_fetch_array(mysql_query("SELECT param_tgl FROM param_tgl WHERE unit ='$userid'")) or die(mysql_error());
     $cek_eod = mysql_fetch_array(mysql_query("SELECT param_tgl FROM param_tgl WHERE nama_param_tgl ='EOD_MOB'")) or die(mysql_error());
 $tgl_eod =$cek_eod['param_tgl'];
 $tgl=$cek_tgl['param_tgl'];

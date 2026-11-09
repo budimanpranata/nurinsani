@@ -9,6 +9,9 @@
  *   - sesi user yang sedang aktif diputus (penanda inc/penjaga_sesi.php ditimpa)
  *   - dicatat di riwayat_reset_password (db/parameter/2026-11-05_password_hash.sql)
  *   - akun sendiri tidak bisa di-reset di sini (pakai menu Ganti Password)
+ * Reset MFA (2026-11-09, PEKERJAAN_TERTUNDA.md bagian 101): hapus pendaftaran authenticator user (HP hilang/ganti HP);
+ * login berikutnya user memindai QR code baru. Dicatat di riwayat_reset_password dengan jenis 'MFA'.
+ * MFA akun sendiri tidak bisa di-reset di sini; darurat: php db/parameter/reset_mfa.php <userid> di server.
  * Hanya level admin (cek_admin.php).
  */
 require_once __DIR__ . '/cek_admin.php';
@@ -16,6 +19,7 @@ require_once __DIR__ . '/../inc/cek_login.php';
 wajib_login();
 require_once __DIR__ . '/../inc/tampilan.php';
 require_once __DIR__ . '/../inc/password.php';
+require_once __DIR__ . '/../inc/mfa.php';
 
 const PANJANG_PASSWORD_SEMENTARA = 10;
 
@@ -67,19 +71,49 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['reset'])) {
     exit;
 }
 
-$pesan = isset($_SESSION['pesan_reset_password']) ? $_SESSION['pesan_reset_password'] : null;
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['reset_mfa'])) {
+    $u = isset($_POST['u']) ? trim((string) $_POST['u']) : '';
+    $alasan = isset($_POST['alasan']) ? trim((string) $_POST['alasan']) : '';
+    $user = $u !== '' ? db_satu("select userid, nama from user where userid = ?", 's', $u) : null;
+    if (!hash_equals($_SESSION['token_reset_password'], isset($_POST['token']) ? (string) $_POST['token'] : '')) {
+        $_SESSION['pesan_reset_password'] = array('danger', 'Formulir kedaluwarsa, silakan ulangi.');
+    } elseif (!$user) {
+        $_SESSION['pesan_reset_password'] = array('danger', 'User tidak ditemukan.');
+    } elseif (strcasecmp($user['userid'], $admin) === 0) {
+        $_SESSION['pesan_reset_password'] = array('danger', 'MFA akun sendiri tidak bisa di-reset di sini.');
+    } elseif ($alasan === '') {
+        $_SESSION['pesan_reset_password'] = array('danger', 'Alasan reset wajib diisi.');
+    } elseif (mfa_hapus($user['userid']) !== 1) {
+        $_SESSION['pesan_reset_password'] = array('warning', 'User ' . $user['userid'] . ' belum mendaftarkan MFA, tidak ada yang di-reset.');
+    } else {
+        db_jalankan("insert into riwayat_reset_password (waktu, admin, userid, jenis, alasan, ip) values (now(), ?, ?, 'MFA', ?, ?)", 'ssss',
+            $admin, $user['userid'], mb_substr($alasan, 0, 255), isset($_SERVER['REMOTE_ADDR']) ? (string) $_SERVER['REMOTE_ADDR'] : '');
+        // sesi user yang sedang login diputus: login berikutnya wajib memindai QR code baru
+        @file_put_contents(penjaga_sesi_berkas($user['userid']), 'reset-mfa-' . time(), LOCK_EX);
+        $_SESSION['pesan_reset_password'] = array('success', 'MFA ' . $user['userid'] . ' - ' . $user['nama']
+            . ' sudah di-reset. Saat login berikutnya user memindai QR code baru dengan aplikasi authenticator di HP-nya.');
+        $_SESSION['token_reset_password'] = bin2hex(random_bytes(16));
+    }
+    header('Location: reset_password.php?u=' . urlencode($u));
+    exit;
+}
+
+$pesan =isset($_SESSION['pesan_reset_password']) ? $_SESSION['pesan_reset_password'] : null;
 $hasil = isset($_SESSION['hasil_reset_password']) ? $_SESSION['hasil_reset_password'] : null;
 unset($_SESSION['pesan_reset_password'], $_SESSION['hasil_reset_password']);
 
 $cari = isset($_GET['cari']) ? trim((string) $_GET['cari']) : '';
 $u = isset($_GET['u']) ? trim((string) $_GET['u']) : '';
 // semua user tampil; isian cari menyaring user name / nama / level / unit
-$daftar = $cari !== '' ? db_semua("select userid, nama, level, kode_branch from user
-    where userid like ? or nama like ? or level like ? or kode_branch like ? order by userid", 'ssss',
+$kolom_daftar = "select user.userid, nama, level, kode_branch, user_mfa.didaftar as mfa_didaftar
+    from user left join user_mfa on user_mfa.userid = user.userid";
+$daftar = $cari !== '' ? db_semua($kolom_daftar . "
+    where user.userid like ? or nama like ? or level like ? or kode_branch like ? order by user.userid", 'ssss',
     '%' . $cari . '%', '%' . $cari . '%', '%' . $cari . '%', '%' . $cari . '%')
-    : db_semua("select userid, nama, level, kode_branch from user order by userid");
+    : db_semua($kolom_daftar . " order by user.userid");
 $user = $u !== '' ? db_satu("select userid, nama, level, kode_branch, last_update from user where userid = ?", 's', $u) : null;
-$riwayat = db_semua("select waktu, admin, userid, alasan, ip from riwayat_reset_password"
+$mfa = $user ? mfa_data($user['userid']) : null;
+$riwayat = db_semua("select waktu, admin, userid, jenis, alasan, ip from riwayat_reset_password"
     . ($user ? ' where userid = ?' : '') . " order by id desc limit 50", $user ? 's' : '', ...($user ? array($user['userid']) : array()));
 
 halaman_awal('Reset Password User');
@@ -115,13 +149,14 @@ halaman_awal('Reset Password User');
     <div class="small text-muted mt-3"><?php echo count($daftar); ?> user<?php echo $cari !== '' ? ' cocok dengan "' . h($cari) . '"' : ''; ?></div>
     <div class="table-responsive mt-1" style="max-height: 28rem; overflow-y: auto;">
       <table class="table table-sm table-bordered table-ni align-middle">
-        <thead class="sticky-top"><tr><th>User Name</th><th>Nama</th><th>Level</th><th>Unit</th><th></th></tr></thead>
+        <thead class="sticky-top"><tr><th>User Name</th><th>Nama</th><th>Level</th><th>Unit</th><th>MFA</th><th></th></tr></thead>
         <tbody>
-          <?php if (!$daftar): ?><tr><td colspan="5" class="text-center text-muted">Tidak ditemukan</td></tr><?php endif; ?>
+          <?php if (!$daftar): ?><tr><td colspan="6" class="text-center text-muted">Tidak ditemukan</td></tr><?php endif; ?>
           <?php foreach ($daftar as $d): ?>
           <tr>
             <td><?php echo h($d['userid']); ?></td><td><?php echo h($d['nama']); ?></td>
             <td><?php echo h($d['level']); ?></td><td><?php echo h($d['kode_branch']); ?></td>
+            <td><?php echo $d['mfa_didaftar'] ? '<span class="badge text-bg-success">Aktif</span>' : '<span class="badge text-bg-secondary">Belum daftar</span>'; ?></td>
             <td class="text-center"><a class="btn btn-sm btn-outline-primary" href="reset_password.php?u=<?php echo h(urlencode($d['userid'])); ?>">Pilih</a></td>
           </tr>
           <?php endforeach; ?>
@@ -155,6 +190,35 @@ halaman_awal('Reset Password User');
     <?php endif; ?>
   </div>
 </form>
+
+<form method="post" action="reset_password.php" class="card card-ni mw-100 mt-3"
+      onsubmit="if (!confirm('Reset MFA user <?php echo h($user['userid']); ?>? Authenticator lama tidak berlaku lagi dan sesi user yang sedang login akan diputus.')) return false; this.querySelector('button[type=submit]').disabled = true;">
+  <div class="card-header">Reset MFA <?php echo h($user['userid'] . ' - ' . $user['nama']); ?></div>
+  <div class="card-body">
+    <p class="small mb-3">Status MFA:
+      <?php if ($mfa): ?>
+      <span class="badge text-bg-success">Aktif</span> didaftarkan <?php echo h($mfa['didaftar']); ?>,
+      terakhir masuk <?php echo h($mfa['terakhir_masuk'] ?: '-'); ?><?php echo (int) $mfa['terkunci'] === 1 ? ', <strong class="text-danger">terkunci sampai ' . h($mfa['kunci_sampai']) . '</strong>' : ''; ?>
+      <?php else: ?>
+      <span class="badge text-bg-secondary">Belum daftar</span> (user memindai QR code saat login berikutnya)
+      <?php endif; ?>
+    </p>
+    <?php if (strcasecmp($user['userid'], $admin) === 0): ?>
+    <div class="alert alert-warning mb-0">Ini akun Anda sendiri. MFA akun sendiri tidak bisa di-reset di sini.</div>
+    <?php elseif ($mfa): ?>
+    <input type="hidden" name="u" value="<?php echo h($user['userid']); ?>">
+    <input type="hidden" name="token" value="<?php echo h($_SESSION['token_reset_password']); ?>">
+    <label class="form-label" for="alasan_mfa">Alasan Reset MFA <span class="text-danger">*</span></label>
+    <textarea name="alasan" id="alasan_mfa" rows="2" maxlength="255" class="form-control" required placeholder="mis. HP hilang / ganti HP, konfirmasi langsung/telepon ke ..."></textarea>
+    <div class="form-text">Pastikan permintaan benar dari user yang bersangkutan. Sesudah di-reset, siapa pun yang tahu
+      password user ini bisa mendaftarkan authenticator baru, jadi minta user segera login.</div>
+    <div class="d-flex gap-2 mt-3">
+      <button type="submit" name="reset_mfa" value="1" class="btn btn-danger">Reset MFA</button>
+      <a href="reset_password.php" class="btn btn-outline-secondary">Batal</a>
+    </div>
+    <?php endif; ?>
+  </div>
+</form>
 <?php endif; ?>
 
 <div class="card card-ni mw-100 mt-3">
@@ -162,13 +226,14 @@ halaman_awal('Reset Password User');
   <div class="card-body">
     <div class="table-responsive">
       <table class="table table-sm table-bordered table-ni align-middle mb-0">
-        <thead><tr><th>Waktu</th><th>Admin</th><th>User</th><th>Alasan</th><th>IP</th></tr></thead>
+        <thead><tr><th>Waktu</th><th>Admin</th><th>User</th><th>Jenis</th><th>Alasan</th><th>IP</th></tr></thead>
         <tbody>
-          <?php if (!$riwayat): ?><tr><td colspan="5" class="text-center text-muted">Belum ada reset</td></tr><?php endif; ?>
+          <?php if (!$riwayat): ?><tr><td colspan="6" class="text-center text-muted">Belum ada reset</td></tr><?php endif; ?>
           <?php foreach ($riwayat as $r): ?>
           <tr>
             <td class="text-nowrap"><?php echo h($r['waktu']); ?></td><td><?php echo h($r['admin']); ?></td>
             <td><a href="reset_password.php?u=<?php echo h(urlencode($r['userid'])); ?>"><?php echo h($r['userid']); ?></a></td>
+            <td><?php echo h($r['jenis']); ?></td>
             <td><?php echo h($r['alasan']); ?></td><td><?php echo h($r['ip']); ?></td>
           </tr>
           <?php endforeach; ?>
