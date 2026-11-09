@@ -1,4 +1,4 @@
-<?php require_once __DIR__ . '/../koneksi_db.php';
+<?php require_once __DIR__ . '/../koneksi_db.php'; require_once __DIR__ . '/../inc/api_token.php';
 /**
  * Rekap Nominative Acrual (Excel), dibuka dari kp > Report > Nominative Pembiayaan (Kr_kp.php).
  * Isian dari sesi Kr_kp.php (status, buss_dates). Mengosongkan accrual dan loan_accrual, mengisi loan_accrual dari
@@ -51,6 +51,7 @@ function curl($url)
 {
     $ch = curl_init();
     curl_setopt($ch, CURLOPT_URL, $url);
+    curl_setopt($ch, CURLOPT_HTTPHEADER, api_token_header());
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
     curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 10);
     $output = curl_exec($ch);

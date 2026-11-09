@@ -1,4 +1,4 @@
-<?php require_once __DIR__ . '/../../koneksi_db.php';
+<?php require_once __DIR__ . '/../../koneksi_db.php'; require_once __DIR__ . '/../../inc/api_token.php';
 /**
  * Menu kp > Proses Konsolidasi Harian: langsung berjalan saat menu dibuka (seperti versi lama, tanpa tombol):
  *   1. kosongkan tabel_master_hari
@@ -17,6 +17,7 @@ function curl($url)
 {
     $ch = curl_init();
     curl_setopt($ch, CURLOPT_URL, $url);
+    curl_setopt($ch, CURLOPT_HTTPHEADER, api_token_header());
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
     curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 10);
     $output = curl_exec($ch);

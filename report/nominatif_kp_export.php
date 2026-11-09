@@ -1,4 +1,4 @@
-<?php require_once __DIR__ . '/../koneksi_db.php';
+<?php require_once __DIR__ . '/../koneksi_db.php'; require_once __DIR__ . '/../inc/api_token.php';
 /**
  * Export Rekap Nominative Acrual kp ke .xlsx secara bertahap (pengganti export_nomi_kp.php untuk tombol Rekap di Kr_kp.php).
  *
@@ -105,6 +105,7 @@ function tambah_musawamah()
 {
     $ch = curl_init();
     curl_setopt($ch, CURLOPT_URL, "http://192.168.88.44/ni/api/categories/musawamah.php");
+    curl_setopt($ch, CURLOPT_HTTPHEADER, api_token_header());
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
     curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 10);
     $curl = curl_exec($ch);

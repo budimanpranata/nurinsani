@@ -1,4 +1,5 @@
 <?php require_once __DIR__ . '/../../php8_compat.php';
+require_once __DIR__ . '/../../inc/api_token.php'; api_token_wajib();
 header('Content-Type: application/json');
 
 include dirname(dirname(__FILE__)).'/db/Db.class.php';

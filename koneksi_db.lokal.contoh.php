@@ -19,6 +19,11 @@ return array(
     'pip' => array(
         'pass' => 'GANTI_DENGAN_PASSWORD_PIP',
     ),
+    // Token endpoint api/categories/* (dipanggil antar-server tanpa login, inc/api_token.php).
+    // HARUS SAMA di semua server yang saling memanggil. Buat: php -r "echo bin2hex(random_bytes(32)),\"\n\";"
+    'api' => array(
+        'token' => 'GANTI_DENGAN_TOKEN_ACAK_PANJANG',
+    ),
     // Kunci enkripsi NIK/alamat (inc/enkripsi.php). Buat dengan: php inc/enkripsi.php buat-kunci
     // SIMPAN CADANGAN kunci ini terpisah dari backup database: tanpa kunci, data terenkripsi tidak dapat dibuka lagi.
     // Jangan pernah mengganti kunci yang sudah dipakai tanpa proses enkripsi ulang.
