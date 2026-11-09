@@ -139,7 +139,7 @@ if (empty($kelompok)){
     <td><?php echo $data['cao']; ?></td>
 	<td class="text-end"><?php echo number_format (compat_num($data['tagihan'])); ?></td>
 	<td><?php echo tgl_indo ($data['next_schedule']);?></td>
-	     <td class="text-center"><a href="booking_list.php?code_kel=<?php echo $_POST['kelompok'];?>" class="btn btn-ni btn-sm" onClick="return confirm('Anda akan melakukan Setoran Kelompok ?')">Proses</a></td>
+	     <td class="text-center"><a href="booking_list.php?code_kel=<?php echo urlencode($_POST['kelompok'] ?? '');?>" class="btn btn-ni btn-sm" onClick="return confirm('Anda akan melakukan Setoran Kelompok ?')">Proses</a></td>
   </tr>
   <?php
 		

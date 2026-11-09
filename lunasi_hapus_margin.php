@@ -1,4 +1,5 @@
 <?php require_once __DIR__ . '/koneksi_db.php';
+require_once __DIR__ . '/inc/csrf.php';
 session_start();
 ob_start();
 $userid=$_SESSION['userid'];
@@ -22,7 +23,9 @@ if($_SESSION['level']!="unit"){
 include "conn2.php";
 include "function.php";
 $koneksi=open_connection2();
-$anggota=$_GET['anggota'];
+if ($_SERVER['REQUEST_METHOD'] !== 'POST') { header('Location: pelunasan_hapus_margin.php'); exit; }
+csrf_wajib();
+$anggota=$_POST['anggota'];
 $date= date("Y-m-d");
 
 // Perbaikan 2026-10-30 (perintah user): versi lama memakai "select count(no_anggota) from loan" tanpa filter,

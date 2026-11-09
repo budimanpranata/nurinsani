@@ -249,7 +249,7 @@ if (empty($kelompok)){
     <td class="style6"><?php echo $data['cao']; ?></td>
 	<td class="style6"><?php echo $data['next_schedule'];?></td>
 	
-     <td><div align="center"><a href="yrd_llist.php?code_kel=<?php echo $_POST['kelompok'];?>" class="style6" onClick="return confirm('Anda akan melakuakan AOTO DEBET ?')"><strong>Detail</strong></a></div></td>
+     <td><div align="center"><a href="yrd_llist.php?code_kel=<?php echo urlencode($_POST['kelompok'] ?? '');?>" class="style6" onClick="return confirm('Anda akan melakuakan AOTO DEBET ?')"><strong>Detail</strong></a></div></td>
   </tr>
   <?php
 		

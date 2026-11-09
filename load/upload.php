@@ -13,15 +13,17 @@ $ext = explode('.', basename($_FILES['file']['name'][$i]));   // Explode file na
 $file_extension = end($ext); // Store extensions in the variable.
 $uploaddir='./photo/';
 $rnd=date('His');
-$name= $rnd."_".$nopen;				
+$name= $rnd."_".preg_replace('/[^A-Za-z0-9_-]/', '', (string) $nopen);				
 $nama_file_upload= $name . "." . $ext[count($ext) - 1];
 $alamatfile=$target_path.$nama_file_upload;
 //$target_path = $target_path . md5(uniqid()) . "." . $ext[count($ext) - 1];     // Set the target path with a new name of image.
 $j = $j + 1;      // Increment the number of uploaded images according to the files in array.
-if (($_FILES["file"]["size"][$i] < 100000)     // Approx. 100kb files can be uploaded.
+$__img = @getimagesize($_FILES['file']['tmp_name'][$i]);
+if ($__img !== false && in_array($__img[2], array(IMAGETYPE_JPEG, IMAGETYPE_PNG), true)
+ && ($_FILES["file"]["size"][$i] < 100000)     // Approx. 100kb files can be uploaded.
 && in_array($file_extension, $validextensions)) {
 if (move_uploaded_file($_FILES['file']['tmp_name'][$i], $alamatfile)) {
-$query=mysql_query("insert into images(name,NOPEN,image) values('$nama_photo','$nopen','$nama_file_upload')");
+$query=db_jalankan("insert into images(name,NOPEN,image) values(?,?,?)", 'sss', (string) $_FILES['file']['name'][$i], (string) $nopen, (string) $nama_file_upload);
 																		
 							// If file moved to uploads folder.
 echo $j. ').<span id="noerror"> uploaded successfully!.</span><br/><br/>';

@@ -1,4 +1,5 @@
 <?php require_once __DIR__ . '/../../php8_compat.php';
+require_once __DIR__ . '/../../inc/csrf.php';
 session_start();
 $userid=$_SESSION['userid'];
 $tgl_system=$_SESSION['stgl_system'];
@@ -50,7 +51,7 @@ while ($row = $res->fetch_assoc()):
 		  
           <td>
           <a href="update.php?u=<?php echo $row['id_transaksi'] ?>"><span class="glyphicon glyphicon-pencil" aria-hidden="true"></span> Edit</a>
-          <a onclick="return confirm('Are you want deleting data')" href="delete.php?d=<?php echo $row['kode_transaksi'] ?>"><span class="glyphicon glyphicon-trash" aria-hidden="true"></span> Delete</a>
+          <form method="post" action="delete.php" style="display:inline" onsubmit="return confirm('Are you want deleting data')"><?php echo csrf_field(); ?><input type="hidden" name="d" value="<?php echo htmlspecialchars($row['kode_transaksi'], ENT_QUOTES); ?>"><button type="submit" class="btn btn-link btn-sm" style="padding:0;border:0;vertical-align:baseline"><span class="glyphicon glyphicon-trash" aria-hidden="true"></span> Delete</button></form>
           </td>
      </tr>
 <?php

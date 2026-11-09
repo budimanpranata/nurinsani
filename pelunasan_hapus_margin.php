@@ -1,6 +1,7 @@
 <?php require_once __DIR__ . '/koneksi_db.php';
 require_once __DIR__ . '/inc/cek_login.php';
 wajib_login();
+require_once __DIR__ . '/inc/csrf.php';
 /**
  * Menu Pemeliharaan Data > Pelunasan Hapus Margin: cari pembiayaan aktif (OS > 0) berdasarkan NOREK, lalu lunasi pokok saja
  * (lunasi_hapus_margin.php).
@@ -85,7 +86,7 @@ halaman_awal('Pelunasan Hapus Margin');
         <td class="text-end"><?php echo number_format(compat_num($data['os'])); ?></td>
         <td class="text-end"><?php echo number_format(compat_num($data['saldo'])); ?></td>
         <td><?php echo h($data['unit']); ?></td>
-        <td class="text-center"><a href="lunasi_hapus_margin.php?anggota=<?php echo urlencode($data['no_anggota']); ?>" class="btn btn-outline-danger btn-sm" data-konfirmasi="Apakah Anda yakin akan melakukan Pelunasan?">Disburse</a></td>
+        <td class="text-center"><form method="post" action="lunasi_hapus_margin.php" style="display:inline"><?php echo csrf_field(); ?><input type="hidden" name="anggota" value="<?php echo htmlspecialchars($data['no_anggota'], ENT_QUOTES); ?>"><button type="submit" class="btn btn-outline-danger btn-sm" data-konfirmasi="Apakah Anda yakin akan melakukan Pelunasan?">Disburse</button></form></td>
       </tr>
     <?php endforeach; ?>
     </tbody>

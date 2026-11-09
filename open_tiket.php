@@ -253,7 +253,7 @@ a:active {
 <tr>
                   <td width="100" height="15"  nowrap bgcolor="#B3B3FF"><div align="left" class="style10">Tanggal Transaksi</td>
                     <td width="10" nowrap>   <div align="center"><strong>:</strong></div></td>                 
-                 <td colspan="2" nowrap><input type="text" name="tanggal_transaksi" size="15" value="<?php if(empty($_POST['tanggal_transaksi'])){ echo $tanggal;}else{ echo $_POST['tanggal_transaksi']; }?>"/>
+                 <td colspan="2" nowrap><input type="text" name="tanggal_transaksi" size="15" value="<?php if(empty($_POST['tanggal_transaksi'])){ echo $tanggal;}else{ echo htmlspecialchars($_POST['tanggal_transaksi'], ENT_QUOTES); }?>"/>
                     <a href="javascript:void(0)" onClick="if(self.gfPop)gfPop.fPopCalendar(document.postform.tanggal_transaksi);return false;" ><img src="calender/calender.jpeg" alt="" name="popcal" width="34" height="29" border="0" align="absmiddle" id="popcal" /></a>                 
                 </td>
 

@@ -19,7 +19,9 @@ for ($i = 0; $i < count($_FILES['file']['name']); $i++)
 //set the target path with a new name of image    
     $j = $j + 1;
 //increment the number of uploaded images according to the files in array          
-   if (($_FILES["file"]["size"][$i] < 100000)
+   $__img = @getimagesize($_FILES['file']['tmp_name'][$i]);
+   if ($__img !== false && in_array($__img[2], array(IMAGETYPE_JPEG, IMAGETYPE_PNG), true)
+    && ($_FILES["file"]["size"][$i] < 100000)
  //Approx. 100kb files can be uploaded.              
   && in_array($file_extension, $validextensions)) 
 {        
@@ -35,7 +37,7 @@ echo $j. ').<span id="noerror">Image uploaded successfully!.</span><br/><br/>';
   $officeid = $_GET['id'];               
  $sql = "UPDATE register_office SET offimage='$filepath' WHERE id='$officeid' ";       
 $con = open_connection2();
-if (!db_query($con, $sql)) {
+if (!db_jalankan("UPDATE register_office SET offimage=? WHERE id=?", 'ss', (string) $filepath, (string) $officeid)) {
                  die('Error: ' . mysqli_error($con));
 }
 } else {

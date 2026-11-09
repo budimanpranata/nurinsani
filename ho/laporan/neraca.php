@@ -127,10 +127,10 @@ a:active {
 		  <table width="100%" border="0">
 			<tr>
 			  <td width="91"><strong>Periode</strong></td>
-			  <td colspan="2"><input type="text" name="tanggal1" size="15" value="<?php if(empty($_POST['tanggal1'])){ echo $tanggal_pertama;}else{ echo $_POST['tanggal1']; }?>"/>
+			  <td colspan="2"><input type="text" name="tanggal1" size="15" value="<?php if(empty($_POST['tanggal1'])){ echo $tanggal_pertama;}else{ echo htmlspecialchars($_POST['tanggal1'], ENT_QUOTES); }?>"/>
 			  <a href="javascript:void(0)" onClick="if(self.gfPop)gfPop.fPopCalendar(document.postform.tanggal1);return false;" ><img src="../images/calendarIcon.jpg" alt="" name="popcal" width="20" height="20" border="0" align="absmiddle" id="popcal" /></a></td>
 			  <td width="40"><strong>S/D</strong></td>
-			  <td colspan="2"><input type="text" name="tanggal2" size="15" value="<?php if(empty($_POST['tanggal2'])){ echo $tanggal;}else{ echo $_POST['tanggal2']; }?>"/>
+			  <td colspan="2"><input type="text" name="tanggal2" size="15" value="<?php if(empty($_POST['tanggal2'])){ echo $tanggal;}else{ echo htmlspecialchars($_POST['tanggal2'], ENT_QUOTES); }?>"/>
 			  <a href="javascript:void(0)" onClick="if(self.gfPop)gfPop.fPopCalendar(document.postform.tanggal2);return false;" ><img src="../images/calendarIcon.jpg" alt="" name="popcal" width="20" height="20" border="0" align="absmiddle" id="popcal" /></a></td>
 			  <td width="102">
 			  <select name="neraca">
@@ -321,7 +321,7 @@ a:active {
 					?>
 		  <div class="container">
 					<h3 align="left"><b>Neraca (Balance Sheet)</b></h3><br />
-					<font color="#333333">Periode : <?php echo $tanggal2=$_POST['tanggal2']; ?></font>
+					<font color="#333333">Periode : <?php echo htmlspecialchars($tanggal2=$_POST['tanggal2'], ENT_QUOTES); ?></font>
 					<h3 align="left"><b>AKTIVA</b></h3><br />
 				
 					<table width="100%" border="1" bordercolor="669900" class="table table-striped table-bordered"			
@@ -472,7 +472,7 @@ a:active {
 					?>
 					<div class="container">
 					<h3 align="left"><b>Neraca (Balance Sheet)</b></h3><br />
-					<font color="#333333">Periode : <?php echo $tanggal2=$_POST['tanggal2']; ?></font>
+					<font color="#333333">Periode : <?php echo htmlspecialchars($tanggal2=$_POST['tanggal2'], ENT_QUOTES); ?></font>
 					<h3 align="right"><b>PASIVA</b></h3><br />
 					
 			
@@ -752,7 +752,7 @@ a:active {
 					?>
 					<div class="container">
 					<h3 align="left"><b>Neraca (Balance Sheet)</b></h3><br />
-					<font color="#333333">Periode : <?php echo $tanggal2=$_POST['tanggal2']; ?></font>
+					<font color="#333333">Periode : <?php echo htmlspecialchars($tanggal2=$_POST['tanggal2'], ENT_QUOTES); ?></font>
 					
 					
 			
