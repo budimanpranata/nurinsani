@@ -2,6 +2,8 @@
 //error_reporting(0);
 session_start();  
 require_once __DIR__ . '/inc/cek_login.php';
+wajib_level('unit');
+require_once __DIR__ . '/inc/cek_login.php';
 wajib_login();
 ob_start();  
 

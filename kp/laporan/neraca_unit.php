@@ -9,6 +9,8 @@
  */
 require_once __DIR__ . '/../../inc/tampilan.php';
 session_start();
+require_once __DIR__ . '/../../inc/cek_login.php';
+wajib_level('kp');
 ob_start();
 $userid = isset($_SESSION['userid']) ? $_SESSION['userid'] : null;
 //cek apakah user sudah login

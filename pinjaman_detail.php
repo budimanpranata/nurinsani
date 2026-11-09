@@ -1,4 +1,7 @@
 <?php require_once __DIR__ . '/php8_compat.php';
+if (session_status() === PHP_SESSION_NONE) { session_start(); }
+require_once __DIR__ . '/inc/cek_login.php';
+wajib_level('unit');
 include "conn2.php";
 $koneksi=open_connection2();
 $select = mysql_query ("Select tgl_murab,cif,pokok,no_anggota,ijaroh,unit,cao,tenor,

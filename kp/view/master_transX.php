@@ -1,3 +1,4 @@
+<?php require_once __DIR__ . '/../../inc/cek_login.php'; wajib_level('kp'); ?>
 ﻿<?php require_once __DIR__ . '/../../php8_compat.php'; 
 session_start();
 ob_start();

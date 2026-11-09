@@ -1,4 +1,7 @@
 <?php require_once __DIR__ . '/../../koneksi_db.php';
+if (session_status() === PHP_SESSION_NONE) { session_start(); }
+require_once __DIR__ . '/../../inc/cek_login.php';
+wajib_level('kp');
 /**
  * Menu kp > Report > Akuntasi > Setup Parameter > Tambah Coa: tambah rekening COA baru (tabel coa) sekaligus baris
  * tabel_master untuk setiap unit (rekening_gl = <unit>-<kode>), dan daftar seluruh COA.

@@ -7,6 +7,8 @@
  * (variabelnya tidak pernah diisi di versi lama).
  */
 session_start();
+require_once __DIR__ . '/../../inc/cek_login.php';
+wajib_level('kp');
 ob_start();
 
 $userid = isset($_SESSION['userid']) ? $_SESSION['userid'] : null;

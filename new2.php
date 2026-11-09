@@ -5,6 +5,8 @@
 require_once __DIR__ . '/inc/tampilan.php';
 include __DIR__ . '/function.php';
 session_start();
+require_once __DIR__ . '/inc/cek_login.php';
+wajib_level('unit');
 
 if (!isset($_SESSION['userid'])) {
     header('location:index.html');

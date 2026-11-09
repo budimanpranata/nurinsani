@@ -6,6 +6,8 @@
  */
 require_once __DIR__ . '/inc/tampilan.php';
 session_start();
+require_once __DIR__ . '/inc/cek_login.php';
+wajib_level('unit');
 $userid = isset($_SESSION['userid']) ? $_SESSION['userid'] : null;
 include "indo_tgl.php";
 $tgl_system = isset($_SESSION['stgl_system']) ? $_SESSION['stgl_system'] : null;

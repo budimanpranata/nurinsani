@@ -9,6 +9,8 @@
 require_once __DIR__ . '/inc/tampilan.php';
 session_start();
 require_once __DIR__ . '/inc/cek_login.php';
+wajib_level('unit');
+require_once __DIR__ . '/inc/cek_login.php';
 wajib_login();
 
 $kolom = array('Kode Kel', 'Norek', 'cif', 'nama', 'Pembiayaan', 'Saldo Pembiayaan', 'Saldo Margin', 'Action');

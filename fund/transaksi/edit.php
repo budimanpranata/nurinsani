@@ -1,4 +1,7 @@
 <?php require_once __DIR__ . '/../../koneksi_db.php';
+if (session_status() === PHP_SESSION_NONE) { session_start(); }
+require_once __DIR__ . '/../../inc/cek_login.php';
+wajib_level('fund', 'admin');
 /**
  * Data Master Deposan > Edit (level fund): ubah data deposan (?kd = CIF); disimpan oleh update-edit.php.
  * Dimigrasi 2026-11-04: tampilan Bootstrap 5, prepared statement, wajib login (dulu tanpa cek sendiri). CIF tidak

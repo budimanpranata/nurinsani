@@ -2,6 +2,8 @@
 include "conn.php";
 $koneksi=open_connection();
 @session_start();
+require_once __DIR__ . '/../inc/cek_login.php';
+wajib_level('lead');
 $username= $_SESSION['userid'];
 if ($username){
 ?>

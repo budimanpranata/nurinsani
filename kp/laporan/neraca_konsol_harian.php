@@ -1,6 +1,8 @@
 <?php require_once __DIR__ . '/../../php8_compat.php';
 
 session_start();
+require_once __DIR__ . '/../../inc/cek_login.php';
+wajib_level('kp');
 ob_start();
 $_SESSION['units']=$unit;
 $tgl_cari=$_SESSION['tgl_cari_konsols'];

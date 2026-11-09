@@ -1,4 +1,7 @@
 <?php require_once __DIR__ . '/../../koneksi_db.php';
+if (session_status() === PHP_SESSION_NONE) { session_start(); }
+require_once __DIR__ . '/../../inc/cek_login.php';
+wajib_level('kp');
 /**
  * Menu kp > Hitung SHU (juga tujuan setelah Posting Ulang, posting_neraca_bulan.php): hitung ulang saldo tabel_master
  * kantor pusat (unit 1010), isi SHU tahun berjalan di rekening 3902000, lalu salin rekening rugi-laba ke tabel_rugi_laba

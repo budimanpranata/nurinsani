@@ -1,3 +1,4 @@
+<?php require_once __DIR__ . '/../../inc/cek_login.php'; wajib_level('ho'); ?>
 <div class="post">
 	<h2>&raquo;Backup Data</h2>
 	<div class="entry">

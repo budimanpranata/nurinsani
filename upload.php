@@ -1,3 +1,4 @@
+<?php require_once __DIR__ . '/inc/cek_login.php'; wajib_level('unit'); ?>
 <form enctype="multipart/form-data" action="insert_image.php?id=<?php require_once __DIR__ . '/php8_compat.php'; echo urlencode($_GET['id'] ?? ''); ?>" method="post">        
 <div id="filediv"><input name="file[]" type="file" id="file"/></div><br/>    
     <input type="button" id="add_more" class="upload" value="Add More Files"/>   

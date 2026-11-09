@@ -1,4 +1,7 @@
 <?php require_once __DIR__ . '/../../koneksi_db.php';
+if (session_status() === PHP_SESSION_NONE) { session_start(); }
+require_once __DIR__ . '/../../inc/cek_login.php';
+wajib_level('fund', 'admin');
 /**
  * Simpan Edit nisbah deposito (dari edit_nisbah.php): eq_rate, rasio, norek_bank, nama_bank, cara_hitung, dan
  * status_print 'ADVIS' WHERE norek; lalu alert dan kembali ke daftar, sama dengan versi lama.

@@ -1,3 +1,4 @@
+<?php require_once __DIR__ . '/inc/cek_login.php'; wajib_level('unit'); ?>
 
 <?php require_once __DIR__ . '/php8_compat.php';
 include "conn2.php";

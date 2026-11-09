@@ -1,4 +1,7 @@
 <?php require_once __DIR__ . '/koneksi_db.php';
+if (session_status() === PHP_SESSION_NONE) { session_start(); }
+require_once __DIR__ . '/inc/cek_login.php';
+wajib_level('unit');
 /**
  * Report > Nomonative > Disbursement (menu kp, ho, lead): rekap pencairan (loan_detail) per unit pada rentang
  * buss_date, unit = userid (seperti versi lama).

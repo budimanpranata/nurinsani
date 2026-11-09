@@ -1,5 +1,7 @@
 <?php require_once __DIR__ . '/koneksi_db.php';
 session_start();  
+require_once __DIR__ . '/inc/cek_login.php';
+wajib_level('unit');
 ob_start();
 ini_set('display_errors',1);
 include "conn2.php";

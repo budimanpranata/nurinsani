@@ -1,3 +1,4 @@
+<?php require_once __DIR__ . '/inc/cek_login.php'; wajib_level('unit'); ?>
 <!DOCTYPE html>
 <html>
 <head>

@@ -1,4 +1,7 @@
 <?php require_once __DIR__ . '/../../koneksi_db.php';
+if (session_status() === PHP_SESSION_NONE) { session_start(); }
+require_once __DIR__ . '/../../inc/cek_login.php';
+wajib_level('fund', 'admin', 'json');
 /**
  * Sumber data DataTables (server-side, POST draw/start/length/search/order) untuk Data Transaksi level fund
  * (fund/view/master_trans.php): deposito left join deposan.

@@ -1,4 +1,7 @@
 <?php require_once __DIR__ . '/../../koneksi_db.php'; 
+if (session_status() === PHP_SESSION_NONE) { session_start(); }
+require_once __DIR__ . '/../../inc/cek_login.php';
+wajib_level('kp');
 //ekspor xls
 function xlsBOF() {
 echo pack("ssssss", 0x809, 0x8, 0x0, 0x10, 0x0, 0x0);

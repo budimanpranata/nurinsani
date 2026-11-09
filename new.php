@@ -1,5 +1,7 @@
 <?php require_once __DIR__ . '/php8_compat.php';
 session_start();
+require_once __DIR__ . '/inc/cek_login.php';
+wajib_level('unit', 'lead');
 //cek apakah user sudah login
 if(!isset($_SESSION['userid'])){
      header("location:index.html");//jika belum login jangan lanjut..

@@ -1,4 +1,7 @@
 <?php require_once __DIR__ . '/../../koneksi_db.php';
+if (session_status() === PHP_SESSION_NONE) { session_start(); }
+require_once __DIR__ . '/../../inc/cek_login.php';
+wajib_level('fund', 'admin');
 /**
  * Simpan Edit Data Master Deposan (dari edit.php): ubah nama, KTP, norek tujuan, bank, tanggal lahir, alamat, telepon
  * deposan WHERE no; lalu alert dan kembali ke daftar, sama dengan versi lama.

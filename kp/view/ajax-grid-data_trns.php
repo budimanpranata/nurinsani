@@ -1,4 +1,7 @@
 <?php require_once __DIR__ . '/../../koneksi_db.php';
+if (session_status() === PHP_SESSION_NONE) { session_start(); }
+require_once __DIR__ . '/../../inc/cek_login.php';
+wajib_level('kp', 'json');
 /**
  * Sumber data DataTables (server-side, POST draw/start/length/search/order) untuk menu Transaksi > Simpanan level kp
  * (kp/view/master_trans.php): saldo simpanan_kp per norek dan jenis.

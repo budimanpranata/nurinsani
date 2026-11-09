@@ -1,6 +1,8 @@
 <?php require_once __DIR__ . '/koneksi_db.php';  
 error_reporting(0);
 session_start();  
+require_once __DIR__ . '/inc/cek_login.php';
+wajib_level('unit');
 ob_start();  
 
 $userid=$_SESSION['userid'];

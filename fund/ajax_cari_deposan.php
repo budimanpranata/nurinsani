@@ -5,6 +5,8 @@
  */
 session_start();
 require_once __DIR__ . '/../inc/cek_login.php';
+wajib_level('fund', 'admin', 'json');
+require_once __DIR__ . '/../inc/cek_login.php';
 wajib_login('json');
 header('Content-Type: application/json; charset=utf-8');
 

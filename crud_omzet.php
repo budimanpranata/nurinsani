@@ -6,6 +6,8 @@
  */
 session_start();
 require_once __DIR__ . '/inc/cek_login.php';
+wajib_level('unit', 'json');
+require_once __DIR__ . '/inc/cek_login.php';
 wajib_login('json');
 
 $aksi = isset($_POST['aksi']) ? $_POST['aksi'] : '';

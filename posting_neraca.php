@@ -1,5 +1,7 @@
 <?php require_once __DIR__ . '/php8_compat.php';
 session_start();
+require_once __DIR__ . '/inc/cek_login.php';
+wajib_level('unit', 'kp');
 ob_start();
  include "conn2.php";
   include "function.php";

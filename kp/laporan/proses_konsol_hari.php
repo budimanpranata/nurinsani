@@ -1,4 +1,7 @@
 <?php require_once __DIR__ . '/../../koneksi_db.php'; require_once __DIR__ . '/../../inc/api_token.php';
+if (session_status() === PHP_SESSION_NONE) { session_start(); }
+require_once __DIR__ . '/../../inc/cek_login.php';
+wajib_level('kp');
 /**
  * Menu kp > Proses Konsolidasi Harian: langsung berjalan saat menu dibuka (seperti versi lama, tanpa tombol):
  *   1. kosongkan tabel_master_hari

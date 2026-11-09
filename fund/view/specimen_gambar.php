@@ -5,6 +5,8 @@
  */
 session_start();
 require_once __DIR__ . '/../../inc/cek_login.php';
+wajib_level('fund', 'admin');
+require_once __DIR__ . '/../../inc/cek_login.php';
 wajib_login();
 
 $cif = isset($_GET['cif']) ? (string) $_GET['cif'] : '';

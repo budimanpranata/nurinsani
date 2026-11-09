@@ -1,3 +1,4 @@
+<?php require_once __DIR__ . '/inc/cek_login.php'; wajib_level('unit', 'json'); ?>
 ﻿<?php require_once __DIR__ . '/koneksi_db.php';
 session_start();
 $userid=$_SESSION['userid'];

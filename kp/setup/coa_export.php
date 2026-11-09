@@ -11,6 +11,8 @@
  */
 session_start();
 require_once __DIR__ . '/../../inc/cek_login.php';
+wajib_level('kp');
+require_once __DIR__ . '/../../inc/cek_login.php';
 require_once __DIR__ . '/../../inc/xlsx_writer.php';
 
 const COA_PER_TAHAP = 500;

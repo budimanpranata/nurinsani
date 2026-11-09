@@ -2,6 +2,8 @@
 ini_set('display_errors',1);
 date_default_timezone_set('Asia/Jakarta');
 session_start();
+require_once __DIR__ . '/../../inc/cek_login.php';
+wajib_level('fund', 'admin');
 ob_start();
         $userid=$_SESSION['userid'];
         if(!isset($_SESSION['userid'])){

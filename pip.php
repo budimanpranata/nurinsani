@@ -1,4 +1,7 @@
 <?php require_once __DIR__ . '/koneksi_db.php';
+if (session_status() === PHP_SESSION_NONE) { session_start(); }
+require_once __DIR__ . '/inc/cek_login.php';
+wajib_level('unit');
 
 $tgl_eod="2021-12-31";
 // kredensial server PIP di koneksi_db.php / koneksi_db.lokal.php (dulu tertulis di sini)

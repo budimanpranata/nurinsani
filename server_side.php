@@ -12,6 +12,8 @@
 require_once __DIR__ . '/inc/enkripsi.php';
 date_default_timezone_set('Asia/Jakarta');
 session_start();
+require_once __DIR__ . '/inc/cek_login.php';
+wajib_level('unit', 'json');
 ob_start();
 
 header('Content-Type: application/json');

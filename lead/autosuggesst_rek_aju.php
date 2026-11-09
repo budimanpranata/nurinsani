@@ -1,5 +1,7 @@
 <?php require_once __DIR__ . '/../koneksi_db.php';
 session_start();
+require_once __DIR__ . '/../inc/cek_login.php';
+wajib_level('lead', 'json');
 ob_start();
 $userid=$_SESSION['userid'];
    $db = db_ni();

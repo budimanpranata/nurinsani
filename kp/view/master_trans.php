@@ -1,3 +1,4 @@
+<?php require_once __DIR__ . '/../../inc/cek_login.php'; wajib_level('kp'); ?>
 ﻿<?php require_once __DIR__ . '/../../koneksi_db.php';
 /**
  * Menu Transaksi > Simpanan (level kp): daftar saldo simpanan_kp per norek dan jenis (DataTables server-side dari

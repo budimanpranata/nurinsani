@@ -7,6 +7,8 @@
 require_once __DIR__ . '/inc/tampilan.php';
 session_start();
 require_once __DIR__ . '/inc/cek_login.php';
+wajib_level('unit');
+require_once __DIR__ . '/inc/cek_login.php';
 wajib_login();
 
 halaman_awal('Data Omzet Anggota', array('assets/app/datatables-ni.css'));
