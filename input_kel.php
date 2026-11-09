@@ -17,11 +17,11 @@ if(!isset($_SESSION['userid'])){
 
 include "conn2.php";
 $koneksi=open_connection2();
-$data = mysql_query ("select kode_branch from user where userid ='$userid'");
+$data = db_hasil("select kode_branch from user where userid =?", 's', (string) $userid);
 $r = mysql_fetch_array($data);
 $branch=$r['kode_branch'];
 
-$query = mysql_query("SELECT 1 FROM kelompok WHERE code_kel = '$kel' ");
+$query = db_hasil("SELECT 1 FROM kelompok WHERE code_kel = ?", 's', (string) $kel);
 $check = mysql_fetch_array($query);
 if ($check[0]) {
 
@@ -35,8 +35,7 @@ echo "<script> alert ('data sudah ada dalam database, isi form dengan kode Kelom
 $_SESSION['cao']=$ds;
 $_SESSION['code_kel']=$kel;
 
-$sqlkel= "insert into kelompok(code_kel,code_unit,nama_kel,alamat,cao,cif) values('$kel','$branch','$nama','$alamat','$ds','0')";
-$input = mysql_query($sqlkel);
+$input = db_jalankan("insert into kelompok(code_kel,code_unit,nama_kel,alamat,cao,cif) values(?,?,?,?,?,'0')", 'sssss', (string) $kel, (string) $branch, (string) $nama, (string) $alamat, (string) $ds);
 
 
 			if($input){ 

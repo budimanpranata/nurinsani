@@ -18,7 +18,6 @@ var TREE_ITEMS = [
 		],
 		['Posting',0,
 			['Posting', '../fund/view/view_jatuh.php'],
-			['Setor/Tarik Tunai', '../fund/view/view_stor.php'],
 		],
 		['Cetak',0,
 			['Cetak Bilyet', '../fund/view/view_cetak_bilyet.php'],

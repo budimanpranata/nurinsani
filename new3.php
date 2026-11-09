@@ -15,11 +15,11 @@ if(!isset($_SESSION['userid'])){
 include "conn2.php";
 include "function.php";
 $koneksi=open_connection2();
-$data = mysql_query ("select kode_branch from user where userid ='$userid'");
+$data = db_hasil("select kode_branch from user where userid =?", 's', (string) $userid);
 $r = mysql_fetch_array($data);
 $branch=$r['kode_branch'];
 
-$danggota = mysql_query ("select * from anggota where cif ='$cif' and unit ='$userid'");
+$danggota = db_hasil("select * from anggota where cif =? and unit =?", 'ss', (string) $cif, (string) $userid);
 $a = mysql_fetch_array($danggota);
 $unit=$a['UNIT'];
 $CODE_KEL=$a['CODE_KEL'];
@@ -53,7 +53,7 @@ $status=$a['status'];
 $pekerjaan_pasangan=$a['UNIT'];
   
 
-$data = mysql_query ("select * from loan where cif ='$cif' and unit ='$userid'");
+$data = db_hasil("select * from loan where cif =? and unit =?", 'ss', (string) $cif, (string) $userid);
 $r = mysql_fetch_array($data);
 $os=$r['os'];
 $salo_margin=$r['saldo_margin'];
@@ -362,13 +362,13 @@ $hari=$r['hari'];
               </tr>
               <tr>
                  <td><span class="style13">Cif <span class="style5">* </span></span> </td>
-                <td nowrap><input type="text" onKeyUp="suggest(this.value);" name="cif" value="<?php echo $cif; ?>" onBlur="fill2();" id="cif" size="15"/>
+                <td nowrap><input type="text" onKeyUp="suggest(this.value);" name="cif" value="<?php echo htmlspecialchars($cif, ENT_QUOTES); ?>" onBlur="fill2();" id="cif" size="15"/>
                     <div class="suggestionsBox" id="suggestions" style="display: none;"> <img src="arrow.png" style="position: relative; top: -12px; left: 30px;" alt="upArrow" />
                         <div class="suggestionList" id="suggestionsList"> </div>
                     </div>
                     
                                         cif simpanan
-                    <input type="text" onKeyUp="suggest(this.value);" name="ciff" value="<?php echo $cif; ?>" onBlur="fill2();" id="ciff" size="15"/></td>
+                    <input type="text" onKeyUp="suggest(this.value);" name="ciff" value="<?php echo htmlspecialchars($cif, ENT_QUOTES); ?>" onBlur="fill2();" id="ciff" size="15"/></td>
                 <td><span class="style9"><span class="style21">Kode AO </span>* </span></td>
                 <td width="34%" bgcolor="#CCCCCC"><input name="code_ao" type="text" tabindex="18" id="code_ao" value="<?php echo $CAO; ?>"style="font-weight:bold;"/>                </td>
               </tr>

@@ -282,13 +282,13 @@ if (empty($buss_date1)){
 
 
 		
-		 $select = mysql_query("Select unit,sum(saldo_awal) as debet,sum(saldo_akhir) as kredit,posisi from tabel_master_konsol where  tanggal_awal = '$buss_date1' group by posisi order by posisi");
+		 $select = db_hasil("Select unit,sum(saldo_awal) as debet,sum(saldo_akhir) as kredit,posisi from tabel_master_konsol where  tanggal_awal = ? group by posisi order by posisi", 's', (string) $buss_date1);
 		}
 if(mysql_num_rows($select)==0){
-			 $select = mysql_query("Select unit,sum(saldo_awal) as debet,sum(saldo_akhir) as kredit,posisi from tabel_master_eoy where  tanggal_awal = '$buss_date1' group by posisi order by posisi");
+			 $select = db_hasil("Select unit,sum(saldo_awal) as debet,sum(saldo_akhir) as kredit,posisi from tabel_master_eoy where  tanggal_awal = ? group by posisi order by posisi", 's', (string) $buss_date1);
 		 }
 		 if(mysql_num_rows($select)==0){
-			 $select = mysql_query("Select unit,sum(saldo_awal) as debet,sum(saldo_akhir) as kredit,posisi from tabel_master_hari_ah where  tanggal_awal = '$buss_date1' group by posisi order by posisi");
+			 $select = db_hasil("Select unit,sum(saldo_awal) as debet,sum(saldo_akhir) as kredit,posisi from tabel_master_hari_ah where  tanggal_awal = ? group by posisi order by posisi", 's', (string) $buss_date1);
 		 }
 if(mysql_num_rows($select)==0){
 			echo "<script>alert('Maaf,.data tidak ditemukan');</script>";
@@ -309,7 +309,7 @@ if(mysql_num_rows($select)==0){
 		?>
   <tr>
     <td class="style6"><?php echo "Konsolidasi"; ?></td>
-	<td class="style6"><?php echo $buss_date1;  ?></td>
+	<td class="style6"><?php echo htmlspecialchars($buss_date1, ENT_QUOTES);  ?></td>
     <td class="style6"><?php echo number_format (compat_num($data['debet']));?></td>
     <td class="style6"><?php echo number_format (compat_num($data['kredit'])); ?></td>
 	<td><div align="center"><a href="./konsolidasi_ah.php?consol=<?php echo $data['posisi'];?>" class="style6" target="_blank" onClick="return confirm('Apakah adan Yakin akan melakukan Posting Neraca ?')"><strong><?php echo $data['posisi'];?></strong></a></div></td>

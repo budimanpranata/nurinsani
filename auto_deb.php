@@ -208,7 +208,7 @@ a {
   $Nama=$_POST['nama'];
   $tanggl=$_POST ['tanggal'];
   
-$data = mysql_query ("select kode_branch from user where userid ='$userid'");
+$data = db_hasil("select kode_branch from user where userid =?", 's', (string) $userid);
 $r = mysql_fetch_array($data);
 $branch=$r['kode_branch'];
   If ($_POST ['search'])
@@ -217,11 +217,11 @@ if (empty($kelompok)){
 	echo "<script>alert('Maaf,.Mohon Nomor Kelompok Yang Benar !!!');</script>";
          echo "<script language='javascript'>document.location.href='tab.php'</script>";}
 	else{
-	$select = mysql_query ("select count(no_anggota)as noa,unit,kelompok.nama_kel,loan.cao,next_schedule from loan 
+	$select = db_hasil("select count(no_anggota)as noa,unit,kelompok.nama_kel,loan.cao,next_schedule from loan 
 	inner join kelompok on kelompok.code_kel = loan.code_kel
-	where loan.code_kel ='$kelompok' AND loan.unit='$branch'
+	where loan.code_kel =? AND loan.unit=?
 	group by unit order by unit
-	");
+	", 'ss', (string) $kelompok, (string) $branch);
 		}
 
 	if(mysql_num_rows($select)==0){

@@ -100,7 +100,7 @@ halaman_awal('Transaksi Booking Debet');
   $tanggl=$_POST ['tanggal'];
 $buss_date=date("Y-m-d");
   
-$data = mysql_query ("select kode_branch from user where userid ='$userid'");
+$data = db_hasil("select kode_branch from user where userid =?", 's', (string) $userid);
 $r = mysql_fetch_array($data);
 $branch=$r['kode_branch'];
 
@@ -110,11 +110,11 @@ if (empty($kelompok)){
 	echo "<script>alert('Maaf,isi Kode Kelompok Yang Benar!');</script>";
          echo "<script language='javascript'>document.location.href='booking_debet.php'</script>";}
 	else{
-	$select = mysql_query ("select count(no_anggota)as noa,sum(bulat) as tagihan,unit,kelompok.nama_kel,loan.cao,next_schedule from loan 
+	$select = db_hasil("select count(no_anggota)as noa,sum(bulat) as tagihan,unit,kelompok.nama_kel,loan.cao,next_schedule from loan 
 	inner join kelompok on kelompok.code_kel = loan.code_kel
-	where loan.code_kel ='$kelompok' AND loan.unit='$branch' and os > 0 and unit not in (select unit from psbb)  
+	where loan.code_kel =? AND loan.unit=? and os > 0 and unit not in (select unit from psbb)  
 	group by loan.code_kel order by loan.code_kel
-	");
+	", 'ss', (string) $kelompok, (string) $branch);
 	
 	if(mysql_num_rows($select)==0){
 			
@@ -161,12 +161,12 @@ if (empty($kelompok)){
   
   </tr>
   <?php
-  	$select = mysql_query ("select count(no_anggota)as noa,sum(bulat) as tagihan,unit,kelompok.nama_kel,loan.cao,next_schedule from loan 
+  	$select = db_hasil("select count(no_anggota)as noa,sum(bulat) as tagihan,unit,kelompok.nama_kel,loan.cao,next_schedule from loan 
 	inner join kelompok on kelompok.code_kel = loan.code_kel
 	INNER JOIN booking_debet ON booking_debet.cif = loan.cif
-	where  loan.unit='$branch' and os > 0 and unit not in (select unit from psbb)
+	where  loan.unit=? and os > 0 and unit not in (select unit from psbb)
 	group by loan.unit  order by loan.unit
-	");
+	", 's', (string) $branch);
 
 	while($data = mysql_fetch_array($select)){
   ?>

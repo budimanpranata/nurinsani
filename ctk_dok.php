@@ -6,13 +6,13 @@ include "conn2.php";
 include "indo_tgl.php";
 $koneksi=open_connection2();
 $userid=$_SESSION['userid'];
-$result = mysql_query(" Select userid,nama from user where userid='$userid'");
+$result = db_hasil(" Select userid,nama from user where userid=?", 's', (string) $userid);
 while($row = mysql_fetch_array($result)){
 $nama1=$row['nama'];
 
 }
 
-$query1= mysql_query("select No,stgloan.BUSS_DATE,CIF,stgloan.CUST_SHORT_NAME,stgloan.BRANCH,stgloan.DEAL_TYPE,stgloan.TENOR AS TENOR,stgloan.PLAFOND AS PLAFOND,JENIS_PENS,HADDRESS1,HADDRESS2,HADDRESS3,HADDRESS4,HPOST_CODE,stgloan.NOREK as NOREK,
+$query1= db_hasil("select No,stgloan.BUSS_DATE,CIF,stgloan.CUST_SHORT_NAME,stgloan.BRANCH,stgloan.DEAL_TYPE,stgloan.TENOR AS TENOR,stgloan.PLAFOND AS PLAFOND,JENIS_PENS,HADDRESS1,HADDRESS2,HADDRESS3,HADDRESS4,HPOST_CODE,stgloan.NOREK as NOREK,
 MOBILE_PHONE,HOME_PHONE,GENDER,stgloan.BIRTH_DATE,ID_NUMBER,CITIZENSHIP,MARITAL_STATUS,RELIGION,MOTHER_NAME,NPWP,SOURCE_INCOME,EDUCATION,TEMPAT_LAHIR,ID_EXPIRED,stgloan.CONTRACT_DATE,MATURITY_DATE,stgloan.Rel_Ob_Mgr_1,smo.smo as SMO,loan_ps.asuransi as asuransi,stgcasa.KODE_JIWA as KODE_JIWA, stgcasa.NOSKEP as NOSKEP,stgcasa.PENERBIT as PENERBIT, stgcasa.TGL_SKEP as TGL_SKEP,
 loan_ps.bersih as bersih,loan_ps.btl as btl,loan_ps.angsuran as angsuran,branch.nama as BRANCH_NAME,Suku_Bunga_flat AS BUNGA,loan_ps.Gaji_Bersih AS GAJI,loan_ps.DAPEN as DAPEN, stgloan.APPROVE as APPROVE 
 FROM stgloan
@@ -21,7 +21,7 @@ inner join loan_ps on loan_ps.No_Pegawai=stgloan.No_Pegawai
 inner join branch on stgloan.BRANCH=branch.kode_branch
 inner join stgcasa on stgcasa.NO_PENSIUN=stgloan.No_Pegawai
 inner join user on user.userid=stgloan.approve
-where stgloan.No_Pegawai ='$nopen' ");  
+where stgloan.No_Pegawai =? ", 's', (string) $nopen);  
 while ($data1 = mysql_fetch_array($query1)){ 
   $nama=$data1['CUST_SHORT_NAME'];
   $branch=$data1['BRANCH'];
