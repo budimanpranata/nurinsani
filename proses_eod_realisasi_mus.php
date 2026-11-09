@@ -29,7 +29,7 @@ $tgl_system = $cek['param_tgl'];
             $kode_tr=5;
             $kode_tr=acakangkahuruf($kode_tr);      
              $data = db_query($con,"select DATE_ADD(tgl_wakalah,INTERVAL 7 DAY) as tgl_murab1,DATE_ADD(tgl_akad,INTERVAL 26 WEEK) as matur,tgl_murab,tgl_akad,calon_loan.buss_date,calon_loan.code_kel,calon_loan.no_anggota,calon_loan.Cust_Short_name,maturity_date,
-            calon_loan.Deal_type,suffix,bagi_hasil,Tenor,Plafond,os,angsuran,pokok,ijaroh,bulat,ke,usaha,calon_loan.unit,tgl_wakalah,hari,calon_loan.cao,calon_loan.USERID,calon_loan.status,calon_loan.cif
+            calon_loan.Deal_type,suffix,bagi_hasil,Tenor,Plafond,os,angsuran,pokok,ijaroh,bulat,ke,usaha,calon_loan.unit,tgl_wakalah,hari,calon_loan.cao,calon_loan.USERID,calon_loan.status,calon_loan.cif,nisbah
              from calon_loan 
              inner join anggota on anggota.cif = calon_loan.cif
 left join nisbah on nisbah.cif = calon_loan.cif
