@@ -7,6 +7,7 @@
  * Kunci rahasia per user disimpan terenkripsi (inc/enkripsi.php) di tabel user_mfa (db/parameter/2026-11-09_mfa.sql).
  * Alur: log.php (password benar) -> mfa.php (daftar / masukkan kode) -> log.php?op=lanjut (sesi login dibuat).
  * Reset MFA hanya lewat Admin > Reset Password, atau darurat lewat CLI db/parameter/reset_mfa.php.
+ * Perangkat tepercaya 30 hari: lihat mfa_perangkat_*() di bawah.
  * Membutuhkan koneksi_db.php.
  */
 require_once __DIR__ . '/enkripsi.php';
@@ -164,6 +165,110 @@ function mfa_hapus($userid)
     $st->bind_param('s', $u);
     $st->execute();
     return $st->affected_rows;
+}
+
+/*
+ * Perangkat tepercaya (2026-11-09, perintah user): sesudah kode MFA benar, browser itu diingat MFA_INGAT_HARI hari (sampai
+ * 23.59 WIB hari ke-30; semula sampai akhir hari, diubah atas perintah user karena user memakai PC yang tetap). Login ulang
+ * di browser yang sama selama itu (sesudah logout / idle 30 menit) cukup dengan password.
+ * Cookie per user, isinya: batas waktu + HMAC-SHA256 (kunci turunan dari kunci enkripsi server) atas userid, batas
+ * waktu dan "sidik" akun = hash password + waktu daftar MFA. Tidak bisa dipalsukan / dipindah ke user lain, dan
+ * otomatis tidak berlaku sesudah Reset Password, ganti password, atau Reset MFA (sidik berubah). Tidak ada tabel baru.
+ */
+const MFA_COOKIE_AWALAN = 'ni_mfa_';
+const MFA_INGAT_HARI = 30;
+
+function mfa_perangkat_kunci()
+{
+    return hash_hmac('sha256', 'nurinsani:mfa-perangkat:v1', enkripsi_kunci('kunci'), true);
+}
+
+/** Nama cookie per user (userid tidak terlihat di nama cookie). */
+function mfa_perangkat_nama($userid)
+{
+    return MFA_COOKIE_AWALAN . substr(hash_hmac('sha256', strtolower((string) $userid), mfa_perangkat_kunci()), 0, 16);
+}
+
+/** Sidik akun: berubah bila password atau pendaftaran MFA berubah. null bila user belum mendaftar MFA. */
+function mfa_perangkat_sidik($userid)
+{
+    $b = db_satu("select user.pass, user_mfa.didaftar from user join user_mfa on user_mfa.userid = user.userid
+        where user.userid = ?", 's', (string) $userid);
+    return $b ? $b['pass'] . '|' . $b['didaftar'] : null;
+}
+
+function mfa_perangkat_tag($userid, $sampai, $sidik)
+{
+    return hash_hmac('sha256', strtolower((string) $userid) . '|' . (int) $sampai . '|' . $sidik, mfa_perangkat_kunci());
+}
+
+/** Detik unix pukul 23:59:59 WIB hari ini. */
+function mfa_akhir_hari()
+{
+    $besok = new DateTime('tomorrow', new DateTimeZone('Asia/Jakarta'));
+    return $besok->getTimestamp() - 1;
+}
+
+/** Folder aplikasi untuk path cookie (dihitung seperti URL halaman login, inc/cek_login.php). */
+function mfa_cookie_path()
+{
+    require_once __DIR__ . '/cek_login.php';
+    $p = rtrim(str_replace('\\', '/', dirname(url_halaman_login())), '/') . '/';
+    // path cookie tidak boleh memuat spasi/;/, (setcookie melempar ValueError): pakai seluruh situs
+    return preg_match('#^/[^,; \t\r\n\x0b\x0c]*$#', $p) ? $p : '/';
+}
+
+function mfa_cookie_kirim($nama, $nilai, $sampai)
+{
+    setcookie($nama, $nilai, array(
+        'expires' => $sampai,
+        'path' => mfa_cookie_path(),
+        'secure' => !empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off',
+        'httponly' => true,
+        'samesite' => 'Lax',
+    ));
+}
+
+/** Batas perangkat tepercaya: 23:59:59 WIB, MFA_INGAT_HARI hari dari hari ini. */
+function mfa_batas_ingat()
+{
+    return mfa_akhir_hari() + MFA_INGAT_HARI * 86400;   // WIB tanpa pergantian jam musim panas
+}
+
+/** Ingat browser ini untuk $userid selama MFA_INGAT_HARI hari. */
+function mfa_perangkat_ingat($userid)
+{
+    $sidik = mfa_perangkat_sidik($userid);
+    if ($sidik === null) {
+        return;
+    }
+    $sampai = mfa_batas_ingat();
+    mfa_cookie_kirim(mfa_perangkat_nama($userid), $sampai . '.' . mfa_perangkat_tag($userid, $sampai, $sidik), $sampai);
+}
+
+/** Hapus tanda perangkat tepercaya $userid di browser ini. */
+function mfa_perangkat_lupakan($userid)
+{
+    $nama = mfa_perangkat_nama($userid);
+    if (isset($_COOKIE[$nama])) {
+        mfa_cookie_kirim($nama, '', 1);
+    }
+}
+
+/** true bila browser ini sudah diingat untuk $userid dan tandanya masih sah (hari ini, sidik akun sama). */
+function mfa_perangkat_dikenal($userid)
+{
+    $nama = mfa_perangkat_nama($userid);
+    $nilai = isset($_COOKIE[$nama]) ? (string) $_COOKIE[$nama] : '';
+    if (!preg_match('/^(\d{1,12})\.([0-9a-f]{64})$/', $nilai, $m)) {
+        return false;
+    }
+    $sampai = (int) $m[1];
+    if ($sampai < time() || $sampai > mfa_batas_ingat()) {
+        return false;
+    }
+    $sidik = mfa_perangkat_sidik($userid);
+    return $sidik !== null && hash_equals(mfa_perangkat_tag($userid, $sampai, $sidik), $m[2]);
 }
 
 // uji cepat dari CLI: php inc/mfa.php uji  -> vektor uji RFC 6238 (SHA1)

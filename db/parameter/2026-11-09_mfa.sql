@@ -2,6 +2,9 @@
 -- PEKERJAAN_TERTUNDA.md bagian 101. Jalankan SEKALI di lokal dan di prod SEBELUM kode baru dipasang
 -- (kode baru membaca tabel user_mfa saat login; tanpa tabel ini login gagal).
 -- Aman diulang (IF NOT EXISTS / cek kolom).
+-- Baris sql_mode: Navicat menjalankan query profil (information_schema.PROFILING ... GROUP BY) sesudah script,
+-- yang ditolak only_full_group_by ("[Err] 1055") walaupun script ini sendiri berhasil. Sama dengan koneksi aplikasi.
+SET SESSION sql_mode = 'NO_ENGINE_SUBSTITUTION';
 
 CREATE TABLE IF NOT EXISTS `user_mfa` (
   `userid` varchar(9) NOT NULL,

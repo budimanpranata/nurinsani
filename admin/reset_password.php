@@ -211,7 +211,8 @@ halaman_awal('Reset Password User');
     <label class="form-label" for="alasan_mfa">Alasan Reset MFA <span class="text-danger">*</span></label>
     <textarea name="alasan" id="alasan_mfa" rows="2" maxlength="255" class="form-control" required placeholder="mis. HP hilang / ganti HP, konfirmasi langsung/telepon ke ..."></textarea>
     <div class="form-text">Pastikan permintaan benar dari user yang bersangkutan. Sesudah di-reset, siapa pun yang tahu
-      password user ini bisa mendaftarkan authenticator baru, jadi minta user segera login.</div>
+      password user ini bisa mendaftarkan authenticator baru, jadi minta user segera login. Perangkat yang "diingat"
+      user (login tanpa kode selama 30 hari) ikut tidak berlaku.</div>
     <div class="d-flex gap-2 mt-3">
       <button type="submit" name="reset_mfa" value="1" class="btn btn-danger">Reset MFA</button>
       <a href="reset_password.php" class="btn btn-outline-secondary">Batal</a>

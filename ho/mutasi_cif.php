@@ -7,7 +7,7 @@ $tgl_system=$_SESSION['stgl_system'];
 include "../conn2.php";
 include "../function.php";
 $koneksi=open_connection2();
-$level_area=mysql_fetch_array(mysql_query("select area from level where userid='$userid'"));
+$level_area=mysql_fetch_array(db_hasil("select area from level where userid=?", 's', (string) $userid));
 $area=$level_area['area'];
 
 
@@ -244,11 +244,10 @@ a:active {
   <td colspan="2" nowrap><select name="select" id="select" size="1">
   <option selected>Pilih Salah satu</option>
                   <?php
-              			$query = "select * from branch where code_region='$area' order by kode_branch ";
-					$result = mysql_query($query);
+              			$result = db_hasil("select * from branch where code_region=? order by kode_branch", 's', (string) $area);
 					while ($kanwil=mysql_fetch_array($result))
 					{
-			  		  	echo "<option value=$kanwil[0]>$kanwil[1]</option>";
+			  		  	echo '<option value="' . htmlspecialchars($kanwil[0], ENT_QUOTES) . '">' . htmlspecialchars($kanwil[1], ENT_QUOTES) . '</option>';
 					}
               		echo"</select>";?>
     </select></td>
@@ -288,16 +287,16 @@ if (empty($cif)||empty($ap_tujuan)){
     
     else{
 		
-			$anggota=mysql_query("select anggota.CUST_SHORT_NAME,anggota.CIF,os, branch.unit from anggota 
+			$anggota=db_hasil("select anggota.CUST_SHORT_NAME,anggota.CIF,os, branch.unit from anggota 
 			inner join loan on loan.cif = anggota.cif 
 			Inner join branch on branch.kode_branch = anggota.unit
-			where anggota.cif='$cif'");
-		$query=mysql_query("update anggota set unit ='$ap_tujuan',userid='$ap_tujuan' where cif='$cif'");
-		$query=mysql_query("update loan set unit ='$ap_tujuan',userid='$ap_tujuan' where cif='$cif'");
-		$query=mysql_query("update simpanan set unit ='$ap_tujuan',userid='$ap_tujuan' where cif='$cif'");
-		$query=mysql_query("update simpanan_pokok set unit ='$ap_tujuan', userid='$ap_tujuan' where cif='$cif'");
-		$query=mysql_query("update simpanan_wajib set unit ='$ap_tujuan', userid='$ap_tujuan' where cif='$cif'");
-$query=mysql_query("update calon_loan set unit ='$ap_tujuan',userid='$ap_tujuan' where cif='$cif'");
+			where anggota.cif=?", 's', (string) $cif);
+		db_jalankan("update anggota set unit=?,userid=? where cif=?", 'sss', (string) $ap_tujuan, (string) $ap_tujuan, (string) $cif);
+		db_jalankan("update loan set unit=?,userid=? where cif=?", 'sss', (string) $ap_tujuan, (string) $ap_tujuan, (string) $cif);
+		db_jalankan("update simpanan set unit=?,userid=? where cif=?", 'sss', (string) $ap_tujuan, (string) $ap_tujuan, (string) $cif);
+		db_jalankan("update simpanan_pokok set unit=?,userid=? where cif=?", 'sss', (string) $ap_tujuan, (string) $ap_tujuan, (string) $cif);
+		db_jalankan("update simpanan_wajib set unit=?,userid=? where cif=?", 'sss', (string) $ap_tujuan, (string) $ap_tujuan, (string) $cif);
+db_jalankan("update calon_loan set unit=?,userid=? where cif=?", 'sss', (string) $ap_tujuan, (string) $ap_tujuan, (string) $cif);
 		
 		
 
@@ -320,7 +319,7 @@ $query=mysql_query("update calon_loan set unit ='$ap_tujuan',userid='$ap_tujuan'
 	<td class="style6"><?php echo $data['unit'];  ?></td>
 	
     <td class="style6"><?php echo number_format (compat_num($data['os'])); ?></td>
-    <td class="style6"><?php echo $ap_tujuan; ?></td>
+    <td class="style6"><?php echo htmlspecialchars($ap_tujuan, ENT_QUOTES); ?></td>
     
   </tr>
   <?php

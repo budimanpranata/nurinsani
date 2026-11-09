@@ -5,6 +5,8 @@
  *   mfa.php        user belum terdaftar: tampil QR code + kunci, user memindai lalu memasukkan kode pertama (pendaftaran)
  *                  sudah terdaftar: masukkan kode 6 digit dari aplikasi authenticator
  *   kode benar  -> $_SESSION['mfa_lolos'] lalu log.php?op=lanjut (pemeriksaan & pengalihan per level seperti dulu)
+ *   "Ingat perangkat ini" (bawaan dicentang): browser diingat 30 hari, login ulang selama itu tanpa kode
+ *   (inc/mfa.php mfa_perangkat_*, perintah user 2026-11-09)
  * Halaman ini terdaftar di penjaga_sesi_publik() (dibuka sebelum ada sesi login); pemeriksaannya sendiri di bawah.
  * Batas: MFA_BATAS_TUNGGU detik setelah password benar; MFA_MAKS_GAGAL kode salah -> dikunci MFA_LAMA_KUNCI detik.
  */
@@ -57,7 +59,19 @@ if ($daftar && empty($tunggu['rahasia_baru'])) {
 }
 
 $pesan = '';
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+$lolos = false;
+$ingat = false;
+if (!$daftar && $_SERVER['REQUEST_METHOD'] !== 'POST') {
+    // perangkat tepercaya (kode MFA sudah benar di browser ini dalam 30 hari terakhir): cukup password
+    if (mfa_perangkat_dikenal($userid)) {
+        db_jalankan("update user_mfa set terakhir_masuk = now() where userid = ?", 's', $userid);
+        $lolos = true;
+    } else {
+        mfa_perangkat_lupakan($userid);   // tanda lama/kedaluwarsa/tidak sah dibuang
+    }
+}
+if (!$lolos && $_SERVER['REQUEST_METHOD'] === 'POST') {
+    $ingat = !empty($_POST['ingat']);
     $kode = isset($_POST['kode']) ? (string) $_POST['kode'] : '';
     if (!hash_equals($_SESSION['mfa_token'], isset($_POST['token']) ? (string) $_POST['token'] : '')) {
         $pesan = 'Formulir kedaluwarsa, silakan masukkan kode lagi.';
@@ -87,13 +101,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $pesan = 'Kode salah atau sudah dipakai. Tunggu kode berikutnya lalu coba lagi.';
         }
     }
-    if (!empty($lolos)) {
-        session_regenerate_id(true);
-        unset($_SESSION['mfa_tunggu'], $_SESSION['mfa_token']);
-        $_SESSION['mfa_lolos'] = array('userid' => $user['userid'], 'waktu' => time());
-        header('Location: log.php?op=lanjut');
-        exit;
+    if ($lolos) {
+        if ($ingat) {
+            mfa_perangkat_ingat($userid);
+        } else {
+            mfa_perangkat_lupakan($userid);
+        }
     }
+}
+if ($lolos) {
+    session_regenerate_id(true);
+    unset($_SESSION['mfa_tunggu'], $_SESSION['mfa_token']);
+    $_SESSION['mfa_lolos'] = array('userid' => $user['userid'], 'waktu' => time());
+    header('Location: log.php?op=lanjut');
+    exit;
 }
 $h = function ($s) {
     return htmlspecialchars((string) $s, ENT_QUOTES, 'UTF-8');
@@ -147,6 +168,11 @@ $h = function ($s) {
                  inputmode="numeric" pattern="[0-9 ]{6,7}" maxlength="7" autocomplete="one-time-code"
                  placeholder="Kode 6 digit" required autofocus>
           <label for="kode">Kode 6 digit</label>
+        </div>
+        <div class="form-check mt-3 text-start">
+          <input class="form-check-input" type="checkbox" name="ingat" value="1" id="ingat" checked>
+          <label class="form-check-label small" for="ingat">Ingat perangkat ini selama <?php echo MFA_INGAT_HARI; ?> hari
+            (login di browser ini cukup dengan password). Hilangkan centang bila memakai komputer milik orang lain.</label>
         </div>
         <button id="kirim-mfa" class="btn btn-ni btn-lg w-100 mt-2" type="submit">
           <span class="teks-tombol"><?php echo $daftar ? 'Aktifkan & Masuk' : 'Verifikasi'; ?></span>

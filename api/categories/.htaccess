@@ -1,6 +1,6 @@
 # api/categories dibuka tanpa login (dikecualikan di inc/penjaga_sesi.php) karena dipanggil lewat curl dari server lain.
-# Hanya IP berikut yang boleh mengakses (perintah user 2026-11-05); IP lain mendapat 403 Forbidden.
+# Hanya IP berikut yang boleh mengakses (perintah user 2026-11-05, daftar diperbarui 2026-11-09); IP lain 403 Forbidden.
 <RequireAny>
     Require ip 127.0.0.1 ::1
-    Require ip 192.168.88.44 192.168.88.14 192.168.88.40
+    Require ip 192.168.88.4 192.168.88.40 192.168.88.44 192.168.88.140 192.168.88.144
 </RequireAny>
