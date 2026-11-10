@@ -59,6 +59,36 @@ function pilihan_lead($label, $nama, $opsi)
     <?php
 }
 
+/** Satu baris label (kiri) + input (kanan); tata letak sama dengan form Pengajuan unit (new2.php). */
+function baris_isian_lead($label, $nama, $nilai, $atribut = '', $wajib = true)
+{
+    ?>
+    <div class="row g-2 mb-1">
+      <label for="<?php echo h($nama); ?>" class="col-sm-5 col-form-label col-form-label-sm"><?php echo h($label); ?><?php echo $wajib ? ' <span class="text-danger">*</span>' : ''; ?></label>
+      <div class="col-sm-7">
+        <input type="text" class="form-control form-control-sm" name="<?php echo h($nama); ?>" id="<?php echo h($nama); ?>" value="<?php echo h($nilai); ?>" <?php echo $atribut; ?>>
+      </div>
+    </div>
+    <?php
+}
+
+/** Satu baris label (kiri) + select (kanan); $opsi = array(array(value|null, teks, terpilih)). */
+function baris_pilihan_lead($label, $nama, $opsi)
+{
+    ?>
+    <div class="row g-2 mb-1">
+      <label for="<?php echo h($nama); ?>" class="col-sm-5 col-form-label col-form-label-sm"><?php echo h($label); ?> <span class="text-danger">*</span></label>
+      <div class="col-sm-7">
+        <select class="form-select form-select-sm" name="<?php echo h($nama); ?>" id="<?php echo h($nama); ?>">
+          <?php foreach ($opsi as $o): ?>
+          <option<?php echo $o[0] === null ? '' : ' value="' . h($o[0]) . '"'; ?><?php echo !empty($o[2]) ? ' selected' : ''; ?>><?php echo h($o[1]); ?></option>
+          <?php endforeach; ?>
+        </select>
+      </div>
+    </div>
+    <?php
+}
+
 $besar = 'data-huruf-besar';
 $angka = 'data-wajib-angka';
 $urutan = array('satu', 'dua', 'tiga', 'empat', 'lima', 'enam', 'tujuh', 'delapan', 'sembilan', 'sepuluh');
@@ -81,46 +111,52 @@ halaman_awal('Form Approve Calon Anggota');
 <form action="update_cim_lead.php" method="post" name="postform" id="form-approve" autocomplete="off">
   <div class="card card-ni mw-100 mb-3">
     <div class="card-header">Informasi Anggota</div>
-    <div class="card-body row g-2">
-      <?php isian_lead('Kode Unit', 'branch', $ag('UNIT'), 'maxlength="6"'); ?>
-      <?php isian_lead('Kode Kelompok', 'code_kel', $ag('CODE_KEL'), $besar . ' maxlength="20"'); ?>
-      <?php isian_lead('Cif', 'cif', $cif); ?>
-      <?php isian_lead('Cif Simpanan', 'ciff', $cif, '', false); ?>
-      <?php isian_lead('Kode AO', 'code_ao', $ag('CAO')); ?>
-      <?php isian_lead('Nomor KTP', 'id', $ag('ID_NUMBER'), $angka . ' maxlength="16"'); ?>
-      <?php pilihan_lead('Kewarganegaraan', 'negara', array(array('', 'INDONESIA'))); ?>
-      <?php isian_lead('Nama', 'nama', $ag('CUST_SHORT_NAME'), $besar . ' maxlength="45"'); ?>
-      <?php pilihan_lead('Pendidikan', 'pendidikan', array(array(null, 'Pilih Salah satu'), array('SMA', 'SMA', true), array('SMP', 'SMP'),
-          array('SD', 'SD'), array('D1', 'D1'), array('D3', 'D3'), array('S1', 'S1'))); ?>
-      <?php isian_lead('Tempat Lahir', 'tempat_lahir', $ag('TEMPAT_LAHIR'), $besar . ' maxlength="14"'); ?>
-      <?php isian_lead('Nama Pasangan/Penjamin', 'wali', $ag('WARIS'), $besar); ?>
-      <?php isian_lead('Tgl Lahir Sesuai KTP', 'tgl_lahir', $ag('BIRTH_DATE'), 'placeholder="YYYY-MM-DD"'); ?>
-      <?php isian_lead('No Tlp', 'no_tlp', $ag('MOBILE_PHONE')); ?>
-      <?php pilihan_lead('Jenis Kelamin', 'jenis_kel', array(array('Perempuan', 'Perempuan'), array('Laki-laki', 'Laki-laki'))); ?>
-      <?php isian_lead('No Tlp Penjamin', 'tlp_penjamin', $ag('HOME_PHONE')); ?>
-      <?php isian_lead('Alamat Sesuai KTP', 'alamat', $ag('HADDRESS1'), $besar . ' maxlength="50"'); ?>
-      <?php // versi lama: value="0" muncul lebih dulu dari value NPWP, sehingga isian selalu "0" ?>
-      <?php isian_lead('NPWP', 'npwp', '0', 'maxlength="20"'); ?>
-      <?php isian_lead('RT/RW', 'rt', $ag('HADDRESS5')); ?>
-      <?php isian_lead('Nama Ibu Kandung', 'ibu', $ag('MOTHER_NAME'), $besar); ?>
-      <?php isian_lead('Kode Pos', 'kd_pos', $ag('HPOST_CODE')); ?>
-      <?php isian_lead('Tanggal Wakalah', 'tgl_skep', $cl('tgl_wakalah'), 'placeholder="YYYY-MM-DD"'); ?>
-      <?php isian_lead('Kelurahan', 'lurah', $ag('HADDRESS2'), $besar); ?>
-      <?php isian_lead('Tgl Murabahah', 'tgl_akad', $cl('tgl_akad'), 'placeholder="YYYY-MM-DD"'); ?>
-      <?php isian_lead('Kecamatan', 'kec', $ag('HADDRESS3'), $besar); ?>
-      <?php pilihan_lead('Jenis Produk Pembiayaan', 'deal_type', array(array('1', 'Minggu'), array('2', 'Hari'), array('3', 'Bulan'))); ?>
-      <?php isian_lead('Kabupaten/Kota', 'kota', $ag('HADDRESS4'), $besar); ?>
-      <?php pilihan_lead('Bidang Usaha', 'usaha', $opsi_usaha); ?>
-      <?php isian_lead('Nama Usaha', 'nama_usaha', $cl('nama_usaha'), '', false); ?>
-      <?php pilihan_lead('Status Perkawinan', 'status_kawin', array(array('kawin', 'KAWIN'), array('belum_kawin', 'BELUM KAWIN'), array('janda', 'JANDA'))); ?>
-      <?php pilihan_lead('Sumber Dana', 'sumber', array(array('1', 'NI'), array('2', 'Pihak Ketiga'), array('3', 'Bank Victoria'), array('4', 'BSM'),
-          array('5', 'BAV'), array('6', 'BJB'), array('7', 'BRI'), array('8', 'LPDB'))); ?>
-      <?php isian_lead('Pekerjaan Pasangan', 'pekerjaan', $ag('pekerjaan_pasangan'), $besar . ' maxlength="75"'); ?>
-      <?php isian_lead('Golongan Pemilik', 'gol_pe', '875', 'maxlength="20"'); ?>
-      <?php pilihan_lead('Agama', 'agama', array(array('ISLAM', 'ISLAM'), array('BUDHA', 'BUDHA'))); ?>
-      <?php isian_lead('Golongan Debitur', 'gol_deb', '874'); ?>
-      <?php isian_lead('ID Expire', 'id_expire', $ag('ID_EXPIRED')); ?>
-      <?php isian_lead('Keterkaitan', 'ket', '2'); ?>
+    <div class="card-body">
+      <div class="row gx-4">
+        <div class="col-lg-6">
+          <?php baris_isian_lead('Kode Unit', 'branch', $ag('UNIT'), 'maxlength="6"'); ?>
+          <?php baris_isian_lead('Cif', 'cif', $cif); ?>
+          <?php baris_isian_lead('Cif Simpanan', 'ciff', $cif, '', false); ?>
+          <?php baris_isian_lead('Nomor KTP', 'id', $ag('ID_NUMBER'), $angka . ' maxlength="16"'); ?>
+          <?php baris_isian_lead('Nama', 'nama', $ag('CUST_SHORT_NAME'), $besar . ' maxlength="45"'); ?>
+          <?php baris_isian_lead('Tempat Lahir', 'tempat_lahir', $ag('TEMPAT_LAHIR'), $besar . ' maxlength="14"'); ?>
+          <?php baris_isian_lead('Tgl Lahir Sesuai KTP', 'tgl_lahir', $ag('BIRTH_DATE'), 'placeholder="YYYY-MM-DD"'); ?>
+          <?php baris_pilihan_lead('Jenis Kelamin', 'jenis_kel', array(array('Perempuan', 'Perempuan'), array('Laki-laki', 'Laki-laki'))); ?>
+          <?php baris_isian_lead('Alamat Sesuai KTP', 'alamat', $ag('HADDRESS1'), $besar . ' maxlength="50"'); ?>
+          <?php baris_isian_lead('RT/RW', 'rt', $ag('HADDRESS5')); ?>
+          <?php baris_isian_lead('Kode Pos', 'kd_pos', $ag('HPOST_CODE')); ?>
+          <?php baris_isian_lead('Kelurahan', 'lurah', $ag('HADDRESS2'), $besar); ?>
+          <?php baris_isian_lead('Kecamatan', 'kec', $ag('HADDRESS3'), $besar); ?>
+          <?php baris_isian_lead('Kabupaten/Kota', 'kota', $ag('HADDRESS4'), $besar); ?>
+          <?php baris_pilihan_lead('Status Perkawinan', 'status_kawin', array(array('kawin', 'KAWIN'), array('belum_kawin', 'BELUM KAWIN'), array('janda', 'JANDA'))); ?>
+          <?php baris_isian_lead('Pekerjaan Pasangan', 'pekerjaan', $ag('pekerjaan_pasangan'), $besar . ' maxlength="75"'); ?>
+          <?php baris_pilihan_lead('Agama', 'agama', array(array('ISLAM', 'ISLAM'), array('BUDHA', 'BUDHA'))); ?>
+          <?php baris_isian_lead('ID Expire', 'id_expire', $ag('ID_EXPIRED')); ?>
+        </div>
+        <div class="col-lg-6">
+          <?php baris_isian_lead('Kode Kelompok', 'code_kel', $ag('CODE_KEL'), $besar . ' maxlength="20"'); ?>
+          <?php baris_isian_lead('Kode AO', 'code_ao', $ag('CAO')); ?>
+          <?php baris_pilihan_lead('Kewarganegaraan', 'negara', array(array('', 'INDONESIA'))); ?>
+          <?php baris_pilihan_lead('Pendidikan', 'pendidikan', array(array(null, 'Pilih Salah satu'), array('SMA', 'SMA', true), array('SMP', 'SMP'),
+              array('SD', 'SD'), array('D1', 'D1'), array('D3', 'D3'), array('S1', 'S1'))); ?>
+          <?php baris_isian_lead('Nama Pasangan/Penjamin', 'wali', $ag('WARIS'), $besar); ?>
+          <?php baris_isian_lead('No Tlp', 'no_tlp', $ag('MOBILE_PHONE')); ?>
+          <?php baris_isian_lead('No Tlp Penjamin', 'tlp_penjamin', $ag('HOME_PHONE')); ?>
+          <?php // versi lama: value="0" muncul lebih dulu dari value NPWP, sehingga isian selalu "0" ?>
+          <?php baris_isian_lead('NPWP', 'npwp', '0', 'maxlength="20"'); ?>
+          <?php baris_isian_lead('Nama Ibu Kandung', 'ibu', $ag('MOTHER_NAME'), $besar); ?>
+          <?php baris_isian_lead('Tanggal Wakalah', 'tgl_skep', $cl('tgl_wakalah'), 'placeholder="YYYY-MM-DD"'); ?>
+          <?php baris_isian_lead('Tgl Murabahah', 'tgl_akad', $cl('tgl_akad'), 'placeholder="YYYY-MM-DD"'); ?>
+          <?php baris_pilihan_lead('Jenis Produk Pembiayaan', 'deal_type', array(array('1', 'Minggu'), array('2', 'Hari'), array('3', 'Bulan'))); ?>
+          <?php baris_pilihan_lead('Bidang Usaha', 'usaha', $opsi_usaha); ?>
+          <?php baris_isian_lead('Nama Usaha', 'nama_usaha', $cl('nama_usaha'), '', false); ?>
+          <?php baris_pilihan_lead('Sumber Dana', 'sumber', array(array('1', 'NI'), array('2', 'Pihak Ketiga'), array('3', 'Bank Victoria'), array('4', 'BSM'),
+              array('5', 'BAV'), array('6', 'BJB'), array('7', 'BRI'), array('8', 'LPDB'))); ?>
+          <?php baris_isian_lead('Golongan Pemilik', 'gol_pe', '875', 'maxlength="20"'); ?>
+          <?php baris_isian_lead('Golongan Debitur', 'gol_deb', '874'); ?>
+          <?php baris_isian_lead('Keterkaitan', 'ket', '2'); ?>
+        </div>
+      </div>
     </div>
   </div>
 
