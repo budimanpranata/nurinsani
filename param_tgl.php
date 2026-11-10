@@ -1,4 +1,5 @@
 <?php require_once __DIR__ . '/php8_compat.php';
+require_once __DIR__ . '/inc/notif.php';
 session_start();
 $userid=$_SESSION['userid'];
 
@@ -200,8 +201,7 @@ $code_area=$r['code_area'];
   If ($_POST ['search'])
 {
 if (empty($tanggal)){
-	echo "<script>alert('Maaf,.Mohon isi tanggal transaksi !!!');</script>";
-         echo "<script language='javascript'>document.location.href='param_tgl.php'</script>";}
+	notif_pergi("Maaf,.Mohon isi tanggal transaksi !!!", "param_tgl.php");}
 	else{
 	$_SESSION['stgl_system']=$tanggal;
 	}	
@@ -212,8 +212,7 @@ if (empty($tanggal)){
 $tgl="000-00-00";
 
 	if ($tanggal < $param_tgl){
-		echo "<script>alert('Maaf,.transaksi tidak bisak back date ');</script>";
-         echo "<script language='javascript'>document.location.href='param_tgl.php'</script>";}
+		notif_pergi("Maaf,.transaksi tidak bisak back date ", "param_tgl.php");}
 	else {
 		
 	

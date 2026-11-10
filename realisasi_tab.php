@@ -1,4 +1,5 @@
 <?php require_once __DIR__ . '/koneksi_db.php'; 
+require_once __DIR__ . '/inc/notif.php';
 session_start();
 ob_start();
 $userid=$_SESSION['userid'];
@@ -6,9 +7,9 @@ $tgl_system=$_SESSION['stgl_system'];
 $tgl_input=date("Y-m-d");
 //cek apakah user sudah login
 if(!isset($_SESSION['stgl_system'])){
-echo "<script>alert('Maaf,.tanggal system belum di setup');</script>";
+notif_pergi('Maaf, tanggal system belum di setup', 'param_tgl.php', 'warning');
 
-   header("location:param_tgl.php");
+   /* redirect ditangani notif_pergi */
  exit; }
 //cek apakah user sudah login
 if(!isset($_SESSION['userid'])){
@@ -87,11 +88,11 @@ if ($cekbox) {
 	
 				}
 			}
-			echo '<script>alert("Tabungan sudah direalisasikan."); window.location="yrs_list.php"</script>';
+			notif_pergi('Tabungan sudah direalisasikan.', 'yrs_list.php');
 		
 		
 	}else {
-			echo '<script>alert("anda belum memilih data."); window.location="yrs_list.php"</script>';
+			notif_pergi('anda belum memilih data.', 'yrs_list.php');
 	}
 
 ?>

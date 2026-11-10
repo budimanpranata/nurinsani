@@ -24,8 +24,12 @@ $cif="$branch-$nextNoTransaksi";
 ?>
 <html>
 <head>
+<!-- notifikasi SweetAlert: override alert() lama lewat assets/app/notif.js -->
+<link rel="stylesheet" href="assets/vendor/sweetalert2-11/sweetalert2.min.css">
+<script src="assets/vendor/sweetalert2-11/sweetalert2.min.js"></script>
+<script src="assets/app/notif.js"></script>
 <script type="text/javascript" charset="utf-8">
-function validateForm() 
+function validateForm()
 {
  var okSoFar=true 
  with (document.postform)

@@ -1,4 +1,5 @@
 <?php require_once __DIR__ . '/../php8_compat.php';
+require_once __DIR__ . '/../inc/notif.php';
 session_start();
 $userid=$_SESSION['userid'];
 $tgl_system=$_SESSION['stgl_system'];
@@ -9,7 +10,7 @@ if($_SESSION['level']!="lead"){
    header("location:index.html");
  exit; }
 if(!isset($_SESSION['stgl_system'])){
-echo "<script>alert('Maaf,.tanggal system belum di setup');</script>";
+notif_pesan('Maaf, tanggal system belum di setup', 'warning');
    }
 ?>
 <HTML>

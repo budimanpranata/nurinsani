@@ -1,4 +1,5 @@
 <?php require_once __DIR__ . '/koneksi_db.php'; 
+require_once __DIR__ . '/inc/notif.php';
 session_start();
 ob_start();
 $userid=$_SESSION['userid'];
@@ -88,11 +89,11 @@ if ($cekbox) {
 
 				}
 			}
-			echo '<script>alert("Data sudah direalisasikan."); window.location="yrs_list.php"</script>';
+			notif_pergi('Data sudah direalisasikan.', 'yrs_list.php');
 			
 		
 	}else {
-			echo '<script>alert("anda belum memilih data."); window.location="yrs_list.php"</script>';
+			notif_pergi('anda belum memilih data.', 'yrs_list.php');
 	}
 
 ?>

@@ -1,4 +1,5 @@
 <?php require_once __DIR__ . '/inc/cek_login.php'; wajib_level('unit'); ?>
+require_once __DIR__ . '/inc/notif.php';
 
 <?php require_once __DIR__ . '/php8_compat.php';
 include "conn2.php";
@@ -26,9 +27,9 @@ $update=mysql_query ("UPDATE loan  set hari ='$dayList[$day]' where cif ='$cif'"
 			}	
 			
 if ($update){
-echo "<script>alert('suksess!!!');</script>";
+notif_pesan("suksess!!!");
 
 }else {
-	echo "<script>alert('gagal!!!');</script>";
+	notif_pesan("gagal!!!");
 }
 ?>

@@ -1,5 +1,6 @@
 <?php require_once __DIR__ . '/php8_compat.php';
-if (session_status() === PHP_SESSION_NONE) { session_start(); }
+if (session_status() === PHP_SESSION_NONE) { require_once __DIR__ . '/inc/notif.php';
+session_start(); }
 require_once __DIR__ . '/inc/cek_login.php';
 wajib_level('unit');
 include "conn2.php";
@@ -101,13 +102,13 @@ $update=mysql_query ("UPDATE pinjaman_detail SET cicilan=@count:=@count+1 where 
 			}	
 }			
 if ($update){
-echo "<script>alert('suksess!!!');</script>";
+notif_pesan("suksess!!!");
 echo "Jumlah Libur : .$libur";
 echo "<br>";
 echo "Jatuh tempo: .$newdate2";
 var_dump ($awal_hari);
 
 }else {
-	echo "<script>alert('gagal!!!');</script>";
+	notif_pesan("gagal!!!");
 }
 ?>

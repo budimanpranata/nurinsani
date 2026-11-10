@@ -1,4 +1,5 @@
 <?php require_once __DIR__ . '/../../koneksi_db.php';
+require_once __DIR__ . '/../../inc/notif.php';
 if (session_status() === PHP_SESSION_NONE) { session_start(); }
 require_once __DIR__ . '/../../inc/cek_login.php';
 wajib_level('fund', 'admin');
@@ -18,8 +19,8 @@ if (isset($_POST['update'])) {
     $update = db_jalankan("UPDATE deposito SET eq_rate=?,rasio=?,norek_bank=?,nama_bank=?,cara_hitung=?, status_print ='ADVIS' WHERE norek =?",
         'ssssss', $pos('eq_rate'), $pos('rasio'), $pos('norek_bank'), $pos('nama_bank'), $pos('cara_hitung'), $pos('norek'));
     if ($update) {
-        echo "<script>alert('Data Berhasil di Update!'); window.location = '../view/master_trans.php'</script>";
+        notif_pergi('Data Berhasil di Update!', '../view/master_trans.php');
     } else {
-        echo "<script>alert('Data Gagal di Update!'); window.location = '../view/master_trans.php'</script>";
+        notif_pergi('Data Gagal di Update!', '../view/master_trans.php');
     }
 }

@@ -1,5 +1,6 @@
 <?php require_once __DIR__ . '/koneksi_db.php';
 date_default_timezone_set('Asia/Jakarta');
+require_once __DIR__ . '/inc/notif.php';
 session_start();
 require_once __DIR__ . '/inc/cek_login.php';
 wajib_level('unit');
@@ -148,7 +149,7 @@ if ($pilih=='01') {
                        
  
            
-    echo '<script>alert("Restruturisasi sudah direalisasi."); window.location="rest_case.php"</script>';     
+    notif_pergi('Restruturisasi sudah direalisasi.', 'rest_case.php');     
     }elseif ($pilih=='05'){
 $row=db_satu("select DATE_ADD(tgl_wakalah,INTERVAL 7 DAY) as tgl_murab1,DATE_ADD(?,INTERVAL ? WEEK) as matur,tgl_murab,loan.buss_date,loan.code_kel,loan.no_anggota,loan.Cust_Short_name,maturity_date,
             loan.Deal_type,suffix,bagi_hasil,Tenor,Plafond,os,angsuran,pokok,ijaroh,bulat,ke,usaha,loan.unit,tgl_wakalah,hari,loan.cao,loan.USERID,loan.status,loan.cif,saldo_margin
@@ -183,7 +184,7 @@ $totalharga=ceil(compat_num($totalharga));
                
 		
             else {
-                    echo '<script>alert("Maaf Menu Belum tersedia."); window.location="rest_case.php"</script>';
+                    notif_pergi('Maaf Menu Belum tersedia.', 'rest_case.php');
         }
 
 ?>

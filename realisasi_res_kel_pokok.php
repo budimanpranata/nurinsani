@@ -1,6 +1,7 @@
 <?php require_once __DIR__ . '/koneksi_db.php';
 error_reporting(E_ALL);
 date_default_timezone_set('Asia/Jakarta');
+require_once __DIR__ . '/inc/notif.php';
 session_start();
 require_once __DIR__ . '/inc/cek_login.php';
 wajib_level('unit');
@@ -152,7 +153,7 @@ db_jalankan("insert into rest_covid values('',?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)", '
             
    
            
-    echo '<script>alert("Restruturisasi Pokok sudah direalisasi."); window.location="rest_kel_pokok.php"</script>';     
+    notif_pergi('Restruturisasi Pokok sudah direalisasi.', 'rest_kel_pokok.php');     
     }
 
                
@@ -239,7 +240,7 @@ db_jalankan("insert into rest_covid values('',?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)", '
                
 
 				db_jalankan("update  loan  set tgl_murab=?,tgl_akad=?,maturity_date=? cif=?", 'ssss', (string) $tgl_system, (string) $tgl_system, (string) $maturity_date, (string) $cif); 
-        echo '<script>alert("Restruturisasi Pokok Margin sudah direalisasi."); window.location="rest_kel_pokok.php"</script>';
+        notif_pergi('Restruturisasi Pokok Margin sudah direalisasi.', 'rest_kel_pokok.php');
 
 
 
@@ -247,7 +248,7 @@ db_jalankan("insert into rest_covid values('',?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)", '
     }
 
             else {
-                    echo '<script>alert("Maaf Menu Belum tersedia."); window.location="rest_kel_pokok.php"</script>';
+                    notif_pergi('Maaf Menu Belum tersedia.', 'rest_kel_pokok.php');
         }
 
 
@@ -262,7 +263,7 @@ db_jalankan("insert into rest_covid values('',?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)", '
 
 
 }else {
-			echo '<script>alert("anda belum memilih data."); window.location="rest_kel_pokok.php"</script>';
+			notif_pergi('anda belum memilih data.', 'rest_kel_pokok.php');
 	}
 }
 

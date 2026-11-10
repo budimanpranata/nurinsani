@@ -1,4 +1,5 @@
 <?php require_once __DIR__ . '/koneksi_db.php'; 
+require_once __DIR__ . '/inc/notif.php';
 session_start();
 ob_start();
 $userid=$_SESSION['userid'];
@@ -7,9 +8,9 @@ $tgl_input=date("Y-m-d");
 $buss_date=$tgl_system;
 //cek apakah user sudah login
 if(!isset($_SESSION['stgl_system'])){
-echo "<script>alert('Maaf,.tanggal system belum di setup');</script>";
+notif_pergi('Maaf, tanggal system belum di setup', 'param_tgl.php', 'warning');
 
-   header("location:param_tgl.php");
+   /* redirect ditangani notif_pergi */
  exit; }
 //cek apakah user sudah login
 if(!isset($_SESSION['userid'])){
@@ -40,15 +41,15 @@ if ($checbox) {
 		// Anggota yang tidak lolos dilewati (alert) dan anggota berikutnya tetap diproses.
 		$cek_loan = db_satu("select cif, os, status from loan where cif = ?", 's', (string) $checbox[$i]);
 		if (!$cek_loan) {
-			echo '<script>alert(' . json_encode('Maaf...,CIF ' . $checbox[$i] . ' tidak ditemukan') . ');</script>';
+			notif_pesan('Maaf...,CIF ' . $checbox[$i] . ' tidak ditemukan');
 			continue;
 		}
 		if ($cek_loan['status'] == 'LUNAS' || compat_num($cek_loan['os']) <= 0) {
-			echo '<script>alert(' . json_encode('Maaf...,Pembiayaan CIF ' . $checbox[$i] . ' sudah lunas') . ');</script>';
+			notif_pesan('Maaf...,Pembiayaan CIF ' . $checbox[$i] . ' sudah lunas');
 			continue;
 		}
 		if ((string) $cek_loan['cif'] === '') {
-			echo '<script>alert(' . json_encode('Maaf...,CIF kosong, pelunasan dibatalkan') . ');</script>';
+			notif_pesan('Maaf...,CIF kosong, pelunasan dibatalkan');
 			continue;
 		}
 		// semua penulisan anggota ini dalam satu transaksi (jurnal_umum & rek_loan masih MyISAM, tidak ikut dibatalkan)
@@ -92,7 +93,7 @@ if ($checbox) {
 
 
 if ($saldo < $os ){
-			echo "<script> alert ('Maaf Saldo an $cif " . addslashes($nama) . " Pelunasan Lebih Kecil dari Sisa Pembiayaan')</script>"; // addslashes: dulu nama sudah di-escape
+			notif_pesan("Maaf Saldo an $cif " . addslashes($nama) . " Pelunasan Lebih Kecil dari Sisa Pembiayaan"); // addslashes: dulu nama sudah di-escape
 			//echo "<script language='javascript'>document.location.href='pelunasan_kel.php'</script>";
 			}else {
 							
@@ -276,11 +277,11 @@ db_jalankan("Update  tagihan_cs set status_realisasi ='BAYAR'  where cif  =? and
 
 if (db_jumlah_gagal() > $gagal_awal) {
 	mysqli_rollback($koneksi_transaksi);
-	echo '<script>alert(' . json_encode("GAGAL Pelunasan an $cif, data tidak disimpan") . ');</script>';
+	notif_pesan("GAGAL Pelunasan an $cif, data tidak disimpan");
 	continue;
 }
 mysqli_commit($koneksi_transaksi);
-echo "<script>alert('Pelunasa an $cif Suksess');</script>";
+notif_pesan("Pelunasa an $cif Suksess");
 		
 		
 		
@@ -300,7 +301,7 @@ echo "<script>alert('Pelunasa an $cif Suksess');</script>";
 	}	
 	
 }else {
-			echo '<script>alert("anda belum memilih data."); window.location="pelunasan_kel.php"</script>';
+			notif_pergi('anda belum memilih data.', 'pelunasan_kel.php');
 	}
 
 ?>

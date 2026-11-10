@@ -1,4 +1,5 @@
 <?php require_once __DIR__ . '/koneksi_db.php';
+require_once __DIR__ . '/inc/notif.php';
 if (session_status() === PHP_SESSION_NONE) { session_start(); }
 require_once __DIR__ . '/inc/cek_login.php';
 wajib_level('unit');
@@ -29,7 +30,6 @@ if (isset($tabel_tagihan[$jenis])) {
 }
 
 
-echo "<script>alert(" . json_encode("hapus pull data $cif sukses ", JSON_HEX_TAG) . ");</script>";
-echo "<script language='javascript'>document.location.href='mob_pull_data.php'</script>";
+notif_pergi("hapus pull data $cif sukses ", 'mob_pull_data.php', 'success');
 
 ?>

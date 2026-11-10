@@ -1,13 +1,14 @@
 <?php require_once __DIR__ . '/../../php8_compat.php';
+require_once __DIR__ . '/../../inc/notif.php';
 session_start();
 ob_start();
 $userid=$_SESSION['userid'];
 $tgl_system=$_SESSION['stgl_system'];
 //cek apakah user sudah login
 if(!isset($_SESSION['stgl_system'])){
-echo "<script>alert('Maaf,.tanggal system belum di setup');</script>";
+notif_pergi('Maaf, tanggal system belum di setup', 'param_tgl.php', 'warning');
 
-   header("location:param_tgl.php");
+   /* redirect ditangani notif_pergi */
  exit; }
 if(!isset($_SESSION['userid'])){
    header("location:index.html");
@@ -342,8 +343,7 @@ $tahun=mysql_real_escape_string((string) $tahun);
 if (empty($norek)){
 //if (empty($norek)||empty($bulan)||empty($tahun)){
 
-    echo "<script>alert('Maaf, Bulan,tahun atau Nomor Perkiraan belum di isi');</script>";
-         echo "<script language='javascript'>document.location.href='buku_besar.php'</script>";}
+    notif_pergi("Maaf, Bulan,tahun atau Nomor Perkiraan belum di isi", "buku_besar.php");}
    
     else{
 $_SESSION['noreks']=$norek;

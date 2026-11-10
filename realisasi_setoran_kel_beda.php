@@ -11,6 +11,7 @@
  *   - $cif dan $no_anggota diisi dari data loan (versi lama kosong di keterangan dan rek_loan)
  *   - pesan gagal / belum memilih data kembali ke setor_kelompok_beda.php (versi lama ke stor_kelompok_beda.php dan form.php, keduanya tidak ada)
  */
+require_once __DIR__ . '/inc/notif.php';
 session_start();
 ob_start();
 $userid=isset($_SESSION['userid']) ? $_SESSION['userid'] : null;
@@ -19,9 +20,9 @@ $tgl_input=date("Y-m-d");
 $buss_date=$tgl_system;
 //cek apakah user sudah login
 if(!isset($_SESSION['stgl_system'])){
-echo "<script>alert('Maaf,.tanggal system belum di setup');</script>";
+notif_pergi('Maaf, tanggal system belum di setup', 'param_tgl.php', 'warning');
 
-   header("location:param_tgl.php");
+   /* redirect ditangani notif_pergi */
  exit; }
 //cek apakah user sudah login
 if(!isset($_SESSION['userid'])){
@@ -295,8 +296,7 @@ if ($checbox) {
 						$tagihan('BAYAR');
 				  }
             }else{
-            echo "<script>alert('Maaf,.Proses Input Gagal');</script>";
-            echo "<script language='javascript'>document.location.href='setor_kelompok_beda.php'</script>";
+            notif_pergi("Maaf,.Proses Input Gagal", "setor_kelompok_beda.php");
             }
 		}
 	}
@@ -305,11 +305,10 @@ if ($checbox) {
 		echo "Transaksi Gagal commit Silahkan ulangi lagi";
 		exit();
 	  }
-echo "<script>alert('Setoran Kelompok sukses di simpan');</script>";
-echo "<script language='javascript'>document.location.href='setor_kelompok_beda.php'</script>";
+notif_pergi("Setoran Kelompok sukses di simpan", "setor_kelompok_beda.php");
 
 }else {
-			echo '<script>alert("anda belum memilih data."); window.location="setor_kelompok_beda.php"</script>';
+			notif_pergi('anda belum memilih data.', 'setor_kelompok_beda.php');
 	}
 
 ?>

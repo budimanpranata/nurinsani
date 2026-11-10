@@ -1,4 +1,5 @@
 <?php require_once __DIR__ . '/php8_compat.php';
+require_once __DIR__ . '/inc/notif.php';
 session_start();
 require_once __DIR__ . '/inc/cek_login.php';
 wajib_level('unit', 'kp');
@@ -279,8 +280,7 @@ a:active {
   If (isset($_POST ['search']))
 {
 if (empty($buss_date1)||empty($buss_date2)){
-	echo "<script>alert('Maaf,.isi Tanggal Pencarian  !!!');</script>";
-         echo "<script language='javascript'>document.location.href='mutasi_kas.php'</script>";}
+	notif_pergi("Maaf,.isi Tanggal Pencarian  !!!", "mutasi_kas.php");}
 	
 	else{
 		$_SESSION['tgl_awal_pos']=$buss_date1;

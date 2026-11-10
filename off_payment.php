@@ -1,4 +1,5 @@
 <?php require_once __DIR__ . '/inc/cek_login.php'; wajib_level('unit'); ?>
+require_once __DIR__ . '/inc/notif.php';
 
 <?php require_once __DIR__ . '/php8_compat.php';
 include "conn2.php";
@@ -44,7 +45,7 @@ $maturity_date_res=$maturity_date_ress;
 
 }			
 
-echo "<script>alert('suksess!!!');</script>";
+notif_pesan("suksess!!!");
 echo "Jumlah Libur : $libur";
 echo "<br>";
 echo "Jatuh tempo: .$maturity_date_res";

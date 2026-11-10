@@ -1,4 +1,5 @@
 <?php require_once __DIR__ . '/php8_compat.php';
+require_once __DIR__ . '/inc/notif.php';
 session_start();
  include "conn2.php";
   $koneksi=open_connection2();
@@ -129,14 +130,12 @@ a {
   If ($_POST ['search'])
 {
 if (empty($nopen)){
-	echo "<script>alert('Maaf,.isi Nomor Pegawai yang benar !!!');</script>";
-         echo "<script language='javascript'>document.location.href='entry.php'</script>";}
+	notif_pergi("Maaf,.isi Nomor Pegawai yang benar !!!", "entry.php");}
 	else{
 	$select = mysql_query ("select Branch,No_Pegawai,Deal_type,Cust_Short_name,Birth_date,Contract_Date,Plafond,Tenor,Gaji_Bersih from loan where No_Pegawai ='$nopen' AND USERID='$userid'");
 		
 if(mysql_num_rows($select)==0){
-			echo "<script>alert('Maaf...,Nopen tidak ditemukan!!!');</script>";
-         echo "<script language='javascript'>document.location.href='entry.php' </script>";
+			notif_pergi("Maaf...,Nopen tidak ditemukan!!!", "entry.php");
 		 }
 
 	//menampilkan data

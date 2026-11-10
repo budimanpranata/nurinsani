@@ -9,6 +9,7 @@
  * Semua anggota diproses dalam satu transaksi database seperti EOD.
  */
 date_default_timezone_set('Asia/Jakarta');
+require_once __DIR__ . '/inc/notif.php';
 session_start();
 require_once __DIR__ . '/inc/cek_login.php';
 wajib_level('unit');
@@ -21,7 +22,7 @@ include "function.php";
 
 $cekbox = isset($_POST['cekbox']) ? $_POST['cekbox'] : null;
 if (!$cekbox) {
-    echo '<script>alert("anda belum memilih data."); window.location="realisasi_musyarokah.php"</script>';
+    notif_pergi('anda belum memilih data.', 'realisasi_musyarokah.php');
     exit;
 }
 
@@ -154,4 +155,4 @@ if (!mysqli_commit($con)) {
 }
 mysqli_autocommit($con, true);
 
-echo '<script>alert("Musyarakah sudah direalisasikan."); window.location="realisasi_musyarokah.php"</script>';
+notif_pergi('Musyarakah sudah direalisasikan.', 'realisasi_musyarokah.php');

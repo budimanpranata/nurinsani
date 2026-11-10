@@ -1,4 +1,5 @@
 <?php require_once __DIR__ . '/php8_compat.php'; 
+require_once __DIR__ . '/inc/notif.php';
 session_start();
 $userid=$_SESSION['userid'];
 $tgl_awal=$_SESSION['tgl_awal_pos'];
@@ -270,7 +271,7 @@ a:active {
 		$selesai=mysql_query("update tabel_transaksi set  keterangan_posting='Post' where unit ='$unitt' and tanggal_transaksi between '$tgl_awal' and '$tgl_akhir'");
 		
 		if($selesai){
-			echo '<script>alert("posting Selesai."); window.location="lead/neraca_percobaan.php"</script>';
+			notif_pergi('posting Selesai.', 'lead/neraca_percobaan.php');
 		}else{
 			echo mysql_error();
 		} 

@@ -1,4 +1,5 @@
 <?php require_once __DIR__ . '/../php8_compat.php';
+require_once __DIR__ . '/../inc/notif.php';
 session_start();
 ob_start();
 //error_reporting(0);
@@ -282,8 +283,7 @@ a:active {
   If (isset($_POST ['search']))
 {
 if (empty($cif)||empty($ap_tujuan)){
-    echo "<script>alert('Maaf, isi cif yang benar');</script>";
-         echo "<script language='javascript'>document.location.href='mutasi_cif.php'</script>";}
+    notif_pergi("Maaf, isi cif yang benar", "mutasi_cif.php");}
     
     else{
 		

@@ -2,6 +2,7 @@
 // wajib login level lead (ditambahkan 2026-11-04; dulu tanpa cek login padahal mengubah tabel_transaksi)
 session_start();
 require_once __DIR__ . '/../../inc/cek_login.php';
+require_once __DIR__ . '/../../inc/notif.php';
 wajib_login();
 if ((isset($_SESSION['level']) ? $_SESSION['level'] : '') != "lead") {
     header("location:../../index.html");
@@ -22,7 +23,7 @@ if(isset($_GET['u'])):
           if($stmt->execute()):
               echo "<script>location.href='koreksi.php'</script>";
           else:
-               echo "<script>alert('".$stmt->error."')</script>";
+               notif_pesan($stmt->error, 'error');
           endif;
      endif;
      $res = $mysqli->prepare("SELECT * FROM tabel_transaksi WHERE id_transaksi=?");

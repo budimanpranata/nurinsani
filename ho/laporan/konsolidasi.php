@@ -1,4 +1,5 @@
 <?php require_once __DIR__ . '/../../php8_compat.php';
+require_once __DIR__ . '/../../inc/notif.php';
 session_start();
 require_once __DIR__ . '/../../inc/cek_login.php';
 wajib_level('ho');
@@ -253,8 +254,7 @@ a:active {
   If (isset($_POST ['search']))
 {
 if (empty($buss_date1)){
-	echo "<script>alert('Maaf,.isi Tanggal Pencarian  !!!');</script>";
-         echo "<script language='javascript'>document.location.href='neraca_percobaab.php'</script>";}
+	notif_pergi("Maaf,.isi Tanggal Pencarian  !!!", "neraca_percobaab.php");}
 	
 	else{
 		$_SESSION['tgl_cari_konsols']=$buss_date1;
@@ -267,8 +267,7 @@ if(mysql_num_rows($select)==0){
 			 $select = db_hasil("Select unit,sum(saldo_awal) as debet,sum(saldo_akhir) as kredit,posisi from tabel_master where  tanggal_awal = ? group by posisi order by posisi", 's', (string) $buss_date1);
 		 }
 		 if(mysql_num_rows($select)==0){
-			echo "<script>alert('Maaf,.data tidak ditemukan');</script>";
-         echo "<script language='javascript'>document.location.href='konsolidasi.php'</script>";
+			notif_pergi("Maaf,.data tidak ditemukan", "konsolidasi.php");
 		 }
 	
   ?>

@@ -1,4 +1,5 @@
 <?php require_once __DIR__ . '/php8_compat.php';
+require_once __DIR__ . '/inc/notif.php';
 session_start();
 require_once __DIR__ . '/inc/cek_login.php';
 wajib_level('unit');
@@ -192,8 +193,7 @@ $branch=$r['kode_branch'];
   If ($_POST ['search'])
 {
 if (empty($tanggal)){
-	echo "<script>alert('Maaf,.Mohon isi tanggal transaksi !!!');</script>";
-         echo "<script language='javascript'>document.location.href='param_tgl.php'</script>";}
+	notif_pergi("Maaf,.Mohon isi tanggal transaksi !!!", "param_tgl.php");}
 	else{
 	$_SESSION['stgl_system']=$tanggal;
 	}	

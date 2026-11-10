@@ -1,5 +1,6 @@
 <?php require_once __DIR__ . '/koneksi_db.php';
-if (session_status() === PHP_SESSION_NONE) { session_start(); }
+if (session_status() === PHP_SESSION_NONE) { require_once __DIR__ . '/inc/notif.php';
+session_start(); }
 require_once __DIR__ . '/inc/cek_login.php';
 wajib_level('unit');
 
@@ -193,10 +194,10 @@ $insert=db_query ($con,"INSERT INTO transaksi(noakad, outstanding, angsurandenda
        
         if($insert){
 
-            echo "<script>alert('suksess!!!');</script>";
+            notif_pesan("suksess!!!");
     
           }else{
-            echo "<script>alert('Gagal!!!');</script>";
+            notif_pesan("Gagal!!!");
           }
     
     

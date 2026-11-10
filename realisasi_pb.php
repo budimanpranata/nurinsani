@@ -9,6 +9,7 @@
  *   - tanpa pilihan kembali ke pb_kel.php (versi lama ke form.php yang tidak ada)
  * Perbaikan 2026-11-03 (perintah user): nominal dicek terhadap saldo simpanan yang didebet (tidak boleh minus).
  */
+require_once __DIR__ . '/inc/notif.php';
 session_start();
 ob_start();
 $userid=isset($_SESSION['userid']) ? $_SESSION['userid'] : null;
@@ -17,9 +18,9 @@ $tgl_input=date("Y-m-d");
 $buss_date=$tgl_system;
 //cek apakah user sudah login
 if(!isset($_SESSION['stgl_system'])){
-echo "<script>alert('Maaf,.tanggal system belum di setup');</script>";
+notif_pergi('Maaf, tanggal system belum di setup', 'param_tgl.php', 'warning');
 
-   header("location:param_tgl.php");
+   /* redirect ditangani notif_pergi */
  exit; }
 //cek apakah user sudah login
 if(!isset($_SESSION['userid'])){
@@ -78,9 +79,9 @@ if ($checbox) {
 		if (compat_num($nominal)==0){
 			$data=0;
 		}elseif (compat_num($nominal) < 0){
-			echo "<script>alert(" . json_encode("Pemindah Bukuan an $cif GAGAL: nominal tidak boleh minus") . ");</script>";
+			notif_pesan("Pemindah Bukuan an $cif GAGAL: nominal tidak boleh minus");
 		}elseif (compat_num($nominal) > $saldo_sumber){
-			echo "<script>alert(" . json_encode("Pemindah Bukuan an $cif GAGAL: nominal " . number_format(compat_num($nominal)) . " melebihi saldo $nama_sumber " . number_format($saldo_sumber)) . ");</script>";
+			notif_pesan("Pemindah Bukuan an $cif GAGAL: nominal " . number_format(compat_num($nominal)) . " melebihi saldo $nama_sumber " . number_format($saldo_sumber));
 		}else{
 			$cao = $kkel ? $kkel['cao'] : null;
 			$norek = $kkel ? $kkel['no_anggota'] : null;
@@ -131,14 +132,14 @@ if ($checbox) {
 				}
 				$jurnal('2101000', $gl, $keterangan);
 			}
-			echo "<script>alert('Pemindah Bukuan an ".addslashes((string) $cif)." Suksess');</script>";
+			notif_pesan("Pemindah Bukuan an ".addslashes((string) $cif)." Suksess");
 		}
 	}
 
 	echo "<script language='javascript'>document.location.href='pb_kel.php'</script>";
 
 }else {
-			echo '<script>alert("anda belum memilih data."); window.location="pb_kel.php"</script>';
+			notif_pergi('anda belum memilih data.', 'pb_kel.php');
 	}
 
 ?>

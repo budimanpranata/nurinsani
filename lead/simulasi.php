@@ -1,4 +1,5 @@
 <?php require_once __DIR__ . '/../php8_compat.php';
+require_once __DIR__ . '/../inc/notif.php';
 session_start();
 require_once __DIR__ . '/../inc/cek_login.php';
 wajib_level('lead');
@@ -128,8 +129,7 @@ a {
   If ($_POST ['search'])
 {
 if (empty($nopen)){
-	echo "<script>alert('Maaf,.isi Nomor Pegawai yang benar euy !!!');</script>";
-         echo "<script language='javascript'>document.location.href='simulasi.php'</script>";}
+	notif_pergi("Maaf,.isi Nomor Pegawai yang benar euy !!!", "simulasi.php");}
 	else{
 	$select = mysql_query ("select BRANCH,No_Pegawai,DEAL_TYPE,CUST_SHORT_NAME,BIRTH_DATE,PLAFOND,TENOR,CIF,MATURITY_DATE FROM stgloan where No_Pegawai ='$nopen' ");
 		}

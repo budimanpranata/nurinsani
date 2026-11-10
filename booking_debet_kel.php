@@ -1,4 +1,5 @@
 <?php require_once __DIR__ . '/koneksi_db.php'; 
+require_once __DIR__ . '/inc/notif.php';
 session_start();
 ob_start();
 date_default_timezone_set('Asia/Jakarta');
@@ -9,9 +10,9 @@ $buss_date=$tgl_system;
 var_dump($tgl_system);
 //cek apakah user sudah login
 if(!isset($_SESSION['stgl_system'])){
-echo "<script>alert('Maaf,.tanggal system belum di setup');</script>";
+notif_pergi('Maaf, tanggal system belum di setup', 'param_tgl.php', 'warning');
 
-   header("location:param_tgl.php");
+   /* redirect ditangani notif_pergi */
  exit; }
 //cek apakah user sudah login
 if(!isset($_SESSION['userid'])){
@@ -116,11 +117,10 @@ if ($checbox) {
 		echo "Transaksi Gagal commit Silahkan ulangi lagi";
 		exit();
 	  }
-echo "<script>alert('Booking Debet sukses di simpan');</script>";
-echo "<script language='javascript'>document.location.href='book_debet.php'</script>";
+notif_pergi("Booking Debet sukses di simpan", "book_debet.php");
 	
 }else {
-			echo '<script>alert("anda belum memilih data."); window.location="form.php"</script>';
+			notif_pergi('anda belum memilih data.', 'form.php');
 	}
 
 ?>

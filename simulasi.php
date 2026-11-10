@@ -4,6 +4,7 @@
  * Kelompok yang belum punya pinjaman diarahkan ke pendaftaran kelompok (new.php).
  */
 require_once __DIR__ . '/inc/tampilan.php';
+require_once __DIR__ . '/inc/notif.php';
 session_start();
 require_once __DIR__ . '/inc/cek_login.php';
 wajib_level('unit', 'lead');
@@ -44,8 +45,7 @@ if ($dicari) {
         $hasil = $st->get_result()->fetch_all(MYSQLI_ASSOC);
 
         if (!$hasil) {
-            $teks = json_encode('Maaf, kelompok ' . $kelompok . ' tidak ditemukan. Sistem akan membuat pendaftaran kelompok.');
-            echo "<script>alert($teks); document.location.href = 'new.php';</script>";
+            notif_pergi('Maaf, kelompok ' . $kelompok . ' tidak ditemukan. Sistem akan membuat pendaftaran kelompok.', 'new.php', 'info');
             exit;
         }
     }

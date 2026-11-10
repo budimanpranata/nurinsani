@@ -11,6 +11,7 @@
  */
 session_start();
 require_once __DIR__ . '/inc/cek_login.php';
+require_once __DIR__ . '/inc/notif.php';
 wajib_login();
 //cek level user
 if ($_SESSION['level'] != 'unit') {
@@ -21,7 +22,7 @@ if ($_SESSION['level'] != 'unit') {
 /** Tampilkan alert lalu kembali ke form (isian tetap ada). */
 function batal_kembali($pesan)
 {
-    echo '<script>alert(' . json_encode($pesan) . '); history.back();</script>';
+    notif_pergi($pesan, 'HISTORY_BACK', 'error');
     exit;
 }
 
@@ -70,10 +71,9 @@ db_jalankan("Update tunggakan set CAO =? where CODE_KEL=?", 'ss', $ds, $kel);
 
 if (db_jumlah_gagal() > $gagal_awal) {
     mysqli_rollback($koneksi_transaksi);
-    echo "gagal input <a href=\"javascript:history.back()\">kembali</a>";
+    notif_pergi('Gagal input, silakan kembali dan ulangi.', 'HISTORY_BACK', 'error');
     exit;
 }
 mysqli_commit($koneksi_transaksi);
 
-echo "<script> alert ('data kelompk sudah Update ')</script>";
-echo "<script language='javascript'>document.location.href='kelompok.php'</script>";
+notif_pergi('data kelompk sudah Update ', 'kelompok.php', 'success');

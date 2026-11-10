@@ -1,4 +1,5 @@
 <?php require_once __DIR__ . '/php8_compat.php';
+require_once __DIR__ . '/inc/notif.php';
 session_start();
 require_once __DIR__ . '/inc/cek_login.php';
 wajib_level('unit');
@@ -215,8 +216,7 @@ $branch=$r['kode_branch'];
   If ($_POST ['search'])
 {
 if (empty($kelompok)){
-	echo "<script>alert('Maaf,.Mohon Nomor Kelompok Yang Benar !!!');</script>";
-         echo "<script language='javascript'>document.location.href='batal_tagih.php'</script>";}
+	notif_pergi("Maaf,.Mohon Nomor Kelompok Yang Benar !!!", "batal_tagih.php");}
 	else{
 	$select = db_hasil ("select count(no_anggota)as noa,sum(bulat) as tagihan,unit,kelompok.nama_kel,loan.cao,next_schedule from loan
 	inner join kelompok on kelompok.code_kel = loan.code_kel

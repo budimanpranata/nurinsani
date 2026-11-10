@@ -1,6 +1,7 @@
 <?php require_once __DIR__ . '/koneksi_db.php';
 ini_set ('display_errors',1);
 date_default_timezone_set('Asia/Jakarta');
+require_once __DIR__ . '/inc/notif.php';
 session_start();
 require_once __DIR__ . '/inc/cek_login.php';
 wajib_level('unit');
@@ -218,12 +219,12 @@ $update=db_jalankan("UPDATE loan SET status='CETAK',gol ='1' where cif=?", 's', 
     }
 
    
-    echo '<script>alert("Pembiayaan sudah direalisasikan."); window.location="realisasi.php"</script>';
+    notif_pergi('Pembiayaan sudah direalisasikan.', 'realisasi.php');
    
             } 
 		}
             else {
-                    echo '<script>alert("anda belum memilih data."); window.location="realisasi.php"</script>';
+                    notif_pergi('anda belum memilih data.', 'realisasi.php');
         }
 
 ?>

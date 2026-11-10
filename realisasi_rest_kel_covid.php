@@ -1,4 +1,5 @@
 <?php require_once __DIR__ . '/koneksi_db.php'; 
+require_once __DIR__ . '/inc/notif.php';
 session_start();
 ob_start();
 $userid=$_SESSION['userid'];
@@ -10,9 +11,9 @@ $kode_kel_url = $kel;
 $code_kel=$_POST['kel'];
 //cek apakah user sudah login
 if(!isset($_SESSION['stgl_system'])){
-echo "<script>alert('Maaf,.tanggal system belum di setup');</script>";
+notif_pergi('Maaf, tanggal system belum di setup', 'param_tgl.php', 'warning');
 
-   header("location:param_tgl.php");
+   /* redirect ditangani notif_pergi */
  exit; }
 //cek apakah user sudah login
 if(!isset($_SESSION['userid'])){
@@ -113,8 +114,7 @@ db_jalankan("insert  into tabel_transaksi(unit,kode_transaksi,kode_rekening,tang
 break;
 case "REST":
 
-echo "<script>alert('Maaf Status REST tidak bisa di Restrturisasi lagi');</script>";
-        echo "<script language='javascript'>document.location.href='rest_covid.php'</script>"; 
+notif_pergi("Maaf Status REST tidak bisa di Restrturisasi lagi", "rest_covid.php"); 
 break;
 case "COVID":
 db_jalankan("delete from  rest_covid where cif =?", 's', (string) $cif) or die(mysql_error());	
@@ -141,13 +141,12 @@ default:
 
 		
 // versi lama menampilkan $kel yang sudah tertimpa hasil query (PHP 8: fatal error); kini menampilkan kode kelompok dari URL
-echo '<script>alert(' . json_encode("Restrurisasi an $kode_kel_url Suksess") . ');</script>';
-        echo "<script language='javascript'>document.location.href='rest_covid.php'</script>";
+notif_pergi("Restrurisasi an $kode_kel_url Suksess", "rest_covid.php");
 	
 		
 }	
 }else {
-			echo '<script>alert("anda belum memilih data."); window.history.back();</script>';
+			notif_pergi('anda belum memilih data.', 'HISTORY_BACK', 'error');
 	}
 
   

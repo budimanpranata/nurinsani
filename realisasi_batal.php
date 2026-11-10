@@ -4,6 +4,7 @@
  * Logika dan urutan proses sama dengan versi lama; hanya query (prepared statement) yang berubah.
  */
 date_default_timezone_set('Asia/Jakarta');
+require_once __DIR__ . '/inc/notif.php';
 session_start();
 require_once __DIR__ . '/inc/cek_login.php';
 wajib_level('unit');
@@ -94,11 +95,11 @@ if($status_app =='MUSYAROKAH'){
 }
 
 		}
-				echo '<script>alert("Pembatalan sudah direalisasikan."); window.location="batal_waka.php"</script>';
+				notif_pergi('Pembatalan sudah direalisasikan.', 'batal_waka.php');
 
 			}
 			else {
-					echo '<script>alert("anda belum memilih data."); window.location="batal_waka.php"</script>';
+					notif_pergi('anda belum memilih data.', 'batal_waka.php');
 		}
 
 ?>

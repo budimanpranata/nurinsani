@@ -1,4 +1,5 @@
 <?php require_once __DIR__ . '/../php8_compat.php';
+require_once __DIR__ . '/../inc/notif.php';
 session_start();
 ob_start();
 error_reporting(0);
@@ -285,8 +286,7 @@ a:active {
   If (isset($_POST ['search']))
 {
 if (empty($cif_kel)||empty($pilih)||empty($jenis_blokir)){
-    echo "<script>alert('Maaf,.isi kode kelompok dan Jenis Transaksi yang benar  !!!');</script>";
-         echo "<script language='javascript'>document.location.href='buka_bokir.php'</script>";}
+    notif_pergi("Maaf,.isi kode kelompok dan Jenis Transaksi yang benar  !!!", "buka_bokir.php");}
     
     else{
         var_dump($jenis_blokir);
@@ -298,13 +298,13 @@ if (empty($cif_kel)||empty($pilih)||empty($jenis_blokir)){
          $cek = mysql_query("SELECT * FROM simpanan WHERE type='01' AND code_kel ='$cif_kel' and blok ='2'");
         if(mysql_num_rows($cek)>=1){                
                 
-        echo "<script>alert('Blokir Rekening $cif_kel  Sudah di buka !!!');</script>";
+        notif_pesan("Blokir Rekening $cif_kel  Sudah di buka !!!");
         $select1 = mysql_query("SET @bal = 0;");
         $select = mysql_query("SELECT simpanan.NOREK,simpanan.BUSS_DATE,anggota.CUST_SHORT_NAME,TYPE,DEBIT,KREDIT,@bal:=(@bal+KREDIT)-DEBIT as balance FROM simpanan
         join anggota on anggota.cif = simpanan.cif
         where simpanan.code_kel='$cif_kel' order by simpanan.REFF");
             }else{
-                echo "<script>alert('Gagal Buka Blokir !!!');</script>";
+                notif_pesan("Gagal Buka Blokir !!!");
             }
         }else{
             
@@ -313,13 +313,13 @@ if (empty($cif_kel)||empty($pilih)||empty($jenis_blokir)){
          $cek = mysql_query("SELECT * FROM simpanan WHERE type='07' AND code_kel='$cif_kel' and blok ='2'");
     if(mysql_num_rows($cek)>=1){                
                 
-    echo "<script>alert('Rekening $cif_kel  Sudah di Blokir !!!');</script>";
+    notif_pesan("Rekening $cif_kel  Sudah di Blokir !!!");
     $select1 = mysql_query("SET @bal = 0;");
     $select = mysql_query("SELECT simpanan.NOREK,simpanan.BUSS_DATE,anggota.CUST_SHORT_NAME,TYPE,DEBIT,KREDIT,@bal:=(@bal+KREDIT)-DEBIT as balance FROM simpanan
     join anggota on anggota.cif = simpanan.cif
     where simpanan.code_kel='$cif_kel' order by simpanan.REFF");
             }else{
-                echo "<script>alert('Gagal TUTUP Blokir !!!');</script>";
+                notif_pesan("Gagal TUTUP Blokir !!!");
             }    
         }
      break;
@@ -330,26 +330,26 @@ if (empty($cif_kel)||empty($pilih)||empty($jenis_blokir)){
          $cek = mysql_query("SELECT * FROM simpanan WHERE type='01' AND cif='$cif_kel' and blok='2'");
     if(mysql_num_rows($cek)>=1){                 
                 
-            echo "<script>alert('Blokir Rekening $cif_kel Sudah di buka !!!');</script>";
+            notif_pesan("Blokir Rekening $cif_kel Sudah di buka !!!");
             $select1 = mysql_query("SET @bal = 0;");
             $select = mysql_query("SELECT simpanan.NOREK,simpanan.BUSS_DATE,anggota.CUST_SHORT_NAME,TYPE,DEBIT,KREDIT,@bal:=(@bal+KREDIT)-DEBIT as balance FROM simpanan
             join anggota on anggota.cif = simpanan.cif
             where simpanan.cif='$cif_kel' order by simpanan.REFF");
             }else{
-                echo "<script>alert('Gagal Buka Blokir !!!');</script>";
+                notif_pesan("Gagal Buka Blokir !!!");
             }
     }else{
     @mysql_query("update simpanan set type ='07', blok ='2' where cif='$cif_kel' and blok ='2'");
      $cek = mysql_query("SELECT * FROM simpanan WHERE type='07' AND cif='$cif_kel' and blok='2'");
         if(mysql_num_rows($cek)>=1){                 
                 
-            echo "<script>alert('Rekening $cif_kel  Sudah di Blokir !!!');</script>";
+            notif_pesan("Rekening $cif_kel  Sudah di Blokir !!!");
             $select1 = mysql_query("SET @bal = 0;");
             $select = mysql_query("SELECT simpanan.NOREK,simpanan.BUSS_DATE,anggota.CUST_SHORT_NAME,TYPE,DEBIT,KREDIT,@bal:=(@bal+KREDIT)-DEBIT as balance FROM simpanan
             join anggota on anggota.cif = simpanan.cif
             where simpanan.cif='$cif_kel' order by simpanan.REFF");
             }else{
-                echo "<script>alert('Gagal TUTUP Blokir !!!');</script>";
+                notif_pesan("Gagal TUTUP Blokir !!!");
             }    
                 
             }

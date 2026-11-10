@@ -1,5 +1,6 @@
 <?php require_once __DIR__ . '/koneksi_db.php'; 
 date_default_timezone_set('Asia/Jakarta');
+require_once __DIR__ . '/inc/notif.php';
 session_start();
 require_once __DIR__ . '/inc/cek_login.php';
 wajib_level('unit');
@@ -87,11 +88,11 @@ if ($cekbox) {
 			db_jalankan("update calon_loan set status_app='MURAB' where no_anggota =?", 's', (string) $no_anggota);
 
 		}
-				echo '<script>alert("Wakalah sudah direalisasikan."); window.location="realisasi.php"</script>';
+				notif_pergi('Wakalah sudah direalisasikan.', 'realisasi.php');
     
 			}  
 			else {
-					echo '<script>alert("anda belum memilih data."); window.location="realisasi.php"</script>';
+					notif_pergi('anda belum memilih data.', 'realisasi.php');
 		}
 
 ?>

@@ -1,4 +1,5 @@
 <?php require_once __DIR__ . '/php8_compat.php';
+require_once __DIR__ . '/inc/notif.php';
 session_start();
 require_once __DIR__ . '/inc/cek_login.php';
 wajib_level('unit');
@@ -330,8 +331,7 @@ If (isset($_POST ['search']))
 {
 require ('fpdf17/fpdf.php');
 if (empty($norek)||empty($pilih)){
-echo "<script>alert('Maaf,isi pencarian');</script>";
-echo "<script language='javascript'>document.location.href='kartu_angsuran_kel.php'</script>";}
+notif_pergi("Maaf,isi pencarian", "kartu_angsuran_kel.php");}
 else{
   switch($pilih)
     {

@@ -1,14 +1,15 @@
 <?php require_once __DIR__ . '/koneksi_db.php';
 require_once __DIR__ . '/inc/csrf.php';
+require_once __DIR__ . '/inc/notif.php';
 session_start();
 ob_start();
 $userid=$_SESSION['userid'];
 $tanggal=$_SESSION['stgl_system'];
 //cek apakah user sudah login
 if(!isset($_SESSION['stgl_system'])){
-echo "<script>alert('Maaf,.tanggal system belum di setup');</script>";
+notif_pergi('Maaf, tanggal system belum di setup', 'param_tgl.php', 'warning');
 
-   header("location:param_tgl.php");
+   /* redirect ditangani notif_pergi */
  exit; }
 
 //cek apakah user sudah login
@@ -33,18 +34,15 @@ $date= date("Y-m-d");
 $cek_loan = db_satu("select cif, os, status from loan where no_anggota = ?", 's', (string) $anggota);
 $tujuan_kembali = 'pelunasan_hapus_margin.php';
 if (!$cek_loan) {
-	echo '<script>alert(' . json_encode("Maaf...,No Anggota $anggota tidak ditemukan, Input no anggota yang benar !!!") . ');</script>';
-	echo "<script language='javascript'>document.location.href='$tujuan_kembali'</script>";
+	notif_pergi("Maaf...,No Anggota $anggota tidak ditemukan, Input no anggota yang benar !!!", $tujuan_kembali, 'error');
 	exit;
 }
 if ($cek_loan['status'] == 'LUNAS' || compat_num($cek_loan['os']) <= 0) {
-	echo '<script>alert(' . json_encode("Maaf...,Pembiayaan No Anggota $anggota sudah lunas") . ');</script>';
-	echo "<script language='javascript'>document.location.href='$tujuan_kembali'</script>";
+	notif_pergi("Maaf...,Pembiayaan No Anggota $anggota sudah lunas", $tujuan_kembali, 'error');
 	exit;
 }
 if ((string) $cek_loan['cif'] === '') {
-	echo '<script>alert(' . json_encode("Maaf...,CIF untuk No Anggota $anggota kosong, pelunasan dibatalkan") . ');</script>';
-	echo "<script language='javascript'>document.location.href='$tujuan_kembali'</script>";
+	notif_pergi("Maaf...,CIF untuk No Anggota $anggota kosong, pelunasan dibatalkan", $tujuan_kembali, 'error');
 	exit;
 }
 // semua penulisan dalam satu transaksi: dibatalkan bila ada query yang gagal
@@ -143,8 +141,7 @@ db_jalankan("Update  tagihan_cs set status_realisasi ='BAYAR'  where cif  =? and
 
 					if (db_jumlah_gagal() > $gagal_awal) {
 						mysqli_rollback($koneksi_transaksi);
-						echo '<script>alert(' . json_encode("GAGAL Pelunasan Nomor Anggota $anggota, data tidak disimpan") . ');</script>';
-						echo "<script language='javascript'>document.location.href='$tujuan_kembali'</script>";
+						notif_pergi("GAGAL Pelunasan Nomor Anggota $anggota, data tidak disimpan", $tujuan_kembali, 'error');
 						exit;
 					}
 					mysqli_commit($koneksi_transaksi);

@@ -1,4 +1,5 @@
 <?php require_once __DIR__ . '/php8_compat.php';
+require_once __DIR__ . '/inc/notif.php';
 session_start();
 require_once __DIR__ . '/inc/cek_login.php';
 wajib_level('unit');
@@ -330,8 +331,7 @@ If (isset($_POST ['search']))
 {
 require ('fpdf17/fpdf.php');
 if (empty($norek)){
-echo "<script>alert('Maaf,.isi Nomor REKENING !');</script>";
-echo "<script language='javascript'>document.location.href='kartu_angsuran.php'</script>";}
+notif_pergi("Maaf,.isi Nomor REKENING !", "kartu_angsuran.php");}
 else{
 
 $sql3 =mysql_query ("select CUST_SHORT_NAME,id_pinjam,bulat,angsuran_pokok,bunga,tgl_jatuh_tempo,tgl_bayar,cicilan from pinjaman_detail

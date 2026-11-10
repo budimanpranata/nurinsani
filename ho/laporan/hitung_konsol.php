@@ -1,4 +1,5 @@
 <?php require_once __DIR__ . '/../../php8_compat.php'; 
+require_once __DIR__ . '/../../inc/notif.php';
 session_start();
 require_once __DIR__ . '/../../inc/cek_login.php';
 wajib_level('ho');
@@ -25,7 +26,7 @@ INNER JOIN branch ON branch.kode_branch = tabel_master_hari_ah.unit
 WHERE branch.code_area = '$userid'");
 		if($hapus_tabel_temporial){
 			
-			echo "<script>alert('Temporary sukses di buat ');</script>";
+			notif_pesan("Temporary sukses di buat ");
 			
 					}else{
 			echo mysql_error();

@@ -1,5 +1,6 @@
 <?php require_once __DIR__ . '/koneksi_db.php'; 
-if (session_status() === PHP_SESSION_NONE) { session_start(); }
+if (session_status() === PHP_SESSION_NONE) { require_once __DIR__ . '/inc/notif.php';
+session_start(); }
 require_once __DIR__ . '/inc/cek_login.php';
 wajib_level('unit', 'json');
 db_ni();
@@ -41,7 +42,7 @@ if ($cekbox) {
 			@mysql_query("insert into tagihan (id_reff,code_kel,no_anggota,bagi_hasil,pokok,tagihan,bulat,tagihan_ke,sisa_os,tgl_realisasi,status)VALUES('','$code_kel','$no_anggota','$ijaroh','$pokok','$angsuran','$bulat','$ke','$os','$next_schedule','RENCANA') ") or die(mysql_error("GAGAL INPUT"));
 			}
 				}
-					echo '<script>alert("Pinjaman sudah direalisasikan."); window.location="auto_deb.php"</script>';
+					notif_pergi('Pinjaman sudah direalisasikan.', 'auto_deb.php');
     
 				} 
 				

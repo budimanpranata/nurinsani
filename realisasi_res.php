@@ -1,5 +1,6 @@
 <?php require_once __DIR__ . '/koneksi_db.php';
 date_default_timezone_set('Asia/Jakarta');
+require_once __DIR__ . '/inc/notif.php';
 session_start();
 require_once __DIR__ . '/inc/cek_login.php';
 wajib_level('unit');
@@ -204,7 +205,7 @@ db_jalankan("insert into simpanan(BUSS_DATE,NOREK,UNIT,CIF,CODE_KEL,DEBIT,TYPE,K
             }
    
            
-    echo '<script>alert("Restruturisasi sudah direalisasi."); window.location="rest.php"</script>';     
+    notif_pergi('Restruturisasi sudah direalisasi.', 'rest.php');     
     }
 
                
@@ -240,12 +241,12 @@ $maturity_date_res =$maturity_date_ress;
 db_jalankan("update loan set maturity_date =?, gol='1', deal_produk ='1' where cif =?", 'ss', (string) $maturity_date_res, (string) $cif);
 db_jalankan("delete from tunggakan where cif =?", 's', (string) $cif);
 
-                    echo '<script>alert("Covid Updated ."); window.location="rest.php"</script>';
+                    notif_pergi('Covid Updated .', 'rest.php');
         }
 
    else {
 
-                    echo '<script>alert("Maaf menu belum tersedia ."); window.location="rest.php"</script>';
+                    notif_pergi('Maaf menu belum tersedia .', 'rest.php');
         }
 
 ?>

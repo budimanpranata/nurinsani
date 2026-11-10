@@ -1,6 +1,7 @@
 <?php require_once __DIR__ . '/php8_compat.php';
 include "conn2.php";
 require_once __DIR__ . '/inc/password.php';
+require_once __DIR__ . '/inc/notif.php';
 $koneksi=open_connection2();
 function antiinjection($data){
   $filter_sql = mysql_real_escape_string(stripslashes(strip_tags(htmlspecialchars($data,ENT_QUOTES))));
@@ -27,8 +28,7 @@ function catat_gagal_login($userid){
   @file_put_contents(file_gagal_login($userid), json_encode($d));
   }
 function kembali_ke_login($pesan){
-  echo "<script>alert('$pesan');</script>";
-  echo "<script language='javascript'>document.location.href='index.html'</script>";
+  notif_pergi($pesan, 'index.html');
   exit;
   }
 
@@ -81,23 +81,20 @@ if($op=="in"){
     $cek_eod = mysql_fetch_array(mysql_query("SELECT param_tgl FROM param_tgl WHERE nama_param_tgl ='EOD_MOB'")) or die(mysql_error());
 $tgl_eod =$cek_eod['param_tgl'];
 $tgl=$cek_tgl['param_tgl'];
- echo "<script>alert('Parameter tanggal Unit adalah .$tgl.');</script>";
-
 if($c['selisih']>=30){
         // hanya boleh membuka halaman ganti password, belum dianggap login
         session_regenerate_id(true);
         $_SESSION['ganti_pass_userid'] = $c['userid'];
-echo "<script>alert('Password Expired ');</script>";
-         echo "<script language='javascript'>document.location.href='Gantipass.php'</script>";
+        notif_pergi('Password Expired', 'Gantipass.php', 'warning');
+        exit;
 }
 elseif($tgl==$tgl_eod){
-
-echo "<script>alert('Parameter tanggal libur masih aktif');</script>";
-         echo "<script language='javascript'>document.location.href='index.html'</script>";
+        notif_pergi('Parameter tanggal libur masih aktif', 'index.html', 'warning');
+        exit;
 }elseif($c['level']=="toko"){
         // modul Toko sudah tidak dipakai dan folder toko/ dihapus (2026-11-03, perintah user)
-echo "<script>alert('Level toko sudah tidak aktif');</script>";
-         echo "<script language='javascript'>document.location.href='index.html'</script>";
+        notif_pergi('Level toko sudah tidak aktif', 'index.html', 'error');
+        exit;
 }else{
         // login berhasil: id session baru supaya id lama (fixation) tidak bisa dipakai
         session_regenerate_id(true);
@@ -137,7 +134,6 @@ echo "<script>alert('Level toko sudah tidak aktif');</script>";
 }
 }else{
 
-echo "<script>alert('Maaf User Sedang Login ');</script>";
-         echo "<script language='javascript'>document.location.href='index.html'</script>";
+notif_pergi('Maaf User Sedang Login', 'index.html', 'warning');
 }
 ?>

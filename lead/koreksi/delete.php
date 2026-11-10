@@ -1,5 +1,6 @@
 <?php require_once __DIR__ . '/../../php8_compat.php';
 require_once __DIR__ . '/../../inc/csrf.php';
+require_once __DIR__ . '/../../inc/notif.php';
 session_start();  
 ob_start();
 $iduser=$_SESSION['userid'];
@@ -44,10 +45,9 @@ $q=db_jalankan("DELETE FROM simpanan_wajib WHERE kode_transaksi=?", 's', $id);
  
      if($q){
 	 
-	echo "<script>alert('Sukses')</script>";          
-	echo "<script>location.href='koreksi.php'</script>";
+	notif_pergi('Sukses', 'koreksi.php', 'success');
      }else{
-          echo "<script>alert('GAGAL')</script>";
+          notif_pesan('GAGAL');
      }
 }
 ?>

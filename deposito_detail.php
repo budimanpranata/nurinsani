@@ -1,4 +1,5 @@
 <?php require_once __DIR__ . '/inc/cek_login.php'; wajib_level('unit'); ?>
+require_once __DIR__ . '/inc/notif.php';
 
 <?php require_once __DIR__ . '/php8_compat.php';
 include "conn2.php";
@@ -22,8 +23,8 @@ $detail= mysql_query("INSERT INTO deposito_detail (id,id_deposito,cif,ke,tgl_jat
 }
 }
 if ($detail){
-echo "<script>alert('suksess!!!');</script>";
+notif_pesan("suksess!!!");
 }else {
-echo "<script>alert('gagal!!!');</script>";
+notif_pesan("gagal!!!");
 }
 ?>

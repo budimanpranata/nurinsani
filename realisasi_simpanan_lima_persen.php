@@ -6,6 +6,7 @@
  * Kekeliruan versi lama yang sengaja dipertahankan dicatat di PEKERJAAN_TERTUNDA.md (bagian Setoran 5 Persen).
  */
 date_default_timezone_set('Asia/Jakarta');
+require_once __DIR__ . '/inc/notif.php';
 session_start();
 ob_start();
 
@@ -13,9 +14,9 @@ $userid=isset($_SESSION['userid']) ? $_SESSION['userid'] : null;
 $tgl_system=isset($_SESSION['stgl_system']) ? $_SESSION['stgl_system'] : null;
 //cek apakah user sudah login
 if(!isset($_SESSION['stgl_system'])){
-echo "<script>alert('Maaf,.tanggal system belum di setup');</script>";
+notif_pergi('Maaf, tanggal system belum di setup', 'param_tgl.php', 'warning');
 
-   header("location:param_tgl.php");
+   /* redirect ditangani notif_pergi */
  exit; }
 if(!isset($_SESSION['userid'])){
    header("location:index.html");
@@ -134,11 +135,11 @@ $kode_trans="BU/".$unit.$kodetr;
             echo "Transaksi Gagal commit Silahkan ulangi lagi";
             exit();
           }else{
-				echo '<script>alert("Simpanan wajib dan Pokok sudah direalisasikan."); window.location="simpanan_lima_persen.php"</script>';
+				notif_pergi('Simpanan wajib dan Pokok sudah direalisasikan.', 'simpanan_lima_persen.php');
           }
             }
 			else {
-					echo '<script>alert("anda belum memilih data."); window.location="simpanan_lima_persen.php"</script>';
+					notif_pergi('anda belum memilih data.', 'simpanan_lima_persen.php');
 		}
 
 ?>

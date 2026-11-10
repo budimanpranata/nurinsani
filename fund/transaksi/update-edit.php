@@ -1,4 +1,5 @@
 <?php require_once __DIR__ . '/../../koneksi_db.php';
+require_once __DIR__ . '/../../inc/notif.php';
 if (session_status() === PHP_SESSION_NONE) { session_start(); }
 require_once __DIR__ . '/../../inc/cek_login.php';
 wajib_level('fund', 'admin');
@@ -22,7 +23,7 @@ if (isset($_POST['update'])) {
     $ktp = trim($pos('ktp'));
     if (!nik_angka_sah($ktp)) {
         // perintah user 2026-11-04: Nomor KTP hanya angka, maksimal 16 digit; kembali ke form (isian tidak hilang)
-        echo "<script>alert('Nomor KTP harus angka, maksimal 16 digit.'); history.back();</script>";
+        notif_pergi('Nomor KTP harus angka, maksimal 16 digit.', 'HISTORY_BACK', 'error');
         exit;
     }
     $ktp_enc = enkripsi_data($ktp);
@@ -35,8 +36,8 @@ if (isset($_POST['update'])) {
             'sssssss', $pos('nama'), $pos('tanggal_lahir'), $alamat_enc, $pos('notelp'), $ktp_enc, $ktp_idx, $nim);
     }
     if ($update) {
-        echo "<script>alert('Data Berhasil di Update!'); window.location = '../view/master_fund.php'</script>";
+        notif_pergi('Data Berhasil di Update!', '../view/master_fund.php');
     } else {
-        echo "<script>alert('Data Gagal di Update!'); window.location = '../view/master_fund.php'</script>";
+        notif_pergi('Data Gagal di Update!', '../view/master_fund.php');
     }
 }

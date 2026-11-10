@@ -7,6 +7,7 @@
  */
 require_once __DIR__ . '/koneksi_db.php';
 require_once __DIR__ . '/inc/password.php';
+require_once __DIR__ . '/inc/notif.php';
 
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
@@ -16,8 +17,8 @@ define('PANJANG_MIN_PASSWORD', 8);
 
 function selesai_ganti_password($pesan, $tujuan)
 {
-    echo "<script>alert('$pesan');</script>";
-    echo "<script language='javascript'>$tujuan</script>";
+    // $tujuan = potongan JS redirect (mis. top.location.href='...'); dijalankan saat popup ditutup
+    notif_pergi_js($pesan, $tujuan);
     exit;
 }
 

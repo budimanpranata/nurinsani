@@ -1,4 +1,5 @@
 <?php require_once __DIR__ . '/koneksi_db.php';
+require_once __DIR__ . '/inc/notif.php';
 session_start();
 ob_start();
 $userid=$_SESSION['userid'];
@@ -6,9 +7,9 @@ $userid=$_SESSION['userid'];
 $tgl_system=$_SESSION['stgl_system'];
 //cek apakah user sudah login
 if(!isset($_SESSION['stgl_system'])){
-echo "<script>alert('Maaf,.tanggal system belum di setup');</script>";
+notif_pergi('Maaf, tanggal system belum di setup', 'param_tgl.php', 'warning');
  
-   header("location:param_tgl.php");
+   /* redirect ditangani notif_pergi */
  exit; }
 if(!isset($_SESSION['userid'])){
    header("location:index.html");
@@ -130,7 +131,7 @@ if ($saldo < $angsuran){
                                  
                 //mysql_query("insert  into tunggakan (tgl_tunggak,NOREK,UNIT,CIF,CODE_KEL,DEBIT,TYPE,KREDIT,USERID,REFF,CAO,blok)VALUES('$tanggal','$no_anggota','$unit','$cif','$code_kel','0','01','$pokok','$userid','$ket','$cao','') ") or die(mysql_error("GAGAL INPUT"));
                
-            echo '<script>alert("Next angsuran  belum di tambahkan karean Menuggak."); window.location="yrs_list.php"</script>';
+            notif_pergi('Next angsuran  belum di tambahkan karean Menuggak.', 'yrs_list.php');
  
 }else{
 
@@ -162,7 +163,7 @@ db_jalankan("insert into rek_loan(ref,tgl_realisasi,unit,no_anggota,saldo_kredit
 
                
            
-            echo '<script>alert("Data sudah direalisasikan."); window.location="yrs_list.php"</script>';
+            notif_pergi('Data sudah direalisasikan.', 'yrs_list.php');
 
 
 }else{
@@ -190,7 +191,7 @@ db_jalankan("insert into rek_loan(ref,tgl_realisasi,unit,no_anggota,saldo_kredit
 
                
            
-            echo '<script>alert("Data sudah direalisasikan."); window.location="yrs_list.php"</script>';
+            notif_pergi('Data sudah direalisasikan.', 'yrs_list.php');
            }
 }
        
@@ -221,7 +222,7 @@ if ($saldo < $angsuran){
                      
                      
                 }else {
-                    echo '<script>alert("Next angsuran  belum di tambahkan karean dalam Rencana Tagihan."); window.location="yrs_list.php"</script>';
+                    notif_pergi('Next angsuran  belum di tambahkan karean dalam Rencana Tagihan.', 'yrs_list.php');
                      
                 }            
          
@@ -287,7 +288,7 @@ db_jalankan("insert  into tabel_transaksi(unit,kode_transaksi,kode_rekening,tang
  
                 }
             }
-            echo '<script>alert("Data sudah direalisasikan."); window.location="yrs_list.php"</script>';
+            notif_pergi('Data sudah direalisasikan.', 'yrs_list.php');
              
 
         }elseif($status_app=="MUSYAROKAH"){
@@ -323,7 +324,7 @@ if ($saldo < $angsuran){
                      
                      
                 }else {
-                    echo '<script>alert("Next angsuran  belum di tambahkan karean dalam Rencana Tagihan."); window.location="yrs_list.php"</script>';
+                    notif_pergi('Next angsuran  belum di tambahkan karean dalam Rencana Tagihan.', 'yrs_list.php');
                      
                 }            
          
@@ -383,7 +384,7 @@ db_jalankan("insert  into simpanan (BUSS_DATE,NOREK,UNIT,CIF,CODE_KEL,DEBIT,TYPE
                 
                 }
             }
-            echo '<script>alert("Data sudah direalisasikan."); window.location="yrs_list.php"</script>';
+            notif_pergi('Data sudah direalisasikan.', 'yrs_list.php');
 
 
 
@@ -526,7 +527,7 @@ $margin = $ijaroh - 2500;
  
                 }
             
-            echo '<script>alert("Data sudah direalisasikan."); window.location="yrs_list.php"</script>';
+            notif_pergi('Data sudah direalisasikan.', 'yrs_list.php');
 
         }
         
@@ -556,7 +557,7 @@ if ($saldo < $angsuran){
                      
                      
                 }else {
-                    echo '<script>alert("Next angsuran  belum di tambahkan karean dalam Rencana Tagihan."); window.location="yrs_list.php"</script>';
+                    notif_pergi('Next angsuran  belum di tambahkan karean dalam Rencana Tagihan.', 'yrs_list.php');
                      
                 }            
          
@@ -632,12 +633,12 @@ db_jalankan("Update  tagihan_cs set status_realisasi ='BAYAR'  where cif  =? and
  
                 }
             }
-            echo '<script>alert("Data sudah direalisasikan."); window.location="yrs_list.php"</script>';
+            notif_pergi('Data sudah direalisasikan.', 'yrs_list.php');
 }    
     }    
 }    
 }else {
-            echo '<script>alert("anda belum memilih data."); window.location="yrs_list.php"</script>';
+            notif_pergi('anda belum memilih data.', 'yrs_list.php');
     }
  
 ?>
