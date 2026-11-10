@@ -20,6 +20,15 @@ function url_app($path = '')
     return $base . ltrim($path, '/');
 }
 
+/** Seperti url_app(), tetapi menambahkan ?v=<waktu ubah file> supaya perubahan CSS/JS langsung terbaca
+ *  (browser tidak memakai salinan lama dari cache). */
+function url_app_v($path)
+{
+    $lokal = dirname(__DIR__) . '/' . ltrim($path, '/');
+    $v = is_file($lokal) ? '?v=' . filemtime($lokal) : '';
+    return url_app($path) . $v;
+}
+
 if (!function_exists('h')) {
     /** Escape teks untuk ditampilkan di HTML. */
     function h($s)
@@ -39,9 +48,9 @@ function halaman_awal($judul, $css = array())
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title><?php echo h($judul); ?></title>
 <link rel="stylesheet" href="<?php echo h(url_app('assets/vendor/bootstrap-5.3.3/css/bootstrap.min.css')); ?>">
-<link rel="stylesheet" href="<?php echo h(url_app('assets/app/app.css')); ?>">
+<link rel="stylesheet" href="<?php echo h(url_app_v('assets/app/app.css')); ?>">
 <?php foreach ($css as $berkas): ?>
-<link rel="stylesheet" href="<?php echo h(url_app($berkas)); ?>">
+<link rel="stylesheet" href="<?php echo h(url_app_v($berkas)); ?>">
 <?php endforeach; ?>
 </head>
 <body>

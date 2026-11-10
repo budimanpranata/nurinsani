@@ -42,8 +42,8 @@ function kerangka_aplikasi($opsi = array())
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title><?php echo h($opsi['judul']); ?></title>
 <link rel="stylesheet" href="<?php echo h(url_app('assets/vendor/bootstrap-5.3.3/css/bootstrap.min.css')); ?>">
-<link rel="stylesheet" href="<?php echo h(url_app('assets/app/app.css')); ?>">
-<link rel="stylesheet" href="<?php echo h(url_app('assets/app/kerangka.css')); ?>">
+<link rel="stylesheet" href="<?php echo h(url_app_v('assets/app/app.css')); ?>">
+<link rel="stylesheet" href="<?php echo h(url_app_v('assets/app/kerangka.css')); ?>">
 </head>
 <body class="kerangka">
 
