@@ -6,7 +6,7 @@ var TREE_ITEMS = [
 		 	['View Data Deviasi', 'viewapprove.php'],
 			['Approval Pengajuan ', '../data_approval.php'],
 			['Buka Blokir', 'buka_blokir.php'],
-			['Setatus Pengajuan', 'turun_pangajuan.php'],
+			['Status Pengajuan', 'turun_pangajuan.php'],
 
 			],
 		['Report ',0,

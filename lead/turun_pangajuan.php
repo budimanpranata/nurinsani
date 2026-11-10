@@ -1,6 +1,6 @@
 <?php require_once __DIR__ . '/../koneksi_db.php';
 /**
- * Menu Approve > Setatus Pengajuan (level lead), per CIF calon_loan:
+ * Menu Approve > Status Pengajuan (level lead), per CIF calon_loan:
  *   01 Turun Plafond   : jurnal BU/ (balik wakalah sebesar plafond lama, wakalah baru sebesar harga baru, selisih ke
  *                        2500000) lalu calon_loan dihitung ulang dari param_biaya dan status_app jadi MURAB
  *   02 Ajukan Kembali  : status_app jadi MUSYAROKAH (bila jenis_akad unit MUSYAROKAH) atau PENDING

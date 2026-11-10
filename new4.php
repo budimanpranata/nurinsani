@@ -12,7 +12,7 @@
 require_once __DIR__ . '/inc/tampilan.php';
 session_start();
 require_once __DIR__ . '/inc/cek_login.php';
-wajib_level('unit');
+wajib_level('lead');
 ob_start();
 $userid = isset($_SESSION['userid']) ? $_SESSION['userid'] : null;
 $cif = isset($_GET['cif']) ? (string) $_GET['cif'] : '';
