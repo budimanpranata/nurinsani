@@ -8,6 +8,8 @@
  * dan semua validasi dilakukan sebelum ada data yang ditulis.
  */
 session_start();
+require_once __DIR__ . '/inc/cek_login.php';
+wajib_level('unit', 'fund', 'ho', 'admin');
 date_default_timezone_set('Asia/Jakarta');
 header('Content-Type: text/plain; charset=utf-8');
 

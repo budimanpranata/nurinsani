@@ -1,6 +1,8 @@
 <?php require_once __DIR__ . '/koneksi_db.php';
 date_default_timezone_set('Asia/Jakarta');
 session_start();
+require_once __DIR__ . '/inc/cek_login.php';
+wajib_level('unit');
 ob_start();
         $userid=$_SESSION['userid'];
         if(!isset($_SESSION['userid'])){
