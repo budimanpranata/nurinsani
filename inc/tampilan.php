@@ -49,9 +49,13 @@ function halaman_awal($judul, $css = array())
 <title><?php echo h($judul); ?></title>
 <link rel="stylesheet" href="<?php echo h(url_app('assets/vendor/bootstrap-5.3.3/css/bootstrap.min.css')); ?>">
 <link rel="stylesheet" href="<?php echo h(url_app_v('assets/app/app.css')); ?>">
+<link rel="stylesheet" href="<?php echo h(url_app('assets/vendor/sweetalert2-11/sweetalert2.min.css')); ?>">
 <?php foreach ($css as $berkas): ?>
 <link rel="stylesheet" href="<?php echo h(url_app_v($berkas)); ?>">
 <?php endforeach; ?>
+<?php /* notifikasi SweetAlert: dimuat di head agar alert()/data-konfirmasi di body sudah dialihkan sebelum dijalankan */ ?>
+<script src="<?php echo h(url_app('assets/vendor/sweetalert2-11/sweetalert2.min.js')); ?>"></script>
+<script src="<?php echo h(url_app_v('assets/app/notif.js')); ?>"></script>
 </head>
 <body>
 <div class="judul-halaman"><?php echo h($judul); ?></div>

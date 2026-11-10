@@ -121,8 +121,8 @@ if (isset($_POST['simpan'])) {
         nb_lepas('BU', $unit);
         if ($tersimpan) {
             $_SESSION['jukp_tanggal'] = $tanggal_transaksi;
-            kembali_ke_form_kp("Data tersimpan pada nomor bukti $kode_transaksi (" . ucfirst($posisi) . " Rp. "
-                . number_format(compat_num($jumlah_dk), 0, ',', '.') . ").");
+            // tanpa notif: langsung buka ulang form, baris tersimpan tampil di list bawah (perintah user)
+            kembali_ke_form_kp("");
         } else {
             echo "<script>alert('Maaf, data gagal disimpan.');</script>";
         }

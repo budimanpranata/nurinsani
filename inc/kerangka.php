@@ -44,6 +44,10 @@ function kerangka_aplikasi($opsi = array())
 <link rel="stylesheet" href="<?php echo h(url_app('assets/vendor/bootstrap-5.3.3/css/bootstrap.min.css')); ?>">
 <link rel="stylesheet" href="<?php echo h(url_app_v('assets/app/app.css')); ?>">
 <link rel="stylesheet" href="<?php echo h(url_app_v('assets/app/kerangka.css')); ?>">
+<link rel="stylesheet" href="<?php echo h(url_app('assets/vendor/sweetalert2-11/sweetalert2.min.css')); ?>">
+<?php /* notifikasi SweetAlert untuk kerangka (alert()/data-konfirmasi di luar iframe) */ ?>
+<script src="<?php echo h(url_app('assets/vendor/sweetalert2-11/sweetalert2.min.js')); ?>"></script>
+<script src="<?php echo h(url_app_v('assets/app/notif.js')); ?>"></script>
 </head>
 <body class="kerangka">
 

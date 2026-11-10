@@ -240,6 +240,8 @@ halaman_awal('Koreksi Pembiayaan');
     </p>
     <input type="hidden" name="cif" value="<?php echo h($cif); ?>">
     <input type="hidden" name="sidik" value="<?php echo h(sidik_loan($loan)); ?>">
+    <?php /* simpan=1 lewat hidden input: nilai tombol submit bisa hilang saat onsubmit menonaktifkan tombol (sebagian browser) */ ?>
+    <input type="hidden" name="simpan" value="1">
     <div class="table-responsive">
       <table class="table table-sm table-bordered align-middle">
         <thead><tr><th>Kolom</th><th>Nilai Sekarang</th><th style="min-width: 14rem;">Nilai Baru</th></tr></thead>

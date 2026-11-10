@@ -96,13 +96,7 @@
         input.addEventListener('blur', tutup);
     }
 
-    /** Konfirmasi sebelum membuka link / mengirim form: data-konfirmasi="Pesan?" */
-    document.addEventListener('click', function (e) {
-        var el = e.target.closest('a[data-konfirmasi], button[data-konfirmasi]');
-        if (el && !window.confirm(el.getAttribute('data-konfirmasi'))) {
-            e.preventDefault();
-        }
-    });
+    /* Konfirmasi data-konfirmasi="Pesan?" ditangani SweetAlert di assets/app/notif.js (dimuat di head). */
 
     /**
      * Pencarian baris tabel:

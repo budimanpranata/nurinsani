@@ -179,6 +179,8 @@ halaman_awal('Reset Password User');
     <?php else: ?>
     <input type="hidden" name="u" value="<?php echo h($user['userid']); ?>">
     <input type="hidden" name="token" value="<?php echo h($_SESSION['token_reset_password']); ?>">
+    <?php /* reset=1 lewat hidden input: nilai tombol submit bisa hilang saat onsubmit menonaktifkan tombol (sebagian browser), akibatnya handler reset tidak jalan */ ?>
+    <input type="hidden" name="reset" value="1">
     <label class="form-label" for="alasan">Alasan Reset <span class="text-danger">*</span></label>
     <textarea name="alasan" id="alasan" rows="2" maxlength="255" class="form-control" required placeholder="mis. user lupa password, konfirmasi langsung/telepon ke ..."></textarea>
     <div class="form-text">Pastikan permintaan benar dari user yang bersangkutan. Sistem membuat password sementara acak;
@@ -208,6 +210,7 @@ halaman_awal('Reset Password User');
     <?php elseif ($mfa): ?>
     <input type="hidden" name="u" value="<?php echo h($user['userid']); ?>">
     <input type="hidden" name="token" value="<?php echo h($_SESSION['token_reset_password']); ?>">
+    <input type="hidden" name="reset_mfa" value="1">
     <label class="form-label" for="alasan_mfa">Alasan Reset MFA <span class="text-danger">*</span></label>
     <textarea name="alasan" id="alasan_mfa" rows="2" maxlength="255" class="form-control" required placeholder="mis. HP hilang / ganti HP, konfirmasi langsung/telepon ke ..."></textarea>
     <div class="form-text">Pastikan permintaan benar dari user yang bersangkutan. Sesudah di-reset, siapa pun yang tahu
