@@ -118,19 +118,51 @@ $riwayat = db_semua("select waktu, admin, userid, jenis, alasan, ip from riwayat
 
 halaman_awal('Reset Password User');
 ?>
+<?php /* notif pakai SweetAlert (assets/app/notif.js memuat Swal di head); fallback alert() bila Swal belum termuat */ ?>
+<?php $JFLAG = JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP; ?>
 <?php if ($pesan): ?>
-<div class="alert alert-<?php echo h($pesan[0]); ?> alert-dismissible fade show" role="alert">
-  <?php echo h($pesan[1]); ?>
-  <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-</div>
+<script>
+(function () {
+  if (window.Swal) {
+    window.Swal.fire({
+      icon: <?php echo json_encode($pesan[0] === 'danger' ? 'error' : ($pesan[0] === 'warning' ? 'warning' : 'success'), $JFLAG); ?>,
+      html: <?php echo json_encode(nl2br(h($pesan[1])), $JFLAG); ?>,
+      confirmButtonText: 'OK',
+      confirmButtonColor: '#2f6b4f',
+      heightAuto: false
+    });
+  } else {
+    alert(<?php echo json_encode($pesan[1], $JFLAG); ?>);
+  }
+})();
+</script>
 <?php endif; ?>
 <?php if ($hasil): ?>
-<div class="alert alert-success" role="alert">
-  Password <strong><?php echo h($hasil['userid'] . ' - ' . $hasil['nama']); ?></strong> sudah di-reset. Password sementara:
-  <div class="fs-3 font-monospace my-2 user-select-all"><?php echo h($hasil['password']); ?></div>
-  Serahkan langsung ke user yang bersangkutan (jangan lewat grup/chat umum). Password ini <strong>hanya ditampilkan
-  sekali</strong>. Saat login dengan password sementara, user langsung diminta membuat password baru (minimal 8 karakter).
-</div>
+<script>
+(function () {
+  var pw = <?php echo json_encode($hasil['password'], $JFLAG); ?>;
+  if (!window.Swal) {
+    alert(<?php echo json_encode('Password sementara ' . $hasil['userid'] . ': ' . $hasil['password'] . "\nHanya ditampilkan sekali.", $JFLAG); ?>);
+    return;
+  }
+  window.Swal.fire({
+    icon: 'success',
+    title: 'Password Sementara',
+    html: <?php echo json_encode(
+      'Password <strong>' . h($hasil['userid'] . ' - ' . $hasil['nama']) . '</strong> sudah di-reset.'
+      . '<div class="fs-2 font-monospace my-3 user-select-all" style="letter-spacing:2px">' . h($hasil['password']) . '</div>'
+      . '<div class="small text-muted">Serahkan langsung ke user (jangan lewat grup/chat umum). <strong>Hanya ditampilkan sekali.</strong> '
+      . 'Saat login dengan password sementara, user langsung diminta membuat password baru.</div>', $JFLAG); ?>,
+    confirmButtonText: 'Salin &amp; Tutup',
+    confirmButtonColor: '#2f6b4f',
+    allowOutsideClick: false,
+    allowEscapeKey: false,
+    heightAuto: false
+  }).then(function () {
+    try { navigator.clipboard.writeText(pw); } catch (e) {}
+  });
+})();
+</script>
 <?php endif; ?>
 
 <div class="card card-ni mw-100">
