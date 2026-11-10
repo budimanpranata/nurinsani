@@ -63,7 +63,7 @@ echo'Gagal :'.mysqli_connect_error();
         cursor: pointer;
     }
     .suggestionList ul li:hover {
-        background-color: #b3b3ff;
+        background-color: #cfe8d8;
         color:#000;
     }
     ul {

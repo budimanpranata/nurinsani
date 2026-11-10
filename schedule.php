@@ -77,23 +77,23 @@ a {
   <td height="10" colspan="4" nowrap><div align="center" class="style3 style9">Kriteria Pencarian </div></td>
   </tr>
 <tr>
-    <td width="237" height="10" nowrap bgcolor="#B3B3FF"><div align="left" class="style5 style6">Nopen /No Pegawai </div></td>
+    <td width="237" height="10" nowrap bgcolor="#cfe8d8"><div align="left" class="style5 style6">Nopen /No Pegawai </div></td>
     <td width="10" nowrap>        <div align="center"><strong>:</strong></div></td>
     <td width="241" colspan="2" nowrap><input name="nopen" type="text" id="tgl_trn4" value="" size="40" maxlength="40"/>      </td>
 </tr>
 <tr>
-  <td height="10" nowrap bgcolor="#B3B3FF"><div align="left" class="style7">Nama</div></td>
+  <td height="10" nowrap bgcolor="#cfe8d8"><div align="left" class="style7">Nama</div></td>
   <td nowrap>
     <div align="center"><strong>:      </strong></div></td>
   <td colspan="2" nowrap><input name="nama" type="text" id="tgl_trn22" value="" size="40"/>    </td>
 </tr>
 <tr>
-  <td height="10" nowrap bgcolor="#B3B3FF"><span class="style7">Jenis</span></td>
+  <td height="10" nowrap bgcolor="#cfe8d8"><span class="style7">Jenis</span></td>
   <td nowrap><div align="center"><strong>:</strong></div></td>
   <td colspan="2" nowrap><input name="Jenis" type="text" id="tgl_trn23" value="" size="40"/>    </td>
 </tr>
 <tr>
-  <td height="10" nowrap bgcolor="#B3B3FF"><span class="style7">Tanggal Lahir </span></td>
+  <td height="10" nowrap bgcolor="#cfe8d8"><span class="style7">Tanggal Lahir </span></td>
   <td nowrap><div align="center"><strong>:</strong></div></td>
   <td colspan="2" nowrap><input name="tgl_lahir" type="text" id="tgl_trn24" value="" size="20"/>
     <a href="javascript:void(0)" onClick="if(self.gfPop)gfPop.fPopCalendar(document.postform.tgl_lahir);return true;" ><img src="images/calendarIcon.jpg" alt="" name="popcal" width="17" height="17" border="0" align="absmiddle" id="popcal" /></a></td>
@@ -101,7 +101,7 @@ a {
 <tr>
   <td height="10" colspan="4">&nbsp;</td>
   </tr>
-<tr bgcolor="#B3B3FF">
+<tr bgcolor="#cfe8d8">
   <td height="10">&nbsp; </td>
   <td><div align="center"></div></td>
   <td colspan="2"><input name="search" type="submit" id="submit2" value="Search" size="40"></td>

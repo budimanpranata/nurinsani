@@ -239,7 +239,7 @@ a:active {
   <td height="10" colspan="4" nowrap><div align="center" class="style3 style9">Input Data </div></td>
   </tr>
   <tr>
-  <td width="206" height="10" nowrap bgcolor="#B3B3FF"><span class="style15">Bulan dan Tahun Pencarian</span></td>
+  <td width="206" height="10" nowrap bgcolor="#cfe8d8"><span class="style15">Bulan dan Tahun Pencarian</span></td>
     <td width="16" nowrap>        <div align="center"><strong>:</strong></div></td>
     <td width="335" colspan="2" nowrap><span class="style5 style6">Bulan</span>
       <select name="bulan" id="bulan">
@@ -267,7 +267,7 @@ a:active {
 </select></td>
 </tr>
 <tr>
-    <td width="203" height="10" nowrap bgcolor="#B3B3FF"><div align="left" class="style5 style6">No Perkiraan</div></td>
+    <td width="203" height="10" nowrap bgcolor="#cfe8d8"><div align="left" class="style5 style6">No Perkiraan</div></td>
     <td width="16" nowrap>        <div align="center"><strong>:</strong></div></td>
     <td width="310" colspan="2" nowrap>
      <div id="suggest">
@@ -285,7 +285,7 @@ a:active {
 <tr>
   <td height="10" colspan="4">&nbsp;</td>
   </tr>
-<tr bgcolor="#B3B3FF">
+<tr bgcolor="#cfe8d8">
   <td height="10">&nbsp; </td>
   <td><div align="center"></div></td>
   <td colspan="2"><input name="search" type="submit" id="submit2" value="Cari" size="40"></td>

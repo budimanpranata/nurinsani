@@ -127,7 +127,7 @@ $anggota=$branch.$cif."01";
 		cursor: pointer;
 	}
 	.suggestionList ul li:hover {
-		background-color: #b3b3ff;
+		background-color: #cfe8d8;
 		color:#000;
 	}
 	ul {

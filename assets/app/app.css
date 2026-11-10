@@ -1,10 +1,10 @@
 /* Tema aplikasi Nur Insani di atas Bootstrap 5.
-   Hijau utama: hijau zamrud lembut #2F6B4F (pengganti hijau lama #2F6B4F); ungu muda #B3B3FF untuk label. */
+   Hijau utama: hijau zamrud lembut #2F6B4F (pengganti hijau lama #2F6B4F); hijau muda #cfe8d8 untuk label (warna hover menu sidebar). */
 :root {
     --ni-hijau: #2f6b4f;
     --ni-hijau-gelap: #1f4a37;
     --ni-hijau-muda: #eaf2ed;
-    --ni-label: #b3b3ff;
+    --ni-label: #cfe8d8;
     --bs-body-font-size: .8125rem;
     --bs-link-color-rgb: 31, 74, 55;
 }

@@ -120,7 +120,7 @@ a {
 		cursor: pointer;
 	}
 	.suggestionList ul li:hover {
-		background-color: #b3b3ff;
+		background-color: #cfe8d8;
 		color:#000;
 	}
 	ul {
@@ -159,7 +159,7 @@ a {
   </tr>
 <tr>
  <div id="suggest">
-    <td width="100%" height="100%" nowrap bgcolor="#B3B3FF"><div align="left" class="style5 style6">Nomor Kelompok  </div></td>
+    <td width="100%" height="100%" nowrap bgcolor="#cfe8d8"><div align="left" class="style5 style6">Nomor Kelompok  </div></td>
     <td width="10" nowrap>   <div align="center"><strong>:</strong></div></td>
      <td colspan="2" nowrap><input type="text" onKeyUp="suggest(this.value);" name="kelompok"  onBlur="fill2();" id="kode" size="15"/> 
 	 <div class="suggestionsBox" id="suggestions" style="display: none;"> <img src="arrow.png" style="position: relative; top: -12px; left: 30px;" alt="upArrow" />
@@ -170,20 +170,20 @@ a {
 	  </td>
 	</tr>
 <tr>
-  <td height="10" nowrap bgcolor="#B3B3FF"><div align="left" class="style7">Nama Kelompok</div></td>
+  <td height="10" nowrap bgcolor="#cfe8d8"><div align="left" class="style7">Nama Kelompok</div></td>
   <td nowrap>
     <div align="center"><strong>:      </strong></div></td>
   <td colspan="2" nowrap><input name="nama" type="text" id="country" value="" size="40"/>    </td>
 </tr>
 <tr>
-  <td height="10" nowrap bgcolor="#B3B3FF"><span class="style7">Jenis Pinjman</span></td>
+  <td height="10" nowrap bgcolor="#cfe8d8"><span class="style7">Jenis Pinjman</span></td>
   <td nowrap><div align="center"><strong>:</strong></div></td>
   <td colspan="2" nowrap><input name="Jenis" type="text" id="tgl_trn23" value="" size="40"/>    </td>
 </tr>
 <tr>
   <td height="10" colspan="4">&nbsp;</td>
   </tr>
-<tr bgcolor="#B3B3FF">
+<tr bgcolor="#cfe8d8">
   <td height="10">&nbsp; </td>
   <td><div align="center"></div></td>
   <td colspan="2"><input name="search" type="submit" id="submit2" value="Search" size="40"></td>

@@ -75,7 +75,7 @@ $dcount = db_query ($koneksi,"select max(norek) AS last FROM deposito where nore
         cursor: pointer;
     }
     .suggestionList ul li:hover {
-        background-color: #b3b3ff;
+        background-color: #cfe8d8;
         color:#000;
     }
     ul {

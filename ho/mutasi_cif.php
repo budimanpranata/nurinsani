@@ -227,7 +227,7 @@ a:active {
   </tr>
 
 <tr>
-    <td width="203" height="10" nowrap bgcolor="#B3B3FF"><div align="left" class="style5 style6">NAMA/CIF </div></td>
+    <td width="203" height="10" nowrap bgcolor="#cfe8d8"><div align="left" class="style5 style6">NAMA/CIF </div></td>
     <td width="16" nowrap>        <div align="center"><strong>:</strong></div></td>
     <td width="310" colspan="2" nowrap>
      <div id="suggest">
@@ -239,7 +239,7 @@ a:active {
       <input type="text" disabled="disabled" name="nama_rekening" onBlur="fill();" id="country" />
 </div></tr>
 <tr>
-  <td height="10" nowrap bgcolor="#B3B3FF"><span class="style7">AP Tujuan </span></td>
+  <td height="10" nowrap bgcolor="#cfe8d8"><span class="style7">AP Tujuan </span></td>
   <td nowrap><div align="center"><strong>:</strong></div></td>
   <td colspan="2" nowrap><select name="select" id="select" size="1">
   <option selected>Pilih Salah satu</option>
@@ -255,7 +255,7 @@ a:active {
 <tr>
   <td height="10" colspan="4"><label></label></td>
   </tr>
-<tr bgcolor="#B3B3FF">
+<tr bgcolor="#cfe8d8">
   <td height="10">&nbsp; </td>
   <td><div align="center"></div></td>
   <td colspan="2"><input name="search" type="submit" id="submit2" value="Proses" size="40"></td>

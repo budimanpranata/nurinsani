@@ -118,7 +118,7 @@ a {
 		cursor: pointer;
 	}
 	.suggestionList ul li:hover {
-		background-color: #b3b3ff;
+		background-color: #cfe8d8;
 		color:#000;
 	}
 	ul {
@@ -157,7 +157,7 @@ a {
   </tr>
 
 <tr>
- <td height="10" nowrap bgcolor="#B3B3FF"><span class="style7">Paramter Tanggal Transaski</span></td>
+ <td height="10" nowrap bgcolor="#cfe8d8"><span class="style7">Paramter Tanggal Transaski</span></td>
   <td nowrap><div align="center"><strong>:</strong></div></td>
   <td colspan="2" nowrap><input name="tanggal" type="text" id="tanggal" value="" size="20"/>
     <a href="javascript:void(0)" onClick="if(self.gfPop)gfPop.fPopCalendar(document.postform.tanggal);return true;" ><img src="images/calendarIcon.jpg" alt="" name="popcal" width="17" height="17" border="0" align="absmiddle" id="popcal" /></a></td>
@@ -165,7 +165,7 @@ a {
 <tr>
   <td height="10" colspan="4">&nbsp;</td>
   </tr>
-<tr bgcolor="#B3B3FF">
+<tr bgcolor="#cfe8d8">
   <td height="10">&nbsp; </td>
   <td><div align="center"></div></td>
   <td colspan="2"><input name="search" type="submit" id="submit2" value="Search" size="40"></td>

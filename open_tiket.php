@@ -225,7 +225,7 @@ a:active {
   <td height="10" colspan="4" nowrap><div align="center" class="style3 style9">Input Data </div></td>
   </tr>
 <tr>
-    <td width="203" height="10" nowrap bgcolor="#B3B3FF"><div align="left" class="style5 style6">No Rekening</div></td>
+    <td width="203" height="10" nowrap bgcolor="#cfe8d8"><div align="left" class="style5 style6">No Rekening</div></td>
     <td width="16" nowrap>        <div align="center"><strong>:</strong></div></td>
     <td width="310" colspan="2" nowrap>
      <div id="suggest">
@@ -238,32 +238,32 @@ a:active {
 </div>
 </tr>
 <tr>
-  <td height="10" nowrap bgcolor="#B3B3FF"><div align="left" class="style7">Bukti Jurnal</div></td>
+  <td height="10" nowrap bgcolor="#cfe8d8"><div align="left" class="style7">Bukti Jurnal</div></td>
   <td nowrap>
    <div align="center"><strong>:      </strong></div></td>
   <td colspan="2" nowrap><input name="bu" type="text" id="bu" value=""  size="20"/>  </td>
 </tr>
 
 <tr>
-  <td height="10" nowrap bgcolor="#B3B3FF"><div align="left" class="style7">Nominal</div></td>
+  <td height="10" nowrap bgcolor="#cfe8d8"><div align="left" class="style7">Nominal</div></td>
   <td nowrap>
    <div align="center"><strong>:      </strong></div></td>
   <td colspan="2" nowrap><input name="nominal" type="text" id="nominal" value="" onKeyPress="return wajibAngka(event)" autocomplete="off" onKeyUp="document.getElementById('format').innerHTML = formatCurrency(this.value);" size="20"/>                     <span id="format"></span></td>
 </tr>
 <tr>
-                  <td width="100" height="15"  nowrap bgcolor="#B3B3FF"><div align="left" class="style10">Tanggal Transaksi</td>
+                  <td width="100" height="15"  nowrap bgcolor="#cfe8d8"><div align="left" class="style10">Tanggal Transaksi</td>
                     <td width="10" nowrap>   <div align="center"><strong>:</strong></div></td>                 
                  <td colspan="2" nowrap><input type="text" name="tanggal_transaksi" size="15" value="<?php if(empty($_POST['tanggal_transaksi'])){ echo $tanggal;}else{ echo htmlspecialchars($_POST['tanggal_transaksi'], ENT_QUOTES); }?>"/>
                     <a href="javascript:void(0)" onClick="if(self.gfPop)gfPop.fPopCalendar(document.postform.tanggal_transaksi);return false;" ><img src="calender/calender.jpeg" alt="" name="popcal" width="34" height="29" border="0" align="absmiddle" id="popcal" /></a>                 
                 </td>
 
 <tr>
-  <td height="10" nowrap bgcolor="#B3B3FF"><div align="left" class="style7">Keterangan</div></td>
+  <td height="10" nowrap bgcolor="#cfe8d8"><div align="left" class="style7">Keterangan</div></td>
   <td nowrap>
    <div align="center"><strong>:      </strong></div></td>
   <td colspan="2" nowrap><textarea  rows="15" cols="40" name="ket" type="text" id="ket" /></textarea>  </tr>
 <tr>
-  <td height="10" nowrap bgcolor="#B3B3FF"><span class="style7">Jenis Transaksi </span></td>
+  <td height="10" nowrap bgcolor="#cfe8d8"><span class="style7">Jenis Transaksi </span></td>
   <td nowrap><div align="center"><strong>:</strong></div></td>
   <td colspan="2" nowrap><select name="select" id="select" size="1">
     <option>Pilih Salah satu</option>
@@ -283,7 +283,7 @@ a:active {
 <tr>
   <td height="10" colspan="4">&nbsp;</td>
   </tr>
-<tr bgcolor="#B3B3FF">
+<tr bgcolor="#cfe8d8">
   <td height="10">&nbsp; </td>
   <td><div align="center"></div></td>
   <td colspan="2"><input name="search" type="submit" id="submit2" value="Input" size="40"></td>

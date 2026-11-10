@@ -216,20 +216,20 @@ a:active {
   <td height="10" colspan="4" nowrap><div align="center" class="style3 style9"> Pencarian Berdasarkan Tanggal </div></td>
   </tr>
 <tr>
-  <td height="10" nowrap bgcolor="#B3B3FF"><span class="style7">Tangggal Awal </span></td>
+  <td height="10" nowrap bgcolor="#cfe8d8"><span class="style7">Tangggal Awal </span></td>
   <td nowrap><div align="center"><strong>:</strong></div></td>
   <td colspan="2" nowrap><input name="buss_date1" type="text" id="tgl_lahir" value="" size="20"/>
     <a href="javascript:void(0)" onClick="if(self.gfPop)gfPop.fPopCalendar(document.postform.tgl_lahir);return true;" ><img src="images/calendarIcon.jpg" alt="" name="popcal" width="17" height="17" border="0" align="absmiddle" id="popcal" /></a></td>
 </tr>
 <tr>
-  <td height="10" nowrap bgcolor="#B3B3FF"><span class="style7">Tanggal Akhir </span></td>
+  <td height="10" nowrap bgcolor="#cfe8d8"><span class="style7">Tanggal Akhir </span></td>
   <td nowrap><div align="center"><strong>:</strong></div></td>
   <td colspan="2" nowrap><input name="buss_date2" type="text" id="tgl_trn" value="" size="20"/>
     <a href="javascript:void(0)" onClick="if(self.gfPop)gfPop.fPopCalendar(document.postform.tgl_trn);return true;" ><img src="images/calendarIcon.jpg" alt="" name="popcal" width="17" height="17" border="0" align="absmiddle" id="popcal" /></a></td>
 </tr>
 
 <tr>
-  <td height="10" nowrap bgcolor="#B3B3FF"><span class="style7">Unit </span></td>
+  <td height="10" nowrap bgcolor="#cfe8d8"><span class="style7">Unit </span></td>
   <td nowrap><div align="center"><strong>:</strong></div></td>
   <td colspan="2" nowrap> <select name="unit" id ="unit" type="text">
   	  <option value="">- Select Kode unit -</option>
@@ -247,7 +247,7 @@ a:active {
 <tr>
   <td height="10" colspan="4">&nbsp;</td>
   </tr>
-<tr bgcolor="#B3B3FF">
+<tr bgcolor="#cfe8d8">
   <td height="10">&nbsp; </td>
   <td><div align="center"></div></td>
   <td colspan="2"><input name="search" type="submit" id="submit2" value="Search" size="40"></td>
