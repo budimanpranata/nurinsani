@@ -14,7 +14,9 @@
 function nomi_daftar($filter, $kolom = "deposito.norek,deposito.bilyet,CUST_SHORT_NAME,deposito.cif,deposito.nominal,deposito.tenor,deposito.maturity_date")
 {
     $cari = isset($filter['cari']) ? (string) $filter['cari'] : '';
-    $sql = "SELECT $kolom FROM deposito join deposan on deposan.CIF = deposito.cif";
+    // left join (bukan inner): baris deposito tetap tampil walau CIF-nya belum punya master di deposan
+    // (perbaikan 2026-11-12 atas laporan user: di prod deposito berisi tapi Data Nominatif kosong karena inner join).
+    $sql = "SELECT $kolom FROM deposito left join deposan on deposan.CIF = deposito.cif";
     if ($cari !== '') {
         return db_semua("$sql where deposito.norek = ? or deposito.cif LIKE ? or CUST_SHORT_NAME LIKE ? order by deposito.norek",
             'sss', $cari, '%' . $cari . '%', '%' . $cari . '%');
