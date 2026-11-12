@@ -95,6 +95,44 @@ document.querySelectorAll('[data-pilih-semua]').forEach(function (b) {
         });
     });
 });
+
+// Konfirmasi SweetAlert sebelum realisasi musyarakah supaya unit melakukan cek ulang.
+(function () {
+    var form = document.getElementById('form-realisasi');
+    if (!form) return;
+    // tombol submit bernama "submit" membayangi form.submit(); pakai prototype agar method asli tetap jalan.
+    function kirim() { HTMLFormElement.prototype.submit.call(form); }
+    form.addEventListener('submit', function (e) {
+        e.preventDefault();
+        var dipilih = form.querySelectorAll('input[name="cekbox[]"]:checked').length;
+        if (dipilih === 0) {
+            if (window.Swal) {
+                Swal.fire({ icon: 'warning', html: 'Anda belum memilih data yang akan direalisasi.', confirmButtonColor: '#2f6b4f', heightAuto: false });
+            } else {
+                alert('Anda belum memilih data yang akan direalisasi.');
+            }
+            return;
+        }
+        var pesan = 'Anda yakin akan merealisasi <b>' + dipilih + '</b> data pembiayaan musyarakah yang dipilih?<br>Silakan cek ulang sebelum melanjutkan.';
+        if (window.Swal) {
+            Swal.fire({
+                icon: 'warning',
+                title: 'Konfirmasi Realisasi Musyarakah',
+                html: pesan,
+                showCancelButton: true,
+                confirmButtonText: 'Ya, Lanjutkan',
+                cancelButtonText: 'Batal',
+                confirmButtonColor: '#2f6b4f',
+                cancelButtonColor: '#6c757d',
+                reverseButtons: true,
+                allowOutsideClick: false,
+                heightAuto: false
+            }).then(function (r) { if (r.isConfirmed) kirim(); });
+        } else if (confirm('Anda yakin akan merealisasi ' + dipilih + ' data yang dipilih? Silakan cek ulang.')) {
+            kirim();
+        }
+    });
+})();
 </script>
 <?php
 halaman_akhir();
