@@ -79,6 +79,44 @@ document.querySelectorAll('[data-pilih-semua]').forEach(function (b) {
         });
     });
 });
+
+// Konfirmasi SweetAlert sebelum pembatalan supaya unit melakukan cek ulang.
+(function () {
+    var form = document.getElementById('form-batal');
+    if (!form) return;
+    // tombol submit bernama "submit" membayangi form.submit(); pakai prototype agar method asli tetap jalan.
+    function kirim() { HTMLFormElement.prototype.submit.call(form); }
+    form.addEventListener('submit', function (e) {
+        e.preventDefault();
+        var dipilih = form.querySelectorAll('input[name="cekbox[]"]:checked').length;
+        if (dipilih === 0) {
+            if (window.Swal) {
+                Swal.fire({ icon: 'warning', html: 'Anda belum memilih data yang akan dibatalkan.', confirmButtonColor: '#2f6b4f', heightAuto: false });
+            } else {
+                alert('Anda belum memilih data yang akan dibatalkan.');
+            }
+            return;
+        }
+        var pesan = 'Anda yakin akan membatalkan <b>' + dipilih + '</b> data wakalah/musyarakah yang dipilih?<br>Silakan cek ulang sebelum melanjutkan.';
+        if (window.Swal) {
+            Swal.fire({
+                icon: 'warning',
+                title: 'Konfirmasi Pembatalan',
+                html: pesan,
+                showCancelButton: true,
+                confirmButtonText: 'Ya, Lanjutkan',
+                cancelButtonText: 'Batal',
+                confirmButtonColor: '#b02a37',
+                cancelButtonColor: '#6c757d',
+                reverseButtons: true,
+                allowOutsideClick: false,
+                heightAuto: false
+            }).then(function (r) { if (r.isConfirmed) kirim(); });
+        } else if (confirm('Anda yakin akan membatalkan ' + dipilih + ' data yang dipilih? Silakan cek ulang.')) {
+            kirim();
+        }
+    });
+})();
 </script>
 <?php
 halaman_akhir();
