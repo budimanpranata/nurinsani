@@ -23,6 +23,10 @@ $st->execute();
 $user = $st->get_result()->fetch_assoc();
 $branch = $user ? $user['kode_branch'] : '';
 
+// jenis akad unit (tabel jenis_akad): unit MUSYAROKAH menyembunyikan Total Margin (kalkulator margin tak relevan)
+$ja = db_satu('SELECT jenis_akad FROM jenis_akad WHERE unit = ?', 's', (string) $branch);
+$is_musyarokah = $ja && strtoupper((string) $ja['jenis_akad']) === 'MUSYAROKAH';
+
 // CIF acak 6 karakter dan no rekening = unit + CIF + 01 (sama seperti versi lama)
 $cif = acakangkahuruf(6);
 $anggota = $branch . $cif . '01';
@@ -230,7 +234,7 @@ halaman_awal('Entry Calon Anggota');
           </div>
           <?php pilihan('Tenor (Minggu)', 'tenor', array('25' => '25', '35' => '35', '50' => '50')); ?>
           <div class="row g-2 mb-1">
-            <label for="pla" class="col-sm-5 col-form-label col-form-label-sm">Disetujui UM/GFH <span class="text-danger">*</span></label>
+            <label for="pla" class="col-sm-5 col-form-label col-form-label-sm">Disetujui MM/BM <span class="text-danger">*</span></label>
             <div class="col-sm-7">
               <input type="text" name="pla" id="pla" class="form-control form-control-sm fw-bold" maxlength="8" inputmode="numeric"
                      data-hanya-angka value="<?php echo h(nilai('pla')); ?>">
@@ -242,7 +246,11 @@ halaman_awal('Entry Calon Anggota');
         <div class="col-lg-6">
           <?php isian('Simpanan Khusus 5%', 'simpanan', 'readonly', false); ?>
           <?php isian('Angsuran', 'angsuran', 'readonly', false); ?>
+          <?php if ($is_musyarokah): ?>
+          <div class="d-none"><?php isian('Total Margin', 'tot_margin', 'readonly', false); ?></div>
+          <?php else: ?>
           <?php isian('Total Margin', 'tot_margin', 'readonly', false); ?>
+          <?php endif; ?>
           <?php isian('Harga Jual', 'harga_jual', 'readonly', false); ?>
           <?php isian('Setoran', 'setoran', 'readonly', false); ?>
         </div>

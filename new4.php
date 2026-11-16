@@ -192,7 +192,7 @@ halaman_awal('Form Approve Calon Anggota');
       <?php isian_lead('Tenor', 'tenor', $cl('Tenor'), '', false); ?>
       <?php isian_lead('Angsuran', 'tot_margin', $cl('angsuran'), '', false); ?>
       <div class="col-md-6 col-lg-3">
-        <label class="form-label small mb-1" for="pla">Disetujui UM/GFH</label>
+        <label class="form-label small mb-1" for="pla">Disetujui MM/BM</label>
         <input type="text" class="form-control form-control-sm fw-bold" name="pla" id="pla" value="<?php echo h($cl('Plafond')); ?>" maxlength="8" <?php echo $angka; ?> data-format-rupiah>
         <div class="form-text" id="format"></div>
       </div>
