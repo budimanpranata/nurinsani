@@ -49,6 +49,18 @@
                 return;
             }
         }
+        // §2j (2026-11-16): pilihan tanpa opsi terpilih (nilai dari database tidak ada di daftar, mis. Sumber Dana '0')
+        // tidak ikut terkirim sehingga tersimpan kosong; wajib dipilih ulang.
+        var pilihan = form.querySelectorAll('select');
+        for (var j = 0; j < pilihan.length; j++) {
+            if (pilihan[j].selectedIndex === -1) {
+                e.preventDefault();
+                var label = form.querySelector('label[for="' + pilihan[j].id + '"]');
+                alert((label ? label.textContent.replace('*', '').trim() : pilihan[j].name) + ' belum dipilih');
+                pilihan[j].focus();
+                return;
+            }
+        }
         // §2j (2026-11-16): tenor + plafond tanpa param_biaya ditolak juga oleh update_log.php; ditahan di sini lebih dulu
         if (!dataKalkulator.biaya[Number(f.tenor.value) + '|' + Number(f.pla.value)]) {
             e.preventDefault();

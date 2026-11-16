@@ -3,7 +3,8 @@
  * Saran anggota untuk Pemeliharaan CIM (dim.php), pengganti autosuggesst_dim.php (query sama).
  * GET q = awalan CIF, nama, atau nomor KTP. Hasil: JSON berisi label + nilai tiap isian form (kunci = id isian).
  * Kode AO: CAO calon_loan, bila kosong/tidak ada calon_loan diambil dari anggota.CAO (perbaikan 2026-11-01 atas laporan
- *   user: versi lama hanya dari calon_loan sehingga kosong untuk anggota tanpa calon_loan).
+ *   user: versi lama hanya dari calon_loan sehingga kosong untuk anggota tanpa calon_loan), lalu loan.cao, lalu AO sesi (§2j 2026-11-16).
+ * Bidang usaha: calon_loan.usaha, bila kosong loan.usaha (§2j 2026-11-16). Jenis kelamin 'P'/'L' -> Perempuan/Laki-laki.
  * Sama dengan versi lama: no_anggota diambil dari calon_loan (menimpa NOREK).
  * Barang/harga ke-8 kini ikut di-SELECT (perbaikan §2j 2026-11-16; versi lama selalu kosong sehingga tertimpa kosong saat simpan).
  */
@@ -31,7 +32,10 @@ $awalan = $q . '%';
 
 // urutan AND/OR sama dengan versi lama
 $baris = db_semua("SELECT nama_kel,calon_loan.no_anggota,tgl_wakalah, anggota.CIF,anggota.CUST_SHORT_NAME,anggota.CODE_KEL,anggota.NOREK,anggota.UNIT,calon_loan.DEAL_TYPE,HADDRESS1,HADDRESS2,HADDRESS3,HADDRESS4,HADDRESS5,HPOST_CODE,MOBILE_PHONE,HOME_PHONE,GENDER,BIRTH_DATE,
-    ID_NUMBER,CITIZENSHIP,TEMPAT_LAHIR,MARITAL_STATUS,RELIGION,MOTHER_NAME,NPWP,SOURCE_INCOME,EDUCATION,ID_EXPIRED,WARIS,COALESCE(NULLIF(calon_loan.CAO,''),anggota.CAO) as CAO,anggota.USERID,tgl_wakalah,Plafond,usaha,
+    ID_NUMBER,CITIZENSHIP,TEMPAT_LAHIR,MARITAL_STATUS,RELIGION,MOTHER_NAME,NPWP,SOURCE_INCOME,EDUCATION,ID_EXPIRED,WARIS,
+    COALESCE(NULLIF(calon_loan.CAO,''),NULLIF(anggota.CAO,''),(SELECT NULLIF(l.cao,'') FROM loan l WHERE l.cif=anggota.CIF LIMIT 1)) as CAO,
+    anggota.USERID,tgl_wakalah,Plafond,
+    COALESCE(NULLIF(calon_loan.usaha,''),(SELECT NULLIF(l.usaha,'') FROM loan l WHERE l.cif=anggota.CIF LIMIT 1)) as usaha,
     barang_satu,barang_dua,barang_tiga,barang_empat,barang_lima, barang_enam, barang_tujuh, barang_delapan, barang_sembilan, barang_sepuluh,Plafond,
     harga_satu,harga_dua,harga_tiga,harga_empat,harga_lima,harga_enam,harga_tujuh, harga_delapan, harga_sembilan,harga_sepuluh,nama_usaha,tgl_akad,tenor,pekerjaan_pasangan,suffix
     FROM anggota
@@ -50,6 +54,20 @@ $tanggal = function ($v) {
     return ($v && substr((string) $v, 0, 4) !== '0000') ? substr((string) $v, 0, 10) : '';
 };
 $urutan = array('satu', 'dua', 'tiga', 'empat', 'lima', 'enam', 'tujuh', 'delapan', 'sembilan', 'sepuluh');
+// §2j (2026-11-16, perintah user): data lama GENDER 'P'/'L' tidak cocok dengan pilihan form (Perempuan/Laki-laki) sehingga
+// isian kosong dan GENDER tersimpan kosong saat Simpan. Diterjemahkan ke nilai form (format sama dengan input baru).
+$gender = function ($v) {
+    $g = strtoupper(trim((string) $v));
+    if ($g === 'P' || $g === 'PEREMPUAN') {
+        return 'Perempuan';
+    }
+    if ($g === 'L' || $g === 'LAKI-LAKI') {
+        return 'Laki-laki';
+    }
+    return $v === null ? '' : (string) $v;
+};
+// Kode AO kosong di semua tabel: pakai AO user login (isian awal dim.php), bukan dikosongkan
+$cao_sesi = isset($_SESSION['cao']) ? (string) $_SESSION['cao'] : '';
 
 $hasil = array();
 foreach ($baris as $r) {
@@ -63,7 +81,8 @@ foreach ($baris as $r) {
         'tempat_lahir' => $teks($r['TEMPAT_LAHIR']), 'code_kel' => $teks($r['CODE_KEL']), 'pendidikan' => $teks($r['EDUCATION']),
         'npwp' => $teks($r['NPWP']), 'kd_pos' => $teks($r['HPOST_CODE']), 'status_kawin' => $teks($r['MARITAL_STATUS']),
         'id_expire' => $teks($r['ID_EXPIRED']), 'id' => $teks(dekripsi_data($r['ID_NUMBER'])), 'sumber' => $teks($r['SOURCE_INCOME']),
-        'jenis_kel' => $teks($r['GENDER']), 'code_ao' => $teks($r['CAO']), 'tgl_skep' => $tanggal($r['tgl_wakalah']),
+        'jenis_kel' => $gender($r['GENDER']), 'code_ao' => $teks($r['CAO']) !== '' ? $teks($r['CAO']) : $cao_sesi,
+        'tgl_skep' => $tanggal($r['tgl_wakalah']),
         'rt' => $teks($r['HADDRESS5']), 'pla' => $teks($r['Plafond']), 'usaha' => $teks($r['usaha']),
         'nama_usaha' => $teks($r['nama_usaha']), 'tgl_akad' => $tanggal($r['tgl_akad']), 'tenor' => $teks($r['tenor']),
         'pekerjaan' => $teks($r['pekerjaan_pasangan']), 'suffix' => $teks($r['suffix']), 'tlp_penjamin' => $teks($r['HOME_PHONE']),
