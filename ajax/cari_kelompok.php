@@ -1,7 +1,7 @@
 <?php require_once __DIR__ . '/../koneksi_db.php';
 /**
  * Saran kelompok (yang sudah punya pinjaman) di unit user yang login.
- * GET q = awalan kode atau nama kelompok. Hasil: JSON [{code_kel, nama_kel, cao, alamat, hari}].
+ * GET q = awalan kode atau nama kelompok. Hasil: JSON [{code_kel, nama_kel, cao, alamat, tlp, hari}].
  */
 session_start();
 header('Content-Type: application/json; charset=utf-8');
@@ -26,10 +26,10 @@ $user = $st->get_result()->fetch_assoc();
 $unit = $user ? $user['kode_branch'] : '';
 
 $awalan = $q . '%';
-$st = $db->prepare('SELECT kelompok.code_kel, kelompok.nama_kel, kelompok.cao, kelompok.alamat, MAX(loan.hari) AS hari
+$st = $db->prepare('SELECT kelompok.code_kel, kelompok.nama_kel, kelompok.cao, kelompok.alamat, kelompok.tlp, MAX(loan.hari) AS hari
     FROM kelompok INNER JOIN loan ON loan.code_kel = kelompok.code_kel
     WHERE kelompok.code_unit = ? AND (kelompok.code_kel LIKE ? OR kelompok.nama_kel LIKE ?)
-    GROUP BY kelompok.code_kel, kelompok.nama_kel, kelompok.cao, kelompok.alamat
+    GROUP BY kelompok.code_kel, kelompok.nama_kel, kelompok.cao, kelompok.alamat, kelompok.tlp
     ORDER BY kelompok.code_kel LIMIT 10');
 if (!$st || !$st->bind_param('sss', $unit, $awalan, $awalan) || !$st->execute()) {
     echo '[]';

@@ -32,6 +32,7 @@ $ds= isset($_POST['cao']) ? (string) $_POST['cao'] : '';
 $alamat= isset($_POST['alamat']) ? (string) $_POST['alamat'] : '';
 $nama= isset($_POST['nama']) ? (string) $_POST['nama'] : '';
 $hari= isset($_POST['hari']) ? (string) $_POST['hari'] : '';
+$tlp= isset($_POST['tlp']) ? (string) $_POST['tlp'] : '';
 
 $r = db_satu("select kode_branch from user where userid =?", 's', (string) $userid);
 $branch= $r ? (string) $r['kode_branch'] : '';
@@ -60,8 +61,8 @@ $koneksi_transaksi = db_ni();
 mysqli_begin_transaction($koneksi_transaksi);
 $gagal_awal = db_jumlah_gagal();
 
-db_jalankan("insert into kelompok(code_kel,code_unit,nama_kel,alamat,cao,cif) values(?,?,?,?,?,'0')
-    on duplicate key update nama_kel=values(nama_kel), alamat=values(alamat), cao=values(cao)", 'sssss', $kel, $branch, $nama, $alamat, $ds);
+db_jalankan("insert into kelompok(code_kel,code_unit,nama_kel,alamat,cao,cif,tlp) values(?,?,?,?,?,'0',?)
+    on duplicate key update nama_kel=values(nama_kel), alamat=values(alamat), cao=values(cao), tlp=values(tlp)", 'ssssss', $kel, $branch, $nama, $alamat, $ds, $tlp);
 db_jalankan("Update loan set cao =?, hari =? where code_kel=?", 'sss', $ds, $hari, $kel);
 db_jalankan("Update anggota set cao =? where code_kel=?", 'ss', $ds, $kel);
 db_jalankan("Update simpanan set CAO =? where code_kel=?", 'ss', $ds, $kel);

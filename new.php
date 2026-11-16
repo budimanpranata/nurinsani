@@ -117,6 +117,13 @@ function validateForm()
      <textarea name="alamat" type="text" id="alamat" size="55"/></textarea>
 	 <td colspan="2" bgcolor="#E8E8E8">&nbsp;</td>
 </td>
+<tr>
+    <td bgcolor="#CCCCCC">No Tlp Ketua Kelompok</td>
+    <td bgcolor="#CCCCCC"><span class="style1">
+      <input name="tlp" type="text" id="tlp" size="30" maxlength="16"/>
+    </span></td>
+    <td colspan="2" bgcolor="#CCCCCC">&nbsp;</td>
+</tr>
 </table>
 
 </form>

@@ -7,6 +7,7 @@ $kel= trim($_POST['code_kel']);
 $ds= trim($_POST['cao']);
 $alamat= $_POST['alamat'];
 $nama= $_POST['nama'];
+$tlp= isset($_POST['tlp']) ? trim((string) $_POST['tlp']) : '';
 
 
 unset ($_SESSION['tgl_wakalah']);
@@ -37,7 +38,7 @@ echo "<script> alert ('data sudah ada dalam database, isi form dengan kode Kelom
 $_SESSION['cao']=$ds;
 $_SESSION['code_kel']=$kel;
 
-$input = db_jalankan("insert into kelompok(code_kel,code_unit,nama_kel,alamat,cao,cif) values(?,?,?,?,?,'0')", 'sssss', (string) $kel, (string) $branch, (string) $nama, (string) $alamat, (string) $ds);
+$input = db_jalankan("insert into kelompok(code_kel,code_unit,nama_kel,alamat,cao,cif,tlp) values(?,?,?,?,?,'0',?)", 'ssssss', (string) $kel, (string) $branch, (string) $nama, (string) $alamat, (string) $ds, (string) $tlp);
 
 
 			if($input){ 

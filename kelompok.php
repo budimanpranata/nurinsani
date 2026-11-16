@@ -22,7 +22,7 @@ $r = db_satu('SELECT kode_branch FROM user WHERE userid = ?', 's', (string) $use
 $branch = $r ? $r['kode_branch'] : null;
 $daftar_ao = db_semua('SELECT * FROM ao WHERE kode_unit = ?', 's', (string) $branch);
 
-$isi = array('#nama' => 'nama_kel', '#cao' => 'cao', '#alamat' => 'alamat', '#hari' => 'hari');
+$isi = array('#nama' => 'nama_kel', '#cao' => 'cao', '#alamat' => 'alamat', '#hari' => 'hari', '#tlp' => 'tlp');
 
 halaman_awal('Update Kelompok');
 ?>
@@ -62,10 +62,16 @@ halaman_awal('Update Kelompok');
           <textarea name="alamat" id="alamat" class="form-control form-control-sm" rows="2"></textarea>
         </div>
       </div>
-      <div class="row g-2 mb-3">
+      <div class="row g-2 mb-2">
         <label for="hari" class="col-sm-4 col-form-label">Hari Minggon <span class="text-danger">*</span></label>
         <div class="col-sm-8">
           <input type="text" name="hari" id="hari" class="form-control form-control-sm" maxlength="30">
+        </div>
+      </div>
+      <div class="row g-2 mb-3">
+        <label for="tlp" class="col-sm-4 col-form-label">No Tlp Ketua Kelompok</label>
+        <div class="col-sm-8">
+          <input type="text" name="tlp" id="tlp" class="form-control form-control-sm" maxlength="16" inputmode="numeric">
         </div>
       </div>
       <input type="hidden" name="kelompok_baru" id="kelompok_baru" value="">
