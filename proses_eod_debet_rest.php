@@ -22,7 +22,9 @@ $tanggal = $cek['param_tgl'];
     
 
                    
-        $select = db_query ($con,"Select cs.cif as cif,loan.angsuran,loan.cao,Cust_Short_name,loan.os as os,deal_produk,loan.saldo_margin as saldo_margin,
+        // 2026-11-16 (perintah user): DATE_ADD(next_schedule) ditambahkan; dulu kolom next_schedule tidak di-SELECT sehingga
+        // $next_schedule1 kosong dan loan.next_schedule anggota menunggak tertimpa 0000-00-00 (sama dengan proses_eod_debet_lebaran.php)
+        $select = db_query ($con,"Select DATE_ADD(loan.next_schedule,INTERVAL 7 DAY) as next_schedule,cs.cif as cif,loan.angsuran,loan.cao,Cust_Short_name,loan.os as os,deal_produk,loan.saldo_margin as saldo_margin,
         no_anggota as norek ,code_kel,status_app,loan.pokok,run_tenor,loan.unit, loan.bulat as bulat,loan.ijaroh as ijaroh,nominal,status_trans
         from cs left join loan on loan.cif = cs.cif  where loan.os > 0 
  and status_app  in ('REST','REST_POKOK_MARGIN','COVID') and nominal ='0' and status_trans ='BAYAR' and tgl_tagih ='$tanggal'
@@ -116,7 +118,9 @@ if($status_app == 'REST'){
  
  
 if ($saldo < $angsuran){    
-                db_query ($con,"Update loan set next_schedule='$next_schedule1-1',ke='$ke_tenor'+1 where cif  ='$cif'");
+                // §2b (2026-11-16, perintah user): dulu tanggal ditulis '<tanggal>-1' yang tersimpan sebagai jam 01:00:00
+                // (cetak CS yang mencocokkan tanggal tidak menemukan baris itu); kini tanggal murni tanpa '-1'.
+                db_query ($con,"Update loan set next_schedule='$next_schedule1',ke='$ke_tenor'+1 where cif  ='$cif'");
                                  
                 //mysqli_query ($con,"insert  into tunggakan (tgl_tunggak,NOREK,UNIT,CIF,CODE_KEL,DEBIT,TYPE,KREDIT,USERID,REFF,CAO,blok)VALUES('$tanggal','$no_anggota','$unit','$cif','$code_kel','0','01','$pokok','$userid','$ket','$cao','') ");
                
@@ -182,7 +186,7 @@ db_query ($con,"INSERT INTO pinjaman_detail_rencana(id,id_pinjam,cicilan,angsura
                  
  
 if ($saldo < $angsuran){    
-                db_query ($con,"Update loan set next_schedule='$next_schedule1-1',ke='$ke_tenor'+1 where cif  ='$cif'");
+                db_query ($con,"Update loan set next_schedule='$next_schedule1',ke='$ke_tenor'+1 where cif  ='$cif'");
                 $ke_n= db_fetch_array(db_query ($con,"select ke from loan WHERE cif ='$cif'"));
                 $ke_lagi=$ke_n['ke'];
                  
@@ -191,10 +195,10 @@ if ($saldo < $angsuran){
                              
                  
         db_query ($con,"INSERT INTO pinjaman_detail (id,id_pinjam,cicilan,angsuran_pokok,bunga,tgl_jatuh_tempo,tgl_bayar,jumlah_bayar,ket,cif,unit,ao)
-                values('$new_id','$no_anggota','$urut','$pokok','$ijaroh','$next_schedule1-1','','0','JATPO','$cif','$unit','$cao')");
+                values('$new_id','$no_anggota','$urut','$pokok','$ijaroh','$next_schedule1','','0','JATPO','$cif','$unit','$cao')");
      
                     db_query ($con,"INSERT INTO pinjaman_detail_jatpo(id,id_pinjam,cicilan,angsuran_pokok,bunga,tgl_jatuh_tempo,tgl_bayar,jumlah_bayar,ket)
-                    VALUES('$new_id','$no_anggota','$urut','$pokok','$ijaroh','$next_schedule1-1','','','')");
+                    VALUES('$new_id','$no_anggota','$urut','$pokok','$ijaroh','$next_schedule1','','','')");
                           
                      
                 }else {
@@ -269,7 +273,7 @@ db_query ($con,"INSERT INTO pinjaman_detail_rencana(id,id_pinjam,cicilan,angsura
                  
  
 if ($saldo < $angsuran){    
-                db_query ($con,"Update loan set next_schedule='$next_schedule1-1',ke='$ke_tenor'+1 where cif  ='$cif'");
+                db_query ($con,"Update loan set next_schedule='$next_schedule1',ke='$ke_tenor'+1 where cif  ='$cif'");
                 $ke_n= db_fetch_array(db_query ($con,"select ke from loan WHERE cif ='$cif'"));
                 $ke_lagi=$ke_n['ke'];
                  
@@ -277,10 +281,10 @@ if ($saldo < $angsuran){
                              
                  
         db_query ($con,"INSERT INTO pinjaman_detail (id,id_pinjam,cicilan,angsuran_pokok,bunga,tgl_jatuh_tempo,tgl_bayar,jumlah_bayar,ket,cif,unit,ao)
-                values('$new_id','$no_anggota','$urut','$pokok','$ijaroh','$next_schedule1-1','','0','JATPO','$cif','$unit','$cao')");
+                values('$new_id','$no_anggota','$urut','$pokok','$ijaroh','$next_schedule1','','0','JATPO','$cif','$unit','$cao')");
      
                     db_query ($con,"INSERT INTO pinjaman_detail_jatpo(id,id_pinjam,cicilan,angsuran_pokok,bunga,tgl_jatuh_tempo,tgl_bayar,jumlah_bayar,ket)
-                    VALUES('$new_id','$no_anggota','$urut','$pokok','$ijaroh','$next_schedule1-1','','','')");
+                    VALUES('$new_id','$no_anggota','$urut','$pokok','$ijaroh','$next_schedule1','','','')");
                      
                      
                 }else {

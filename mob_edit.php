@@ -119,9 +119,15 @@ echo'Gagal :'.mysqli_connect_error();
                 $jenis        = $_POST['jenis'];
                 $cif        = $_POST['cif'];
                 $nominal       = str_replace ('.','',$_POST['nominal']);	
-                var_dump($cif);		
-                 
-                $insert= db_hasil_di($koneksi,"update cs set nominal =?, status_trans=? where cif =?", 'sss', $nominal, $jenis, $cif);
+                // 2026-11-16 (perintah user): var_dump($cif) sisa debug dibuang; hanya cs milik unit user login yang boleh
+                // diubah (dulu CIF unit lain bisa diubah nominalnya). Bukan milik unit -> pesan "Data Gagal Di Update".
+                // Unit diambil dari tagihan_cs.unit, sama dengan daftar mob-ajax-grid-data_trns.php yang membuka halaman ini.
+                $milik_unit = db_hasil_di($koneksi, "select 1 from tagihan_cs where cif =? and unit =? limit 1", 'ss', $cif, unit_user());
+                if ($milik_unit && mysqli_num_rows($milik_unit) > 0) {
+                    $insert= db_hasil_di($koneksi,"update cs set nominal =?, status_trans=? where cif =?", 'sss', $nominal, $jenis, $cif);
+                } else {
+                    $insert = false;
+                }
 				
 		
                

@@ -91,8 +91,9 @@ if ($cekbox) {
             db_jalankan("insert  into tabel_transaksi(unit,kode_transaksi,kode_rekening,tanggal_transaksi, jenis_transaksi, keterangan_transaksi,kredit,id_admin)
                     values(?,?,'1431000',?,'Bukti SYSTEM',?,?,?)", 'ssssss', (string) $unit, (string) $kode_trans, (string) $tgl_system, (string) $ket, (string) $Plafond, (string) $userid);
            
-            // versi lama menulis '$$tgl_system' (tanda $ ikut terkirim di depan tanggal); dipertahankan
-            db_jalankan("insert into jurnal_umum(nomor_jurnal,kode_transaksi,tanggal_selesai,unit) values(?,?,?,?)", 'ssss', (string) (isset($nomor_jurnal) ? $nomor_jurnal : ''), (string) $kode_trans, '$' . $tgl_system, (string) $unit);
+            // §2 (2026-11-16, perintah user): versi lama menulis '$$tgl_system' (tanda $ ikut terkirim di depan tanggal)
+            // sehingga tanggal_selesai tersimpan 0000-00-00. Kini tanggal sistem, sama dengan jurnal pertama di atas.
+            db_jalankan("insert into jurnal_umum(nomor_jurnal,kode_transaksi,tanggal_selesai,unit) values(?,?,?,?)", 'ssss', (string) (isset($nomor_jurnal) ? $nomor_jurnal : ''), (string) $kode_trans, (string) $tgl_system, (string) $unit);
             //Realisasi Piutang Margin   
             db_jalankan("insert  into tabel_transaksi(unit,kode_transaksi,kode_rekening,tanggal_transaksi, jenis_transaksi, keterangan_transaksi,debet,id_admin)
                 values(?,?,'1413000',?,'Bukti SYSTEM',?,?,?)", 'ssssss', (string) $unit, (string) $kode_trans, (string) $tgl_system, (string) $ket, (string) $piutang, (string) $userid);

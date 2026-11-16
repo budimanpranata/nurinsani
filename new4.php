@@ -23,6 +23,9 @@ if (!isset($_SESSION['userid'])) {
     exit;
 }
 
+// 2026-11-16 (perintah user): lead hanya membuka pengajuan unit di areanya (dulu CIF dari URL area mana pun bisa)
+wajib_cif_area($cif);
+
 $a = db_satu("select * from anggota where cif =?", 's', $cif);
 $r = db_satu("select * from calon_loan where cif =?", 's', $cif);
 $ag = function ($k) use ($a) {

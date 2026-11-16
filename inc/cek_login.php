@@ -114,6 +114,30 @@ function wajib_cif_unit($cif)
     if ($unit !== '' && $loan && (string) $loan['unit'] === $unit) {
         return;
     }
+    tolak_akses('anggota tidak terdaftar di unit Anda.');
+}
+
+/**
+ * Pengaman area lead (2026-11-16, perintah user: lead hanya pengajuan unit di areanya, branch.code_area = kode lead).
+ * calon_loan.unit harus unit di area lead (kode area = userid lead, sama dengan modul lead/ dan hitungan total
+ * Approval Pengajuan). Selain itu HTTP 403, isi halaman tidak dimuat.
+ *
+ *   wajib_cif_area($cif);
+ */
+function wajib_cif_area($cif)
+{
+    $area = isset($_SESSION['userid']) ? (string) $_SESSION['userid'] : '';
+    $ada = $area === '' ? null : db_satu('SELECT 1 AS ada FROM calon_loan c INNER JOIN branch b ON b.kode_branch = c.unit
+        WHERE c.cif = ? AND b.code_area = ? LIMIT 1', 'ss', (string) $cif, $area);
+    if ($ada) {
+        return;
+    }
+    tolak_akses('pengajuan anggota ini bukan dari unit di area Anda.');
+}
+
+/** Hentikan request dengan HTTP 403 dan pesan "Akses ditolak: ...". */
+function tolak_akses($pesan)
+{
     while (ob_get_level() > 0) {
         ob_end_clean();
     }
@@ -123,7 +147,7 @@ function wajib_cif_unit($cif)
         header('Content-Type: text/html; charset=utf-8');
     }
     echo '<!DOCTYPE html><html><head><meta charset="utf-8"><title>Akses ditolak</title></head><body>'
-        . '<p style="font-family:sans-serif">Akses ditolak: anggota tidak terdaftar di unit Anda.</p>'
+        . '<p style="font-family:sans-serif">Akses ditolak: ' . htmlspecialchars($pesan, ENT_QUOTES, 'UTF-8') . '</p>'
         . '</body></html>';
     exit;
 }

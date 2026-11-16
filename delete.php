@@ -26,7 +26,8 @@ $tabel_tagihan = array(
 );
 if (isset($tabel_tagihan[$jenis])) {
     $t = $tabel_tagihan[$jenis];
-    @db_hasil_di($config_dua, "delete pull_data, $t from pull_data inner join $t on $t.cif = pull_data.cif  where pull_data.cif = ? ", 's', $cif);
+    // 2026-11-16 (perintah user): hanya data tarikan unit user login (dulu CIF unit lain bisa dihapus lewat URL)
+    @db_hasil_di($config_dua, "delete pull_data, $t from pull_data inner join $t on $t.cif = pull_data.cif  where pull_data.cif = ? and pull_data.unit = ? ", 'ss', $cif, unit_user());
 }
 
 

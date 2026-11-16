@@ -42,36 +42,37 @@ $columns = array(
 
 // getting total number records without any search
 $sql = "SELECT unit,tagihan_cs.tgl_tagih as tgl_tagih,cs.nama_kel as nama_kel,tagihan_cs.cif as cif,cs.nama as nama,tagihan_cs.bulat as bulat,nominal, status_trans";
-$sql.=" FROM cs left join tagihan_cs on cs.cif = tagihan_cs.cif where unit ='$userid'";
-$query=db_query($conn, $sql) or die("ajax-grid-data_trns.php: get InventoryItems");
+$sql.=" FROM cs left join tagihan_cs on cs.cif = tagihan_cs.cif where unit = ?";
+$query=db_hasil_di($conn, $sql, 's', (string) $userid) or die("ajax-grid-data_trns.php: get InventoryItems");
 $totalData = db_num_rows($query);
 $totalFiltered = $totalData;  // when there is no search parameter then total number rows = total number filtered rows.
 
 
+// 2026-11-16 (perintah user): urutan/halaman dibatasi ke nilai sah (dulu ditempel langsung ke SQL)
+$kol_urut = isset($requestData['order'][0]['column'], $columns[(int) $requestData['order'][0]['column']]) ? $columns[(int) $requestData['order'][0]['column']] : 'unit';
+$arah_urut = (isset($requestData['order'][0]['dir']) && strtolower((string) $requestData['order'][0]['dir']) === 'desc') ? 'desc' : 'asc';
+$batas = " ORDER BY " . $kol_urut . "   " . $arah_urut . "   LIMIT " . max(0, (int) (isset($requestData['start']) ? $requestData['start'] : 0)) . " ," . max(0, (int) (isset($requestData['length']) ? $requestData['length'] : 10)) . "   ";
+
 if( !empty($requestData['search']['value']) ) {
-	// if there is a search parameter
+	// 2026-11-16 (perintah user): pencarian dulu tanpa filter unit (data unit lain tampil) dan nilai cari ditempel
+	// langsung ke SQL (SQL injection). Kini prepared statement + tetap hanya unit user login.
+	$cari = (string) $requestData['search']['value'] . '%';
 	$sql = "SELECT unit,tagihan_cs.tgl_tagih as tgl_tagih,cs.nama_kel as nama_kel,tagihan_cs.cif as cif,cs.nama as nama,tagihan_cs.bulat as bulat,nominal, status_trans";
     $sql.=" FROM cs left join tagihan_cs on cs.cif = tagihan_cs.cif ";
-    $sql.=" WHERE unit  LIKE '".$requestData['search']['value']."%'  ";  
-    $sql.=" OR cs.nama_kel LIKE '".$requestData['search']['value']."%'  ";
-	$sql.=" OR cs.nama LIKE '".$requestData['search']['value']."%'  ";    // $requestData['search']['value'] contains search parameter
-	$sql.=" OR tagihan_cs.cif  LIKE '".$requestData['search']['value']."%'  ";
-    $sql.=" OR status_trans  LIKE '".$requestData['search']['value']."%'  ";
-	
-	$query=db_query($conn, $sql) or die("mob-ajax-grid-data_trns.php: get PO");
-	$totalFiltered = db_num_rows($query); // when there is a search parameter then we have to modify total number filtered rows as per search result without limit in the query 
+    $sql.=" WHERE unit = ? AND (unit LIKE ? OR cs.nama_kel LIKE ? OR cs.nama LIKE ? OR tagihan_cs.cif LIKE ? OR status_trans LIKE ?) ";
 
-	$sql.=" ORDER BY ". $columns[$requestData['order'][0]['column']]."   ".$requestData['order'][0]['dir']."   LIMIT ".$requestData['start']." ,".$requestData['length']."   "; // $requestData['order'][0]['column'] contains colmun index, $requestData['order'][0]['dir'] contains order such as asc/desc , $requestData['start'] contains start row number ,$requestData['length'] contains limit length.
-	$query=db_query($conn, $sql) or die("mob-ajax-grid-data_trns.php: get PO"); // again run query with limit
-	
-} else {	
+	$query=db_hasil_di($conn, $sql, 'ssssss', (string) $userid, $cari, $cari, $cari, $cari, $cari) or die("mob-ajax-grid-data_trns.php: get PO");
+	$totalFiltered = db_num_rows($query); // when there is a search parameter then we have to modify total number filtered rows as per search result without limit in the query
+
+	$query=db_hasil_di($conn, $sql . $batas, 'ssssss', (string) $userid, $cari, $cari, $cari, $cari, $cari) or die("mob-ajax-grid-data_trns.php: get PO"); // again run query with limit
+
+} else {
 
 	$sql = "SELECT unit,tagihan_cs.tgl_tagih as tgl_tagih,cs.nama_kel as nama_kel,tagihan_cs.cif as cif,cs.nama as nama,tagihan_cs.bulat as bulat,nominal, status_trans";
-$sql.=" FROM cs left join tagihan_cs on cs.cif = tagihan_cs.cif where unit ='$userid'" ;
+$sql.=" FROM cs left join tagihan_cs on cs.cif = tagihan_cs.cif where unit = ?" ;
 
-	$sql.=" ORDER BY ". $columns[$requestData['order'][0]['column']]."   ".$requestData['order'][0]['dir']."   LIMIT ".$requestData['start']." ,".$requestData['length']."   ";
-	$query=db_query($conn, $sql) or die("mob-ajax-grid-data_trns.php: get PO");
-	
+	$query=db_hasil_di($conn, $sql . $batas, 's', (string) $userid) or die("mob-ajax-grid-data_trns.php: get PO");
+
 }
 
 $data = array();

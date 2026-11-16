@@ -100,7 +100,9 @@ left join nisbah on nisbah.cif = calon_loan.cif
                 db_query($con,"insert  into tabel_transaksi(unit,kode_transaksi,kode_rekening,tanggal_transaksi, jenis_transaksi, keterangan_transaksi,kredit,id_admin)
                         values('$unit','$kode_trans','1120000','$tgl_system','Bukti SYSTEM','$ket','$Plafond','$userid')");
                
-               db_query($con,"insert into rekap_nsibah(cif,nisbah,omzet,tgl_realisasi) values('$cif','$nisbah','$omzet','$tgl_system')");
+               // §1 (2026-11-16, perintah user): dulu ke tabel salah ketik rekap_nsibah (tidak ada) sehingga nisbah tidak pernah
+               // tercatat; kini rekap_nisbah, sama dengan realisasi manual (realisasi_musyarakah.php).
+               db_query($con,"insert into rekap_nisbah(cif,nisbah,omzet,tgl_realisasi) values('$cif','$nisbah','$omzet','$tgl_system')");
          
         db_query($con,"delete from loan  WHERE cif ='$cif'");
         db_query($con,"delete from tunggakan  WHERE cif ='$cif'");

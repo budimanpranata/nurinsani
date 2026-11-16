@@ -16,11 +16,14 @@ $tanggal="2024-05-27";
  $cek= db_fetch_array(db_query($con,"select param_tgl from param_tgl WHERE nama_param_tgl ='EOD_MOB'"));
 $tanggal = $cek['param_tgl']; 
 //$tanggal="2026-04-14";         
-$select = db_query ($con,"Select tunggakan_mob.cif as cif,loan.angsuran,loan.cao,Cust_Short_name,loan.os as os,deal_produk,loan.saldo_margin as saldo_margin,
+// 2026-11-16 (perintah user): DATE_ADD(next_schedule) ditambahkan dan $next_schedule1 diisi; dulu tidak pernah diisi sehingga
+// loan.next_schedule anggota menunggak tertimpa 0000-00-00 (sama dengan proses_eod_debet_lebaran.php)
+$select = db_query ($con,"Select DATE_ADD(loan.next_schedule,INTERVAL 7 DAY) as next_schedule,tunggakan_mob.cif as cif,loan.angsuran,loan.cao,Cust_Short_name,loan.os as os,deal_produk,loan.saldo_margin as saldo_margin,
 no_anggota as norek ,code_kel,status_app,loan.pokok,run_tenor,loan.unit, loan.bulat as bulat,loan.ijaroh as ijaroh,nominal
 from tunggakan_mob left join loan on loan.cif = tunggakan_mob.cif where nominal > 0 and tgl_tagih ='$tanggal' ");
 while($data = db_fetch_array($select)){
- 
+
+        $next_schedule1=$data['next_schedule'];
         $norek=$data['norek'];
         $no_anggota=$data['norek'];
         $unit=$data ['unit'];
@@ -117,7 +120,9 @@ if($status_app == 'REST'){
 
 
 if ($saldo < $angsuran){    
-        db_query($con,"Update loan set next_schedule='$next_schedule1-1',ke='$ke_tenor'+1 where cif  ='$cif'");
+        // §2b (2026-11-16, perintah user): dulu tanggal ditulis '<tanggal>-1' yang tersimpan sebagai jam 01:00:00
+        // (cetak CS yang mencocokkan tanggal tidak menemukan baris itu); kini tanggal murni tanpa '-1'.
+        db_query($con,"Update loan set next_schedule='$next_schedule1',ke='$ke_tenor'+1 where cif  ='$cif'");
                          
         //mysql_query("insert  into tunggakan (tgl_tunggak,NOREK,UNIT,CIF,CODE_KEL,DEBIT,TYPE,KREDIT,USERID,REFF,CAO,blok)VALUES('$tanggal','$no_anggota','$unit','$cif','$code_kel','0','01','$pokok','$userid','$ket','$cao','') ") or die(mysql_error("GAGAL INPUT"));
        
@@ -189,7 +194,7 @@ db_query($con,"INSERT INTO pinjaman_detail_rencana(id,id_pinjam,cicilan,angsuran
          
 
 if ($saldo < $angsuran){    
-        db_query($con,"Update loan set next_schedule='$next_schedule1-1',ke='$ke_tenor'+1 where cif  ='$cif'");
+        db_query($con,"Update loan set next_schedule='$next_schedule1',ke='$ke_tenor'+1 where cif  ='$cif'");
         $ke_n= mysql_fetch_array(mysql_query("select ke from loan WHERE cif ='$cif'"));
         $ke_lagi=$ke_n['ke'];
          
@@ -272,7 +277,7 @@ $cek_omzet= db_fetch_array(db_query($con,"SELECT nominal from omzet WHERE tangga
                      db_query ($con,"Update  pinjaman_detail_mus set nisbah_anggota ='$nisbah_mus',tgl_bayar='$tanggal' where id_pinjam  ='$norek' and cicilan='$pb'");
                        
 if ($saldo < $angsuran){    
-        db_query($con,"Update loan set next_schedule='$next_schedule1-1',ke='$ke_tenor'+1 where cif  ='$cif'");
+        db_query($con,"Update loan set next_schedule='$next_schedule1',ke='$ke_tenor'+1 where cif  ='$cif'");
         $ke_n= mysql_fetch_array(mysql_query("select ke from loan WHERE cif ='$cif'"));
         $ke_lagi=$ke_n['ke'];
          
@@ -349,7 +354,7 @@ if ($saldo < $angsuran){
          
 
 if ($saldo < $angsuran){    
-    db_query($con,"Update loan set next_schedule='$next_schedule1-1',ke='$ke_tenor'+1 where cif  ='$cif'");
+    db_query($con,"Update loan set next_schedule='$next_schedule1',ke='$ke_tenor'+1 where cif  ='$cif'");
         $ke_n= db_fetch_array(db_query($con,"select ke from loan WHERE cif ='$cif'"));
         $ke_lagi=$ke_n['ke'];
          

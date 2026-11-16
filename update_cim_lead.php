@@ -27,6 +27,9 @@ $pos = function ($k) {
 $code_kel = $pos('code_kel');
 $cao = $pos('code_ao');
 $cif = $pos('cif');
+// 2026-11-16 (perintah user): lead hanya meng-approve pengajuan unit di areanya (branch.code_area = kode lead)
+require_once __DIR__ . '/inc/cek_login.php';
+wajib_cif_area($cif);
 $nama = $pos('nama');
 $nama1 = $pos('wali');
 

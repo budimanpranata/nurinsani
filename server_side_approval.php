@@ -2,9 +2,9 @@
 /**
  * Sumber data DataTables (protokol lama: sEcho/iDisplayStart/sSearch, POST) untuk Approval Pengajuan
  * (data_approval.php, level lead). Daftar calon_loan dengan gol='0'.
- * Logika sama dengan versi lama; query kini prepared statement dan isi sel di-escape HTML. Perilaku lama yang
- * dipertahankan (PEKERJAAN_TERTUNDA.md bagian 38): daftar tidak disaring per area lead, sedangkan iTotalRecords
- * dihitung dari calon_loan di area lead (tanpa syarat gol).
+ * Logika sama dengan versi lama; query kini prepared statement dan isi sel di-escape HTML. Sejak 2026-11-16 (perintah
+ * user) daftar disaring per area lead (calon_loan.unit di branch.code_area = kode lead). iTotalRecords tetap seperti
+ * versi lama: calon_loan di area lead (tanpa syarat gol).
  * Perubahan: wajib login (versi lama tanpa cek login); tautan "delete" dihapus karena tidak pernah berfungsi
  * (memanggil deleteUser dengan id kosong ke crud.php milik menu Tagihan; menu Tagihan level unit beserta
  * m_tagih.php/crud.php/serverSide.php di root sudah dihapus 2026-11-04 karena tidak dipakai).
@@ -70,6 +70,10 @@ for ($i = 0; $i < $iColumnCount; $i++) {
         $nilai[] = '%' . $ambil('sSearch_' . $i) . '%';
     }
 }
+// 2026-11-16 (perintah user): daftar hanya pengajuan unit di area lead (branch.code_area = kode lead); dulu semua area
+$aFilteringRules[] = "unit IN (SELECT kode_branch FROM branch WHERE code_area = ?)";
+$tipe .= 's';
+$nilai[] = $userid;
 $sWhere = $aFilteringRules ? " WHERE gol ='0' AND  " . implode(" AND ", $aFilteringRules) : " WHERE gol ='0'";
 
 $rResult = db_semua("SELECT `" . implode("`, `", $aColumns) . "` FROM calon_loan" . $sWhere . $sOrder . $sLimit, $tipe, ...$nilai);

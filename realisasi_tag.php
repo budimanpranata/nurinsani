@@ -127,7 +127,9 @@ if($status_app == 'REST'){
  
  
 if ($saldo < $angsuran){    
-                db_jalankan("Update loan set next_schedule=?,ke=?+1 where no_anggota  =?", 'sss', $next_schedule1 . '-1', (string) $ke_tenor, (string) $value) or die(mysql_error());
+                // §2b (2026-11-16, perintah user): dulu tanggal ditulis '<tanggal>-1' yang tersimpan sebagai jam 01:00:00
+                // (cetak CS yang mencocokkan tanggal tidak menemukan baris itu); kini tanggal murni tanpa '-1'.
+                db_jalankan("Update loan set next_schedule=?,ke=?+1 where no_anggota  =?", 'sss', (string) $next_schedule1, (string) $ke_tenor, (string) $value) or die(mysql_error());
                                  
                 //mysql_query("insert  into tunggakan (tgl_tunggak,NOREK,UNIT,CIF,CODE_KEL,DEBIT,TYPE,KREDIT,USERID,REFF,CAO,blok)VALUES('$tanggal','$no_anggota','$unit','$cif','$code_kel','0','01','$pokok','$userid','$ket','$cao','') ") or die(mysql_error("GAGAL INPUT"));
                
@@ -202,7 +204,7 @@ db_jalankan("INSERT INTO pinjaman_detail_rencana(id,id_pinjam,cicilan,angsuran_p
                  
  
 if ($saldo < $angsuran){    
-                db_jalankan("Update loan set next_schedule=?,ke=?+1 where no_anggota  =?", 'sss', $next_schedule1 . '-1', (string) $ke_tenor, (string) $value) or die(mysql_error());
+                db_jalankan("Update loan set next_schedule=?,ke=?+1 where no_anggota  =?", 'sss', (string) $next_schedule1, (string) $ke_tenor, (string) $value) or die(mysql_error());
                 $ke_n=db_satu("select ke from loan WHERE cif =?", 's', (string) $cif) or die(mysql_error());
                 $ke_lagi=$ke_n['ke'];
                  
@@ -213,10 +215,10 @@ if ($saldo < $angsuran){
                              
                  
         db_jalankan("INSERT INTO pinjaman_detail (id,id_pinjam,cicilan,angsuran_pokok,bunga,tgl_jatuh_tempo,tgl_bayar,jumlah_bayar,ket,cif,unit,ao)
-                values(?,?,?,?,?,?,'','0','JATPO',?,?,?)", 'sssssssss', (string) $new_id, (string) $no_anggota, (string) $urut, (string) $pokok, (string) $ijaroh, $next_schedule1 . '-1', (string) $cif, (string) $unit, (string) $cao) or die(mysql_error());
+                values(?,?,?,?,?,?,'','0','JATPO',?,?,?)", 'sssssssss', (string) $new_id, (string) $no_anggota, (string) $urut, (string) $pokok, (string) $ijaroh, (string) $next_schedule1, (string) $cif, (string) $unit, (string) $cao) or die(mysql_error());
      
                     db_jalankan("INSERT INTO pinjaman_detail_jatpo(id,id_pinjam,cicilan,angsuran_pokok,bunga,tgl_jatuh_tempo,tgl_bayar,jumlah_bayar,ket)
-                    VALUES(?,?,?,?,?,?,'','','')", 'ssssss', (string) $new_id, (string) $no_anggota, (string) $urut, (string) $pokok, (string) $ijaroh, $next_schedule1 . '-1');
+                    VALUES(?,?,?,?,?,?,'','','')", 'ssssss', (string) $new_id, (string) $no_anggota, (string) $urut, (string) $pokok, (string) $ijaroh, (string) $next_schedule1);
                     //mysql_query("Update  loan set next_schedule ='$next_schedule1-1',ke=ke+1 where no_anggota  ='" . $value . "'") or die(mysql_error("GAGAL INPUT"));
                     //mysql_query("delete from tunggakan where cif ='$cif' and tgl_tunggak ='$tanggal' ");
                      
@@ -308,7 +310,7 @@ db_jalankan("insert  into tabel_transaksi(unit,kode_transaksi,kode_rekening,tang
                  
  
 if ($saldo < $angsuran){    
-                db_jalankan("Update loan set next_schedule=?,ke=?+1 where no_anggota  =?", 'sss', $next_schedule1 . '-1', (string) $ke_tenor, (string) $value) or die(mysql_error());
+                db_jalankan("Update loan set next_schedule=?,ke=?+1 where no_anggota  =?", 'sss', (string) $next_schedule1, (string) $ke_tenor, (string) $value) or die(mysql_error());
                 $ke_n=db_satu("select ke from loan WHERE cif =?", 's', (string) $cif) or die(mysql_error());
                 $ke_lagi=$ke_n['ke'];
                  
@@ -317,10 +319,10 @@ if ($saldo < $angsuran){
                              
                  
         db_jalankan("INSERT INTO pinjaman_detail (id,id_pinjam,cicilan,angsuran_pokok,bunga,tgl_jatuh_tempo,tgl_bayar,jumlah_bayar,ket,cif,unit,ao)
-                values(?,?,?,?,?,?,'','0','JATPO',?,?,?)", 'sssssssss', (string) $new_id, (string) $no_anggota, (string) $urut, (string) $pokok, (string) $ijaroh, $next_schedule1 . '-1', (string) $cif, (string) $unit, (string) $cao) or die(mysql_error());
+                values(?,?,?,?,?,?,'','0','JATPO',?,?,?)", 'sssssssss', (string) $new_id, (string) $no_anggota, (string) $urut, (string) $pokok, (string) $ijaroh, (string) $next_schedule1, (string) $cif, (string) $unit, (string) $cao) or die(mysql_error());
      
                     db_jalankan("INSERT INTO pinjaman_detail_jatpo(id,id_pinjam,cicilan,angsuran_pokok,bunga,tgl_jatuh_tempo,tgl_bayar,jumlah_bayar,ket)
-                    VALUES(?,?,?,?,?,?,'','','')", 'ssssss', (string) $new_id, (string) $no_anggota, (string) $urut, (string) $pokok, (string) $ijaroh, $next_schedule1 . '-1');
+                    VALUES(?,?,?,?,?,?,'','','')", 'ssssss', (string) $new_id, (string) $no_anggota, (string) $urut, (string) $pokok, (string) $ijaroh, (string) $next_schedule1);
                      
                      
                 }else {
@@ -537,7 +539,7 @@ db_jalankan("INSERT INTO pinjaman_detail_rencana(id,id_pinjam,cicilan,angsuran_p
                  
  
 if ($saldo < $angsuran){    
-                db_jalankan("Update loan set next_schedule=?,ke=?+1 where no_anggota  =?", 'sss', $next_schedule1 . '-1', (string) $ke_tenor, (string) $value) or die(mysql_error());
+                db_jalankan("Update loan set next_schedule=?,ke=?+1 where no_anggota  =?", 'sss', (string) $next_schedule1, (string) $ke_tenor, (string) $value) or die(mysql_error());
                 $ke_n=db_satu("select ke from loan WHERE cif =?", 's', (string) $cif) or die(mysql_error());
                 $ke_lagi=$ke_n['ke'];
                  
@@ -548,10 +550,10 @@ if ($saldo < $angsuran){
                              
                  
         db_jalankan("INSERT INTO pinjaman_detail (id,id_pinjam,cicilan,angsuran_pokok,bunga,tgl_jatuh_tempo,tgl_bayar,jumlah_bayar,ket,cif,unit,ao)
-                values(?,?,?,?,?,?,'','0','JATPO',?,?,?)", 'sssssssss', (string) $new_id, (string) $no_anggota, (string) $urut, (string) $pokok, (string) $ijaroh, $next_schedule1 . '-1', (string) $cif, (string) $unit, (string) $cao) or die(mysql_error());
+                values(?,?,?,?,?,?,'','0','JATPO',?,?,?)", 'sssssssss', (string) $new_id, (string) $no_anggota, (string) $urut, (string) $pokok, (string) $ijaroh, (string) $next_schedule1, (string) $cif, (string) $unit, (string) $cao) or die(mysql_error());
      
                     db_jalankan("INSERT INTO pinjaman_detail_jatpo(id,id_pinjam,cicilan,angsuran_pokok,bunga,tgl_jatuh_tempo,tgl_bayar,jumlah_bayar,ket)
-                    VALUES(?,?,?,?,?,?,'','','')", 'ssssss', (string) $new_id, (string) $no_anggota, (string) $urut, (string) $pokok, (string) $ijaroh, $next_schedule1 . '-1');
+                    VALUES(?,?,?,?,?,?,'','','')", 'ssssss', (string) $new_id, (string) $no_anggota, (string) $urut, (string) $pokok, (string) $ijaroh, (string) $next_schedule1);
                     //mysql_query("Update  loan set next_schedule ='$next_schedule1-1',ke=ke+1 where no_anggota  ='" . $value . "'") or die(mysql_error("GAGAL INPUT"));
                     //mysql_query("delete from tunggakan where cif ='$cif' and tgl_tunggak ='$tanggal' ");
                      
