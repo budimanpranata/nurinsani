@@ -48,11 +48,9 @@ if ($cekbox) {
 			$ijaroh=$row['ijaroh'];
 			$bulat=$row['bulat'];
 		
-			if ($suffix=1){
-				$ke=1;
-			}else{
-				$ke=((int)$suffix)+1;
-			}
+			// §2 (2026-11-17, perintah user): dulu `if ($suffix=1)` (penugasan, bukan perbandingan) sehingga suffic
+			// loan_detail selalu 1. Kini = pembiayaan ke- (calon_loan.suffix, sama dengan 2 digit akhir no_anggota); kosong -> 1.
+			$ke = ((int) $suffix > 0) ? (int) $suffix : 1;
 			
 			$usaha=$row['usaha'];
 			$unit=$row['unit'];

@@ -200,7 +200,9 @@ $nyata=abs(compat_num($nyata));
 	$nyata=$ft;
 	$nyata=abs(compat_num($nyata));
 }
-db_jalankan("insert into total_laris values(?,?)", 'ss', (string) (isset($kode_brach) ? $kode_brach : ''), (string) $nyata);
+// §3 (2026-11-17, perintah user): dulu salah ketik $kode_brach -> tersimpan unit kosong (tidak pernah terhapus oleh
+// 'delete ... where unit=$kode_branch' di atas, menumpuk). $laris hasil penjumlahannya tidak dicetak, jadi PDF tidak berubah.
+db_jalankan("insert into total_laris values(?,?)", 'ss', (string) $kode_branch, (string) $nyata);
 
 //query dan arraying
 $pdf->SetFont('Arial','',10);

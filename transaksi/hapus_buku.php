@@ -45,8 +45,14 @@ ob_start();
                 $nama=$_POST['nama']; // dikirim sebagai parameter, tidak perlu di-escape
                 $tot_wo=$margin+$pokok;
 
-                $data_cif=db_satu("select status_app from loan WHERE cif =?", 's', (string) $cif) or die(mysql_error());
+                $data_cif=db_satu("select status_app,cao,code_kel,no_anggota from loan WHERE cif =?", 's', (string) $cif) or die(mysql_error());
                 $status_app=$data_cif['status_app'];
+                // PEKERJAAN_TERTUNDA §2c (2026-11-17): versi lama tidak mengisi ketiganya di proses simpan,
+                // sehingga baris simpanan "Realisasi Hapus Buku" tersimpan dengan NOREK/CODE_KEL/CAO kosong.
+                // Nilainya diambil dari loan, sama seperti proses Selesai.
+                $cao=$data_cif['cao'];
+                $code_kel=$data_cif['code_kel'];
+                $no_anggota=$data_cif['no_anggota'];
                  
                      
         switch ($status_app) {
@@ -1172,14 +1178,17 @@ $query=db_jalankan("delete from tunggakan WHERE cif =?", 's', (string) $cif) or 
             }
 
             //untuk mendecode url yang di enrypsi
-            $var=decode($_SERVER['REQUEST_URI']);
-     
+            $var=strpos($_SERVER['REQUEST_URI'], '?') !== false ? decode($_SERVER['REQUEST_URI']) : array();
+
             //pecahkan nilai array
-            $mode=$var['mode'];
-            $id_transaksi=$var['id_transaksi'];
-             
+            $mode=isset($var['mode']) ? $var['mode'] : null;
+            $id_transaksi=isset($var['id_transaksi']) ? $var['id_transaksi'] : null;
+
             if($mode=='delete'){
-                $query=db_jalankan("delete from tabel_transaksi where id_transaksi=?", 's', (string) $id_transaksi);
+                // PEKERJAAN_TERTUNDA §2c (2026-11-17): hanya baris milik user ini pada nomor bukti yang sedang
+                // dibuka (= baris yang tampil di tabel). Versi lama: id apa pun, termasuk milik unit lain.
+                $query=db_jalankan("delete from tabel_transaksi where id_transaksi=? and id_admin=? and kode_transaksi=?", 'sss',
+                    (string) $id_transaksi, (string) $userid, (string) $kode_transaksi);
             }
 
 $pesan_proses = ob_get_clean();

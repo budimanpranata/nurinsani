@@ -33,7 +33,7 @@ foreach ($cekbox as $value) {
     $kode_tr = 5;
     $kode_tr = acakangkahuruf($kode_tr);
     $row = db_satu("select DATE_ADD(tgl_wakalah,INTERVAL 7 DAY) as tgl_murab1,DATE_ADD(tgl_akad,INTERVAL 26 WEEK) as matur,tgl_murab,tgl_akad,calon_loan.buss_date,calon_loan.code_kel,calon_loan.no_anggota,calon_loan.Cust_Short_name,maturity_date,
-        calon_loan.Deal_type,suffix,bagi_hasil,Tenor,Plafond,os,angsuran,pokok,ijaroh,bulat,ke,usaha,calon_loan.unit,tgl_wakalah,hari,calon_loan.cao,calon_loan.USERID,calon_loan.status,calon_loan.cif,nisbah
+        calon_loan.Deal_type,suffix,bagi_hasil,Tenor,Plafond,os,angsuran,pokok,ijaroh,bulat,ke,usaha,calon_loan.unit,tgl_wakalah,hari,calon_loan.cao,calon_loan.USERID,calon_loan.status,calon_loan.cif,nisbah,omzet
         from calon_loan
         inner join anggota on anggota.cif = calon_loan.cif
         left join nisbah on nisbah.cif = calon_loan.cif
@@ -57,18 +57,16 @@ foreach ($cekbox as $value) {
     $Tenor = $row['Tenor'];
     $os = $row['os'];
     $nisbah = $row['nisbah'];
+    $omzet = $row['omzet'];
     $angsuran = $row['angsuran'];
     $pokok = $row['pokok'];
     $ijaroh = $row['ijaroh'];
     $bulat = $row['bulat'];
     $maturity_date = $row['maturity_date'];
 
-    // sama dengan EOD (dan versi lama): kondisi berupa penugasan, sehingga $ke selalu 1
-    if ($suffix = 1) {
-        $ke = 1;
-    } else {
-        $ke = ((int) $suffix) + 1;
-    }
+    // §2 (2026-11-17, perintah user): dulu `if ($suffix=1)` (penugasan, bukan perbandingan) sehingga suffic
+    // loan_detail selalu 1. Kini = pembiayaan ke- (calon_loan.suffix, sama dengan 2 digit akhir no_anggota); kosong -> 1.
+    $ke = ((int) $suffix > 0) ? (int) $suffix : 1;
 
     $unit = $row['unit'];
     $hari = $row['hari'];
@@ -100,9 +98,10 @@ foreach ($cekbox as $value) {
         values(?,?,'1120000',?,'Bukti SYSTEM',?,?,?)", 'ssssss',
         (string) $unit, (string) $kode_trans, (string) $tgl_akad, (string) $ket, (string) $Plafond, (string) $userid);
 
-    // EOD mengisi omzet dari variabel yang tidak pernah diisi (kosong); dipertahankan
+    // §1 (2026-11-17, perintah user): omzet dari tabel nisbah, sama dengan EOD (proses_eod_realisasi_mus.php sejak
+    // commit 8c53af0). Dulu selalu kosong.
     db_jalankan("insert into rekap_nisbah(cif,nisbah,omzet,tgl_realisasi) values(?,?,?,?)", 'ssss',
-        (string) $cif, (string) $nisbah, '', (string) $tgl_akad);
+        (string) $cif, (string) $nisbah, (string) $omzet, (string) $tgl_akad);
 
     db_jalankan("delete from loan WHERE cif = ?", 's', (string) $cif);
     db_jalankan("delete from tunggakan WHERE cif = ?", 's', (string) $cif);
