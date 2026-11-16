@@ -34,6 +34,10 @@ function kerangka_aplikasi($opsi = array())
     $u = db_satu('SELECT nama FROM user WHERE userid = ?', 's', $userid);
     $nama = $u ? (string) $u['nama'] : '';
     $level = isset($_SESSION['level']) ? (string) $_SESSION['level'] : '';
+    // tanggal system (param_tgl unit) yang disimpan saat login di log.php ($_SESSION['stgl_system'])
+    $tgl_system = isset($_SESSION['stgl_system']) ? (string) $_SESSION['stgl_system'] : '';
+    $ts = $tgl_system !== '' ? strtotime($tgl_system) : false;
+    $tgl_system_fmt = $ts ? date('d-m-Y', $ts) : $tgl_system;
     ?>
 <!DOCTYPE html>
 <html lang="id">
@@ -63,6 +67,12 @@ function kerangka_aplikasi($opsi = array())
     <ol class="breadcrumb mb-0" id="jejak-menu"><li class="breadcrumb-item active">Home</li></ol>
   </nav>
   <div class="kerangka-pengguna">
+    <?php if ($tgl_system_fmt !== ''): ?>
+    <span class="kerangka-tgl d-none d-sm-inline-flex" title="Tanggal sistem yang digunakan">
+      <span class="tgl-ikon" aria-hidden="true">&#128197;</span>
+      <span class="tgl-teks"><small>Tgl Sistem</small><strong><?php echo h($tgl_system_fmt); ?></strong></span>
+    </span>
+    <?php endif; ?>
     <span class="pengguna-avatar" aria-hidden="true"><?php echo h(strtoupper(substr($nama !== '' ? $nama : $userid, 0, 1))); ?></span>
     <span class="pengguna-nama d-none d-md-inline">
       <strong><?php echo h($nama !== '' ? $nama : $userid); ?></strong>

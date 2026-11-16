@@ -104,28 +104,31 @@ elseif($tgl==$tgl_eod){
         // satu sesi per user + awal hitung idle (inc/penjaga_sesi.php)
         sesi_tandai_login($c['userid']);
 
-        if($c['level']=="lead"){
-		 $update_log = mysql_query("UPDATE user SET status ='1' WHERE userid= '$userid'");
-		 header("location:lead/homelead.php");
-		 }else if($c['level']=="gfh"){
-		 header("location:gfh/homesmo.php");
-		}else if($c['level']=="um"){
-		 header("location:um/homesms.php");
-		 }else if($c['level']=="fund"){
-		 header("location:fund/fund.php");
-		 }else if($c['level']=="afh"){
-		 header("location:afh/homeao.php");
-		 }else if($c['level']=="kp"){
-		 header("location:kp/kp.php");
-
-		 }else if($c['level']=="admin"){
-		 header("location:admin/admin.php");
-        	 }else if($c['level']=="ho"){
-		 header("location:ho/ho.php");
-        }else if($c['level']=="unit"){
-		$update_log = mysql_query("UPDATE user SET status ='1',tgl_open='$buss_date' WHERE userid= '$userid'");
-		include ("redirect.php");
-		     }
+        $tujuan = 'index.html';
+        if ($c['level'] == "lead") {
+            $update_log = mysql_query("UPDATE user SET status ='1' WHERE userid= '$userid'");
+            $tujuan = 'lead/homelead.php';
+        } else if ($c['level'] == "gfh") {
+            $tujuan = 'gfh/homesmo.php';
+        } else if ($c['level'] == "um") {
+            $tujuan = 'um/homesms.php';
+        } else if ($c['level'] == "fund") {
+            $tujuan = 'fund/fund.php';
+        } else if ($c['level'] == "afh") {
+            $tujuan = 'afh/homeao.php';
+        } else if ($c['level'] == "kp") {
+            $tujuan = 'kp/kp.php';
+        } else if ($c['level'] == "admin") {
+            $tujuan = 'admin/admin.php';
+        } else if ($c['level'] == "ho") {
+            $tujuan = 'ho/ho.php';
+        } else if ($c['level'] == "unit") {
+            $update_log = mysql_query("UPDATE user SET status ='1',tgl_open='$buss_date' WHERE userid= '$userid'");
+            $tujuan = 'redirect.php';
+        }
+        // notif tanggal system (dikembalikan 2026-11-16; dulu alert() lalu redirect JS, kini SweetAlert via notif_pergi)
+        notif_pergi('Parameter tanggal Unit adalah ' . $tgl, $tujuan, 'info');
+        exit;
 	}
 }else if($op=="out"){
     unset($_SESSION['userid']);

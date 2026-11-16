@@ -118,6 +118,37 @@ body.menu-terbuka .ikon-burger span:nth-child(3) { transform: translateY(-6px) r
     margin-left: auto;
 }
 
+.kerangka-tgl {
+    align-items: center;
+    gap: .4rem;
+    padding: .15rem .65rem;
+    border: 1px solid rgba(255, 255, 255, .35);
+    border-radius: 2rem;
+    background: rgba(255, 255, 255, .1);
+    line-height: 1.1;
+}
+
+.kerangka-tgl .tgl-ikon {
+    font-size: 1rem;
+}
+
+.kerangka-tgl .tgl-teks {
+    display: flex;
+    flex-direction: column;
+}
+
+.kerangka-tgl small {
+    font-size: .625rem;
+    color: rgba(255, 255, 255, .7);
+    text-transform: uppercase;
+    letter-spacing: .03em;
+}
+
+.kerangka-tgl strong {
+    font-size: .8rem;
+    white-space: nowrap;
+}
+
 .pengguna-avatar {
     display: inline-grid;
     place-items: center;
