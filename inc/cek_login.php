@@ -84,3 +84,46 @@ function wajib_level($level)
         . '</body></html>';
     exit;
 }
+
+/**
+ * Unit (user.kode_branch) milik user yang login; '' bila tidak ada. Butuh koneksi_db.php.
+ */
+function unit_user()
+{
+    static $unit = null;
+    if ($unit === null) {
+        $u = isset($_SESSION['userid'])
+            ? db_satu('SELECT kode_branch FROM user WHERE userid = ?', 's', (string) $_SESSION['userid'])
+            : null;
+        $unit = $u ? (string) $u['kode_branch'] : '';
+    }
+    return $unit;
+}
+
+/**
+ * Pengaman kepemilikan data (2026-11-16, perintah user): anggota (loan.unit) harus milik unit user login.
+ * Untuk halaman yang menerima CIF dari URL/form; wajib_level('unit') hanya memastikan user berlevel unit,
+ * bukan bahwa anggotanya milik unit user. Bukan milik unit / tidak ada di loan -> HTTP 403, isi halaman tidak dimuat.
+ *
+ *   wajib_cif_unit($cif);
+ */
+function wajib_cif_unit($cif)
+{
+    $unit = unit_user();
+    $loan = db_satu('SELECT unit FROM loan WHERE cif = ? LIMIT 1', 's', (string) $cif);
+    if ($unit !== '' && $loan && (string) $loan['unit'] === $unit) {
+        return;
+    }
+    while (ob_get_level() > 0) {
+        ob_end_clean();
+    }
+    if (!headers_sent()) {
+        http_response_code(403);
+        header('Cache-Control: no-store');
+        header('Content-Type: text/html; charset=utf-8');
+    }
+    echo '<!DOCTYPE html><html><head><meta charset="utf-8"><title>Akses ditolak</title></head><body>'
+        . '<p style="font-family:sans-serif">Akses ditolak: anggota tidak terdaftar di unit Anda.</p>'
+        . '</body></html>';
+    exit;
+}

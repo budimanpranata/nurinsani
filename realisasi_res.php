@@ -19,6 +19,9 @@ $cif=$_GET['cif'];
 
 include "function.php";
 
+// 2026-11-16 (perintah user): CIF dari URL harus anggota unit user login (dulu bisa diganti ke anggota unit lain)
+wajib_cif_unit($cif);
+
 // §2e (2026-11-16, perintah user): cegah realisasi ganda (klik ganda / Back / cari ulang lalu Disburse lagi).
 // Kunci per CIF: klik kedua yang masuk bersamaan menunggu sampai klik pertama selesai, lalu tertolak cek di bawah.
 // Kunci lepas otomatis saat koneksi ditutup di akhir request.

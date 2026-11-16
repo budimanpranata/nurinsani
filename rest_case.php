@@ -35,7 +35,9 @@ $tenor = isset($_POST['tenor']) ? $_POST['tenor'] : null;
 $pilih = isset($_POST['pilih']) ? $_POST['pilih'] : null;
 $nominal = isset($_POST['nominal']) ? $_POST['nominal'] : null;
 
-$kel = db_semua("select CODE_KEL,CIF,UNIT,CUST_SHORT_NAME,CAO FROM loan where no_anggota =?", 's', (string) $norek);
+// 2026-11-16 (perintah user): hanya rekening anggota unit user login (dulu rekening unit lain ikut ditemukan)
+require_once __DIR__ . '/inc/cek_login.php';
+$kel = db_semua("select CODE_KEL,CIF,UNIT,CUST_SHORT_NAME,CAO FROM loan where no_anggota =? and unit =?", 'ss', (string) $norek, unit_user());
 $kkel = $kel ? $kel[0] : null;
 $ciff = $kkel ? $kkel['CIF'] : null;
 

@@ -19,7 +19,8 @@ $tanggal=$_SESSION['stanggal'];
 include "conn2.php";
 include "function.php";
 $koneksi=open_connection2();
-$cif = $_GET['cif'];  
+$cif = $_GET['cif'];
+wajib_cif_unit($cif); // 2026-11-16 (perintah user): CIF dari URL harus anggota unit user login
 
 $buss_date=date("y-m-d");
 $buss_date1=getdate();

@@ -36,7 +36,9 @@ $pilih = isset($_POST['pilih']) ? $_POST['pilih'] : null;
 $nominal = isset($_POST['nominal']) ? $_POST['nominal'] : null;
 $tanggal = isset($_POST['tanggal']) ? $_POST['tanggal'] : null;
 
-$kkel = db_satu("select CODE_KEL,CIF,UNIT,CUST_SHORT_NAME,CAO FROM anggota where  norek =?", 's', (string) $norek);
+// 2026-11-16 (perintah user): hanya rekening anggota unit user login (dulu rekening unit lain ikut ditemukan)
+require_once __DIR__ . '/inc/cek_login.php';
+$kkel = db_satu("select CODE_KEL,CIF,UNIT,CUST_SHORT_NAME,CAO FROM anggota where  norek =? and UNIT =?", 'ss', (string) $norek, unit_user());
 $ciff = $kkel ? $kkel['CIF'] : null;
 
 /** Bulatkan angsuran ke ribuan seperti versi lama (sisa >= 500 dibulatkan biasa, selain itu naik 1000). */

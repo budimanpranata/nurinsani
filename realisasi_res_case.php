@@ -16,6 +16,7 @@ $wadiah=$_SESSION['swadiah'];
 $pla=$_SESSION['snominal'];
 $tenor=$_SESSION['stenor'];	
 $cif=$_GET['cif'];
+wajib_cif_unit($cif); // 2026-11-16 (perintah user): CIF dari URL harus anggota unit user login
 
 	
 include "function.php";
