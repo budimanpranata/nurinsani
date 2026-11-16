@@ -117,7 +117,9 @@ $status_app=$status_app1;
     );
 
 /* Ini untuk mengecek Bila Tanggal Libur */
-	if ($Newmurab = $param){
+	// §2j (2026-11-16, perintah user): versi lama "if ($Newmurab = $param)" (penugasan). $param hanya berisi $murab1
+	// (= $Newmurab) bila tanggal itu libur, atau null bila bukan, sehingga hasilnya sama persis dengan perbandingan ini.
+	if ($Newmurab == $param){
 			$murab =  date("Y-m-d", strtotime("+2 week", $tgl_wakal));
 	}else {
 			$murab =  date("Y-m-d", strtotime("+7 day", $tgl_wakal));
@@ -184,10 +186,13 @@ db_jalankan("replace into nisbah (cif,nisbah,omzet)values(?,?,?)", 'sss', (strin
 
 				} else {
 							
-						echo "<script> alert ('Parameter Pembiayaan tidak ditemukan')</script>";		
-
-						echo "<script language='javascript'>document.location.href='new2.php'</script>";									
-	
+						// Perbaikan §2j (2026-11-16, perintah user): versi lama hanya mencetak alert + pindah ke new2.php tetapi PHP
+						// tetap lanjut menyimpan, sehingga calon_loan tertimpa pokok/angsuran/os kosong dan jenis akad kosong
+						// (deal_produk selalu '3'). Kini berhenti di sini SEBELUM ada data yang disimpan, lalu kembali ke form
+						// (isian tetap). Jalur parameter ditemukan tidak berubah.
+						echo "<script> alert ('Parameter Pembiayaan tidak ditemukan')</script>";
+						echo "<script language='javascript'>history.back()</script>";
+						exit;
 				}
 
 
@@ -215,10 +220,18 @@ $count = db_semua("select max(no) AS last FROM anggota where  no LIKE ? and unit
 				values(?,?,?,?,?,?,?,'0','')", 'sssssss', (string) $d, (string) $no_anggota, (string) $x, (string) $pokok, (string) $ijaroh, (string) $awal_hari, (string) $awal) or die(mysql_error());
 				}
 
-					$cek_tanggal = db_semua("SELECT COUNT(tgl_libur) as libur from param_libur 
-					INNER join pinjaman_detail_c on pinjaman_detail_c.tgl_jatuh_tempo = param_libur.tgl_libur");
+					// §2j (2026-11-16, perintah user: bila ada libur maturity_date mundur sesuai jumlah libur):
+					// - hanya jadwal anggota ini (versi lama tanpa filter id_pinjam: jadwal user lain yang sedang simpan ikut terhitung);
+					// - libur pada tanggal murabahah awal ($murab1, yang membuat tgl_murab mundur di atas) ikut dihitung.
+					// Hasilnya sama dengan rumus input baru (inputlog.php: libur BETWEEN tgl_murab AND maturity_date).
+					$cek_tanggal = db_semua("SELECT COUNT(tgl_libur) as libur from param_libur
+					INNER join pinjaman_detail_c on pinjaman_detail_c.tgl_jatuh_tempo = param_libur.tgl_libur
+					WHERE pinjaman_detail_c.id_pinjam = ?", 's', (string) $no_anggota);
 					foreach ($cek_tanggal as $data_libur){
 					$libur =$data_libur['libur'];
+					}
+					if (!empty($param)) {
+						$libur = (int) $libur + 1;
 					}
 					db_jalankan("delete from pinjaman_detail_c where id_pinjam=?", 's', (string) $no_anggota);
 					//@mysql_query ("delete from pinjaman_detail where id_pinjam='$no_anggota'");
@@ -258,9 +271,20 @@ $input_loan = db_jalankan("REPLACE into calon_loan(buss_date,code_kel,no_anggota
 					(no,CODE_KEL,NOREK,BUSS_DATE,CIF,CUST_SHORT_NAME,UNIT,DEAL_TYPE,HADDRESS1,HADDRESS2,HADDRESS3,HPOST_CODE,HADDRESS4,HADDRESS5,MOBILE_PHONE,HOME_PHONE,GENDER,BIRTH_DATE,ID_NUMBER,CITIZENSHIP,MARITAL_STATUS,RELIGION,MOTHER_NAME,NPWP,SOURCE_INCOME,EDUCATION,TEMPAT_LAHIR,ID_EXPIRED,WARIS,CAO,USERID,status,pekerjaan_pasangan)
 					values
 					(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,'ANGGOTA',?)", 'ssssssssssssssssssssssssssssssss', (string) $no, (string) $code_kel, (string) $no_anggota, (string) $buss_date_anggota, (string) $cif, (string) $nama, (string) $branch, (string) $deal_type, (string) $alamat, (string) $lurah, (string) $kec, (string) $kode_pos, (string) $kota, (string) $rt, (string) $notlp, (string) $home_tlp, (string) $jenis_kel, (string) $tgl_lahir, (string) $ktp, (string) $negara, (string) $status_kawin, (string) $agama, (string) $ibu, (string) $npwp, (string) $usaha, (string) $pendidikan, (string) $tempat_lahir, (string) $id_expire, (string) $nama1, (string) $cao, (string) $userid, (string) $kerja);
-db_jalankan("delete from barang where cif=?", 's', (string) $cif);
-					$b = db_jalankan("replace into barang(id_barang,unit,cif,code_kel,barang_satu,harga_satu,barang_dua,harga_dua,barang_tiga,harga_tiga,barang_empat,harga_empat,barang_lima,harga_lima,barang_enam,harga_enam,barang_tujuh,harga_tujuh,barang_delapan,harga_delapan,barang_sembilan,harga_sembilan,barang_sepuluh,harga_sepuluh,userid) 
-					VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?) where id_barang =?", 'ssssssssssssssssssssssssss', (string) $no_anggota, (string) $branch, (string) $cif, (string) $code_kel, (string) $barang_satu, (string) $harga_satu, (string) $barang_dua, (string) $harga_dua, (string) $barang_tiga, (string) $harga_tiga, (string) $barang_empat, (string) $harga_empat, (string) $barang_lima, (string) $harga_lima, (string) $barang_enam, (string) $harga_enam, (string) $barang_tujuh, (string) $harga_tujuh, (string) $barang_delapan, (string) $harga_delapan, (string) $barang_sembilan, (string) $harga_sembilan, (string) $barang_sepuluh, (string) $harga_sepuluh, (string) $userid, (string) $no_anggota);
+					// Perbaikan §2j (2026-11-16, perintah user): versi lama memakai "REPLACE ... VALUES (...) WHERE id_barang=?" yang
+					// SQL-nya tidak valid, sehingga barang terhapus oleh DELETE lalu tidak pernah ditulis ulang. WHERE dibuang (REPLACE
+					// memakai primary key id_barang = no_anggota) dan DELETE + REPLACE dibungkus transaksi: bila REPLACE gagal,
+					// DELETE ikut dibatalkan sehingga barang lama tidak hilang. DELETE per CIF dipertahankan (satu baris barang per CIF).
+					$db_barang = db_ni();
+					$db_barang->begin_transaction();
+					$b = db_jalankan("delete from barang where cif=?", 's', (string) $cif)
+					  && db_jalankan("replace into barang(id_barang,unit,cif,code_kel,barang_satu,harga_satu,barang_dua,harga_dua,barang_tiga,harga_tiga,barang_empat,harga_empat,barang_lima,harga_lima,barang_enam,harga_enam,barang_tujuh,harga_tujuh,barang_delapan,harga_delapan,barang_sembilan,harga_sembilan,barang_sepuluh,harga_sepuluh,userid) 
+					VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)", 'sssssssssssssssssssssssss', (string) $no_anggota, (string) $branch, (string) $cif, (string) $code_kel, (string) $barang_satu, (string) $harga_satu, (string) $barang_dua, (string) $harga_dua, (string) $barang_tiga, (string) $harga_tiga, (string) $barang_empat, (string) $harga_empat, (string) $barang_lima, (string) $harga_lima, (string) $barang_enam, (string) $harga_enam, (string) $barang_tujuh, (string) $harga_tujuh, (string) $barang_delapan, (string) $harga_delapan, (string) $barang_sembilan, (string) $harga_sembilan, (string) $barang_sepuluh, (string) $harga_sepuluh, (string) $userid);
+					if ($b) {
+						$db_barang->commit();
+					} else {
+						$db_barang->rollback();
+					}
 					
 					$rekomendasi = db_jalankan("replace into rekomendasi (norek,cif,nominal)values(?,?,?)", 'sss', (string) $no_anggota, (string) $cif, (string) $rekomen);
 										

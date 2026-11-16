@@ -44,3 +44,32 @@ function password_cocok($isian, $tersimpan)
 {
     return password_cocok_md5(password_md5_lama($isian), $tersimpan);
 }
+
+/**
+ * Validasi kekuatan password baru pada isian MENTAH (yang diketik user, sebelum normalisasi/hash).
+ * Mengembalikan pesan error (string) bila tidak memenuhi, atau null bila lolos.
+ * Aturan: minimal $min karakter, memuat huruf kecil + huruf besar + angka + simbol; tidak sama dengan user name.
+ */
+function password_validasi($isian, $userid = '', $min = 8)
+{
+    $p = (string) $isian;
+    if (strlen($p) < $min) {
+        return 'Password baru minimal ' . $min . ' karakter.';
+    }
+    if (!preg_match('/[a-z]/', $p)) {
+        return 'Password baru harus memuat huruf kecil (a-z).';
+    }
+    if (!preg_match('/[A-Z]/', $p)) {
+        return 'Password baru harus memuat huruf besar (A-Z).';
+    }
+    if (!preg_match('/[0-9]/', $p)) {
+        return 'Password baru harus memuat angka (0-9).';
+    }
+    if (!preg_match('/[^a-zA-Z0-9]/', $p)) {
+        return 'Password baru harus memuat minimal satu simbol (mis. ! @ # $ % & *).';
+    }
+    if ($userid !== '' && strcasecmp($p, (string) $userid) === 0) {
+        return 'Password baru tidak boleh sama dengan user name.';
+    }
+    return null;
+}

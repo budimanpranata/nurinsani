@@ -4,7 +4,8 @@
  * GET q = awalan CIF, nama, atau nomor KTP. Hasil: JSON berisi label + nilai tiap isian form (kunci = id isian).
  * Kode AO: CAO calon_loan, bila kosong/tidak ada calon_loan diambil dari anggota.CAO (perbaikan 2026-11-01 atas laporan
  *   user: versi lama hanya dari calon_loan sehingga kosong untuk anggota tanpa calon_loan).
- * Sama dengan versi lama: no_anggota diambil dari calon_loan (menimpa NOREK), barang/harga ke-8 tidak ikut di-SELECT.
+ * Sama dengan versi lama: no_anggota diambil dari calon_loan (menimpa NOREK).
+ * Barang/harga ke-8 kini ikut di-SELECT (perbaikan §2j 2026-11-16; versi lama selalu kosong sehingga tertimpa kosong saat simpan).
  */
 session_start();
 header('Content-Type: application/json; charset=utf-8');
@@ -31,8 +32,8 @@ $awalan = $q . '%';
 // urutan AND/OR sama dengan versi lama
 $baris = db_semua("SELECT nama_kel,calon_loan.no_anggota,tgl_wakalah, anggota.CIF,anggota.CUST_SHORT_NAME,anggota.CODE_KEL,anggota.NOREK,anggota.UNIT,calon_loan.DEAL_TYPE,HADDRESS1,HADDRESS2,HADDRESS3,HADDRESS4,HADDRESS5,HPOST_CODE,MOBILE_PHONE,HOME_PHONE,GENDER,BIRTH_DATE,
     ID_NUMBER,CITIZENSHIP,TEMPAT_LAHIR,MARITAL_STATUS,RELIGION,MOTHER_NAME,NPWP,SOURCE_INCOME,EDUCATION,ID_EXPIRED,WARIS,COALESCE(NULLIF(calon_loan.CAO,''),anggota.CAO) as CAO,anggota.USERID,tgl_wakalah,Plafond,usaha,
-    barang_satu,barang_dua,barang_tiga,barang_empat,barang_lima, barang_enam, barang_tujuh, barang_sembilan, barang_sepuluh,Plafond,
-    harga_satu,harga_dua,harga_tiga,harga_empat,harga_lima,harga_enam,harga_tujuh, harga_sembilan,harga_sepuluh,nama_usaha,tgl_akad,tenor,pekerjaan_pasangan,suffix
+    barang_satu,barang_dua,barang_tiga,barang_empat,barang_lima, barang_enam, barang_tujuh, barang_delapan, barang_sembilan, barang_sepuluh,Plafond,
+    harga_satu,harga_dua,harga_tiga,harga_empat,harga_lima,harga_enam,harga_tujuh, harga_delapan, harga_sembilan,harga_sepuluh,nama_usaha,tgl_akad,tenor,pekerjaan_pasangan,suffix
     FROM anggota
     left join calon_loan on anggota.CIF=calon_loan.cif
     left join barang on barang.id_barang=calon_loan.no_anggota
@@ -68,9 +69,8 @@ foreach ($baris as $r) {
         'pekerjaan' => $teks($r['pekerjaan_pasangan']), 'suffix' => $teks($r['suffix']), 'tlp_penjamin' => $teks($r['HOME_PHONE']),
     );
     foreach ($urutan as $u) {
-        // barang/harga ke-8 tidak ada di SELECT versi lama sehingga selalu kosong
-        $data['barang_' . $u] = $u === 'delapan' ? '' : $teks($r['barang_' . $u]);
-        $data['harga_' . $u] = $u === 'delapan' ? '' : $teks($r['harga_' . $u]);
+        $data['barang_' . $u] = $teks($r['barang_' . $u]);
+        $data['harga_' . $u] = $teks($r['harga_' . $u]);
     }
     $hasil[] = $data;
 }

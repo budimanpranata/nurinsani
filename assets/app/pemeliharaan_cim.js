@@ -24,7 +24,7 @@
         ['ibu', 'IBU KANDUNG masih kosong'],
         ['kd_pos', 'KODE POS masih kosong'],
         ['tgl_skep', 'TANGGA WAKALAH masih kosong'],
-        ['lurah', 'TANGGA WAKALAH masih kosong'], // teks versi lama
+        ['lurah', 'KELURAHAN masih kosong'], // §2j 2026-11-16: versi lama salah teks "TANGGA WAKALAH masih kosong"
         ['kec', 'KECAMATAN masih kosong'],
         ['kota', 'KOTA masih kosong'],
         ['pekerjaan', 'Pekerjaan masih kosong'],
@@ -48,6 +48,12 @@
                 (f[wajib[i][3]] || el).focus();
                 return;
             }
+        }
+        // §2j (2026-11-16): tenor + plafond tanpa param_biaya ditolak juga oleh update_log.php; ditahan di sini lebih dulu
+        if (!dataKalkulator.biaya[Number(f.tenor.value) + '|' + Number(f.pla.value)]) {
+            e.preventDefault();
+            alert('Parameter Pembiayaan tidak ditemukan');
+            f.pla.focus();
         }
     });
 

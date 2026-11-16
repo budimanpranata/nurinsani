@@ -59,7 +59,10 @@ while($row = mysql_fetch_array($result)){
     </tr>
     <tr>
       <td bgcolor="#CCCCCC"><span class="style13">Password <strong>Baru</strong>  <span class="style5">* </span></span></td>
-      <td bgcolor="#CCCCCC"><input name="passbaru" type="password" id="passbaru" size="30" maxlength="50" autocomplete="new-password"/> <small>minimal 8 karakter</small></td>
+      <td bgcolor="#CCCCCC"><input name="passbaru" type="password" id="passbaru" size="30" maxlength="50" autocomplete="new-password"
+          pattern="(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,}"
+          title="Minimal 8 karakter dan memuat huruf besar, huruf kecil, angka, serta simbol"/>
+        <br><small>Min. 8 karakter &amp; memuat: huruf besar, huruf kecil, angka, dan simbol (mis. ! @ # $ %)</small></td>
     </tr>
     <tr>
       <td><span class="style13"><strong>Confirmasi</strong> Password  <span class="style5">* </span></span></td>

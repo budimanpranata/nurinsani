@@ -45,11 +45,9 @@ if ($passlama === '' || $passbaru === '' || $passlagi === '') {
 if ($passbaru !== $passlagi) {
     selesai_ganti_password('Password baru dan konfirmasi password tidak sama', $kembali);
 }
-if (strlen($passbaru) < PANJANG_MIN_PASSWORD) {
-    selesai_ganti_password('Password baru minimal ' . PANJANG_MIN_PASSWORD . ' karakter', $kembali);
-}
-if (strcasecmp($passbaru, $userid) === 0) {
-    selesai_ganti_password('Password baru tidak boleh sama dengan user name', $kembali);
+$galat_password = password_validasi($passbaru, $userid, PANJANG_MIN_PASSWORD);
+if ($galat_password !== null) {
+    selesai_ganti_password($galat_password, $kembali);
 }
 
 $db = db_ni();
