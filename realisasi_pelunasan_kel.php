@@ -5,6 +5,8 @@ ob_start();
 $userid=$_SESSION['userid'];
 $tgl_system=$_SESSION['stgl_system'];
 $tgl_input=date("Y-m-d");
+// §2m (2026-11-17, perintah user): 3 insert simpanan pelunasan dulu memakai $date yang tidak pernah diisi
+// (tgl_input kosong); kini $tgl_input, sama dengan insert lain di file ini dan lunasi.php.
 $buss_date=$tgl_system;
 //cek apakah user sudah login
 if(!isset($_SESSION['stgl_system'])){
@@ -121,7 +123,7 @@ if ($saldo < $os ){
 				db_jalankan("update pinjaman_detail set jumlah_bayar=?,tgl_bayar=? where id_pinjam=?", 'sss', (string) $angsuran, (string) $tanggal, (string) $anggota);
 				
 				$t = db_jalankan("insert into simpanan(BUSS_DATE,NOREK,UNIT,CIF,CODE_KEL,DEBIT,TYPE,KREDIT,USERID,KET,REFF,CAO,blok,tgl_input,kode_transaksi) 
-				VALUES (?,?,?,?,?,?,'03','0',?,?,'',?,'0',?,?)", 'sssssssssss', (string) $tanggal, (string) $anggota, (string) $unit, (string) $cif, (string) $code_kel, (string) $os, (string) $userid, (string) $ket, (string) $cao, (string) $date, (string) $kode_trans);
+				VALUES (?,?,?,?,?,?,'03','0',?,?,'',?,'0',?,?)", 'sssssssssss', (string) $tanggal, (string) $anggota, (string) $unit, (string) $cif, (string) $code_kel, (string) $os, (string) $userid, (string) $ket, (string) $cao, (string) $tgl_input, (string) $kode_trans);
 db_jalankan("insert into rek_loan(ref,tgl_realisasi,unit,no_anggota,saldo_kredit,debet,tipe,ket,USERID,STATUS,cif,AO)VALUES('',?,?,?,'0',?,'03','Pelunasan',?,'REALISASI POKOK',?,(select cao from loan where cif=? limit 1))", 'sssssss', (string) $tanggal, (string) $unit, (string) $anggota, (string) $os, (string) $userid, (string) $cif, (string) $cif) or die(mysql_error());
 				 		db_jalankan("Update  tagihan_cs set status_realisasi ='BAYAR'  where cif  =? and tgl_tagih=?", 'ss', (string) $checbox[$i], (string) $tanggal);
 
@@ -154,7 +156,7 @@ db_jalankan("insert into jurnal_umum(nomor_jurnal,kode_transaksi,tanggal_selesai
 				db_jalankan("update pinjaman_detail set jumlah_bayar=?,tgl_bayar=? where id_pinjam=?", 'sss', (string) $angsuran, (string) $tanggal, (string) $anggota);
 				db_jalankan("delete from tunggakan where cif=?", 's', (string) $cif);
 				$t = db_jalankan("insert into simpanan(BUSS_DATE,NOREK,UNIT,CIF,CODE_KEL,DEBIT,TYPE,KREDIT,USERID,KET,REFF,CAO,blok,tgl_input,kode_transaksi) 
-				VALUES (?,?,?,?,?,?,'03','0',?,?,'',?,'0',?,?)", 'sssssssssss', (string) $tanggal, (string) $anggota, (string) $unit, (string) $cif, (string) $code_kel, (string) $os, (string) $userid, (string) $ket, (string) $cao, (string) $date, (string) $kode_trans);
+				VALUES (?,?,?,?,?,?,'03','0',?,?,'',?,'0',?,?)", 'sssssssssss', (string) $tanggal, (string) $anggota, (string) $unit, (string) $cif, (string) $code_kel, (string) $os, (string) $userid, (string) $ket, (string) $cao, (string) $tgl_input, (string) $kode_trans);
 db_jalankan("insert into rek_loan(ref,tgl_realisasi,unit,no_anggota,saldo_kredit,debet,tipe,ket,USERID,STATUS,cif,AO)VALUES('',?,?,?,'0',?,'03','Pelunasan',?,'REALISASI POKOK',?,(select cao from loan where cif=? limit 1))", 'sssssss', (string) $tanggal, (string) $unit, (string) $anggota, (string) $pokok, (string) $userid, (string) $cif, (string) $cif) or die(mysql_error());
 				db_jalankan("insert into rek_loan(ref,tgl_realisasi,unit,no_anggota,saldo_kredit,debet,tipe,ket,USERID,STATUS,cif,AO)VALUES('',?,?,?,'0',?,'03','Pelunasan',?,'REALISASI BAGHAS',?,(select cao from loan where cif=? limit 1))", 'sssssss', (string) $tanggal, (string) $unit, (string) $anggota, (string) $saldo_margin, (string) $userid, (string) $cif, (string) $cif) or die(mysql_error());
 
@@ -265,7 +267,7 @@ db_jalankan("Update  tagihan_cs set status_realisasi ='BAYAR'  where cif  =? and
 				db_jalankan("update pinjaman_detail set jumlah_bayar=?,tgl_bayar=? where id_pinjam=?", 'sss', (string) $angsuran, (string) $tanggal, (string) $anggota);
 				db_jalankan("delete from tunggakan where cif=?", 's', (string) $cif);
 				$t = db_jalankan("insert into simpanan(BUSS_DATE,NOREK,UNIT,CIF,CODE_KEL,DEBIT,TYPE,KREDIT,USERID,KET,REFF,CAO,blok,tgl_input,kode_transaksi) 
-				VALUES (?,?,?,?,?,?,'03','0',?,?,'',?,'0',?,?)", 'sssssssssss', (string) $tanggal, (string) $anggota, (string) $unit, (string) $cif, (string) $code_kel, (string) $os, (string) $userid, (string) $ket, (string) $cao, (string) $date, (string) $kode_trans);
+				VALUES (?,?,?,?,?,?,'03','0',?,?,'',?,'0',?,?)", 'sssssssssss', (string) $tanggal, (string) $anggota, (string) $unit, (string) $cif, (string) $code_kel, (string) $os, (string) $userid, (string) $ket, (string) $cao, (string) $tgl_input, (string) $kode_trans);
 db_jalankan("insert into rek_loan(ref,tgl_realisasi,unit,no_anggota,saldo_kredit,debet,tipe,ket,USERID,STATUS,cif,AO)VALUES('',?,?,?,'0',?,'03','Pelunasan',?,'REALISASI POKOK',?,(select cao from loan where cif=? limit 1))", 'sssssss', (string) $tanggal, (string) $unit, (string) $anggota, (string) $pokok, (string) $userid, (string) $cif, (string) $cif) or die(mysql_error());
 				db_jalankan("insert into rek_loan(ref,tgl_realisasi,unit,no_anggota,saldo_kredit,debet,tipe,ket,USERID,STATUS,cif,AO)VALUES('',?,?,?,'0',?,'03','Pelunasan',?,'REALISASI BAGHAS',?,(select cao from loan where cif=? limit 1))", 'sssssss', (string) $tanggal, (string) $unit, (string) $anggota, (string) $saldo_margin, (string) $userid, (string) $cif, (string) $cif) or die(mysql_error());
 

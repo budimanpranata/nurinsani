@@ -3,8 +3,8 @@
  * Menu Pemeliharaan Data > Restrukturisasi Data > Rest Special Case.
  * Hitung pratinjau angsuran baru dari Plafond Baru ÷ tenor, simpan pilihan ke session,
  * lalu Cetak (cetak_add_case.php) atau Disburse (realisasi_res_case.php).
- * Perilaku sama dengan versi lama, termasuk keluaran debug var_dump($ciff), cek simpanan 'Ya' (huruf besar)
- * yang tidak pernah cocok, dan $param_margin/$param_tabung yang tidak pernah diisi.
+ * Perilaku sama dengan versi lama, termasuk $param_margin/$param_tabung yang tidak pernah diisi.
+ * 2026-11-17 (§2h): debug var_dump dibuang; cek simpanan kini 'ya' (dulu 'Ya', tidak pernah cocok).
  */
 require_once __DIR__ . '/inc/tampilan.php';
 session_start();
@@ -100,10 +100,7 @@ halaman_awal('Transaksi Restrukturisasi Special Case');
   </div>
 </div>
 <?php
-// keluaran debug versi lama (selalu tampil), dipertahankan
-echo '<pre class="small text-body-secondary mb-2">';
-var_dump($ciff);
-echo '</pre>';
+// §2h (2026-11-17, perintah user): keluaran debug var_dump($ciff) versi lama dibuang.
 
 $baris = array();
 if (isset($_POST['search'])) {
@@ -121,8 +118,9 @@ if (isset($_POST['search'])) {
             $saldo_simpanan = $row_saldo['saldo_simpanan'];
 
             foreach ($select as $data) {
-                // versi lama membandingkan dengan 'Ya' (huruf besar) sehingga cabang ini tidak pernah terpakai; kedua cabang menghitung sama
-                $saldo_simpanan = $wadiah == 'Ya' ? $saldo_simpanan : 0;
+                // §2h (2026-11-17, perintah user): dulu dibandingkan dengan 'Ya' (huruf besar) padahal nilai form 'ya',
+                // sehingga simpanan selalu 0 di pratinjau. Kini 'ya', sama dengan cetak_add_case.php & realisasi_res_case.php.
+                $saldo_simpanan = $wadiah == 'ya' ? $saldo_simpanan : 0;
                 $param_margin = isset($param_margin) ? $param_margin : null; // tidak pernah diisi di versi lama
                 $param_tabung = isset($param_tabung) ? $param_tabung : null;
                 $pokok = compat_bagi($nominal, $tenor);

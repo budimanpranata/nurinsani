@@ -3,7 +3,7 @@
  * Menu Pemeliharaan Data > Restrukturisasi Data > Restrukturisasi.
  * Hitung pratinjau angsuran baru per jenis restrukturisasi (Pokok / Pokok Margin / Muqosah / Covid19),
  * simpan pilihan ke session, lalu Cetak (cetak_add.php), Cetak Covid (cetak_covid.php), atau Disburse (realisasi_res.php).
- * Perilaku sama dengan versi lama (termasuk keluaran debug var_dump dan berhenti bila data_loan tidak ada).
+ * Perilaku sama dengan versi lama (termasuk berhenti bila data_loan tidak ada); debug var_dump dibuang 2026-11-17 (§2e).
  * Pembagian memakai compat_bagi(): tenor kosong/0 tidak menghentikan halaman, sama seperti PHP 5.
  */
 require_once __DIR__ . '/inc/tampilan.php';
@@ -126,11 +126,7 @@ if (isset($_POST['search'])) {
             $_SESSION['snominal'] = isset($muqosah) ? $muqosah : null; // versi lama: variabel tidak pernah diisi
             $_SESSION['stenor'] = $tenor;
             $_SESSION['stanggal'] = $tanggal;
-            // keluaran debug versi lama, dipertahankan
-            echo '<pre class="small text-body-secondary mb-2">';
-            var_dump($_SESSION['stanggal']);
-            var_dump($pilih);
-            echo '</pre>';
+            // §2e (2026-11-17, perintah user): keluaran debug var_dump (tanggal & jenis) versi lama dibuang.
             $select = db_semua("select unit,CUST_SHORT_NAME,saldo_margin,code_kel,no_anggota,cif,ijaroh,angsuran,pokok,os,angsuran,bulat,tgl_akad,(os-saldo_margin) as saldo_os  from loan  WHERE cif =?", 's', (string) $ciff);
             $row_saldo = db_satu("select sum(kredit-DEBIT) as saldo_simpanan from simpanan where cif =? and type not in('04','05') ", 's', (string) $ciff) or die(mysql_error());
             $saldo_simpanan = $row_saldo['saldo_simpanan'];

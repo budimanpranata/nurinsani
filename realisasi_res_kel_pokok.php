@@ -35,6 +35,11 @@ if (isset($_POST["realisasi"])){
 
 
             $no_anggota=$row['no_anggota'];
+            // §2f (2026-11-17, perintah user): dulu $norek/$code_kel tidak pernah diisi -> baris simpanan
+            // "Realisasi Restrukturisasi" tersimpan dengan NOREK/CODE_KEL kosong. Kini dari loan (no_anggota, code_kel).
+            $norek=$row['no_anggota'];
+            $code_kel=$row['code_kel'];
+            $kelompok=$row['code_kel']; // dulu tidak diisi -> rest_covid.code_kel kosong
             $cif=$row['cif'];
             $bagi_hasil=$row['bagi_hasil'];
             $os=$row['os'];
@@ -148,7 +153,8 @@ db_jalankan("insert into rest_covid values('',?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)", '
                    
                
 
-				db_jalankan("update  loan  set tgl_murab=?,tgl_akad=?,maturity_date=? cif=?", 'ssss', (string) $tgl_system, (string) $tgl_system, (string) $maturity_date, (string) $cif); 
+				// §2f E (2026-11-17, perintah user): dulu "maturity_date=? cif=?" tanpa WHERE -> SQL gagal, tgl_akad tidak terisi.
+				db_jalankan("update  loan  set tgl_murab=?,tgl_akad=?,maturity_date=? WHERE cif=?", 'ssss', (string) $tgl_system, (string) $tgl_system, (string) $maturity_date, (string) $cif); 
 
             
    
@@ -239,7 +245,8 @@ db_jalankan("insert into rest_covid values('',?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)", '
                    
                
 
-				db_jalankan("update  loan  set tgl_murab=?,tgl_akad=?,maturity_date=? cif=?", 'ssss', (string) $tgl_system, (string) $tgl_system, (string) $maturity_date, (string) $cif); 
+				// §2f E (2026-11-17, perintah user): dulu "maturity_date=? cif=?" tanpa WHERE -> SQL gagal, tgl_akad tidak terisi.
+				db_jalankan("update  loan  set tgl_murab=?,tgl_akad=?,maturity_date=? WHERE cif=?", 'ssss', (string) $tgl_system, (string) $tgl_system, (string) $maturity_date, (string) $cif); 
         notif_pergi('Restruturisasi Pokok Margin sudah direalisasi.', 'rest_kel_pokok.php');
 
 
