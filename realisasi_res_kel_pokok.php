@@ -12,20 +12,44 @@ ob_start();
 $tgl_system=$_SESSION['stgl_system'];
 
 
-$pilih=$_SESSION['spilih'];
-$wadiah=$_SESSION['swadiah'];
-$muqosah=$_SESSION['snominal'];
-$tenor=$_SESSION['stenor'];	
-	
+$pilih=isset($_SESSION['spilih']) ? $_SESSION['spilih'] : null;
+$wadiah=isset($_SESSION['swadiah']) ? $_SESSION['swadiah'] : null;
+$muqosah=isset($_SESSION['snominal']) ? $_SESSION['snominal'] : null;
+$tenor=isset($_SESSION['stenor']) ? $_SESSION['stenor'] : null;
+
 include "function.php";
 $checbox = isset($_POST['cekbox']) ? $_POST['cekbox'] : null;
+$checbox = is_array($checbox) ? array_values($checbox) : ($checbox ? array($checbox) : null);
+$nomor_jurnal=''; // tidak pernah diisi di versi lama (jurnal_umum.nomor_jurnal kosong); kini eksplisit agar tanpa warning
 
 
 
-if (isset($_POST["realisasi"])){        
-    
-    if ($checbox) {
+if (isset($_POST["realisasi"])){
+
+    if (!$checbox) {
+        notif_pergi('anda belum memilih data.', 'rest_kel_pokok.php');
+    } elseif ($pilih!='01' && $pilih!='02') {
+        // Muqosah (04) belum ada logika bisnisnya (keputusan user 2026-11-17); dulu pesan ini muncul sekali per anggota
+        notif_pergi('Maaf Menu Belum tersedia.', 'rest_kel_pokok.php');
+    } else {
+        // §2f A (2026-11-17, perintah user): semua CIF yang dicentang wajib milik unit user (dulu CIF unit lain ikut diproses).
+        // Dicek semua sebelum ada yang diproses; satu saja bukan milik unit -> HTTP 403, tidak ada data berubah.
+        foreach ($checbox as $c) {
+            wajib_cif_unit((string) $c);
+        }
+        $jml_proses=0;
+        $jml_lewat=0;
         for ($i=0; $i <sizeof($checbox);$i++){
+        // §2f B (2026-11-17, perintah user): refresh/klik ganda dulu memproses ulang (simpanan, jurnal, rek_loan ganda).
+        // Kunci per CIF + lewati anggota yang sudah direstrukturisasi hari ini (sama dengan realisasi_res.php).
+        $kunci='realisasi_res_' . (string) $checbox[$i];
+        db_satu("SELECT GET_LOCK(?, 30) AS kunci", 's', $kunci);
+        $sudah=db_satu("select 1 as ada from loan where cif=? and status_app in ('REST','REST_POKOK_MARGIN') and tgl_akad=?", 'ss', (string) $checbox[$i], (string) $tgl_system);
+        if ($sudah) {
+            db_satu("SELECT RELEASE_LOCK(?) AS lepas", 's', $kunci);
+            $jml_lewat++;
+            continue;
+        }
 
     $row = db_satu("select DATE_ADD(tgl_wakalah,INTERVAL 7 DAY) as tgl_murab1,DATE_ADD(?,INTERVAL ? WEEK) as matur,tgl_murab,loan.buss_date,loan.code_kel,loan.no_anggota,loan.Cust_Short_name,maturity_date,Tenor,
     loan.Deal_type,suffix,bagi_hasil,Tenor,Plafond,os,angsuran,pokok,ijaroh,bulat,ke,usaha,loan.unit,tgl_wakalah,hari,loan.cao,loan.USERID,loan.status,loan.cif,saldo_margin
@@ -82,6 +106,7 @@ if($wadiah =='ya'){
             
 
 if ($pilih=='01') {
+	$angsuran_pokok=''; $angsuran_margin=''; // tidak diisi di jenis 01 versi lama (rest_covid kosong); eksplisit agar tanpa warning
 	$kode_tr=5;
             $kode_tr=acakangkahuruf($kode_tr);      
             
@@ -158,8 +183,8 @@ db_jalankan("insert into rest_covid values('',?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)", '
 
             
    
-           
-    notif_pergi('Restruturisasi Pokok sudah direalisasi.', 'rest_kel_pokok.php');     
+
+    $jml_proses++; // pesan sukses kini sekali di akhir (dulu sekali per anggota)
     }
 
                
@@ -247,31 +272,27 @@ db_jalankan("insert into rest_covid values('',?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)", '
 
 				// §2f E (2026-11-17, perintah user): dulu "maturity_date=? cif=?" tanpa WHERE -> SQL gagal, tgl_akad tidak terisi.
 				db_jalankan("update  loan  set tgl_murab=?,tgl_akad=?,maturity_date=? WHERE cif=?", 'ssss', (string) $tgl_system, (string) $tgl_system, (string) $maturity_date, (string) $cif); 
-        notif_pergi('Restruturisasi Pokok Margin sudah direalisasi.', 'rest_kel_pokok.php');
+        $jml_proses++;
 
 
 
 
     }
 
-            else {
-                    notif_pergi('Maaf Menu Belum tersedia.', 'rest_kel_pokok.php');
-        }
-
-
-        
-
-   
-   
+        db_satu("SELECT RELEASE_LOCK(?) AS lepas", 's', $kunci);
          }
 
-
-
-
-
-}else {
-			notif_pergi('anda belum memilih data.', 'rest_kel_pokok.php');
-	}
+        $pesan = $pilih=='01' ? 'Restruturisasi Pokok sudah direalisasi' : 'Restruturisasi Pokok Margin sudah direalisasi';
+        if ($jml_proses > 0) {
+            $pesan .= " ($jml_proses anggota).";
+            if ($jml_lewat > 0) {
+                $pesan .= " $jml_lewat anggota dilewati karena sudah direstrukturisasi hari ini.";
+            }
+            notif_pergi($pesan, 'rest_kel_pokok.php', 'success');
+        } else {
+            notif_pergi('Maaf, anggota yang dipilih sudah direstrukturisasi hari ini.', 'rest_kel_pokok.php');
+        }
+    }
 }
 
 ?>

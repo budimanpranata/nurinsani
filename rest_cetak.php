@@ -7,6 +7,7 @@ require_once __DIR__ . '/inc/cek_login.php';
 wajib_login();
 ob_start();  
 $userid=$_SESSION['userid'];
+$tgl_system=isset($_SESSION['stgl_system']) ? $_SESSION['stgl_system'] : date("Y-m-d"); // §2g: dasar jatuh tempo baru, sama dengan realisasi
 //cek apakah user sudah login
 
 include "conn2.php";
@@ -38,7 +39,7 @@ ID_NUMBER from loan
 left join anggota on anggota.cif=loan.cif 
 left join kelompok on kelompok.code_kel = loan.code_kel
 left join bidang_usaha on bidang_usaha.code_bidang=loan.usaha 
-where loan.code_kel=? order by loan.cif", 's', (string) $code_kel);
+where loan.code_kel=? and loan.unit=? order by loan.cif", 'ss', (string) $code_kel, unit_user()); // §2g 2026-11-17: dulu kelompok unit lain bisa dicetak lewat URL
 $page=0;
 foreach ($pot as $p){
 $page++;
@@ -82,7 +83,11 @@ $row_tunggak=db_satu("select sum(KREDIT-DEBIT) as saldo_tunggak from tunggakan w
  $saldo_tunggak=$row_tunggak['saldo_tunggak'];     
 $tunggak=$saldo_tunggak;
 
-$ft =compat_bagi($tunggak, $angsur); // PHP 5: pembagi 0/kosong -> false, bukan error
+// §2g (2026-11-17, perintah user): hitungan disamakan dengan realisasi_rest_kel.php agar tanggal di adendum = tanggal
+// yang direalisasi: dari tanggal sistem (dulu dari jatuh tempo lama), minggu dibulatkan ke atas (dulu pecahan -> tanggal
+// kacau). Anggota tanpa tunggakan tidak diproses saat realisasi, jadi jatuh tempo baru = jatuh tempo lama.
+$tanpa_tunggak = compat_num($tunggak) <= 0 || compat_num($angsur) <= 0;
+$ft = $tanpa_tunggak ? 0 : (int) ceil(round(compat_num($tunggak) / compat_num($angsur), 6));
 
 $os_res=$os;
 
@@ -90,8 +95,8 @@ $os_res=$os;
 
 
 
-        $tgl_m    = strtotime($mat);
-        $maturity_date_ress =  date("Y-m-d", strtotime("+$ft WEEK", $tgl_m));
+        $tgl_m    = strtotime($tgl_system);
+        $maturity_date_ress =  $tanpa_tunggak ? $mat : date("Y-m-d", strtotime("+$ft WEEK", $tgl_m));
 
 
 $cek_tanggal = db_semua("SELECT COUNT(tgl_libur) as libur from param_libur where tgl_libur between ? and ? and Hari =?", 'sss', (string) $mat, (string) $maturity_date_ress, (string) $harii);
@@ -101,10 +106,10 @@ $cek_tanggal = db_semua("SELECT COUNT(tgl_libur) as libur from param_libur where
            
         }
 
-if($libur>0){
+if($libur>0 && !$tanpa_tunggak){
 $ft =$ft+$libur;
 
-        $tgl_m    = strtotime($mat);
+        $tgl_m    = strtotime($tgl_system);
         $maturity_date_res =  date("Y-m-d", strtotime("+$ft WEEK", $tgl_m));
 
 

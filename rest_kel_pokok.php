@@ -2,7 +2,9 @@
 /**
  * Menu Pemeliharaan Data > Restrukturisasi Data > Restrukturisasi By Kel.
  * Pilih kelompok, jenis restrukturisasi, simpanan dan tenor baru; pilihan disimpan ke session,
- * lalu Disburse per anggota di rest_pokok_list.php. Perilaku sama dengan versi lama.
+ * lalu Disburse per anggota di rest_pokok_list.php. Perilaku sama dengan versi lama, kecuali
+ * 2026-11-17 (§2f, perintah user): pilihan default ditolak, tenor wajib 1-50 (dulu alert tidak menghentikan),
+ * kelompok wajib punya pinjaman di unit user (dulu cek selalu lolos, tanpa filter unit).
  */
 require_once __DIR__ . '/inc/tampilan.php';
 session_start();
@@ -92,29 +94,33 @@ halaman_awal('Transaksi Restrukturisasi Kelompok');
 </div>
 <?php
 $baris = array();
-// versi lama: count() tanpa group by selalu menghasilkan satu baris, jadi pemeriksaan ini selalu lolos
-$kel = db_semua("select count(loan.cif) as noa, loan.CODE_KEL, nama_kel, loan.CAO  FROM loan
-  left join kelompok on kelompok.code_kel = loan.code_kel
-  where  loan.code_kel=? ", 's', (string) $norek);
+// §2f (2026-11-17, perintah user): dulu count() tanpa group by selalu menghasilkan satu baris sehingga cek
+// "kelompok ada" selalu lolos, dan kelompok tidak dibatasi unit. Kini dihitung pinjaman kelompok di unit user.
+require_once __DIR__ . '/inc/cek_login.php';
+$kel = db_satu("select count(loan.cif) as noa FROM loan where loan.code_kel=? and loan.unit=?", 'ss', (string) $norek, unit_user());
+$ada_kel = $kel && (int) $kel['noa'] > 0;
 if (isset($_POST['search'])) {
-    if ($tenor > 50) {
-        // versi lama tidak berhenti di sini
-        echo "<script>alert('Maaf, tenor > 50');</script>";
+    if (empty($norek) || empty($pilih) || empty($wadiah) || empty($tenor)
+        || !isset($pilihan_jenis[$pilih]) || $pilih === 'Pilih Salah satu'
+        || !isset($pilihan_wadiah[$wadiah]) || $wadiah === 'Pilih Salah satu') {
+        // pilihan default "Pilih Salah satu" dulu lolos cek kosong
+        echo "<script>alert('Maaf,Kode kelompok , jenis restruturisasi dan tenor baru tidak boleh kosong');</script>";
         echo "<script language='javascript'>document.location.href='rest_kel_pokok.php'</script>";
-    }
-    if (count($kel)) {
-        if (empty($norek) || empty($pilih) || empty($wadiah) || empty($tenor)) {
-            echo "<script>alert('Maaf,Kode kelompok , jenis restruturisasi dan tenor baru tidak boleh kosong');</script>";
-            echo "<script language='javascript'>document.location.href='rest_kel_pokok.php'</script>";
-        } else {
-            $_SESSION['spilih'] = $pilih;
-            $_SESSION['swadiah'] = $wadiah;
-            $_SESSION['snominal'] = isset($muqosah) ? $muqosah : null; // versi lama: variabel tidak pernah diisi
-            $_SESSION['stenor'] = $tenor;
-            $baris = db_semua("select count(loan.cif) as noa, tenor, loan.CODE_KEL, nama_kel, loan.CAO as ao, sum(os) as pembiayaan FROM loan
+    } elseif (!ctype_digit((string) $tenor) || (int) $tenor < 1 || (int) $tenor > 50) {
+        // dulu alert "tenor > 50" tidak menghentikan proses (session tetap diisi, tabel tetap tampil)
+        echo "<script>alert('Maaf, tenor harus 1 - 50');</script>";
+        echo "<script language='javascript'>document.location.href='rest_kel_pokok.php'</script>";
+    } elseif (!$ada_kel) {
+        echo "<script>alert('Maaf, kelompok tidak ditemukan di unit Anda');</script>";
+        echo "<script language='javascript'>document.location.href='rest_kel_pokok.php'</script>";
+    } else {
+        $_SESSION['spilih'] = $pilih;
+        $_SESSION['swadiah'] = $wadiah;
+        $_SESSION['snominal'] = isset($muqosah) ? $muqosah : null; // versi lama: variabel tidak pernah diisi
+        $_SESSION['stenor'] = $tenor;
+        $baris = db_semua("select count(loan.cif) as noa, tenor, loan.CODE_KEL, nama_kel, loan.CAO as ao, sum(os) as pembiayaan FROM loan
  left join kelompok on kelompok.code_kel = loan.code_kel
- where  loan.code_kel=? and os > 0 group by loan.code_kel order by loan.code_kel", 's', (string) $norek);
-        }
+ where  loan.code_kel=? and loan.unit=? and os > 0 group by loan.code_kel order by loan.code_kel", 'ss', (string) $norek, unit_user());
     }
 }
 ?>
