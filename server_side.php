@@ -5,7 +5,8 @@
  *   - wajib login (versi lama bisa diakses tanpa login);
  *   - recordsTotal/recordsFiltered dihitung dari query yang sama dengan data yang tampil
  *     (versi lama selalu memakai jumlah seluruh tabel anggota, sehingga info & jumlah halaman saat mencari salah).
- * Catatan: data belum difilter per unit (lihat PEKERJAAN_TERTUNDA.md).
+ * Perbaikan 2026-11-18: klik judul kolom kini mengurutkan data (kolom dari daftar tetap, KTP tidak bisa diurutkan).
+ * Catatan: data sengaja tidak difilter per unit (keputusan user, lihat PEKERJAAN_TERTUNDA.md).
  * Enkripsi (PEKERJAAN_TERTUNDA.md bagian 87): NIK terenkripsi (anggota pasangan deposan) tampil tersamar; NIK lengkap
  * yang diketik juga dicocokkan lewat ID_NUMBER_IDX (NIK terenkripsi tidak bisa dicari sebagian dengan LIKE).
  */
@@ -59,7 +60,32 @@ if ($saring === '') {
     $totalFiltered = $hasil ? $hasil['total'] : 0;
 }
 
-$sql = " SELECT anggota.unit,anggota.code_kel,norek,ID_NUMBER,anggota.Cust_Short_name,saldo_margin,os,Plafond,no_anggota,loan.cif" . $dari . $saring . " LIMIT ?, ?";
+// Urutan kolom (perbaikan 2026-11-18, PEKERJAAN_TERTUNDA.md 2i): hanya kolom di daftar ini yang bisa diurutkan
+// (indeks = urutan kolom di view_data.js); KTP tidak (sebagian NIK terenkripsi) dan Action tidak.
+// Tanpa permintaan urutan, query sama dengan versi lama (tanpa ORDER BY).
+$kolom_urut = array(
+    1 => 'anggota.unit',
+    2 => 'anggota.code_kel',
+    3 => 'no_anggota',
+    4 => 'anggota.CIF',
+    5 => 'anggota.Cust_Short_name',
+    6 => 'os',
+    7 => 'Plafond',
+    8 => 'saldo_margin',
+);
+$urut = '';
+if (isset($_POST['order'][0]['column']) && !is_array($_POST['order'][0]['column'])) {
+    $idx_urut = (string) $_POST['order'][0]['column'];
+    if (ctype_digit($idx_urut) && isset($kolom_urut[(int) $idx_urut])) {
+        $arah_urut = isset($_POST['order'][0]['dir']) && $_POST['order'][0]['dir'] === 'desc' ? 'DESC' : 'ASC';
+        $urut = " ORDER BY " . $kolom_urut[(int) $idx_urut] . " " . $arah_urut;
+        if ($kolom_urut[(int) $idx_urut] !== 'anggota.CIF') {
+            $urut .= ", anggota.CIF " . $arah_urut; // urutan kedua supaya pindah halaman tidak dobel/terlewat
+        }
+    }
+}
+
+$sql = " SELECT anggota.unit,anggota.code_kel,norek,ID_NUMBER,anggota.Cust_Short_name,saldo_margin,os,Plafond,no_anggota,loan.cif" . $dari . $saring . $urut . " LIMIT ?, ?";
 $data = array();
 foreach (db_semua($sql, $tipe . 'ii', ...array_merge($param, array($start, $length))) as $row) {
     // nilai dikirim sebagai teks seperti versi lama (mysqli_query)

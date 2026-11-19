@@ -12,6 +12,8 @@ require_once __DIR__ . '/inc/csrf.php';
  * ke pelunasan.php sehingga pencarian pindah ke Pelunasan biasa), dan pengalihan saat NOREK kosong / tidak ditemukan
  * juga ke halaman ini (versi lama ke pelunasan.php).
  * Perilaku sama dengan versi lama; pengaman login ditambahkan (versi lama tidak memeriksa login).
+ * §2l (2026-11-19, perintah user): anggota tanpa simpanan kini ditemukan; hanya pembiayaan unit user; pembiayaan
+ * MUSYAROKAH tidak ditampilkan dan muncul notif "CIF .. AN .. adalah anggota Musyarokah, tidak bisa hapus margin".
  */
 require_once __DIR__ . '/inc/tampilan.php';
 include "indo_tgl.php";
@@ -27,14 +29,30 @@ if (!empty($_POST['search'])) {
     } else {
         $kkel = db_satu("select CODE_KEL,CIF,UNIT,CUST_SHORT_NAME,CAO FROM anggota where  norek =?", 's', $nopen);
         $ciff = $kkel ? $kkel['CIF'] : null;
-        $hasil = db_semua("select loan.no_anggota,loan.Cust_Short_name,loan.Plafond,os,maturity_date,branch.unit,angsuran,os,(sum(KREDIT)-sum(DEBIT))as saldo
+        // §2l (2026-11-19, perintah user): syarat TYPE dipindah ke ON (versi lama di WHERE sehingga anggota tanpa
+        // baris simpanan tidak ditemukan; sama dengan perbaikan pelunasan.php 2026-11-03) dan hanya unit user.
+        $hasil = db_semua("select loan.no_anggota,loan.Cust_Short_name,loan.Plafond,os,maturity_date,branch.unit,angsuran,os,(sum(KREDIT)-sum(DEBIT))as saldo,loan.cif,loan.status_app
             from loan
-            left join simpanan on simpanan.cif=loan.cif
+            left join simpanan on simpanan.cif=loan.cif and simpanan.TYPE not in ('04','05')
             left join branch on branch.kode_branch=loan.unit
-            where loan.cif =? and os > 0 and simpanan.TYPE not in ('04','05') group by no_anggota order by no_anggota", 's', (string) $ciff);
+            where loan.cif =? and loan.unit =? and os > 0 group by no_anggota order by no_anggota", 'ss', (string) $ciff, unit_user());
+        // §2l (2026-11-19, perintah user): MUSYAROKAH tidak punya hapus margin -> notif, baris tidak ditampilkan
+        $musyarokah = array();
+        foreach ($hasil as $k => $baris_mus) {
+            if ($baris_mus['status_app'] === 'MUSYAROKAH') {
+                $musyarokah[] = $baris_mus;
+                unset($hasil[$k]);
+            }
+        }
+        foreach ($musyarokah as $baris_mus) {
+            $pesan[] = "<script>alert(" . json_encode('CIF ' . $baris_mus['cif'] . ' AN ' . $baris_mus['Cust_Short_name'] . ' adalah anggota Musyarokah, tidak bisa hapus margin', JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP | JSON_UNESCAPED_UNICODE) . ");</script>";
+        }
+        if ($musyarokah && !$hasil) {
+            $pesan[] = "<script language='javascript'>document.location.href='pelunasan_hapus_margin.php'</script>";
+        }
     }
     // versi lama: juga muncul saat NOREK kosong (alert kedua)
-    if (!$hasil) {
+    if (!$hasil && empty($musyarokah)) {
         $pesan[] = "<script>alert('Maaf...,data tdak di temukan!!!');</script>";
         $pesan[] = "<script language='javascript'>document.location.href='pelunasan_hapus_margin.php'</script>";
     }
@@ -89,7 +107,7 @@ halaman_awal('Pelunasan Hapus Margin');
         <td class="text-end"><?php echo number_format(compat_num($data['os'])); ?></td>
         <td class="text-end"><?php echo number_format(compat_num($data['saldo'])); ?></td>
         <td><?php echo h($data['unit']); ?></td>
-        <td class="text-center"><form method="post" action="lunasi_hapus_margin.php" style="display:inline"><?php echo csrf_field(); ?><input type="hidden" name="anggota" value="<?php echo htmlspecialchars($data['no_anggota'], ENT_QUOTES); ?>"><button type="submit" class="btn btn-outline-danger btn-sm" data-konfirmasi="Apakah Anda yakin akan melakukan Pelunasan?">Disburse</button></form></td>
+        <td class="text-center"><form method="post" action="lunasi_hapus_margin.php" style="display:inline"><?php echo csrf_field(); ?><input type="hidden" name="anggota" value="<?php echo htmlspecialchars($data['no_anggota'], ENT_QUOTES); ?>"><button type="submit" class="btn btn-outline-danger btn-sm" data-konfirmasi="Apakah Anda yakin akan melakukan Pelunasan?">Lunasi</button></form></td>
       </tr>
     <?php endforeach; ?>
     </tbody>

@@ -8,6 +8,7 @@ require_once __DIR__ . '/inc/csrf.php';
 /**
  * Menu Pemeliharaan Data > Pelunasan: cari pembiayaan aktif (OS > 0) berdasarkan NOREK, lalu lunasi (lunasi.php).
  * Perilaku sama dengan versi lama; pengaman login ditambahkan (versi lama tidak memeriksa login).
+ * §2k (2026-11-19, perintah user): hanya pembiayaan unit user yang tampil; tombol berlabel "Lunasi" (dulu "Disburse").
  */
 require_once __DIR__ . '/inc/tampilan.php';
 include "indo_tgl.php";
@@ -33,7 +34,8 @@ if (!empty($_POST['search'])) {
             from loan
             left join simpanan on simpanan.cif=loan.cif and simpanan.TYPE not in ('04','05')
             left join branch on branch.kode_branch=loan.unit
-            where loan.cif =? and os > 0 group by no_anggota order by no_anggota", 's', (string) $ciff);
+            where loan.cif =? and loan.unit =? and os > 0 group by no_anggota order by no_anggota", 'ss', (string) $ciff, unit_user());
+        // §2k (2026-11-19, perintah user): hanya anggota unit sendiri (lunasi.php juga menolak unit lain)
     }
     // versi lama: juga muncul saat NOREK kosong (alert kedua)
     if (!$hasil) {
@@ -91,7 +93,7 @@ halaman_awal('Pelunasan');
         <td class="text-end"><?php echo number_format(compat_num($data['os'])); ?></td>
         <td class="text-end"><?php echo number_format(compat_num($data['saldo'])); ?></td>
         <td><?php echo h($data['unit']); ?></td>
-        <td class="text-center"><form method="post" action="lunasi.php" style="display:inline"><?php echo csrf_field(); ?><input type="hidden" name="anggota" value="<?php echo htmlspecialchars($data['no_anggota'], ENT_QUOTES); ?>"><button type="submit" class="btn btn-outline-danger btn-sm" data-konfirmasi="Apakah Anda yakin akan melakukan Pelunasan?">Disburse</button></form></td>
+        <td class="text-center"><form method="post" action="lunasi.php" style="display:inline"><?php echo csrf_field(); ?><input type="hidden" name="anggota" value="<?php echo htmlspecialchars($data['no_anggota'], ENT_QUOTES); ?>"><button type="submit" class="btn btn-outline-danger btn-sm" data-konfirmasi="Apakah Anda yakin akan melakukan Pelunasan?">Lunasi</button></form></td>
       </tr>
     <?php endforeach; ?>
     </tbody>

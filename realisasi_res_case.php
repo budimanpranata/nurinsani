@@ -11,23 +11,28 @@ ob_start();
 $tgl_system=$_SESSION['stgl_system'];
    
 
-$pilih=$_SESSION['spilih'];
-$wadiah=$_SESSION['swadiah'];
-$pla=$_SESSION['snominal'];
-$tenor=$_SESSION['stenor'];	
-$cif=$_GET['cif'];
+$pilih=isset($_SESSION['spilih']) ? $_SESSION['spilih'] : null;
+$wadiah=isset($_SESSION['swadiah']) ? $_SESSION['swadiah'] : null;
+$pla=isset($_SESSION['snominal']) ? $_SESSION['snominal'] : null;
+$tenor=isset($_SESSION['stenor']) ? $_SESSION['stenor'] : null;
+$cif=isset($_GET['cif']) ? (string) $_GET['cif'] : '';
 wajib_cif_unit($cif); // 2026-11-16 (perintah user): CIF dari URL harus anggota unit user login
 
-	
+
 include "function.php";
+$nomor_jurnal=''; // tidak pernah diisi di versi lama (tersimpan kosong); kini eksplisit agar tanpa warning
+
+// §2h (2026-11-17, perintah user): kunci per CIF agar klik ganda/refresh tidak berjalan bersamaan
+db_satu("SELECT GET_LOCK(?, 30) AS kunci", 's', 'realisasi_res_case_' . $cif);
 
 $param_biaya = db_semua("select margin,tab,pla,jw  FROM param_biaya where jw =? and pla=?", 'ss', (string) $tenor, (string) $pla);
 						$pbiaya = $param_biaya ? $param_biaya[0] : false;
-						$param_margin=$pbiaya['margin'];
-						$param_tabung=$pbiaya['tab'];
-						$param_tenor=$pbiaya['jw'];
-						$param_pla=$pbiaya['pla'];
-						if ($param_tenor==$tenor and $pla==$param_pla)
+						$param_margin=$pbiaya ? $pbiaya['margin'] : null;
+						$param_tabung=$pbiaya ? $pbiaya['tab'] : null;
+						$param_tenor=$pbiaya ? $pbiaya['jw'] : null;
+						$param_pla=$pbiaya ? $pbiaya['pla'] : null;
+						$ada_param = $pbiaya && (string) $pla !== '' && $param_tenor==$tenor && $pla==$param_pla;
+						if ($ada_param)
 						{
 						$pokok_baru=compat_bagi($pla, $tenor); // PHP 5: pembagi 0/kosong -> false, bukan error
 						$margin_baru=$pla * ($param_margin/100);
@@ -49,6 +54,18 @@ if($wadiah =='ya'){
          
 
 if ($pilih=='01') {
+	// §2h (2026-11-17, perintah user): dulu bila Plafond Baru + tenor tidak ada di param_biaya proses tetap jalan
+	// -> loan tertimpa os/angsuran/margin 0 dan jurnal bernilai kosong. Kini ditolak tanpa perubahan data.
+	if (!$ada_param) {
+		notif_pergi('Maaf, Plafond Baru dan tenor tidak ada di parameter biaya.', 'rest_case.php');
+		exit;
+	}
+	// §2h: Disburse adalah link (GET) -> refresh dulu mencatat jurnal/simpanan/rek_loan lagi. Tolak bila hari ini sudah ada.
+	$sudah = db_satu("select 1 as ada from simpanan where CIF=? and BUSS_DATE=? and TYPE='03' and KET like 'Realisasi Reversal Restrukturisasi%' limit 1", 'ss', (string) $cif, (string) $tgl_system);
+	if ($sudah) {
+		notif_pergi('Maaf, restrukturisasi anggota ini sudah direalisasi hari ini.', 'rest_case.php');
+		exit;
+	}
 	$kode_tr=5;
             $kode_tr=acakangkahuruf($kode_tr);      
             
@@ -56,7 +73,12 @@ if ($pilih=='01') {
             loan.Deal_type,suffix,bagi_hasil,Tenor,Plafond,os,angsuran,pokok,ijaroh,bulat,ke,usaha,loan.unit,tgl_wakalah,hari,loan.cao,loan.USERID,loan.status,loan.cif,saldo_margin
             from loan 
              inner join anggota on anggota.cif = loan.cif
-             WHERE loan.cif =?", 's', (string) $cif) or die(mysql_error());
+             WHERE loan.cif =?", 's', (string) $cif);
+            if (!$row) {
+                // §2h: dulu berhenti diam-diam (layar putih) bila data anggota tidak ada
+                notif_pergi('Maaf, data anggota tidak ditemukan.', 'rest_case.php');
+                exit;
+            }
         //$row = mysql_fetch_array(mysql_query("select * from calon_loan  WHERE no_anggota ='" . $value . "'")) or die(mysql_error());
             $no_anggota=$row['no_anggota'];
             $cif=$row['cif'];
@@ -138,7 +160,10 @@ if ($pilih=='01') {
                     
            
             //@mysql_query("Update calon_loan set next_schedule = (select DATE_ADD(tgl_murab,INTERVAL 7 DAY) from calon_loan where no_anggota  ='" . $value . "') where no_anggota  ='" . $value . "'") or die(mysql_error("GAGAL INPUT"));
-            db_jalankan("update loan  set Plafond=?,os =?, bagi_hasil=?,saldo_margin=?,angsuran=?,pokok=?,bulat=?,tenor=?,run_tenor='0', ke ='1',ijaroh=?,gol='1',status_app='MURAB', deal_produk ='1' WHERE cif =?", 'ssssssssss', (string) $pla, (string) $os_baru, (string) $margin_baru, (string) $margin_baru, (string) $angsuran_baru, (string) $pokok_baru, (string) $uang, (string) $tenor, (string) $ijaroh, (string) $cif) or die(mysql_error());
+            // §2h a (2026-11-17, perintah user): dulu tgl_akad & jatuh tempo tidak ikut diubah walau tenor diganti.
+            // Kini tgl_akad = tanggal sistem, jatuh tempo = tanggal sistem + 7 hari + tenor minggu (sama dengan adendum cetak_add_case.php).
+            $maturity_baru = date("Y-m-d", strtotime("+" . (int) $tenor . " WEEK", strtotime("+7 day", strtotime($tgl_system))));
+            db_jalankan("update loan  set Plafond=?,os =?, bagi_hasil=?,saldo_margin=?,angsuran=?,pokok=?,bulat=?,tenor=?,run_tenor='0', ke ='1',ijaroh=?,gol='1',status_app='MURAB', deal_produk ='1', tgl_akad=?, maturity_date=? WHERE cif =?", 'ssssssssssss', (string) $pla, (string) $os_baru, (string) $margin_baru, (string) $margin_baru, (string) $angsuran_baru, (string) $pokok_baru, (string) $uang, (string) $tenor, (string) $ijaroh, (string) $tgl_system, (string) $maturity_baru, (string) $cif) or die(mysql_error());
            db_jalankan("delete from tunggakan WHERE cif =?", 's', (string) $cif) or die(mysql_error());
             db_jalankan("insert into rek_loan(ref,tgl_realisasi,unit,no_anggota,saldo_kredit,debet,tipe,ket,USERID,STATUS,cif,AO)VALUES('',?,?,?,'0',?,'03',?,?,'REALISASI BAGHAS',?,(select cao from loan where cif=? limit 1))", 'ssssssss', (string) $tgl_system, (string) $unit, (string) $no_anggota, (string) $saldo_margin, (string) $ket, (string) $userid, (string) $cif, (string) $cif) or die(mysql_error());
            db_jalankan("insert into rek_loan(ref,tgl_realisasi,unit,no_anggota,saldo_kredit,debet,tipe,ket,USERID,STATUS,cif,AO)VALUES('',?,?,?,'0',?,'03',?,?,'REALISASI POKOK',?,(select cao from loan where cif=? limit 1))", 'ssssssss', (string) $tgl_system, (string) $unit, (string) $no_anggota, (string) $pokok_os, (string) $ket, (string) $userid, (string) $cif, (string) $cif) or die(mysql_error());
@@ -156,7 +181,11 @@ $row=db_satu("select DATE_ADD(tgl_wakalah,INTERVAL 7 DAY) as tgl_murab1,DATE_ADD
             loan.Deal_type,suffix,bagi_hasil,Tenor,Plafond,os,angsuran,pokok,ijaroh,bulat,ke,usaha,loan.unit,tgl_wakalah,hari,loan.cao,loan.USERID,loan.status,loan.cif,saldo_margin
             from loan 
              inner join anggota on anggota.cif = loan.cif
-             WHERE loan.cif =?", 'sss', (string) $tgl_system, (string) $tenor, (string) $cif) or die(mysql_error());
+             WHERE loan.cif =?", 'sss', (string) $tgl_system, (string) $tenor, (string) $cif);
+            if (!$row) {
+                notif_pergi('Maaf, data anggota tidak ditemukan.', 'rest_case.php');
+                exit;
+            }
         //$row = mysql_fetch_array(mysql_query("select * from calon_loan  WHERE no_anggota ='" . $value . "'")) or die(mysql_error());
             $no_anggota=$row['no_anggota'];
             $cif=$row['cif'];
@@ -179,6 +208,7 @@ $totalharga=ceil(compat_num($totalharga));
 
  db_jalankan("update loan  set os =?, angsuran=?,pokok=?,bulat=?,tenor=?,run_tenor='0',maturity_date =?,ke ='1',gol='1', tgl_akad=?, tgl_murab =?, deal_produk ='1' WHERE cif =?", 'sssssssss', (string) $os, (string) $angsuran_baru, (string) $angsuran_baru, (string) $total_harga, (string) $tenor, (string) $matur, (string) $tgl_system, (string) $tgl_system, (string) $cif) or die(mysql_error());
   db_jalankan("delete from tunggakan WHERE cif =?", 's', (string) $cif) or die(mysql_error());
+  notif_pergi('Restruturisasi sudah direalisasi.', 'rest_case.php'); // §2h: dulu tanpa pesan (layar putih)
 
 }
 

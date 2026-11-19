@@ -45,6 +45,22 @@ if ((string) $cek_loan['cif'] === '') {
 	notif_pergi("Maaf...,CIF untuk No Anggota $anggota kosong, pelunasan dibatalkan", $tujuan_kembali, 'error');
 	exit;
 }
+// §2l (2026-11-19, perintah user): hanya anggota unit sendiri (selain itu HTTP 403, tidak ada data berubah)
+require_once __DIR__ . '/inc/cek_login.php';
+wajib_cif_unit($cek_loan['cif']);
+// §2l: kunci per CIF (nama kunci sama dengan lunasi.php) agar klik ganda / Pelunasan biasa tidak berjalan bersamaan
+// (lepas otomatis saat skrip selesai), lalu status dibaca ulang setelah kunci didapat.
+db_satu("SELECT GET_LOCK(?, 30) AS kunci", 's', 'lunasi_' . $cek_loan['cif']);
+$cek_loan = db_satu("select cif, os, status, status_app, Cust_Short_name from loan where no_anggota = ?", 's', (string) $anggota);
+if (!$cek_loan || $cek_loan['status'] == 'LUNAS' || compat_num($cek_loan['os']) <= 0) {
+	notif_pergi("Maaf...,Pembiayaan No Anggota $anggota sudah lunas", $tujuan_kembali, 'error');
+	exit;
+}
+// §2l (2026-11-19, perintah user): MUSYAROKAH tidak punya hapus margin (versi lama memakai jurnal murabahah 1413000)
+if ($cek_loan['status_app'] === 'MUSYAROKAH') {
+	notif_pergi('CIF ' . $cek_loan['cif'] . ' AN ' . $cek_loan['Cust_Short_name'] . ' adalah anggota Musyarokah, tidak bisa hapus margin', $tujuan_kembali, 'error');
+	exit;
+}
 // semua penulisan dalam satu transaksi: dibatalkan bila ada query yang gagal
 // (catatan: jurnal_umum dan rek_loan masih MyISAM sehingga tidak ikut dibatalkan)
 $koneksi_transaksi = db_ni();

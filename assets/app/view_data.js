@@ -11,8 +11,9 @@ $(function () {
             url: 'server_side.php',
             type: 'POST'
         },
+        order: [], // tampilan awal tanpa urutan (sama dengan versi lama); urut setelah judul kolom diklik
         columns: [
-            { data: 'ID_NUMBER' },
+            { data: 'ID_NUMBER', orderable: false }, // sebagian NIK terenkripsi, urutannya tidak bermakna
             { data: 'unit' },
             { data: 'code_kel' },
             { data: 'no_anggota' },

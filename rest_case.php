@@ -3,7 +3,8 @@
  * Menu Pemeliharaan Data > Restrukturisasi Data > Rest Special Case.
  * Hitung pratinjau angsuran baru dari Plafond Baru ÷ tenor, simpan pilihan ke session,
  * lalu Cetak (cetak_add_case.php) atau Disburse (realisasi_res_case.php).
- * Perilaku sama dengan versi lama, termasuk $param_margin/$param_tabung yang tidak pernah diisi.
+ * 2026-11-17 (§2h, perintah user): pratinjau memakai rumus realisasi (01: param_biaya, 05: OS ÷ tenor),
+ * isian kosong tidak dicari, Plafond Baru tampil untuk 01/04.
  * 2026-11-17 (§2h): debug var_dump dibuang; cek simpanan kini 'ya' (dulu 'Ya', tidak pernah cocok).
  */
 require_once __DIR__ . '/inc/tampilan.php';
@@ -37,7 +38,8 @@ $nominal = isset($_POST['nominal']) ? $_POST['nominal'] : null;
 
 // 2026-11-16 (perintah user): hanya rekening anggota unit user login (dulu rekening unit lain ikut ditemukan)
 require_once __DIR__ . '/inc/cek_login.php';
-$kel = db_semua("select CODE_KEL,CIF,UNIT,CUST_SHORT_NAME,CAO FROM loan where no_anggota =? and unit =?", 'ss', (string) $norek, unit_user());
+// §2h (2026-11-17, perintah user): isian kosong tidak dicari (dulu cocok dengan loan yang no_anggota-nya kosong)
+$kel = (string) $norek === '' ? array() : db_semua("select CODE_KEL,CIF,UNIT,CUST_SHORT_NAME,CAO FROM loan where no_anggota =? and unit =?", 'ss', (string) $norek, unit_user());
 $kkel = $kel ? $kel[0] : null;
 $ciff = $kkel ? $kkel['CIF'] : null;
 
@@ -104,7 +106,9 @@ halaman_awal('Transaksi Restrukturisasi Special Case');
 
 $baris = array();
 if (isset($_POST['search'])) {
-    if (count($kel)) {
+    if ((string) $norek === '') {
+        echo "<script>alert('Maaf,isi Nomor REKENING dan Jenis Transaksi yang benar');</script>";
+    } elseif (count($kel)) {
         if (empty($norek) || empty($pilih) || empty($wadiah)) {
             echo "<script>alert('Maaf,isi Nomor REKENING dan Jenis Transaksi yang benar');</script>";
             echo "<script language='javascript'>document.location.href='rest_case.php'</script>";
@@ -117,6 +121,20 @@ if (isset($_POST['search'])) {
             $row_saldo = db_satu("select sum(kredit-DEBIT) as saldo_simpanan from simpanan where cif =? and type not in('04','05') ", 's', (string) $ciff) or die(mysql_error());
             $saldo_simpanan = $row_saldo['saldo_simpanan'];
 
+            // §2h (2026-11-17, perintah user): pratinjau memakai rumus yang sama dengan realisasi_res_case.php.
+            // 01: margin & tabungan dari param_biaya (Plafond Baru + tenor); tidak ada -> pesan, tanpa tombol Disburse.
+            // 05: angsuran baru = OS ÷ tenor. Jenis lain (belum ada realisasinya): rumus lama.
+            if ($pilih == '01') {
+                $pb = (string) $nominal === '' ? null : db_satu("select margin,tab,pla,jw FROM param_biaya where jw =? and pla=?", 'ss', (string) $tenor, (string) $nominal);
+                if (!$pb) {
+                    echo "<script>alert('Maaf, Plafond Baru dan tenor tidak ada di parameter biaya');</script>";
+                    $select = array();
+                } else {
+                    $param_margin = $pb['margin'];
+                    $param_tabung = $pb['tab'];
+                }
+            }
+
             foreach ($select as $data) {
                 // §2h (2026-11-17, perintah user): dulu dibandingkan dengan 'Ya' (huruf besar) padahal nilai form 'ya',
                 // sehingga simpanan selalu 0 di pratinjau. Kini 'ya', sama dengan cetak_add_case.php & realisasi_res_case.php.
@@ -127,6 +145,9 @@ if (isset($_POST['search'])) {
                 $margin = compat_num($nominal) * (compat_num($param_margin) / 100);
                 $ijaroh = compat_bagi($margin, $tenor);
                 $angsuran = $ijaroh + $pokok;
+                if ($pilih == '05') {
+                    $angsuran = compat_bagi($data['os'], $tenor);
+                }
                 $baris[] = array(
                     'nama' => $data['CUST_SHORT_NAME'],
                     'tgl_akad' => $data['tgl_akad'],
@@ -178,16 +199,19 @@ if (isset($_POST['search'])) {
 </div>
 <script>
 (function () {
-    // Plafond Baru: disembunyikan untuk jenis 01-03, tampil untuk 04 (seperti versi lama)
+    // §2h (2026-11-17, perintah user): Plafond Baru tampil untuk 01 (wajib, dipakai realisasi) dan 04;
+    // disembunyikan untuk 02/03/05 (dulu 01 ikut disembunyikan dan 05 tidak berpengaruh, salinan dari rest.php)
     var pilih = document.getElementById('pilih');
     var baris = document.getElementById('baris-nominal');
-    pilih.addEventListener('change', function () {
-        if (pilih.value === '04') {
+    function aturNominal() {
+        if (['01', '04'].indexOf(pilih.value) > -1) {
             baris.hidden = false;
-        } else if (['01', '02', '03'].indexOf(pilih.value) > -1) {
+        } else if (['02', '03', '05'].indexOf(pilih.value) > -1) {
             baris.hidden = true;
         }
-    });
+    }
+    pilih.addEventListener('change', aturNominal);
+    aturNominal();
     var nominal = document.getElementById('nominal');
     var format = document.getElementById('format');
     nominal.addEventListener('keyup', function () {

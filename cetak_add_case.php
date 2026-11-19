@@ -13,7 +13,9 @@ $wadiah=$_SESSION['swadiah'];
 $nominal=$_SESSION['snominal'];
 
 $tenor=$_SESSION['stenor'];
-$tanggal=$_SESSION['stanggal'];
+// §2h a (2026-11-17, perintah user): dulu $_SESSION['stanggal'] milik rest.php (kosong/sisa pencarian lain).
+// Kini tanggal sistem, sama dengan dasar tgl_akad & jatuh tempo di realisasi_res_case.php.
+$tanggal=isset($_SESSION['stgl_system']) ? $_SESSION['stgl_system'] : date("Y-m-d");
 //cek apakah user sudah login
 
 include "conn2.php";
@@ -38,8 +40,14 @@ $ao = $dataao ? $dataao[0] : false;
 $nama_um=$ao['um'];
 $jabatan=$ao['jabatan'];
 
- $pbiaya=db_satu("select margin,tab,pla,jw  FROM param_biaya where jw =? and pla=?", 'ss', (string) $tenor, (string) $nominal) or die(mysql_error());
-						
+ $pbiaya=db_satu("select margin,tab,pla,jw  FROM param_biaya where jw =? and pla=?", 'ss', (string) $tenor, (string) $nominal);
+if (!$pbiaya || (string) $nominal === '') {
+	// §2h (2026-11-17, perintah user): dulu berhenti diam-diam (layar putih)
+	require_once __DIR__ . '/inc/notif.php';
+	notif_pergi('Maaf, Plafond Baru dan tenor tidak ada di parameter biaya.', 'rest_case.php');
+	exit;
+}
+
 						$param_margin=$pbiaya['margin'];
 						$param_tabung=$pbiaya['tab'];
 						$param_tenor=$pbiaya['jw'];
@@ -244,7 +252,8 @@ $pdf->cell(18,5,''.$tenor,0,'R',1);
 $pdf->cell(20,5,'Minggu',0,'R',1);
 $pdf->Ln(5);
 $pdf->cell(70,5,'d. Jatuh Tempo Pembiayaan',0,'L',1);
-$pdf->cell(15,5,': Tanggal '.$maturity_date_reshj,0,'L',1);
+// §2h (2026-11-17): dulu salah ketik $maturity_date_reshj -> jatuh tempo tercetak kosong
+$pdf->cell(15,5,': Tanggal '.$maturity_date_res,0,'L',1);
 $pdf->Ln(5);
 $pdf->SetFont ('Arial','BU',11);
 $pdf->multicell(0,5,'PASAL 3',0,'C',1);
