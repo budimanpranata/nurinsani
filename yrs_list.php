@@ -2,6 +2,7 @@
 /**
  * Realisasi Tagihan Kelompok langkah 2: daftar anggota kelompok (loan dengan OS > 0) beserta TWM,
  * dipilih lalu dikirim ke realisasi_tag.php. Perilaku sama dengan versi lama.
+ * §2b (2026-11-19, perintah user): judul kolom "No Anggota" -> "CIF" (isinya memang CIF); baris TOTAL dari baris yang tampil.
  */
 require_once __DIR__ . '/inc/tampilan.php';
 session_start();
@@ -30,10 +31,10 @@ $anggota = db_semua("SELECT loan.no_anggota, loan.cif, loan.unit, Plafond, angsu
     WHERE kelompok.code_kel = ? AND loan.unit = ? AND os > 0
     GROUP BY loan.cif ORDER BY loan.cif", 'ss', $code_kel, (string) $unit);
 
-$total = db_satu("SELECT SUM(Plafond) AS tot_pla, SUM(bagi_hasil) AS margin, SUM(angsuran) AS angsuran, SUM(pokok) AS pokok, SUM(bulat) AS bulat, SUM(ijaroh) AS ijaroh
-    FROM loan
-    WHERE code_kel = ? AND unit = ? AND status_app IN ('MURAB','REST','COVID') AND os > 0
-    GROUP BY code_kel ORDER BY code_kel", 'ss', $code_kel, (string) $unit);
+// §2b (2026-11-19, perintah user): baris TOTAL dijumlah dari baris yang tampil (semua status, kolom sesuai judul).
+// Versi lama memakai query terpisah khusus MURAB/REST/COVID, kolom TWM berisi total pokok, Saldo TWM total ijaroh,
+// Sisa TWM kosong, dan kelompok tanpa MURAB/REST/COVID menampilkan Setoran anggota terakhir.
+$total = array('Plafond' => 0, 'bagi_hasil' => 0, 'bulat' => 0, 'angsuran' => 0, 'total_twm' => 0, 'twm' => 0, 'saldo_twm' => 0);
 
 halaman_awal('Realisasi Tagihan Kelompok');
 ?>
@@ -44,7 +45,7 @@ halaman_awal('Realisasi Tagihan Kelompok');
         <tr>
           <th class="text-center">Pilih</th>
           <th class="text-center">No</th>
-          <th>No Anggota</th>
+          <th>CIF</th>
           <th>Nama</th>
           <th>Unit</th>
           <th>Kelompok</th>
@@ -68,6 +69,12 @@ halaman_awal('Realisasi Tagihan Kelompok');
           $row_sal = db_satu("SELECT (SUM(KREDIT) - SUM(DEBIT)) AS twm FROM simpanan WHERE type NOT IN ('05','04') AND cif = ?", 's', (string) $cif) or die(mysql_error());
           $twm = $row_sal['twm'];
           $saldo_twm = $twm - $total_twm;
+          foreach (array('Plafond', 'bagi_hasil', 'bulat', 'angsuran') as $k) {
+              $total[$k] += compat_num($data[$k]);
+          }
+          $total['total_twm'] += compat_num($total_twm);
+          $total['twm'] += compat_num($twm);
+          $total['saldo_twm'] += compat_num($saldo_twm);
           $no++; ?>
         <tr>
           <td class="text-center"><input type="checkbox" class="form-check-input" name="cekbox[]" value="<?php echo h($data['no_anggota']); ?>" aria-label="Pilih <?php echo h($data['Cust_Short_name']); ?>"></td>
@@ -87,22 +94,15 @@ halaman_awal('Realisasi Tagihan Kelompok');
       <?php endforeach; ?>
       </tbody>
       <tfoot>
-        <?php
-        // baris total versi lama: kolom TWM berisi total pokok, Saldo TWM berisi total margin (ijaroh).
-        // Bila query total kosong, versi lama menampilkan $bulat milik anggota terakhir di tabel; dipertahankan.
-        if ($total) {
-            $bulat = $total['bulat'];
-        }
-        ?>
         <tr class="fw-bold">
           <td colspan="6" class="text-center">TOTAL TRANSAKSI</td>
-          <td class="text-end"><?php echo number_format(compat_num($total ? $total['tot_pla'] : null)); ?></td>
-          <td class="text-end"><?php echo number_format(compat_num($total ? $total['margin'] : null)); ?></td>
-          <td class="text-end"><?php echo number_format(compat_num(isset($bulat) ? $bulat : null)); ?></td>
-          <td class="text-end"><?php echo number_format(compat_num($total ? $total['angsuran'] : null)); ?></td>
-          <td class="text-end"><?php echo number_format(compat_num($total ? $total['pokok'] : null)); ?></td>
-          <td class="text-end"><?php echo number_format(compat_num($total ? $total['ijaroh'] : null)); ?></td>
-          <td></td>
+          <td class="text-end"><?php echo number_format($total['Plafond']); ?></td>
+          <td class="text-end"><?php echo number_format($total['bagi_hasil']); ?></td>
+          <td class="text-end"><?php echo number_format($total['bulat']); ?></td>
+          <td class="text-end"><?php echo number_format($total['angsuran']); ?></td>
+          <td class="text-end"><?php echo number_format($total['total_twm']); ?></td>
+          <td class="text-end"><?php echo number_format($total['twm']); ?></td>
+          <td class="text-end"><?php echo number_format($total['saldo_twm']); ?></td>
         </tr>
       </tfoot>
     </table>

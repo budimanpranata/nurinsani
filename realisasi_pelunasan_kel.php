@@ -32,7 +32,16 @@ $nom=isset($_POST['bulat']) ? $_POST['bulat'] : null;
 			
 $checbox = isset($_POST['cekbox']) ? $_POST['cekbox'] : null;
 if ($checbox) {
+	// §2m (2026-11-19, perintah user): hasil per anggota dikumpulkan lalu ditampilkan SATU ringkasan di akhir
+	// (dulu notif per anggota langsung tertimpa pindah halaman yang dicetak di dalam loop);
+	// CIF unit lain dilewati; kunci per CIF (nama sama dengan lunasi.php) agar kirim ganda tidak melunasi dua kali.
+	require_once __DIR__ . '/inc/cek_login.php';
+	$unit_saya = unit_user();
+	$checbox = array_values((array) $checbox);
+	$jml_lunas = 0;
+	$dilewati = array();
 	for ($i=0; $i <sizeof($checbox);$i++){
+		$checbox[$i] = (string) $checbox[$i];
 		//$query="insert into data (name,alamat) values ('".$checbox[$i]."','".$nom[$i]."')";
 		$kel = db_semua("select no_anggota,anggota.cif,loan.code_kel,loan.unit,angsuran,loan.Cust_Short_name,loan.cif,os,loan.cao,saldo_margin,status_app,deal_produk,Tenor,run_tenor,loan.ijaroh FROM loan
 		left join anggota on anggota.cif=loan.cif
@@ -41,17 +50,29 @@ if ($checbox) {
 
 		// Perbaikan 2026-10-30 (perintah user): pengaman yang sama dengan lunasi.php, per anggota.
 		// Anggota yang tidak lolos dilewati (alert) dan anggota berikutnya tetap diproses.
-		$cek_loan = db_satu("select cif, os, status from loan where cif = ?", 's', (string) $checbox[$i]);
+		$cek_loan = db_satu("select cif, os, status, unit from loan where cif = ?", 's', (string) $checbox[$i]);
 		if (!$cek_loan) {
-			notif_pesan('Maaf...,CIF ' . $checbox[$i] . ' tidak ditemukan');
+			$dilewati[] = 'CIF ' . $checbox[$i] . ' (tidak ditemukan)';
 			continue;
 		}
 		if ($cek_loan['status'] == 'LUNAS' || compat_num($cek_loan['os']) <= 0) {
-			notif_pesan('Maaf...,Pembiayaan CIF ' . $checbox[$i] . ' sudah lunas');
+			$dilewati[] = 'CIF ' . $checbox[$i] . ' (sudah lunas)';
 			continue;
 		}
 		if ((string) $cek_loan['cif'] === '') {
-			notif_pesan('Maaf...,CIF kosong, pelunasan dibatalkan');
+			$dilewati[] = 'CIF kosong (pelunasan dibatalkan)';
+			continue;
+		}
+		if ($unit_saya === '' || (string) $cek_loan['unit'] !== $unit_saya) {
+			$dilewati[] = 'CIF ' . $checbox[$i] . ' (bukan anggota unit Anda)';
+			continue;
+		}
+		$nama_kunci = 'lunasi_' . $cek_loan['cif'];
+		db_satu("SELECT GET_LOCK(?, 30) AS kunci", 's', $nama_kunci);
+		$cek_loan = db_satu("select cif, os, status from loan where cif = ?", 's', (string) $checbox[$i]);
+		if (!$cek_loan || $cek_loan['status'] == 'LUNAS' || compat_num($cek_loan['os']) <= 0) {
+			db_satu("SELECT RELEASE_LOCK(?) AS lepas", 's', $nama_kunci);
+			$dilewati[] = 'CIF ' . $checbox[$i] . ' (sudah lunas)';
 			continue;
 		}
 		// semua penulisan anggota ini dalam satu transaksi (jurnal_umum & rek_loan masih MyISAM, tidak ikut dibatalkan)
@@ -95,8 +116,11 @@ if ($checbox) {
 
 
 if ($saldo < $os ){
-			notif_pesan("Maaf Saldo an $cif " . addslashes($nama) . " Pelunasan Lebih Kecil dari Sisa Pembiayaan"); // addslashes: dulu nama sudah di-escape
-			//echo "<script language='javascript'>document.location.href='pelunasan_kel.php'</script>";
+			// §2m: dulu notif per anggota; kini masuk ringkasan (tidak ada yang ditulis, sama dengan versi lama)
+			mysqli_rollback($koneksi_transaksi);
+			db_satu("SELECT RELEASE_LOCK(?) AS lepas", 's', $nama_kunci);
+			$dilewati[] = "CIF $cif AN $nama (saldo kurang dari sisa pembiayaan)";
+			continue;
 			}else {
 							
 					$kodetr=5;
@@ -279,11 +303,13 @@ db_jalankan("Update  tagihan_cs set status_realisasi ='BAYAR'  where cif  =? and
 
 if (db_jumlah_gagal() > $gagal_awal) {
 	mysqli_rollback($koneksi_transaksi);
-	notif_pesan("GAGAL Pelunasan an $cif, data tidak disimpan");
+	db_satu("SELECT RELEASE_LOCK(?) AS lepas", 's', $nama_kunci);
+	$dilewati[] = "CIF $cif AN $nama (GAGAL, data tidak disimpan)";
 	continue;
 }
 mysqli_commit($koneksi_transaksi);
-notif_pesan("Pelunasa an $cif Suksess");
+db_satu("SELECT RELEASE_LOCK(?) AS lepas", 's', $nama_kunci);
+$jml_lunas++;
 		
 		
 		
@@ -299,8 +325,15 @@ notif_pesan("Pelunasa an $cif Suksess");
 		
 	
 
-            echo "<script language='javascript'>document.location.href='pelunasan_kel.php'</script>";
-	}	
+	} // akhir loop anggota (dulu pindah halaman dicetak di sini, per anggota)
+
+            // §2m: satu ringkasan setelah semua anggota diproses, lalu kembali ke pelunasan_kel.php
+            // (dulu notif per anggota langsung tertimpa pindah halaman)
+            $ringkas = "Pelunasan selesai: $jml_lunas anggota lunas.";
+            if ($dilewati) {
+                $ringkas .= "\nDilewati " . count($dilewati) . " anggota:\n- " . implode("\n- ", $dilewati);
+            }
+            notif_pergi($ringkas, 'pelunasan_kel.php', $dilewati ? ($jml_lunas > 0 ? 'warning' : 'error') : 'success');
 	
 }else {
 			notif_pergi('anda belum memilih data.', 'pelunasan_kel.php');

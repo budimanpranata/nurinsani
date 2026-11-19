@@ -18,6 +18,15 @@ if($_SESSION['level']!="unit"){
  $koneksi=open_connection2();	
 $code_kel = $_GET['code_kel']; 
 $jenis =$_GET['jenis'];
+// §3 (2026-11-19, perintah user): code_kel dari URL dulu tidak dicek unitnya -> Lariswah kelompok unit lain bisa dicetak
+// dengan mengganti URL. Kelompok yang punya calon pinjaman di unit lain ditolak (sebelum total_laris disentuh).
+require_once __DIR__ . '/inc/cek_login.php';
+$cek_unit_kel = db_satu("select count(*) as n from calon_loan where code_kel=? and unit<>?", 'ss', (string) $code_kel, unit_user());
+if ($cek_unit_kel && (int) $cek_unit_kel['n'] > 0) {
+    require_once __DIR__ . '/inc/notif.php';
+    notif_pergi('Maaf, kelompok ' . $code_kel . ' tidak terdaftar di unit Anda.', 'lariswah_satu.php', 'error');
+    exit;
+}
 //var_dump($jenis);
 
 $ca = db_satu("Select nama_ao FROM ao WHERE cao=?", 's', (string) $cao);
@@ -282,4 +291,4 @@ $pdf->Ln(9);
  
 $pdf->Output();
 
-?>ks
+?>

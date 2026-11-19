@@ -20,6 +20,13 @@ include "function.php";
 $koneksi=open_connection2();
 $cif = $_GET['cif'];
 wajib_cif_unit($cif); // 2026-11-16 (perintah user): CIF dari URL harus anggota unit user login
+// §2e (2026-11-19, perintah user): Pokok Margin (02) & Muqosah (03) belum tersedia -> notif, tanpa PDF
+$produk_belum = array('02' => 'Pokok Margin', '03' => 'Muqosah');
+if (isset($produk_belum[(string) $pilih])) {
+    require_once __DIR__ . '/inc/notif.php';
+    notif_pergi('Maaf, produk ' . $produk_belum[(string) $pilih] . ' belum tersedia.', 'rest.php');
+    exit;
+}
 
 $buss_date=date("y-m-d");
 $buss_date1=getdate();
@@ -67,11 +74,17 @@ $tunggak=$saldo_tunggak;
 
 
 
-$row_covid_mar=db_satu("select gol from data_loan where cif =? and buss_date ='2020-03-31'", 's', (string) $cif) or die(mysql_error());
-       $covid_mar=$row_covid_mar['gol'];     
+// §2e (2026-11-19, perintah user): dulu berhenti (or die, layar putih) bila tidak ada data_loan, juga untuk jenis 01
+$row_covid_mar=db_satu("select gol from data_loan where cif =? and buss_date ='2020-03-31'", 's', (string) $cif);
+       $covid_mar=$row_covid_mar ? $row_covid_mar['gol'] : null;
 
-$row_covid_feb=db_satu("select gol from data_loan where cif =? and buss_date ='2020-02-28'", 's', (string) $cif) or die(mysql_error());
-       $covid_feb=$row_covid_feb['gol'];   
+$row_covid_feb=db_satu("select gol from data_loan where cif =? and buss_date ='2020-02-28'", 's', (string) $cif);
+       $covid_feb=$row_covid_feb ? $row_covid_feb['gol'] : null;
+if ((string) $pilih === '04' && !$row_covid_feb) {
+    require_once __DIR__ . '/inc/notif.php';
+    notif_pergi('Maaf, data kolektibilitas Februari 2020 anggota ini tidak ada (data_loan). Covid19 tidak bisa dihitung.', 'rest.php');
+    exit;
+}
 
 
 $page=0;
@@ -116,11 +129,19 @@ $pokok_os=$p['saldo_os'];
 $angsur=$p['angsuran'];
 
 $ft =compat_bagi($tunggak, $angsur); // PHP 5: pembagi 0/kosong -> false, bukan error
+// §2e (2026-11-19, perintah user): minggu pecahan dibulatkan KE ATAS (sama dengan realisasi_res.php)
+if ($ft !== false) {
+	$ft = (int) ceil(round(compat_num($ft), 6));
+}
 switch($pilih){
 case "01":
 
  if($wadiah =='ya'){
 	$saldo_simpan=$saldo_simpanan;
+	// §2f (2026-11-19, perintah user): simpanan yang diambil maksimal sebesar sisa pokok (sama dengan proses realisasi)
+	if (compat_num($saldo_simpan) > compat_num($pokok_os)) {
+		$saldo_simpan = $pokok_os;
+	}
 			$os_res=$pokok_os - $saldo_simpan;
 
 			$pokok=compat_bagi($os_res, $tenor); // PHP 5: pembagi 0/kosong -> false, bukan error

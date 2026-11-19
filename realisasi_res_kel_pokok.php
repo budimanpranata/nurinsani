@@ -112,7 +112,12 @@ if ($pilih=='01') {
             
             $ket="Realisasi Restrukturisasi $Cust_Short_name";
 			$pokok_os=$os - $saldo_margin;
-			
+			// §2f (2026-11-19, perintah user): simpanan yang diambil maksimal sebesar sisa pokok (dulu simpanan > sisa pokok
+			// -> OS, angsuran & jurnal minus, kelebihan simpanan ikut terdebet). Debit simpanan & jurnal memakai nilai ini.
+			if (compat_num($simpanan) > compat_num($pokok_os)) {
+				$simpanan = $pokok_os;
+			}
+
 			//Hitung Restruturisasai
 			$os_res=$pokok_os-$simpanan;
 			

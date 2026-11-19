@@ -1,8 +1,8 @@
-<?php require_once __DIR__ . '/../koneksi_db.php'; require_once __DIR__ . '/../inc/api_token.php';
+<?php require_once __DIR__ . '/../koneksi_db.php';
 /**
  * Rekap Nominative Acrual (Excel), dibuka dari kp > Report > Nominative Pembiayaan (Kr_kp.php).
  * Isian dari sesi Kr_kp.php (status, buss_dates). Mengosongkan accrual dan loan_accrual, mengisi loan_accrual dari
- * loan (CURRENT) atau data_loan (EOM), menambah data musawamah dari API 192.168.88.44, menghitung day/accrual,
+ * loan (CURRENT) atau data_loan (EOM), menghitung day/accrual (API musawamah toko dihapus 2026-11-19),
  * lalu menampilkan seluruh loan_accrual. loan_accrual dipakai accrual.php untuk posting jurnal.
  * Dimigrasi 2026-11-03 (prepared statement, pengaman login); perhitungan sama dengan versi lama, termasuk:
  *   - query select $query versi lama tidak pernah dijalankan, jadi dibuang
@@ -47,24 +47,9 @@ db_jalankan("update loan_accrual set day = (select total_hari from param_hari wh
     isset($dayList[$day]) ? $dayList[$day] : '');
 db_jalankan("update loan_accrual set accrual = Plafond * 18/100/tenor/7*day");
 
-function curl($url)
-{
-    $ch = curl_init();
-    curl_setopt($ch, CURLOPT_URL, $url);
-    curl_setopt($ch, CURLOPT_HTTPHEADER, api_token_header());
-    curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
-    curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 10);
-    $output = curl_exec($ch);
-    curl_close($ch);
-    return $output;
-}
-
-$curl = curl("http://192.168.88.44/ni/api/categories/musawamah.php");
-// mengubah JSON menjadi array
-$data = is_string($curl) ? json_decode($curl, true) : null;
-if (!is_array($data)) {
-    $data = array();
-}
+// 2026-11-19 (perintah user): API toko 192.168.88.44 (musawamah) dihapus, toko tidak dipakai lagi.
+// Hasilnya sama dengan saat API tidak terjangkau: tanpa baris musawamah.
+$data = array();
 
 $kolom_api = array(
     'buss_date', 'code_kel', 'no_anggota', 'id_member', 'Cust_Short_name', 'Deal_type', 'suffix', 'bagi_hasil', 'Tenor',

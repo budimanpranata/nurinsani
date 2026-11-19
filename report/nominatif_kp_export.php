@@ -1,11 +1,11 @@
-<?php require_once __DIR__ . '/../koneksi_db.php'; require_once __DIR__ . '/../inc/api_token.php';
+<?php require_once __DIR__ . '/../koneksi_db.php';
 /**
  * Export Rekap Nominative Acrual kp ke .xlsx secara bertahap (pengganti export_nomi_kp.php untuk tombol Rekap di Kr_kp.php).
  *
  *   POST aksi=mulai              -> buat pekerjaan export, hasil {job, total}
  *   POST aksi=proses&job=...     -> langkah berikutnya, hasil {persen, berikut, habis}:
  *                                   isi (kosongkan accrual/loan_accrual, isi dari loan/data_loan, hitung day/accrual),
- *                                   api (tambah musawamah dari API 192.168.88.44), lalu tulis 500 baris per panggilan
+ *                                   api (hitung jumlah rekening; API musawamah toko dihapus 2026-11-19), lalu tulis 500 baris per panggilan
  *   POST aksi=rakit&job=...      -> baris TOTAL + rakit file .xlsx, hasil {unduh: url, ringkasan}
  *   GET  aksi=unduh&job=...      -> kirim file .xlsx lalu hapus file sementara
  *
@@ -103,17 +103,9 @@ maturity_date,last_payment,hari,cao,USERID,status,status_usia,status_app,gol';
  */
 function tambah_musawamah()
 {
-    $ch = curl_init();
-    curl_setopt($ch, CURLOPT_URL, "http://192.168.88.44/ni/api/categories/musawamah.php");
-    curl_setopt($ch, CURLOPT_HTTPHEADER, api_token_header());
-    curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
-    curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 10);
-    $curl = curl_exec($ch);
-    curl_close($ch);
-    $data = is_string($curl) ? json_decode($curl, true) : null;
-    if (!is_array($data)) {
-        $data = array();
-    }
+    // 2026-11-19 (perintah user): API toko 192.168.88.44 (musawamah) dihapus, toko tidak dipakai lagi.
+    // Hasilnya sama dengan saat API tidak terjangkau: tanpa baris musawamah.
+    $data = array();
     $kolom = 'buss_date,code_kel,no_anggota,cif,Cust_Short_name,Deal_type,suffix,bagi_hasil,Tenor,Plafond,os,saldo_margin,
 angsuran,pokok,ijaroh,bulat,run_tenor,ke,usaha,nama_usaha,unit,tgl_wakalah,tgl_akad,tgl_murab,next_schedule,
 maturity_date,last_payment,hari,cao,USERID,status,status_usia,status_app,gol,day,accrual';
@@ -184,7 +176,7 @@ if ($aksi === 'proses') {
         isi_loan_accrual($meta['status'], $meta['buss_date']);
         $meta['langkah'] = 'api';
         simpan_job($meta);
-        jawab_json(array('persen' => 10, 'berikut' => 'Mengambil data musawamah (API)…', 'habis' => false));
+        jawab_json(array('persen' => 10, 'berikut' => 'Menghitung jumlah rekening…', 'habis' => false));
     }
     if ($meta['langkah'] === 'api') {
         $tgl = tambah_musawamah();

@@ -26,6 +26,19 @@ $pot = db_semua("select calon_loan.cif as CIF,bidang_usaha.nama_usaha usaha_angg
  from calon_loan left join anggota on anggota.cif = calon_loan.cif 
  left join bidang_usaha on bidang_usaha.code_bidang = calon_loan.usaha
  where calon_loan.unit=? and calon_loan.status_app='MUSYAROKAH' and tgl_akad=? order by calon_loan.code_kel,calon_loan.cust_Short_name", 'ss', $userid, $tgl_mrb);
+// §3 (2026-11-19, perintah user): anggota tanpa data nisbah dulu membuat seluruh PDF berhenti (or die, layar putih).
+// Sekarang dicek dulu; ada yang kosong -> notif berisi CIF/nama, PDF tidak dicetak (nisbah tidak ditebak).
+$tanpa_nisbah = array();
+foreach ($pot as $p) {
+    if (!db_satu("select nisbah from nisbah WHERE cif =?", 's', $p['CIF'])) {
+        $tanpa_nisbah[] = $p['CIF'] . ' ' . $p['Cust_Short_name'];
+    }
+}
+if ($tanpa_nisbah) {
+    require_once __DIR__ . '/inc/notif.php';
+    notif_pergi("Maaf, akad Musyarakah tidak bisa dicetak. Data nisbah belum ada untuk:\n" . implode("\n", $tanpa_nisbah), 'musyarokah.php', 'error');
+    exit;
+}
 $page=0;
 require ('fpdf17/fpdf.php');
 $pdf=new FPDF ('P','mm','A4');
@@ -47,7 +60,7 @@ $usaha_anggota=$p['usaha_anggota'];
 $bulan=$p['bulan'];
 $bulat=number_format(compat_num($p['bulat']));
 $tahun_full=$p['tahun'];
-$row_sal= db_satu("select nisbah from nisbah WHERE cif =?", 's', $cif) or die(db_ni()->error);
+$row_sal= db_satu("select nisbah from nisbah WHERE cif =?", 's', $cif); // sudah dicek di atas (§3)
 $nisbah=$row_sal['nisbah'];
 $persen_nisbah = number_format(compat_num($nisbah * 100), 2) . ' %';
 $komplementer = 1 - $nisbah; // Hasil: 0.925 (92.5%)

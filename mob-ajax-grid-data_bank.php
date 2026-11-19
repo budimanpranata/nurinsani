@@ -40,36 +40,36 @@ $columns = array(
 
 // getting total number records without any search
 $sql = "SELECT tgl_setor,kode_unit,nama_ao,bank,name,image";
-$sql.=" FROM bukti_setor left join ao on ao.cao = bukti_setor.cao where kode_unit ='$userid'";
-$query=db_query($conn, $sql) or die("ajax-grid-data_trns.php: get InventoryItems");
+$sql.=" FROM bukti_setor left join ao on ao.cao = bukti_setor.cao where kode_unit = ?";
+$query=db_hasil_di($conn, $sql, 's', (string) $userid) or die("ajax-grid-data_trns.php: get InventoryItems");
 $totalData = db_num_rows($query);
 $totalFiltered = $totalData;  // when there is no search parameter then total number rows = total number filtered rows.
 
+// 2026-11-19 (perintah user): urutan/halaman dibatasi ke nilai sah (dulu ditempel langsung ke SQL)
+$kol_urut = isset($requestData['order'][0]['column'], $columns[(int) $requestData['order'][0]['column']]) ? $columns[(int) $requestData['order'][0]['column']] : 'tgl_setor';
+$arah_urut = (isset($requestData['order'][0]['dir']) && strtolower((string) $requestData['order'][0]['dir']) === 'desc') ? 'desc' : 'asc';
+$batas = " ORDER BY " . $kol_urut . "   " . $arah_urut . "   LIMIT " . max(0, (int) (isset($requestData['start']) ? $requestData['start'] : 0)) . " ," . max(0, (int) (isset($requestData['length']) ? $requestData['length'] : 10)) . "   ";
 
 if( !empty($requestData['search']['value']) ) {
-	// if there is a search parameter
+	// 2026-11-19 (perintah user, guard unit mobcol): pencarian dulu tanpa filter unit (bukti setor unit lain tampil
+	// & bisa diunduh) dan nilai cari ditempel langsung ke SQL (SQL injection). Kini prepared statement + hanya unit user.
+	$cari = (string) $requestData['search']['value'] . '%';
 	$sql = "SELECT tgl_setor,kode_unit,nama_ao,bank,name,image";
 $sql.=" FROM bukti_setor left join ao on ao.cao = bukti_setor.cao";
-    $sql.=" WHERE kode_unit  LIKE '".$requestData['search']['value']."%'  ";  
-    $sql.=" OR nama_ao LIKE '".$requestData['search']['value']."%'  ";
-	$sql.=" OR bank LIKE '".$requestData['search']['value']."%'  ";    // $requestData['search']['value'] contains search parameter
-	$sql.=" OR tgl_setor  LIKE '".$requestData['search']['value']."%'  ";
- 
-	
-	$query=db_query($conn, $sql) or die("mob-ajax-grid-data_bank.php: get PO");
-	$totalFiltered = db_num_rows($query); // when there is a search parameter then we have to modify total number filtered rows as per search result without limit in the query 
+    $sql.=" WHERE kode_unit = ? AND (kode_unit LIKE ? OR nama_ao LIKE ? OR bank LIKE ? OR tgl_setor LIKE ?) ";
 
-	$sql.=" ORDER BY ". $columns[$requestData['order'][0]['column']]."   ".$requestData['order'][0]['dir']."   LIMIT ".$requestData['start']." ,".$requestData['length']."   "; // $requestData['order'][0]['column'] contains colmun index, $requestData['order'][0]['dir'] contains order such as asc/desc , $requestData['start'] contains start row number ,$requestData['length'] contains limit length.
-	$query=db_query($conn, $sql) or die("mob-ajax-grid-data_bank.php: get PO"); // again run query with limit
-	
-} else {	
+	$query=db_hasil_di($conn, $sql, 'sssss', (string) $userid, $cari, $cari, $cari, $cari) or die("mob-ajax-grid-data_bank.php: get PO");
+	$totalFiltered = db_num_rows($query); // when there is a search parameter then we have to modify total number filtered rows as per search result without limit in the query
+
+	$query=db_hasil_di($conn, $sql . $batas, 'sssss', (string) $userid, $cari, $cari, $cari, $cari) or die("mob-ajax-grid-data_bank.php: get PO"); // again run query with limit
+
+} else {
 
     $sql = "SELECT tgl_setor,kode_unit,nama_ao,bank,name,image";
-    $sql.=" FROM bukti_setor left join ao on ao.cao = bukti_setor.cao where kode_unit ='$userid'";
+    $sql.=" FROM bukti_setor left join ao on ao.cao = bukti_setor.cao where kode_unit = ?";
 
-	$sql.=" ORDER BY ". $columns[$requestData['order'][0]['column']]."   ".$requestData['order'][0]['dir']."   LIMIT ".$requestData['start']." ,".$requestData['length']."   ";
-	$query=db_query($conn, $sql) or die("mob-ajax-grid-data_bank.php: get PO");
-	
+	$query=db_hasil_di($conn, $sql . $batas, 's', (string) $userid) or die("mob-ajax-grid-data_bank.php: get PO");
+
 }
 
 $data = array();

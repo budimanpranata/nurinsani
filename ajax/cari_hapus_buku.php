@@ -24,12 +24,14 @@ $unit = $user ? (string) $user['kode_branch'] : '';
 $awalan = $q . '%';
 
 // urutan AND/OR sama dengan versi lama: (CIF cocok ...) OR (nama cocok ...)
+// §2c (2026-11-19, perintah user): syarat TYPE dipindah ke ON. Versi lama di WHERE sehingga anggota tanpa baris
+// simpanan (selain 04/05) tidak ditemukan; sama dengan perbaikan pelunasan.php 2026-11-03. Saldo tetap tanpa 04/05.
 $baris = db_semua("SELECT anggota.CIF, anggota.CUST_SHORT_NAME, os, saldo_margin, saldo_margin AS MARGIN, ke AS KE, sum(kredit-debit) AS SALDO
     FROM anggota
     LEFT JOIN loan ON anggota.CIF = loan.cif
-    LEFT JOIN simpanan ON anggota.CIF = simpanan.cif
-    WHERE anggota.CIF LIKE ? AND anggota.UNIT = ? AND TYPE NOT IN ('04','05')
-       OR anggota.CUST_SHORT_NAME LIKE ? AND anggota.UNIT = ? AND TYPE NOT IN ('04','05')
+    LEFT JOIN simpanan ON anggota.CIF = simpanan.cif AND simpanan.TYPE NOT IN ('04','05')
+    WHERE anggota.CIF LIKE ? AND anggota.UNIT = ?
+       OR anggota.CUST_SHORT_NAME LIKE ? AND anggota.UNIT = ?
     GROUP BY anggota.cif ORDER BY anggota.cif", 'ssss', $awalan, $unit, $awalan, $unit);
 
 $hasil = array();

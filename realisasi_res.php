@@ -21,6 +21,12 @@ include "function.php";
 
 // 2026-11-16 (perintah user): CIF dari URL harus anggota unit user login (dulu bisa diganti ke anggota unit lain)
 wajib_cif_unit($cif);
+// §2e (2026-11-19, perintah user): Pokok Margin (02) & Muqosah (03) belum tersedia (dulu "Maaf menu belum tersedia .")
+$produk_belum = array('02' => 'Pokok Margin', '03' => 'Muqosah');
+if (isset($produk_belum[(string) $pilih])) {
+    notif_pergi('Maaf, produk ' . $produk_belum[(string) $pilih] . ' belum tersedia.', 'rest.php');
+    exit;
+}
 
 // §2e (2026-11-16, perintah user): cegah realisasi ganda (klik ganda / Back / cari ulang lalu Disburse lagi).
 // Kunci per CIF: klik kedua yang masuk bersamaan menunggu sampai klik pertama selesai, lalu tertolak cek di bawah.
@@ -40,6 +46,11 @@ $row_tunggak=db_satu("select sum(KREDIT-DEBIT) as saldo_tunggak from tunggakan w
 $tunggak=$saldo_tunggak;
 
 $ft=compat_bagi($tunggak, $angsur); // PHP 5: pembagi 0/kosong -> false, bukan error
+// §2e (2026-11-19, perintah user): minggu pecahan (tunggakan bukan kelipatan angsuran) dibulatkan KE ATAS, sisanya jadi
+// tagihan akhir. Dulu strtotime("+1.5 WEEK") -> jatuh tempo salah/0000-00-00. round 6 desimal: sisa sen tidak menambah minggu.
+if ($ft !== false) {
+	$ft = (int) ceil(round(compat_num($ft), 6));
+}
          
 
 if ($pilih=='01') {
@@ -50,6 +61,10 @@ if ($pilih=='01') {
 		notif_pergi('Restrukturisasi anggota ini sudah direalisasi hari ini.', 'rest.php');
 		exit;
 	}
+	// §2e (4) (2026-11-19, perintah user): semua penulisan dalam satu transaksi; satu query gagal -> semua dibatalkan
+	// (dulu berhenti di tengah: simpanan/jurnal sudah tercatat, loan/jadwal belum).
+	mysqli_begin_transaction(db_ni());
+	$gagal_awal = db_jumlah_gagal();
 	$kode_tr=5;
             $kode_tr=acakangkahuruf($kode_tr);      
             
@@ -77,7 +92,12 @@ if ($pilih=='01') {
 }
             $ket="Realisasi Restrukturisasi $Cust_Short_name";
 			$pokok_os=$os - $saldo_margin;
-			
+			// §2f (2026-11-19, perintah user): simpanan yang diambil maksimal sebesar sisa pokok (dulu simpanan > sisa pokok
+			// -> OS, angsuran & jurnal minus, kelebihan simpanan ikut terdebet). Debit simpanan & jurnal memakai nilai ini.
+			if (compat_num($simpanan) > compat_num($pokok_os)) {
+				$simpanan = $pokok_os;
+			}
+
 			//Hitung Restruturisasai
 			$os_res=$pokok_os-$simpanan;
 			
@@ -136,9 +156,9 @@ db_jalankan("insert into simpanan(BUSS_DATE,NOREK,UNIT,CIF,CODE_KEL,DEBIT,TYPE,K
            
            
             //@mysql_query("Update calon_loan set next_schedule = (select DATE_ADD(tgl_murab,INTERVAL 7 DAY) from calon_loan where no_anggota  ='" . $value . "') where no_anggota  ='" . $value . "'") or die(mysql_error("GAGAL INPUT"));
-            db_jalankan("update loan  set os =?, saldo_margin='0',angsuran=?,pokok=?,bulat=?,tenor=?,run_tenor='0', ke ='1',ijaroh='0',gol='1',status_app='REST' , deal_produk ='1' WHERE cif =?", 'ssssss', (string) $os_res, (string) $angsuran, (string) $angsuran, (string) $bulat, (string) $tenor, (string) $cif) or die(mysql_error());
-           db_jalankan("delete from tunggakan WHERE cif =?", 's', (string) $cif) or die(mysql_error());
-            db_jalankan("insert into rek_loan(ref,tgl_realisasi,unit,no_anggota,saldo_kredit,debet,tipe,ket,USERID,STATUS,cif,AO)VALUES('',?,?,?,'0',?,'03',?,?,'REALISASI BAGHAS',?,(select cao from loan where cif=? limit 1))", 'ssssssss', (string) $tgl_system, (string) $unit, (string) $no_anggota, (string) $saldo_margin, (string) $ket, (string) $userid, (string) $cif, (string) $cif) or die(mysql_error());
+            db_jalankan("update loan  set os =?, saldo_margin='0',angsuran=?,pokok=?,bulat=?,tenor=?,run_tenor='0', ke ='1',ijaroh='0',gol='1',status_app='REST' , deal_produk ='1' WHERE cif =?", 'ssssss', (string) $os_res, (string) $angsuran, (string) $angsuran, (string) $bulat, (string) $tenor, (string) $cif);
+           db_jalankan("delete from tunggakan WHERE cif =?", 's', (string) $cif);
+            db_jalankan("insert into rek_loan(ref,tgl_realisasi,unit,no_anggota,saldo_kredit,debet,tipe,ket,USERID,STATUS,cif,AO)VALUES('',?,?,?,'0',?,'03',?,?,'REALISASI BAGHAS',?,(select cao from loan where cif=? limit 1))", 'ssssssss', (string) $tgl_system, (string) $unit, (string) $no_anggota, (string) $saldo_margin, (string) $ket, (string) $userid, (string) $cif, (string) $cif);
            
 
 
@@ -155,7 +175,7 @@ db_jalankan("insert into simpanan(BUSS_DATE,NOREK,UNIT,CIF,CODE_KEL,DEBIT,TYPE,K
                 $x ++;
                 $awal_hari= date ("Y-m-d", strtotime("+7 DAY", strtotime($awal_hari)));
                 $detail= db_jalankan("INSERT INTO pinjaman_detail_c (id,id_pinjam,cicilan,angsuran_pokok,bunga,tgl_jatuh_tempo,tgl_bayar,jumlah_bayar,ket)
-                values(?,?,?,?,?,?,?,'0','')", 'sssssss', (string) $d, (string) $no_anggota, (string) $x, (string) $pokok, (string) $ijaroh, (string) $awal_hari, (string) $awal) or die(mysql_error());
+                values(?,?,?,?,?,?,?,'0','')", 'sssssss', (string) $d, (string) $no_anggota, (string) $x, (string) $pokok, (string) $ijaroh, (string) $awal_hari, (string) $awal);
                    
                     }
 
@@ -194,7 +214,7 @@ db_jalankan("insert into simpanan(BUSS_DATE,NOREK,UNIT,CIF,CODE_KEL,DEBIT,TYPE,K
                 $reff="$no_anggota$xx";
                 $awal_hari= date ("Y-m-d", strtotime("+7 DAY", strtotime($awal_hari)));
                 $detail_data= db_jalankan("INSERT INTO pinjaman_detail (id,id_pinjam,cicilan,angsuran_pokok,bunga,tgl_jatuh_tempo,tgl_bayar,jumlah_bayar,ket,cif,unit,ao)
-                values(?,?,?,?,?,?,?,'0','',?,?,?)", 'ssssssssss', (string) $reff, (string) $no_anggota, (string) $xx, (string) $pokok, (string) $ijaroh, (string) $awal_hari, (string) $awal, (string) $cif, (string) $unit, (string) $cao) or die(mysql_error());
+                values(?,?,?,?,?,?,?,'0','',?,?,?)", 'ssssssssss', (string) $reff, (string) $no_anggota, (string) $xx, (string) $pokok, (string) $ijaroh, (string) $awal_hari, (string) $awal, (string) $cif, (string) $unit, (string) $cao);
                 }
                 // §2e (2026-11-16, perintah user): dulu tanpa filter cif sehingga jadwal SEMUA anggota di tanggal libur ikut terhapus
                 db_jalankan("delete from pinjaman_detail where tgl_jatuh_tempo in (select tgl_libur from param_libur where tgl_libur=pinjaman_detail.tgl_jatuh_tempo) and cif=?", 's', (string) $cif);
@@ -215,7 +235,7 @@ db_jalankan("insert into simpanan(BUSS_DATE,NOREK,UNIT,CIF,CODE_KEL,DEBIT,TYPE,K
                 $reff="$no_anggota$x1";
                 $awal_hari= date ("Y-m-d", strtotime("+7 DAY", strtotime($awal_hari)));
                 $update= db_jalankan("INSERT INTO pinjaman_detail (id,id_pinjam,cicilan,angsuran_pokok,bunga,tgl_jatuh_tempo,tgl_bayar,jumlah_bayar,ket,cif,unit,ao)
-                values(?,?,?,?,?,?,?,'0','',?,?,?)", 'ssssssssss', (string) $reff, (string) $no_anggota, (string) $x1, (string) $pokok, (string) $ijaroh, (string) $awal_hari, (string) $awal, (string) $cif, (string) $unit, (string) $cao) or die(mysql_error());
+                values(?,?,?,?,?,?,?,'0','',?,?,?)", 'ssssssssss', (string) $reff, (string) $no_anggota, (string) $x1, (string) $pokok, (string) $ijaroh, (string) $awal_hari, (string) $awal, (string) $cif, (string) $unit, (string) $cao);
                            
                 }
                 // §2e (2026-11-16, perintah user): dulu tanpa filter cif sehingga jadwal SEMUA anggota di tanggal libur ikut terhapus
@@ -228,7 +248,13 @@ db_jalankan("insert into simpanan(BUSS_DATE,NOREK,UNIT,CIF,CODE_KEL,DEBIT,TYPE,K
             }
    
            
-    notif_pergi('Restruturisasi sudah direalisasi.', 'rest.php');     
+    if (db_jumlah_gagal() > $gagal_awal) {
+        mysqli_rollback(db_ni());
+        notif_pergi('Restrukturisasi GAGAL, data tidak disimpan.', 'rest.php', 'error');
+    } else {
+        mysqli_commit(db_ni());
+    notif_pergi('Restruturisasi sudah direalisasi.', 'rest.php');
+    }
     }
 
                
@@ -268,10 +294,19 @@ $tgl_wakal    = strtotime($mat);
 $maturity_date_res =$maturity_date_ress;
 }
 
+// §2e (4) (2026-11-19, perintah user): update loan + hapus tunggakan dalam satu transaksi
+mysqli_begin_transaction(db_ni());
+$gagal_awal = db_jumlah_gagal();
 db_jalankan("update loan set maturity_date =?, gol='1', deal_produk ='1' where cif =?", 'ss', (string) $maturity_date_res, (string) $cif);
 db_jalankan("delete from tunggakan where cif =?", 's', (string) $cif);
 
+if (db_jumlah_gagal() > $gagal_awal) {
+                    mysqli_rollback(db_ni());
+                    notif_pergi('Restrukturisasi GAGAL, data tidak disimpan.', 'rest.php', 'error');
+} else {
+                    mysqli_commit(db_ni());
                     notif_pergi('Covid Updated .', 'rest.php');
+}
         }
 
    else {

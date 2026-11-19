@@ -38,6 +38,8 @@ ob_start();
                 $tanggal_transaksi=$_POST['tanggal_transaksi'];
                 $keterangan_transaksi=isset($_POST['keterangan_transaksi']) ? $_POST['keterangan_transaksi'] : null; // field ini tidak ada di form (versi lama)
                 $cif=$_POST['kode_rekening'];
+                // §2c (2026-11-19, perintah user): hanya anggota unit sendiri (selain itu HTTP 403, tidak ada data berubah)
+                wajib_cif_unit($cif);
                 $ke =$_POST['ke'];
                 $jenis=$_POST['jenis'];
                 $margin=$_POST['margin'];
@@ -1146,6 +1148,27 @@ ob_start();
                 $tanggal_selesai=$_POST['tanggal_selesai'];
                 $cif=$_POST['cif'];
                 $pokok=$_POST['pokok'];
+                // §2c (2026-11-19, perintah user): Selesai (OS & margin 0, hapus tunggakan, header jurnal) hanya bila
+                // CIF terisi & milik unit user, jurnal nomor bukti ini ada dan Balance, dan belum pernah di-Selesai-kan.
+                // Selain itu notif dan tidak ada data berubah.
+                $tolak_selesai = '';
+                if ((string) $cif === '') {
+                    $tolak_selesai = 'Maaf, CIF kosong. Pilih anggota dan Simpan jurnal hapus buku dulu sebelum Selesai.';
+                } else {
+                    wajib_cif_unit($cif);
+                    $cek_jurnal = db_satu("select count(*) as baris, coalesce(sum(debet),0) as debet, coalesce(sum(kredit),0) as kredit from tabel_transaksi where kode_transaksi=? and id_admin=?", 'ss', (string) $kode_transaksi, (string) $userid);
+                    if (!$cek_jurnal || (int) $cek_jurnal['baris'] === 0) {
+                        $tolak_selesai = "Maaf, belum ada transaksi untuk nomor bukti $kode_transaksi.";
+                    } elseif (round(compat_num($cek_jurnal['debet']), 2) != round(compat_num($cek_jurnal['kredit']), 2)) {
+                        $tolak_selesai = "Maaf, jurnal nomor bukti $kode_transaksi belum Balance (selisih " . number_format(abs(compat_num($cek_jurnal['debet']) - compat_num($cek_jurnal['kredit'])), 2, '.', ',') . ').';
+                    } elseif (db_satu("select 1 as ada from jurnal_umum where kode_transaksi=? limit 1", 's', (string) $kode_transaksi)) {
+                        $tolak_selesai = "Maaf, nomor bukti $kode_transaksi sudah diselesaikan.";
+                    }
+                }
+                if ($tolak_selesai !== '') {
+                    require_once __DIR__ . '/../inc/notif.php';
+                    notif_pesan($tolak_selesai, 'error');
+                } else {
                 $row_sal=db_satu("select(sum(KREDIT) - sum(DEBIT))as saldo from simpanan WHERE cif =?", 's', (string) $cif) or die(mysql_error());
                 $sisa=$row_sal['saldo'];
                  
@@ -1171,8 +1194,9 @@ $query=db_jalankan("delete from tunggakan WHERE cif =?", 's', (string) $cif) or 
                 }else{
                     echo mysql_error();
                 }
-                 
-             
+                } // §2c akhir pengaman Selesai
+
+
             }else{
                 unset($_POST['selesai']);
             }
@@ -1203,10 +1227,11 @@ foreach (db_semua("select * from tabel_transaksi where kode_transaksi=? and id_a
     $kredit = $row['kredit'] === null ? null : (string) $row['kredit'];
     $tot_debet = $tot_debet + $debet;
     $tot_kredit = $tot_kredit + $kredit;
-    $n = db_satu("select nama_rek from coa WHERE  kode_rek =?", 's', (string) $row['kode_rekening']) or die(mysql_error());
+    // §2c (2026-11-19, perintah user): versi lama berhenti (or die, layar putih) bila kode rekening tidak ada di coa
+    $n = db_satu("select nama_rek from coa WHERE  kode_rek =?", 's', (string) $row['kode_rekening']);
     $baris_transaksi[] = array(
         'kode_rekening' => $row['kode_rekening'],
-        'nama_rek' => $n['nama_rek'],
+        'nama_rek' => $n ? $n['nama_rek'] : '(tidak ada di COA)',
         'keterangan_transaksi' => $row['keterangan_transaksi'],
         'debet' => $debet,
         'kredit' => $kredit,

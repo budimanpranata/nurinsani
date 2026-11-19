@@ -3,7 +3,9 @@
  * Menu Pemeliharaan Data > Restrukturisasi Data > Restrukturisasi.
  * Hitung pratinjau angsuran baru per jenis restrukturisasi (Pokok / Pokok Margin / Muqosah / Covid19),
  * simpan pilihan ke session, lalu Cetak (cetak_add.php), Cetak Covid (cetak_covid.php), atau Disburse (realisasi_res.php).
- * Perilaku sama dengan versi lama (termasuk berhenti bila data_loan tidak ada); debug var_dump dibuang 2026-11-17 (§2e).
+ * Perilaku sama dengan versi lama; debug var_dump dibuang 2026-11-17 (§2e).
+ * §2e 2026-11-19 (perintah user): 02/03 ditandai belum tersedia; "Pilih Salah satu" ditolak; tanpa data_loan tidak berhenti
+ * (hanya Covid19 yang butuh data Februari 2020 -> notif).
  * Pembagian memakai compat_bagi(): tenor kosong/0 tidak menghentikan halaman, sama seperti PHP 5.
  */
 require_once __DIR__ . '/inc/tampilan.php';
@@ -51,7 +53,10 @@ function bulat_ribuan($angsuran)
     return round(compat_num($totalharga), -3) + 1000;
 }
 
-$pilihan_jenis = array('Pilih Salah satu' => 'Pilih Salah satu', '01' => 'Pokok', '02' => 'Pokok Margin', '03' => 'Muqosah', '04' => 'Covid19');
+// §2e (2026-11-19, perintah user): Pokok Margin (02) dan Muqosah (03) ditandai belum tersedia (Disburse 02 belum ada,
+// proses bisnis Muqosah belum ada); dipilih -> notif, tanpa pratinjau/Cetak/Disburse.
+$produk_belum = array('02' => 'Pokok Margin', '03' => 'Muqosah');
+$pilihan_jenis = array('Pilih Salah satu' => 'Pilih Salah satu', '01' => 'Pokok', '02' => 'Pokok Margin (belum tersedia)', '03' => 'Muqosah (belum tersedia)', '04' => 'Covid19');
 $pilihan_wadiah = array('Pilih Salah satu' => 'Pilih Salah satu', 'ya' => 'Ya', 'tidak' => 'Tidak');
 
 halaman_awal('Transaksi Restrukturisasi');
@@ -117,9 +122,14 @@ halaman_awal('Transaksi Restrukturisasi');
 $baris = array();
 if (isset($_POST['search'])) {
     if ($kkel) {
-        if (empty($norek) || empty($pilih) || empty($wadiah)) {
+        // §2e (2026-11-19, perintah user): pilihan "Pilih Salah satu" dulu lolos cek isian kosong
+        if (empty($norek) || empty($pilih) || empty($wadiah)
+            || !isset($pilihan_jenis[(string) $pilih]) || (string) $pilih === 'Pilih Salah satu'
+            || !in_array((string) $wadiah, array('ya', 'tidak'), true)) {
             echo "<script>alert('Maaf,isi Nomor REKENING dan Jenis Transaksi yang benar');</script>";
             echo "<script language='javascript'>document.location.href='rest.php'</script>";
+        } elseif (isset($produk_belum[(string) $pilih])) {
+            echo "<script>alert(" . json_encode('Maaf, produk ' . $produk_belum[(string) $pilih] . ' belum tersedia.') . ");</script>";
         } else {
             $_SESSION['spilih'] = $pilih;
             $_SESSION['swadiah'] = $wadiah;
@@ -131,10 +141,16 @@ if (isset($_POST['search'])) {
             $row_saldo = db_satu("select sum(kredit-DEBIT) as saldo_simpanan from simpanan where cif =? and type not in('04','05') ", 's', (string) $ciff) or die(mysql_error());
             $saldo_simpanan = $row_saldo['saldo_simpanan'];
             $saldo_simpan = $saldo_simpanan;
-            $row_covid_mar = db_satu("select gol from data_loan where cif =? and buss_date ='2020-03-31'", 's', (string) $ciff) or die(mysql_error());
-            $covid_mar = $row_covid_mar['gol'];
-            $row_covid_feb = db_satu("select gol from data_loan where cif =? and buss_date ='2020-02-28'", 's', (string) $ciff) or die(mysql_error());
-            $covid_feb = $row_covid_feb['gol'];
+            // §2e (2026-11-19, perintah user): dulu berhenti (or die, layar putih) bila anggota tidak punya data_loan,
+            // juga untuk jenis 01 yang tidak memakainya. Kini hanya Covid19 (04) yang butuh data Februari 2020.
+            $row_covid_mar = db_satu("select gol from data_loan where cif =? and buss_date ='2020-03-31'", 's', (string) $ciff);
+            $covid_mar = $row_covid_mar ? $row_covid_mar['gol'] : null;
+            $row_covid_feb = db_satu("select gol from data_loan where cif =? and buss_date ='2020-02-28'", 's', (string) $ciff);
+            $covid_feb = $row_covid_feb ? $row_covid_feb['gol'] : null;
+            if ((string) $pilih === '04' && !$row_covid_feb) {
+                echo "<script>alert('Maaf, data kolektibilitas Februari 2020 anggota ini tidak ada (data_loan). Covid19 tidak bisa dihitung.');</script>";
+                $select = array();
+            }
 
             foreach ($select as $data) {
                 $saldo_margin = $data['saldo_margin'];
@@ -144,6 +160,10 @@ if (isset($_POST['search'])) {
                 switch ($pilih) {
                     case "01":
                         $saldo_simpan = $wadiah == 'ya' ? $saldo_simpanan : 0;
+                        // §2f (2026-11-19, perintah user): simpanan yang diambil maksimal sebesar sisa pokok (dulu OS bisa minus)
+                        if (compat_num($saldo_simpan) > compat_num($pokok_os)) {
+                            $saldo_simpan = $pokok_os;
+                        }
                         $os_res = $pokok_os - $saldo_simpan;
                         $pokok = compat_bagi($os_res, $tenor);
                         $angsuran = $pokok;

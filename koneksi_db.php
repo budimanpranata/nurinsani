@@ -34,6 +34,8 @@ $GLOBALS['DB_CONFIG'] = array(
         'user' => 'root',
         'pass' => '',
         'name' => 'mobcol',
+        // Folder foto bukti setor (download.php). Dulu tertulis langsung di download.php (2026-11-19).
+        'upload_url' => 'http://76.13.20.176/apimobcol/uploads/',
     ),
     // Server PIP (pip.php). Password diisi di koneksi_db.lokal.php; dulu tertulis di pip.php (2026-11-05).
     'pip' => array(

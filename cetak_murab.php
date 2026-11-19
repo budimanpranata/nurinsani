@@ -10,7 +10,15 @@ $userid=$_SESSION['userid'];
 include "conn2.php";
 include "function.php";
 $koneksi=open_connection2();
-$code_kel = $_GET['code_kel'];  
+$code_kel = $_GET['code_kel'];
+// §3 (2026-11-19, perintah user): code_kel dari URL dulu tidak dicek unitnya -> akad (nama, NIK, alamat) kelompok unit lain
+// bisa dicetak dengan mengganti URL. Kelompok yang punya calon pinjaman di unit lain ditolak.
+$cek_unit_kel = db_satu("select count(*) as n from calon_loan where code_kel=? and unit<>?", 'ss', (string) $code_kel, unit_user());
+if ($cek_unit_kel && (int) $cek_unit_kel['n'] > 0) {
+    require_once __DIR__ . '/inc/notif.php';
+    notif_pergi('Maaf, kelompok ' . $code_kel . ' tidak terdaftar di unit Anda.', 'murabahah.php', 'error');
+    exit;
+}
 
 
 
