@@ -12,6 +12,9 @@
     document.querySelectorAll('.tombol-disburse').forEach(function (b) {
         b.addEventListener('click', function () {
             form.elements.id.value = b.getAttribute('data-id');
+            // 2026-11-21: baris yang diklik (id_realisasi) dan kode jurnal yang akan dicatat (BU/<id_realisasi>)
+            form.elements.id_realisasi.value = b.getAttribute('data-realisasi');
+            form.elements.norek.value = 'BU/' + b.getAttribute('data-realisasi');
             form.elements.jatuh.value = b.getAttribute('data-jatuh');
             form.elements.nomi.value = b.getAttribute('data-nomi');
             form.elements.ket.value = b.getAttribute('data-ket');

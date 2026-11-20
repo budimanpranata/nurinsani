@@ -23,22 +23,26 @@ include "../../indo_tgl.php";
 
 $r = db_satu("select kode_branch from user where userid =?", 's', (string) $userid);
 $unit = $r ? (string) $r['kode_branch'] : '';
-$jurnal_keluar = db_satu("SELECT max(nomor_jurnal) as n FROM jurnal_umum where unit =? ORDER BY tanggal_selesai DESC", 's', $unit);
-$nomor_jurnal = compat_num($jurnal_keluar ? $jurnal_keluar['n'] : null) + 1;
-$kode_transaksi = "KK/" . $unit . $nomor_jurnal;
+// 2026-11-21 (perintah user, §51 C): isian ID TRANSAKSI di modal kini kode jurnal yang benar-benar dicatat proses
+// (BU/<id_realisasi>, read-only). Dulu "KK/<unit><max nomor_jurnal+1>" yang tidak dipakai proses.
 
 $baris = array();
 $bayar = null;
 $ket = null;
 $tanggal = null;
-foreach (db_semua("select dep_realisasi.norek,CUST_SHORT_NAME,jumlah_bayar as nominal,tgl_bayar,tgl_jatuh_tempo,tenor,jumlah_bayar,status from dep_realisasi
+foreach (db_semua("select dep_realisasi.id_realisasi,dep_realisasi.norek,CUST_SHORT_NAME,jumlah_bayar as nominal,tgl_bayar,tgl_jatuh_tempo,
+    deposito.contract_date,tenor,jumlah_bayar,status from dep_realisasi
     left join deposan on  deposan.cif = dep_realisasi.cif
-    left join deposito on deposito.norek=dep_realisasi.norek") as $row) {
-    // versi lama: kolom bagi hasil untuk BREAK memakai nilai baris sebelumnya ($bayar tidak diisi ulang)
+    left join deposito on deposito.norek=dep_realisasi.norek
+    order by dep_realisasi.tgl_bayar, dep_realisasi.id_realisasi") as $row) {
+    // 2026-11-21: urutan dibuat pasti (urutan antrean masuk). Tanpa ORDER BY, MySQL 8 (hash join) mengacak urutan;
+    // MySQL 5 server lama menampilkan urutan data masuk.
     if ($row['status'] == 'PENEMPATAN') {
         $bayar = 0;
         $ket = 'PENEMPATAN';
     } elseif ($row['status'] == 'BREAK') {
+        // 2026-11-21 (§51 C): bagi hasil BREAK 0 (dulu memakai nilai baris sebelumnya); pokok tampil di NOMINAL
+        $bayar = 0;
         // perbaikan 2026-11-03: nomor rekening ikut (versi lama memakai $norek yang tidak pernah diisi)
         $ket = "PEMBAYARAN BREAK PENEMPATAN " . $row['norek'];
     } else {
@@ -70,8 +74,8 @@ halaman_awal('Monitoring Daily Disbursement');
           <td><?php echo h($r['norek']); ?></td>
           <td><?php echo h($r['CUST_SHORT_NAME']); ?></td>
           <td class="text-end"><?php echo number_format(compat_num($r['nominal'])); ?></td>
-          <?php // versi lama: kolom TGL KONTRAK juga menampilkan tanggal jatuh tempo ?>
-          <td><?php echo h(tgl_indo($r['tgl_jatuh_tempo'])); ?></td>
+          <?php // 2026-11-21 (§51 C): tanggal kontrak deposito (dulu tanggal jatuh tempo) ?>
+          <td><?php echo $r['contract_date'] ? h(tgl_indo(substr((string) $r['contract_date'], 0, 10))) : ''; ?></td>
           <td><?php echo h(tgl_indo($r['tgl_jatuh_tempo'])); ?></td>
           <td><?php echo h($r['tenor']); ?></td>
           <td class="text-end"><?php echo number_format(compat_num($r['bayar'])); ?></td>
@@ -79,6 +83,7 @@ halaman_awal('Monitoring Daily Disbursement');
           <td class="text-center">
             <button type="button" class="btn btn-sm btn-outline-warning tombol-disburse"
                     data-id="<?php echo h($r['norek']); ?>"
+                    data-realisasi="<?php echo h($r['id_realisasi']); ?>"
                     data-jatuh="<?php echo h($r['tgl_bayar']); ?>"
                     data-nomi="<?php echo h($r['nominal']); ?>"
                     data-ket="<?php echo h($r['ket_jurnal']); ?>">Disburse</button>
@@ -99,6 +104,7 @@ halaman_awal('Monitoring Daily Disbursement');
     <div class="modal-content">
       <form id="form-data" method="post" action="../transaksi/engine_update_dep.php?p=update" autocomplete="off">
         <input type="hidden" name="id" id="id">
+        <input type="hidden" name="id_realisasi" id="id_realisasi">
         <div class="modal-header">
           <h2 class="modal-title fs-6" id="judul-edit">Posting Ke Jurnal</h2>
           <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
@@ -106,7 +112,7 @@ halaman_awal('Monitoring Daily Disbursement');
         <div class="modal-body">
           <div class="mb-2">
             <label class="form-label small" for="norek">ID TRANSAKSI</label>
-            <input type="text" name="norek" id="norek" value="<?php echo h($kode_transaksi); ?>" class="form-control form-control-sm">
+            <input type="text" name="norek" id="norek" value="" class="form-control form-control-sm" readonly>
           </div>
           <div class="mb-2">
             <label class="form-label small" for="jatuh">TANGGAL</label>
