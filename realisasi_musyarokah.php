@@ -29,11 +29,9 @@ function alert_pindah($pesan, $tujuan)
 
 if (!empty($_POST['search'])) {
     if ($kelompok === '') {
-        // versi lama tidak berhenti di sini: lanjut ke pengecekan data sehingga alert kedua juga muncul
-        echo '<script>alert(' . json_encode('Maaf,.Mohon Nomor Kelompok Yang Benar !!!') . ');</script>';
-        // versi lama mengarah ke realisasi_wakalah.php di sini; dipertahankan
-        echo "<script language='javascript'>document.location.href='realisasi_wakalah.php'</script>";
-        alert_pindah('Maaf...,Kelompok  sudah dilakukan realisasi!!!', 'realisasi_musyarokah.php');
+        // §2 (2026-11-20, perintah user): dulu dua alert (kedua "sudah dilakukan realisasi" keliru) dan sempat
+        // diarahkan ke realisasi_wakalah.php sebelum ditimpa. Kini satu alert, tetap kembali ke halaman ini (sama seperti akhir alur lama).
+        alert_pindah('Maaf,.Mohon Nomor Kelompok Yang Benar !!!', 'realisasi_musyarokah.php');
     }
     $r = db_satu('SELECT kode_branch FROM user WHERE userid = ?', 's', (string) $userid);
     $branch = $r ? (string) $r['kode_branch'] : '';

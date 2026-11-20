@@ -18,6 +18,7 @@ include "function.php";
            
 $cekbox = isset($_POST['cekbox']) ? $_POST['cekbox'] : null;
 if ($cekbox) {
+       $dilewati_os = array(); // §2 (2026-11-20): anggota yang dilewati karena masih ada OS, diumumkan sekali di akhir
        foreach ($cekbox as $value) {
        
             $kode_tr=5;
@@ -67,9 +68,9 @@ if ($cekbox) {
 		if ($os_lama >0) {
 
 			// jika data ditemukan
-		echo "<script> alert ('Maaf  $cif mempunyai saldo OS sebesar $os_lama ')</script>";
-
-		echo "<script language='javascript'>document.location.href='new2.php'</script>";
+			// §2 (2026-11-20, perintah user): dulu alert per anggota + pindah ke new2.php yang selalu tertimpa oleh
+			// pindah berikutnya; anggota ini tetap dilewati (sama), pesannya kini digabung di notif akhir.
+			$dilewati_os[] = "Maaf  $cif mempunyai saldo OS sebesar $os_lama";
 				}else{
 
 
@@ -218,9 +219,16 @@ $update=db_jalankan("UPDATE loan SET status='CETAK',gol ='1' where cif=?", 's', 
     }
 
    
-    notif_pergi('Pembiayaan sudah direalisasikan.', 'realisasi.php');
-   
-            } 
+            }
+    // §2 (2026-11-20, perintah user): dulu notif "sudah direalisasikan" dicetak di dalam loop (sekali per anggota,
+    // popup bertumpuk). Kini sekali sesudah semua anggota diproses; tujuan tetap realisasi.php.
+    if ($dilewati_os) {
+        $jml_proses = count($cekbox) - count($dilewati_os);
+        notif_pergi(($jml_proses > 0 ? "Pembiayaan sudah direalisasikan.\n\nTidak direalisasi:\n" : "Pembiayaan tidak direalisasikan:\n")
+            . implode("\n", $dilewati_os), 'realisasi.php', 'warning');
+    } else {
+        notif_pergi('Pembiayaan sudah direalisasikan.', 'realisasi.php');
+    }
 		}
             else {
                     notif_pergi('anda belum memilih data.', 'realisasi.php');

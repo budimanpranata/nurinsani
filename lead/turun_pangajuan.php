@@ -9,8 +9,12 @@
  * ajax/cari_pengajuan_lead.php (query sama dengan lead/autosuggesst_rek_aju.php).
  * Penyesuaian PHP 8: hitungan memakai aturan PHP 5 (harga baru kosong = 0). Di PHP 8 versi lama berhenti dengan
  * TypeError untuk Ajukan Kembali / Hapus Pengajuan (harga baru kosong), sehingga keduanya tidak pernah jalan.
- * Perilaku lama yang dipertahankan dicatat di PEKERJAAN_TERTUNDA.md bagian 40 (termasuk jurnal tetap dibuat walau
- * harga baru lebih besar / parameter tidak ditemukan).
+ * Perilaku lama yang dipertahankan dicatat di PEKERJAAN_TERTUNDA.md bagian 40.
+ * Perbaikan 2026-11-20 (perintah user, §40): Turun Plafond berhenti bila harga baru kosong/bukan angka/lebih besar dari
+ * plafond lama atau parameter tidak ditemukan (dulu jurnal + update calon_loan tetap jalan dengan angsuran/OS 0);
+ * jurnal + update calon_loan dalam satu transaksi dengan kunci per CIF; CIF harus dari unit di area lead (01/02/03);
+ * CIF tidak ditemukan diberi pesan; isian kosong kembali ke halaman ini (dulu buka_bokir.php, 404).
+ * Hitungan, rekening jurnal, dan hasil untuk isian yang valid tidak berubah.
  */
 require_once __DIR__ . '/../inc/tampilan.php';
 session_start();
@@ -32,6 +36,9 @@ $cif_kel = isset($_POST['kode_rekening']) ? (string) $_POST['kode_rekening'] : '
 $pilih = isset($_POST['select']) ? (string) $_POST['select'] : '';
 $status_pengajuan = $pilih == '01' ? "Turun Plafond" : "Pengajuan";
 $harga_baru = isset($_POST['harga_baru']) ? (string) $_POST['harga_baru'] : '';
+// 2026-11-20 (perintah user): harga baru boleh diketik/ditempel dengan pemisah ribuan ("2.000.000", "Rp 2.000.000").
+// Dulu "2.000.000" dibaca 2 sehingga plafond jadi 2 rupiah. Titik, spasi, dan "Rp" dibuang; koma (desimal) tetap ditolak validasi.
+$harga_baru = preg_replace('/^rp\.?/i', '', str_replace(array('.', ' ', "\xC2\xA0"), '', trim($harga_baru)));
 
 $skrip = array();
 $select = array();
@@ -45,12 +52,18 @@ $teks = function ($baris, $k) {
 if (isset($_POST['search'])) {
     if (empty($cif_kel) || empty($pilih)) {
         $skrip[] = "alert('Maaf,.isi CIF dan Jenis Pengajuan');";
-        // versi lama mengarah ke buka_bokir.php (halaman tidak ada) - dipertahankan
-        $skrip[] = "document.location.href='buka_bokir.php';";
+        // 2026-11-20: dulu ke buka_bokir.php (halaman tidak ada, 404)
+        $skrip[] = "document.location.href='turun_pangajuan.php';";
     } else {
         $cek_cif = db_satu("select Plafond,Cust_Short_name,Tenor,unit,cif from calon_loan WHERE cif=?", 's', $cif_kel);
-        // versi lama: CIF tidak ada -> die(), proses berhenti tanpa pesan
-        if ($cek_cif) {
+        // 2026-11-20: CIF harus dari unit di area lead yang login (sama dengan Approval Pengajuan / saran CIF);
+        // dulu CIF unit mana pun bisa diproses lewat isian. CIF tidak ada dulu berhenti tanpa pesan.
+        $di_area = $cek_cif ? db_satu('SELECT 1 AS ada FROM calon_loan c INNER JOIN branch b ON b.kode_branch = c.unit
+            WHERE c.cif = ? AND b.code_area = ? LIMIT 1', 'ss', $cif_kel, (string) $userid) : null;
+        if (!$cek_cif || !$di_area) {
+            $skrip[] = "alert(" . json_encode('Maaf, CIF ' . $cif_kel . ' tidak ditemukan di pengajuan unit area Anda', JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP) . ");";
+            $skrip[] = "document.location.href='turun_pangajuan.php';";
+        } else {
             $plafond = $teks($cek_cif, 'Plafond');
             $selisih = compat_num($plafond) - compat_num($harga_baru);
             $tenor = $teks($cek_cif, 'Tenor');
@@ -64,9 +77,12 @@ if (isset($_POST['search'])) {
                 case "01":
                     // nilai hitungan; tetap kosong bila harga baru lebih besar / parameter tidak ditemukan (versi lama)
                     $pokok = $margin = $ijaroh = $angsuran = $uang = $os = '';
-                    if ($harga_baru > $plafond) {
-                        $skrip[] = "alert ('Harga Baru lebih besar dari harga lama')";
-                        $skrip[] = "document.location.href='turun_pangajuan.php';";
+                    $gagal = '';
+                    if (!preg_match('/^[0-9]+$/', $harga_baru) || (int) $harga_baru <= 0) {
+                        // 2026-11-20: dulu harga baru kosong tetap diproses (plafond jadi 0)
+                        $gagal = 'Harga Baru harus diisi angka lebih dari 0';
+                    } elseif (compat_num($harga_baru) > compat_num($plafond)) {
+                        $gagal = 'Harga Baru lebih besar dari harga lama';
                     } else {
                         $pbiaya = db_satu("select margin,tab,pla,jw  FROM param_biaya where jw =? and pla=?", 'ss', $tenor, $harga_baru);
                         $param_margin = $teks($pbiaya, 'margin');
@@ -82,11 +98,26 @@ if (isset($_POST['search'])) {
                             $os = compat_num($harga_baru) + $margin + (2500 * compat_num($tenor));
                             $margin = compat_num($harga_baru) * (compat_num($param_margin) / 100) + (2500 * compat_num($tenor));
                         } else {
-                            $skrip[] = "alert ('Parameter Pembiayaan tidak ditemukan')";
-                            $skrip[] = "document.location.href='turun_pangajuan.php';";
+                            $gagal = 'Parameter Pembiayaan tidak ditemukan';
                         }
                     }
-                    // versi lama: jurnal dan update di bawah tetap dijalankan di semua kondisi di atas
+                    // 2026-11-20 (perintah user): dulu jurnal dan update di bawah tetap dijalankan walau validasi gagal
+                    // (calon_loan jadi MURAB dengan angsuran/OS 0). Kini berhenti di sini.
+                    if ($gagal !== '') {
+                        $skrip[] = "alert('" . $gagal . "')";
+                        $skrip[] = "document.location.href='turun_pangajuan.php';";
+                        break;
+                    }
+                    // kunci per CIF: dua proses bersamaan untuk CIF yang sama tidak mencatat jurnal ganda
+                    $kunci = db_satu("SELECT GET_LOCK(?, 10) AS ok", 's', 'nurinsani_turun_plafond_' . $cif);
+                    if (!$kunci || (int) $kunci['ok'] !== 1) {
+                        $skrip[] = "alert('CIF ini sedang diproses, coba lagi')";
+                        $skrip[] = "document.location.href='turun_pangajuan.php';";
+                        break;
+                    }
+                    $db_tp = db_ni();
+                    mysqli_begin_transaction($db_tp);
+                    $gagal_awal = db_jumlah_gagal();
                     $kode_trans = "BU/" . $unit . acakangkahuruf(5);
                     //pencatatan jurnal umum (nomor_jurnal kosong di versi lama -> nomor otomatis)
                     db_jalankan("insert into jurnal_umum(nomor_jurnal,kode_transaksi,tanggal_selesai) values(?,?,?)", 'sss', '', $kode_trans, (string) $tgl_system);
@@ -107,6 +138,14 @@ if (isset($_POST['search'])) {
                     $cek = db_jalankan("update calon_loan set plafond=?,os=?,angsuran=?,ijaroh=?,bulat=?,pokok=?,saldo_margin=?,bagi_hasil=?,status_app='MURAB' where cif =?",
                         'sssssssss', $harga_baru, (string) $os, (string) $angsuran, (string) $ijaroh, (string) $uang, (string) $pokok,
                         (string) $margin, (string) $margin, $cif_kel);
+                    // satu transaksi: bila salah satu insert/update gagal, semua dibatalkan
+                    if (db_jumlah_gagal() > $gagal_awal) {
+                        mysqli_rollback($db_tp);
+                        $cek = false;
+                    } else {
+                        mysqli_commit($db_tp);
+                    }
+                    db_satu("SELECT RELEASE_LOCK(?) AS ok", 's', 'nurinsani_turun_plafond_' . $cif);
                     if ($cek) {
                         $skrip[] = "alert('  Turun Plafond Selelsai diproses');";
                         $select = db_semua("select * from calon_loan where cif=?", 's', $cif_kel);
@@ -180,6 +219,8 @@ foreach ($skrip as $s) {
         <div class="form-text" id="format"></div>
       </div>
       <div class="col-12">
+        <?php // 2026-11-20: flag POST lewat hidden input, karena tombol dinonaktifkan saat submit (cegah klik ganda) ?>
+        <input type="hidden" name="search" value="Proses">
         <button name="search" type="submit" id="submit2" value="Proses" class="btn btn-ni">Proses</button>
       </div>
     </form>
@@ -235,6 +276,16 @@ foreach ($skrip as $s) {
         if (kode > 31 && (kode < 48 || kode > 57)) {
             evt.preventDefault();
         }
+    });
+    // 2026-11-20: cegah klik ganda (dulu dua klik = dua jurnal turun plafond)
+    document.forms.postform.addEventListener('submit', function () {
+        document.getElementById('submit2').disabled = true;
+    });
+    // 2026-11-20: teks yang ditempel (mis. "Rp 2.000.000") dibersihkan dari titik ribuan, spasi, dan "Rp";
+    // koma (desimal) sengaja tidak dibuang agar ditolak server, bukan digabung jadi angka lain
+    harga.addEventListener('input', function () {
+        var bersih = harga.value.replace(/^\s*rp\.?/i, '').replace(/[.\s]/g, '');
+        if (bersih !== harga.value) { harga.value = bersih; }
     });
     harga.addEventListener('keyup', function () {
         var angka = harga.value.replace(/[^0-9]/g, '') || '0';

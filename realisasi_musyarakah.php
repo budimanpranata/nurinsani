@@ -28,6 +28,7 @@ if (!$cekbox) {
 
 $con = db_ni();
 mysqli_autocommit($con, false);
+$gagal_awal = db_jumlah_gagal();
 
 foreach ($cekbox as $value) {
     $kode_tr = 5;
@@ -148,6 +149,14 @@ foreach ($cekbox as $value) {
     db_jalankan("delete from pinjaman_detail_temp_mus where cicilan > ? AND cif = ?", 'ss', (string) $Tenor, (string) $cif);
 }
 
+// §1 (2026-11-20, perintah user): dulu selalu commit walau ada query gagal (data tersimpan setengah).
+// Kini bila ada query gagal semua dibatalkan. Catatan: loan_detail MyISAM, tidak ikut dibatalkan.
+if (db_jumlah_gagal() > $gagal_awal) {
+    mysqli_rollback($con);
+    mysqli_autocommit($con, true);
+    notif_pergi('Realisasi Musyarakah GAGAL, data tidak disimpan. Silakan ulangi.', 'realisasi_musyarokah.php', 'error');
+    exit;
+}
 if (!mysqli_commit($con)) {
     echo "Transaksi Gagal commit Silahkan ulangi lagi";
     exit();

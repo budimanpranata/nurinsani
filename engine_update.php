@@ -85,8 +85,10 @@ if ($jenis_akad === '') {
 
 $tgl_wakal = strtotime($tgl_wakalah);
 $murab1 = date('Y-m-d', strtotime('+7 day', (int) $tgl_wakal));
-// Sama seperti versi lama: strtotime() atas timestamp angka -> false -> 0, hasilnya 1970-01-08.
-$Newmurab = date('Y-m-d', strtotime('+7 day', (int) strtotime((string) $tgl_wakal)));
+// §2 (2026-11-20, perintah user): versi lama strtotime() atas timestamp angka -> false -> 0, sehingga tgl_murab
+// selalu 1970-01-08 (tampil di approval KP, cetak akad, dan dipakai realisasi). Kini tanggal wakalah + 7 hari,
+// sama dengan $murab1 yang sudah dipakai menghitung maturity_date.
+$Newmurab = $murab1;
 $tgl_m = strtotime($murab1);
 $maturity_date1 = date('Y-m-d', strtotime('+' . (int) $tenor . ' WEEK', $tgl_m));
 $dayList = array('Sun' => 'Minggu', 'Mon' => 'Senin', 'Tue' => 'Selasa', 'Wed' => 'Rabu',
@@ -174,8 +176,11 @@ if ($jenis_akad === 'MURAB') {
         $st->bind_param('sisssss', $anggota, $x, $pokok, $ijaroh, $awal_hari, $next_schedule, $next_schedule);
         $st->execute();
     }
+    // §2 (2026-11-20, perintah user): dulu tanpa filter anggota, sehingga libur di jadwal sementara anggota lain
+    // (yang sedang diproses bersamaan / sisa proses gagal) ikut terhitung. Kini hanya jadwal anggota ini.
     $c = satu_baris($db, 'SELECT COUNT(tgl_libur) AS libur FROM param_libur
-        INNER JOIN pinjaman_detail_c ON pinjaman_detail_c.tgl_jatuh_tempo = param_libur.tgl_libur');
+        INNER JOIN pinjaman_detail_c ON pinjaman_detail_c.tgl_jatuh_tempo = param_libur.tgl_libur
+        WHERE pinjaman_detail_c.id_pinjam = ?', 's', $anggota);
     $libur = $c ? (int) $c['libur'] : 0;
     jalankan($db, 'DELETE FROM pinjaman_detail_c WHERE id_pinjam = ?', 's', $anggota);
 

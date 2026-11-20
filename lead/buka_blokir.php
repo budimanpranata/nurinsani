@@ -7,6 +7,8 @@
  * Logika sama dengan versi lama; hanya tampilan dan query (prepared statement) yang berubah. Saran CIF/kelompok dari
  * ajax/cari_blokir.php (query sama dengan lead/autosuggesst_rek.php). var_dump($jenis_blokir) sisa debug dihapus.
  * Perilaku lama yang dipertahankan dicatat di PEKERJAAN_TERTUNDA.md bagian 39.
+ * 2026-11-20 (perintah user, §39): kelompok/CIF harus dari unit di area lead (semua anggotanya di unit area lead);
+ * isian kosong kembali ke buka_blokir.php (dulu buka_bokir.php, 404). Logika tutup/buka TYPE tidak diubah (keputusan user).
  */
 require_once __DIR__ . '/../inc/tampilan.php';
 session_start();
@@ -32,11 +34,25 @@ $select = array();
 if (isset($_POST['search'])) {
     if (empty($cif_kel) || empty($pilih) || empty($jenis_blokir)) {
         $skrip[] = "alert('Maaf,.isi Nomor kode kelompok dan Jenis Transaksi yang benar  !!!');";
-        // versi lama mengarah ke buka_bokir.php (salah ketik, halaman tidak ada) - dipertahankan
-        $skrip[] = "document.location.href='buka_bokir.php';";
+        // 2026-11-20: dulu ke buka_bokir.php (salah ketik, halaman tidak ada / 404)
+        $skrip[] = "document.location.href='buka_blokir.php';";
     } else {
         // 01 = per kelompok (code_kel), 02 = perorangan (cif); pilihan lain tidak memproses apa pun
         $kolom = $pilih == '01' ? 'code_kel' : ($pilih == '02' ? 'cif' : null);
+        if ($kolom !== null) {
+            // 2026-11-20 (perintah user): kelompok/CIF harus milik unit di area lead (branch.code_area = userid lead) dan
+            // tidak boleh ada anggotanya di unit luar area. Dulu kode unit mana pun bisa diblokir/dibuka.
+            $kolom_anggota = $kolom === 'cif' ? 'CIF' : 'CODE_KEL';
+            $area = db_satu("SELECT COALESCE(SUM(b.kode_branch IS NOT NULL), 0) AS dalam, COALESCE(SUM(b.kode_branch IS NULL), 0) AS luar
+                FROM anggota a LEFT JOIN branch b ON b.kode_branch = a.UNIT AND b.code_area = ?
+                WHERE a.$kolom_anggota = ?", 'ss', (string) $userid, $cif_kel);
+            if (!$area || (int) $area['dalam'] < 1 || (int) $area['luar'] > 0) {
+                $skrip[] = "alert(" . json_encode(($pilih == '01' ? 'Maaf, kelompok ' : 'Maaf, CIF ') . $cif_kel . ' tidak ditemukan di unit area Anda',
+                    JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP) . ");";
+                $skrip[] = "document.location.href='buka_blokir.php';";
+                $kolom = null;
+            }
+        }
         if ($kolom !== null) {
             $teks = addslashes($cif_kel);
             if ($jenis_blokir == 'buka') {
