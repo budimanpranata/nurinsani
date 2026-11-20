@@ -38,6 +38,43 @@ function csrf_cek()
     return $kirim !== '' && hash_equals(csrf_token(), $kirim);
 }
 
+/**
+ * Token SEKALI PAKAI (2026-11-20) untuk form proses uang yang tidak boleh terkirim dua kali (klik ganda, muat ulang,
+ * tombol kembali): PB PerKelompok, Setoran PerKelompok / Beda Hari. Satu sesi menyimpan sampai 20 token per $kunci
+ * sehingga beberapa tab daftar boleh terbuka bersamaan; tiap token hanya bisa dipakai sekali.
+ *   halaman daftar : $t = token_sekali_buat('setoran_kel_token');  <input type="hidden" name="..." value="$t">
+ *   halaman proses : if (!token_sekali_pakai('setoran_kel_token', $_POST['...'])) { tolak }
+ */
+function token_sekali_buat($kunci)
+{
+    if (session_status() === PHP_SESSION_NONE) {
+        @session_start();
+    }
+    $daftar = isset($_SESSION[$kunci]) && is_array($_SESSION[$kunci]) ? $_SESSION[$kunci] : array();
+    $token = bin2hex(random_bytes(16));
+    $daftar[] = $token;
+    $_SESSION[$kunci] = array_slice($daftar, -20);
+    return $token;
+}
+
+/** true (dan token dihapus) bila $token ada di daftar $kunci; false bila kosong, salah, atau sudah dipakai. */
+function token_sekali_pakai($kunci, $token)
+{
+    if (session_status() === PHP_SESSION_NONE) {
+        @session_start();
+    }
+    $token = (string) $token;
+    $daftar = isset($_SESSION[$kunci]) && is_array($_SESSION[$kunci]) ? $_SESSION[$kunci] : array();
+    foreach ($daftar as $i => $t) {
+        if ($token !== '' && hash_equals((string) $t, $token)) {
+            unset($daftar[$i]);
+            $_SESSION[$kunci] = array_values($daftar);
+            return true;
+        }
+    }
+    return false;
+}
+
 /** Hentikan permintaan (419) bila token tidak cocok. Panggil di awal pemrosesan POST. */
 function csrf_wajib($mode = 'halaman')
 {

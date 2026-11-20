@@ -34,6 +34,14 @@ if($_SESSION['level']!="unit"){
    header("location:index.html");
  exit; }
 
+// 2026-11-20 (perintah user, §16): token sekali pakai dari setoran_list_beda.php; kiriman kedua (klik ganda / muat ulang /
+// tombol kembali) ditolak sebelum ada data yang ditulis. Dulu dua klik = setoran & angsuran tercatat dua kali.
+require_once __DIR__ . '/inc/csrf.php';
+if (!empty($_POST['cekbox']) && !token_sekali_pakai('setoran_beda_token', isset($_POST['setoran_token']) ? $_POST['setoran_token'] : '')) {
+	notif_pergi('Setoran ini sudah diproses atau halaman sudah kedaluwarsa. Silakan cari kelompok lagi.', 'setor_kelompok_beda.php', 'warning');
+	exit;
+}
+
 $con = db_ni();
 // Turn autocommit off
 mysqli_autocommit($con,FALSE);

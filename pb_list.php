@@ -29,6 +29,9 @@ $unit = null;
 foreach (db_semua("Select kode_branch from user where userid=?", 's', (string) $userid) as $row) {
     $unit = $row['kode_branch'];
 }
+// 2026-11-20 (perintah user, §17): token sekali pakai untuk realisasi_pb.php (cegah klik ganda / kirim ulang)
+require_once __DIR__ . '/inc/csrf.php';
+$pb_token = token_sekali_buat('pb_token');
 $data_anggota = db_semua("Select loan.cif,unit,Plafond,ijaroh,bagi_hasil,bulat,pokok,Cust_Short_name,kelompok.nama_kel,(bulat-angsuran) as sk from loan
 inner join kelompok on kelompok.code_kel = loan.code_kel
 Where kelompok.code_kel=? and loan.unit=? and os >0", 'ss', $code_kel, (string) $unit);
@@ -36,6 +39,7 @@ Where kelompok.code_kel=? and loan.unit=? and os >0", 'ss', $code_kel, (string) 
 halaman_awal('PB Kelompok');
 ?>
 <form action="realisasi_pb.php" method="post" id="form-pb">
+  <input type="hidden" name="pb_token" value="<?php echo h($pb_token); ?>">
   <div class="table-responsive">
     <table class="table table-sm table-bordered table-ni table-hover align-middle">
       <thead>
@@ -80,6 +84,10 @@ halaman_awal('PB Kelompok');
   </div>
 </form>
 <script>
+// 2026-11-20: tombol dinonaktifkan saat dikirim (cegah klik ganda; nama tombol tidak dipakai realisasi_pb.php)
+document.getElementById('form-pb').addEventListener('submit', function () {
+    this.querySelectorAll('button[type="submit"]').forEach(function (t) { t.disabled = true; });
+});
 document.querySelectorAll('[data-pilih-semua]').forEach(function (b) {
     b.addEventListener('click', function () {
         var nilai = b.getAttribute('data-pilih-semua') === '1';

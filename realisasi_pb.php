@@ -8,6 +8,14 @@
  *   - jurnal_masuk.kode_transaksi diisi kode transaksi PB (versi lama kosong)
  *   - tanpa pilihan kembali ke pb_kel.php (versi lama ke form.php yang tidak ada)
  * Perbaikan 2026-11-03 (perintah user): nominal dicek terhadap saldo simpanan yang didebet (tidak boleh minus).
+ * Perbaikan 2026-11-20 (perintah user, §17):
+ *   - jurnal_masuk.nomor_jurnal dibuat otomatis (auto increment). Dulu max(jurnal_umum unit)+1 yang sama untuk semua
+ *     anggota dan bentrok dengan nomor jurnal_masuk yang sudah ada, sehingga baris jurnal_masuk gagal tersimpan.
+ *   - per anggota: kunci per CIF (cek saldo + tulis) dan transaksi DB; bila ada query gagal, simpanan/tabel_transaksi
+ *     dibatalkan dan baris MyISAM (simpanan_pokok/wajib, jurnal_masuk) dengan kode transaksi PB itu dihapus, lalu
+ *     pesan GAGAL (dulu tetap "Suksess").
+ *   - cegah klik ganda / kirim ulang: token sekali pakai dari pb_list.php.
+ * Rekening, nominal, TYPE, dan isi data untuk PB yang berhasil tidak berubah.
  */
 require_once __DIR__ . '/inc/notif.php';
 session_start();
@@ -48,6 +56,12 @@ $baki=isset($_SESSION['bakis']) ? $_SESSION['bakis'] : null;
 $nom=isset($_POST['bulat']) ? $_POST['bulat'] : null;
 
 $checbox = isset($_POST['cekbox']) ? $_POST['cekbox'] : null;
+// 2026-11-20: token sekali pakai dari pb_list.php; kiriman kedua (klik ganda / muat ulang / tombol kembali) ditolak
+require_once __DIR__ . '/inc/csrf.php';
+if ($checbox && !token_sekali_pakai('pb_token', isset($_POST['pb_token']) ? $_POST['pb_token'] : '')) {
+	notif_pergi('Data PB ini sudah diproses atau halaman sudah kedaluwarsa. Silakan cari kelompok lagi.', 'pb_kel.php', 'warning');
+	exit;
+}
 if ($checbox) {
 	for ($i=0; $i <sizeof($checbox);$i++){
 		$kkel = db_satu("select no_anggota,code_kel,cif,unit,Cust_Short_name,cao FROM loan where  cif =?", 's', (string) $checbox[$i]);
@@ -69,6 +83,17 @@ if ($checbox) {
 		$tabel_sumber = $baki=="Debet" ? ($simpan=="pokok" ? 'simpanan_pokok' : 'simpanan_wajib') : 'simpanan';
 		$nama_sumber = $baki=="Debet" ? ($simpan=="pokok" ? 'simpanan pokok' : 'simpanan wajib') : 'simpanan sukarela';
 		$saldo_sumber = 0;
+		// 2026-11-20: kunci per CIF sejak cek saldo sampai data tersimpan (dua PB bersamaan tidak lolos cek saldo yang sama)
+		$kunci_pb = 'nurinsani_pb_' . (string) $ciff;
+		$terkunci = false;
+		if (compat_num($nominal) > 0) {
+			$k = db_satu("SELECT GET_LOCK(?, 15) AS ok", 's', $kunci_pb);
+			$terkunci = $k && (int) $k['ok'] === 1;
+		}
+		if (compat_num($nominal) > 0 && !$terkunci) {
+			notif_pesan("Pemindah Bukuan an $cif GAGAL: data anggota sedang diproses, coba lagi");
+			continue;
+		}
 		if (compat_num($nominal) > 0) {
 			$s = $tabel_sumber == 'simpanan'
 				? db_satu("select sum(KREDIT)- sum(DEBIT) as saldo FROM simpanan where cif =? and type not in ('04','05')", 's', (string) $ciff)
@@ -86,17 +111,18 @@ if ($checbox) {
 			$cao = $kkel ? $kkel['cao'] : null;
 			$norek = $kkel ? $kkel['no_anggota'] : null;
 
-			$j = db_satu("SELECT max(nomor_jurnal) AS n FROM jurnal_umum where unit =? ORDER BY tanggal_selesai DESC", 's', (string) $unit);
-			$nomor_jurnal = compat_num($j ? $j['n'] : null) + 1;
+			// 2026-11-20: nomor jurnal_masuk otomatis (dulu max(jurnal_umum unit)+1, bentrok -> baris gagal tersimpan)
+			mysqli_begin_transaction(db_ni());
+			$gagal_awal = db_jumlah_gagal();
 
 			$catat = function ($tabel, $debit, $type, $kredit, $keterangan) use ($buss_date, $norek, $unit, $ciff, $code_kel, $userid, $cao, $kode_trans) {
 				$tabel = in_array($tabel, array('simpanan', 'simpanan_pokok', 'simpanan_wajib'), true) ? $tabel : 'simpanan';
 				qs_pb("Insert into $tabel(BUSS_DATE,NOREK,UNIT,CIF,CODE_KEL,DEBIT,TYPE,KREDIT,USERID,KET,REFF,CAO,kode_transaksi)VALUES(?,?,?,?,?,?,?,?,?,?,'',?,?)",
 					$buss_date, $norek, $unit, $ciff, $code_kel, $debit, $type, $kredit, $userid, $keterangan, $cao, $kode_trans);
 			};
-			$jurnal = function ($rek_debet, $rek_kredit, $keterangan) use ($nomor_jurnal, $tgl_system, $unit, $kode_trans, $nominal, $userid) {
+			$jurnal = function ($rek_debet, $rek_kredit, $keterangan) use ($tgl_system, $unit, $kode_trans, $nominal, $userid) {
 				// versi lama: kode_transaksi kosong (variabel $kode_transaksi tidak pernah diisi)
-				qs_pb("insert into jurnal_masuk(nomor_jurnal,kode_transaksi,tanggal_selesai,unit) values(?,?,?,?)", $nomor_jurnal, $kode_trans, $tgl_system, $unit);
+				qs_pb("insert into jurnal_masuk(kode_transaksi,tanggal_selesai,unit) values(?,?,?)", $kode_trans, $tgl_system, $unit);
 				qs_pb("insert  into tabel_transaksi(unit,kode_transaksi,kode_rekening,tanggal_transaksi, jenis_transaksi, keterangan_transaksi,debet,id_admin)
 					values(?,?,?,?,'Bukti SYSTEM',?,?,?)", $unit, $kode_trans, $rek_debet, $tgl_system, $keterangan, $nominal, $userid);
 				qs_pb("insert  into tabel_transaksi(unit,kode_transaksi,kode_rekening,tanggal_transaksi, jenis_transaksi, keterangan_transaksi,kredit,id_admin)
@@ -132,7 +158,20 @@ if ($checbox) {
 				}
 				$jurnal('2101000', $gl, $keterangan);
 			}
-			notif_pesan("Pemindah Bukuan an ".addslashes((string) $cif)." Suksess");
+			if (db_jumlah_gagal() > $gagal_awal) {
+				// simpanan & tabel_transaksi (InnoDB) dibatalkan; baris MyISAM PB ini dihapus lewat kode transaksinya
+				mysqli_rollback(db_ni());
+				foreach (array('simpanan_pokok', 'simpanan_wajib', 'jurnal_masuk') as $t_myisam) {
+					db_jalankan("DELETE FROM $t_myisam WHERE kode_transaksi = ?", 's', (string) $kode_trans);
+				}
+				notif_pesan("Pemindah Bukuan an $cif GAGAL, data tidak disimpan");
+			} else {
+				mysqli_commit(db_ni());
+				notif_pesan("Pemindah Bukuan an ".addslashes((string) $cif)." Suksess");
+			}
+		}
+		if ($terkunci) {
+			db_satu("SELECT RELEASE_LOCK(?) AS ok", 's', $kunci_pb);
 		}
 	}
 

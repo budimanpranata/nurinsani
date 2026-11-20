@@ -30,9 +30,13 @@ $data_anggota = db_semua("Select loan.cif,unit,Plafond,ijaroh,angsuran,bulat, ba
 inner join kelompok on kelompok.code_kel = loan.code_kel
 Where kelompok.code_kel=? and loan.unit=? and os > 0", 'ss', $code_kel, (string) $unit);
 
+// 2026-11-20 (perintah user, §16): token sekali pakai untuk realisasi_setoran_kel_beda.php (cegah klik ganda / kirim ulang)
+require_once __DIR__ . '/inc/csrf.php';
+$setoran_token = token_sekali_buat('setoran_beda_token');
 halaman_awal('Setoran Kelompok Beda Hari');
 ?>
 <form action="realisasi_setoran_kel_beda.php" method="post" name="myform" id="form-setoran">
+  <input type="hidden" name="setoran_token" value="<?php echo h($setoran_token); ?>">
   <div class="table-responsive">
     <table class="table table-sm table-bordered table-ni table-hover align-middle">
       <thead>
@@ -88,6 +92,10 @@ document.querySelectorAll('.nyata-setoran').forEach(function (el) {
     el.addEventListener('keyup', getTotal);
 });
 getTotal();
+// 2026-11-20: tombol dinonaktifkan saat dikirim (cegah klik ganda; nama tombol tidak dipakai realisasi)
+document.getElementById('form-setoran').addEventListener('submit', function () {
+    this.querySelectorAll('button[type="submit"]').forEach(function (t) { t.disabled = true; });
+});
 document.querySelectorAll('[data-pilih-semua]').forEach(function (b) {
     b.addEventListener('click', function () {
         var nilai = b.getAttribute('data-pilih-semua') === '1';
