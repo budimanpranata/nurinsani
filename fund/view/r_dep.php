@@ -160,12 +160,18 @@ function realisasi_tempo($unit, $userid)
         db_jalankan("INSERT INTO deposito_detail (id_deposito,cif,ke,tgl_jatuh_tempo,tgl_bayar,jumlah_nisbah,rek_tujuan,ket) values(?,?,?,?,?,'0',?,'')",
             'ssssss', $norek, $cif, (string) $ke, $tanggal, $tanggal, $norek);
     }
+    $arsip_gagal = false;
     if ($jenis === 'BREAK') {
+        // 2026-11-20 (perintah user, §51): arsip ke dep_audit (InnoDB, ikut transaksi) sebelum dep_titip & hapus deposito
+        require_once __DIR__ . '/../../inc/arsip_deposito.php';
+        $arsip_gagal = !arsip_deposito($norek, 'BREAK_TITIP', $buss_date, $userid);
         // dep_titip (MyISAM) di dalam langkah ini: bila gagal, jurnal dibatalkan dan deposito tidak dihapus
-        db_jalankan("insert into dep_titip select * from deposito where norek=?", 's', $norek);
+        if (!$arsip_gagal) {
+            db_jalankan("insert into dep_titip select * from deposito where norek=?", 's', $norek);
+        }
     }
-    if (db_jumlah_gagal() > $gagal_awal) {
-        $galat = db_error_terakhir();
+    if (db_jumlah_gagal() > $gagal_awal || $arsip_gagal) {
+        $galat = $arsip_gagal ? 'arsip data deposito (tabel dep_audit) gagal disimpan, hubungi admin.' : db_error_terakhir();
         $db->rollback();
         return array(false, 'Ups, Data Gagal Di simpan ! ' . $galat);
     }

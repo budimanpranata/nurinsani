@@ -20,9 +20,12 @@ if ($_SESSION['level'] != "unit") {
 include "indo_tgl.php";
 
 $code_kel = isset($_GET['code_kel']) ? (string) $_GET['code_kel'] : '';
+// 2026-11-20 (perintah user, §14): hanya calon_loan unit user (dulu kelompok unit lain bisa dibuka lewat URL)
+$r_unit = db_satu("select kode_branch from user where userid =?", 's', (string) $userid);
+$unit_user = $r_unit ? (string) $r_unit['kode_branch'] : '';
 $data_anggota = array();
 if ($code_kel) {
-    $data_anggota = db_semua("Select * from calon_loan where code_kel=? and os > 0 and status_app ='MURAB'", 's', $code_kel);
+    $data_anggota = db_semua("Select * from calon_loan where code_kel=? and os > 0 and status_app ='MURAB' and unit = ?", 'ss', $code_kel, $unit_user);
 }
 $tot_pla = 0;
 $tot_angsuran = 0;

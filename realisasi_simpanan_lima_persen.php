@@ -4,6 +4,9 @@
  * (pokok 50.000 lebih dulu bila belum ada, sisanya ke simpanan wajib) beserta jurnalnya, dalam satu transaksi DB.
  * Logika dan urutan sama dengan versi lama; hanya query (prepared statement) yang berubah.
  * Kekeliruan versi lama yang sengaja dipertahankan dicatat di PEKERJAAN_TERTUNDA.md (bagian Setoran 5 Persen).
+ * Perbaikan 2026-11-20 (perintah user, §14): hanya CIF yang ada di daftar (calon_loan MURAB, os > 0, unit user) yang
+ * diproses; CIF lain dilewati dan disebut di pesan. Dulu CIF yang tidak ada di calon_loan (POST diubah) tetap dicatat
+ * pokok 50.000 + jurnal dengan unit/norek kosong, dan CIF unit lain ikut diproses.
  */
 date_default_timezone_set('Asia/Jakarta');
 require_once __DIR__ . '/inc/notif.php';
@@ -56,14 +59,19 @@ function catat_simpanan_5($tabel, $tgl, $norek, $unit, $cif, $code_kel, $kredit,
 
 $cekbox = isset($_POST['cekbox']) ? $_POST['cekbox'] : null;
 if ($cekbox) {
+	$r_unit = db_satu("select kode_branch from user where userid =?", 's', (string) $userid);
+	$unit_user = $r_unit ? (string) $r_unit['kode_branch'] : '';
+	$dilewati = array();
        foreach ($cekbox as $value) {
 			$value = (string) $value;
 			$kode_tr=5;
 			$kode_tr=acakangkahuruf($kode_tr);
+		     // 2026-11-20: syarat sama dengan daftar yra_list_lima_persen.php (MURAB, os > 0, unit user)
 		     $row = db_satu("select DATE_ADD(tgl_wakalah,INTERVAL 7 DAY) as tgl_murab,maturity_date,calon_loan.buss_date,calon_loan.code_kel,calon_loan.no_anggota,calon_loan.Cust_Short_name,	calon_loan.Deal_type,suffix,bagi_hasil,Tenor,Plafond,os,angsuran,pokok,ijaroh,bulat,ke,usaha,calon_loan.unit,tgl_wakalah,hari,calon_loan.cao,calon_loan.USERID,calon_loan.status,calon_loan.cif
 			 from calon_loan
 			 left join anggota on anggota.cif = calon_loan.cif
-			 WHERE calon_loan.cif =? ", 's', $value);
+			 WHERE calon_loan.cif =? AND calon_loan.unit = ? AND os > 0 AND status_app = 'MURAB'", 'ss', $value, $unit_user);
+			if (!$row) { $dilewati[] = $value; continue; }
 			$no_anggota=$row ? $row['no_anggota'] : null;
             $nama=$row ? $row['Cust_Short_name'] : null;
             $unit=$row ? $row['unit'] : null;
@@ -135,7 +143,9 @@ $kode_trans="BU/".$unit.$kodetr;
             echo "Transaksi Gagal commit Silahkan ulangi lagi";
             exit();
           }else{
-				notif_pergi('Simpanan wajib dan Pokok sudah direalisasikan.', 'simpanan_lima_persen.php');
+				notif_pergi('Simpanan wajib dan Pokok sudah direalisasikan.'
+					. ($dilewati ? "\n\nTidak diproses (tidak ada di daftar unit Anda):\n" . implode("\n", $dilewati) : ''),
+					'simpanan_lima_persen.php', $dilewati ? 'warning' : null);
           }
             }
 			else {

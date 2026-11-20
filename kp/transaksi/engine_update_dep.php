@@ -121,6 +121,14 @@ switch ($p) {
             $pindah_audit();
             db_jalankan("update deposito set status_print='OK' where norek=?", 's', $norek);
         } elseif ($posisi == 'BREAK') {
+            // 2026-11-20 (perintah user, §51): baris deposito diarsip ke dep_audit sebelum dihapus. Bila arsip gagal,
+            // proses dihentikan sebelum ada yang ditulis (dulu deposito dihapus tanpa salinan).
+            require_once __DIR__ . '/../../inc/arsip_deposito.php';
+            if (!arsip_deposito($norek, 'BREAK', $tgl, $userid)) {
+                db_satu("SELECT RELEASE_LOCK('nurinsani_kp_disburse_dep') as ok");
+                echo "<h5>* Arsip data deposito " . h($norek) . " gagal disimpan (tabel dep_audit). Break tidak diproses, hubungi admin.</h5>";
+                break;
+            }
             // jurnal_umum cukup satu kali (versi lama dua kali untuk kode yang sama)
             $jurnal_umum();
             $transaksi('1010-2852000', 'debet', 'Bukti Umum');

@@ -5,6 +5,14 @@
  *   04 Pemindah bukuan (debet/kredit pokok/wajib)   05 Setoran angsuran WO
  * Logika, urutan query, dan pesan sama dengan versi lama; hanya tampilan dan query (prepared statement) yang berubah.
  * Kekeliruan versi lama yang sengaja dipertahankan dicatat di PEKERJAAN_TERTUNDA.md (bagian Setor).
+ * Perbaikan 2026-11-20 (perintah user, §13):
+ *   - norek harus milik anggota di unit user (dulu norek unit lain bisa ditransaksikan bila diketik langsung)
+ *   - semua jenis (01-05) dalam satu transaksi DB; bila ada query gagal: simpanan/tabel_transaksi/loan_wo di-rollback,
+ *     baris MyISAM transaksi ini (simpanan_pokok/wajib, temp_tarik, jurnal_masuk) dihapus, pesan gagal
+ *   - nomor jurnal_masuk otomatis (auto increment); dulu max(jurnal_umum unit)+1 yang bentrok sehingga baris gagal tersimpan
+ *   - 05 WO: OS loan_wo dikurangi berdasarkan CIF anggota (dulu CIF dari tabel loan, kosong bila tidak ada loan);
+ *     anggota tanpa data loan_wo ditolak (dulu jurnal WO tetap tercatat tanpa OS berkurang)
+ * Rekening, nominal, TYPE, keterangan, dan pesan untuk transaksi yang berhasil tidak berubah.
  */
 require_once __DIR__ . '/inc/tampilan.php';
 session_start();
@@ -58,14 +66,22 @@ function catat_simpanan($tabel, $isi)
         }, array_values($isi)));
 }
 
-/** Nomor jurnal berikutnya per unit (query sama dengan versi lama). */
-function nomor_jurnal_berikut($unit)
+/**
+ * Catat header jurnal_masuk dengan nomor otomatis (2026-11-20; dulu max(jurnal_umum unit)+1 yang bentrok).
+ * Nomor yang terbentuk disimpan agar bisa dihapus bila transaksi dibatalkan (jurnal_masuk MyISAM, tidak ikut rollback).
+ */
+function catat_jurnal_masuk($kode_trans, $tgl, $unit)
 {
-    $j = db_satu("SELECT max(nomor_jurnal) AS n FROM jurnal_umum where unit =? ORDER BY tanggal_selesai DESC", 's', (string) $unit);
-    return compat_num($j ? $j['n'] : null) + 1;
+    if (db_jalankan("insert into jurnal_masuk(kode_transaksi,tanggal_selesai,unit) values(?,?,?)", 'sss',
+            (string) $kode_trans, (string) $tgl, (string) $unit)) {
+        $GLOBALS['__stor_jurnal_masuk'][] = (int) db_ni()->insert_id;
+    }
 }
 
-$kkel = db_satu("select CODE_KEL,CIF,UNIT,CUST_SHORT_NAME,CAO FROM anggota where  norek =?", 's', $norek);
+// 2026-11-20: norek harus milik anggota di unit user (dulu tanpa filter unit)
+$r_unit_user = db_satu("select kode_branch from user where userid=?", 's', (string) $userid);
+$unit_user = $r_unit_user ? (string) $r_unit_user['kode_branch'] : '';
+$kkel = db_satu("select CODE_KEL,CIF,UNIT,CUST_SHORT_NAME,CAO FROM anggota where  norek =? AND UNIT = ?", 'ss', $norek, $unit_user);
 $code_kel = $kkel ? $kkel['CODE_KEL'] : null;
 $ciff = $kkel ? $kkel['CIF'] : null;
 $unit = $kkel ? $kkel['UNIT'] : null;
@@ -113,6 +129,10 @@ if (isset($_POST['search'])) {
             $alert('Maaf,.isi Nomor REKENING dan Jenis Transaksi yang benar');
             $pindah();
         } else {
+            // 2026-11-20: satu transaksi DB per setoran/penarikan
+            $GLOBALS['__stor_jurnal_masuk'] = array();
+            mysqli_begin_transaction(db_ni());
+            $gagal_awal = db_jumlah_gagal();
             switch ($pilih) {
                 case "01":
                     $cwajib = db_satu("select SUM(KREDIT-DEBIT) as wajib from simpanan_wajib where cif =?", 's', (string) $ciff);
@@ -220,9 +240,7 @@ if (isset($_POST['search'])) {
                         $ket = "Setoran Angsuran An $nama";
                         // Perbaikan 2026-11-03 (perintah user): update tabungan_detail (tidak dipakai; sum simpanan per NOREK tanpa
                         // index) dihapus. Saldo dihitung langsung dari simpanan per CIF.
-                        $nomor_jurnal = nomor_jurnal_berikut($unit);
-                        db_jalankan("insert into jurnal_masuk(nomor_jurnal,kode_transaksi,tanggal_selesai,unit) values(?,?,?,?)", 'ssss',
-                            (string) $nomor_jurnal, $kode_trans, (string) $tgl_system, (string) $unit);
+                        catat_jurnal_masuk($kode_trans, $tgl_system, $unit);
                         catat_transaksi($unit, $kode_trans, '1120000', $tgl_system, 'Bukti SYSTEM', $ket, 'debet', $nominal, $userid);
                         catat_transaksi($unit, $kode_trans, '2101000', $tgl_system, 'Bukti SYSTEM', 'Simpanan Pokok', 'kredit', $nominal, $userid);
                         $alert("Nominal sudah ditambahkan pada rekening $norek");
@@ -236,7 +254,6 @@ if (isset($_POST['search'])) {
                     break;
 
                 case "04":
-                    $nomor_jurnal = nomor_jurnal_berikut($unit);
                     $dasar = array('BUSS_DATE' => $buss_date, 'NOREK' => $norek, 'UNIT' => $unit, 'CIF' => $ciff, 'CODE_KEL' => $code_kel);
                     $isi = function ($debit, $type, $kredit) use ($dasar, $userid, $keterangan, $cao, $kode_trans) {
                         return $dasar + array('DEBIT' => $debit, 'TYPE' => $type, 'KREDIT' => $kredit, 'USERID' => $userid, 'KET' => $keterangan, 'REFF' => '', 'CAO' => $cao, 'kode_transaksi' => $kode_trans);
@@ -250,9 +267,8 @@ if (isset($_POST['search'])) {
                             catat_simpanan('simpanan_wajib', $isi($nominal, '05', 0));
                         }
                         catat_simpanan('simpanan', $isi(0, '01', $nominal));
-                        // versi lama memakai $kode_transaksi yang belum diisi: kode transaksi jurnal_masuk kosong
-                        db_jalankan("insert into jurnal_masuk(nomor_jurnal,kode_transaksi,tanggal_selesai,unit) values(?,'',?,?)", 'sss',
-                            (string) $nomor_jurnal, (string) $tgl_system, (string) $unit);
+                        // versi lama memakai $kode_transaksi yang belum diisi: kode transaksi jurnal_masuk kosong (dipertahankan)
+                        catat_jurnal_masuk('', $tgl_system, $unit);
                         catat_transaksi($unit, $kode_trans, $gl, $tgl_system, 'Bukti SYSTEM', $keterangan, 'debet', $nominal, $userid);
                         catat_transaksi($unit, $kode_trans, '2101000', $tgl_system, 'Bukti SYSTEM', $keterangan, 'kredit', $nominal, $userid);
                     } else {
@@ -265,8 +281,7 @@ if (isset($_POST['search'])) {
                             catat_simpanan('simpanan_wajib', $isi(0, '04', $nominal));
                         }
                         catat_simpanan('simpanan', $isi($nominal, '01', 0));
-                        db_jalankan("insert into jurnal_masuk(nomor_jurnal,kode_transaksi,tanggal_selesai,unit) values(?,'',?,?)", 'sss',
-                            (string) $nomor_jurnal, (string) $tgl_system, (string) $unit);
+                        catat_jurnal_masuk('', $tgl_system, $unit);
                         // Perbaikan 2026-11-04 (perintah user): versi lama memakai $ket yang belum diisi sehingga keterangan jurnal
                         // debet 2101000 kosong; kini isian Keterangan form (seperti arah Debet), bila kosong "PB Simpanan Pokok/Wajib an <nama>"
                         $ket_pb = trim((string) $keterangan) !== '' ? $keterangan : 'PB Simpanan ' . ($simpan == "pokok" ? 'Pokok' : 'Wajib') . " an $nama";
@@ -281,16 +296,21 @@ if (isset($_POST['search'])) {
 
                 case "05":
                     $ket = "Setoran Angsuran WO An $nama";
+                    // 2026-11-20 (perintah user): OS WO ada di loan_wo (per CIF anggota). Anggota tanpa data loan_wo ditolak;
+                    // dulu jurnal WO tetap tercatat walau tidak ada OS yang berkurang.
+                    if (!db_satu("select 1 as ada from loan_wo where cif = ?", 's', (string) $ciff)) {
+                        $alert("Maaf, anggota $norek tidak punya pembiayaan WO. Transaksi tidak disimpan.");
+                        $pindah();
+                        break;
+                    }
                     // Perbaikan 2026-11-03 (perintah user): update tabungan_detail dihapus, sama seperti jenis 03
-                    $nomor_jurnal = nomor_jurnal_berikut($unit);
-                    db_jalankan("insert into jurnal_masuk(nomor_jurnal,kode_transaksi,tanggal_selesai,unit) values(?,?,?,?)", 'ssss',
-                        (string) $nomor_jurnal, $kode_trans, (string) $tgl_system, (string) $unit);
+                    catat_jurnal_masuk($kode_trans, $tgl_system, $unit);
                     catat_transaksi($unit, $kode_trans, '1120000', $tgl_system, 'Bukti SYSTEM', $ket, 'debet', $nominal, $userid);
                     catat_transaksi($unit, $kode_trans, '42356', $tgl_system, 'Bukti SYSTEM', $ket, 'kredit', $nominal, $userid);
                     catat_transaksi($unit, $kode_trans, '9910000', $tgl_system, 'Bukti SYSTEM', $ket, 'debet', $nominal, $userid);
                     catat_transaksi($unit, $kode_trans, '9141000', $tgl_system, 'Bukti SYSTEM', $ket, 'kredit', $nominal, $userid);
-                    // versi lama: CIF diambil dari data loan (kosong bila anggota tidak punya loan)
-                    db_jalankan("update loan_wo set os=os - ?  WHERE cif =?", 'ss', $nominal, (string) $cif) or die(mysqli_error(db_ni()));
+                    // 2026-11-20: CIF anggota (dulu CIF dari tabel loan, kosong bila anggota tidak punya loan -> OS WO tidak berkurang)
+                    db_jalankan("update loan_wo set os=os - ?  WHERE cif =?", 'ss', $nominal, (string) $ciff);
                     $alert("Nominal sudah ditambahkan pada rekening $norek");
                     $mutasi = $ambil_mutasi("SELECT simpanan.NOREK,simpanan.BUSS_DATE,anggota.CUST_SHORT_NAME,DEBIT,KREDIT,@bal:=(@bal+KREDIT)-DEBIT as balance FROM simpanan
                         join anggota on anggota.cif = simpanan.cif
@@ -298,6 +318,22 @@ if (isset($_POST['search'])) {
                     break;
 
                 default:
+            }
+            // 2026-11-20: bila ada query gagal, transaksi ini dibatalkan seluruhnya (dulu tersimpan sebagian + pesan sukses)
+            if (db_jumlah_gagal() > $gagal_awal) {
+                mysqli_rollback(db_ni());
+                foreach (array('simpanan_pokok', 'simpanan_wajib', 'temp_tarik') as $t_myisam) {
+                    db_jalankan("DELETE FROM $t_myisam WHERE kode_transaksi = ?", 's', (string) $kode_trans);
+                }
+                foreach ($GLOBALS['__stor_jurnal_masuk'] as $id_jm) {
+                    db_jalankan("DELETE FROM jurnal_masuk WHERE nomor_jurnal = ?", 'i', $id_jm);
+                }
+                $pesan = array();
+                $mutasi = array();
+                $alert('Maaf,.Proses Input Gagal, data tidak disimpan');
+                $pindah();
+            } else {
+                mysqli_commit(db_ni());
             }
         }
     } else {
