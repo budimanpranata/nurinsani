@@ -1,291 +1,119 @@
-<?php require_once __DIR__ . '/../php8_compat.php';
+<?php require_once __DIR__ . '/../koneksi_db.php';
+/**
+ * Report > PPAP > Rekap (PDF): rekap kolektabilitas pembiayaan unit, bagian MURABAHAH (status_app bukan MUSYAROKAH) dan
+ * MUSYARAKAH, per golongan (gol 1 Lancar, 2 Kurang Lancar, 3 Diragukan, 4 Macet): jumlah debitur, plafond, saldo pinjaman
+ * (os - saldo_margin), PPAP (0,5% / 10% / 50% / 100% saldo, dibulatkan ke bawah per baris; total = jumlah tanpa pembulatan).
+ * Query, angka, dan tata letak sama dengan versi lama, kecuali (2026-11-21, perintah user, PEKERJAAN_TERTUNDA §27 A6):
+ *   - kolom "Nilai Anggunan" dihapus (selalu kosong: variabel tidak pernah diisi dan tidak ada data agunan di database)
+ *   - kolom "Prosent NPL-Gross" diisi (dulu selalu kosong): per golongan = saldo golongan / total saldo bagian itu;
+ *     baris Jumlah Total = NPL-Gross = (saldo Kurang Lancar + Diragukan + Macet) / total saldo
+ *   - migrasi: prepared statement, wajib login level unit (versi lama memakai conn2 / mysql_*).
+ */
+date_default_timezone_set('Asia/Jakarta');
 session_start();
+require_once __DIR__ . '/../inc/cek_login.php';
+wajib_level('unit');
 ob_start();
-$userid=$_SESSION['userid'];
-$tgl=$_SESSION['stgl_npl'];
-//cek apakah user sudah login
-if(!isset($_SESSION['userid'])){
-   header("location:index.html");
- exit; }
+include __DIR__ . '/../indo_tgl.php';
+$userid = (string) $_SESSION['userid'];
+$tgl = isset($_SESSION['stgl_npl']) ? (string) $_SESSION['stgl_npl'] : '';
+$periode = tgl_indo($tgl);
 
-//cek level user
-if($_SESSION['level']!="unit"){
-   header("location:index.html");
- exit; }
- include "../conn2.php";
- include "../indo_tgl.php";
- $koneksi=open_connection2();
-$code_kel=$_GET['kode_kel'];
-$periode =tgl_indo($tgl);
+$dsmo = db_satu("Select nama,kode_branch FROM user WHERE userid=?", 's', $userid);
+$kode_branch = $dsmo ? (string) $dsmo['kode_branch'] : '';
+$br = db_satu("Select unit, alamat FROM branch WHERE kode_branch=?", 's', $kode_branch);
+$nama_unit = $br ? $br['unit'] : '';
+$alamat = $br ? $br['alamat'] : '';
 
-$sql1=mysql_query("Select nama,kode_branch FROM user WHERE userid='$userid'");
-$dsmo= mysql_fetch_array($sql1);
-$nama_sales=$dsmo['nama'];
-$kode_branch=$dsmo['kode_branch'];
+/** Data satu bagian: [gol => [noa, pla, saldo]] untuk musyarakah (true) atau murabahah (false). */
+function rekap_ppap_data($unit, $musyarakah)
+{
+    $hasil = array();
+    foreach (array(1, 2, 3, 4) as $gol) {
+        $d = db_satu("SELECT count(cif) as noa, sum(Plafond) as pla, sum(os-saldo_margin) as saldo from loan
+            where gol=? AND loan.unit =? and os>0 and " . ($musyarakah ? "status_app ='MUSYAROKAH'" : "status_app not in ('MUSYAROKAH')"),
+            'ss', (string) $gol, (string) $unit);
+        $hasil[$gol] = array(compat_num($d ? $d['noa'] : 0), compat_num($d ? $d['pla'] : 0), compat_num($d ? $d['saldo'] : 0));
+    }
+    return $hasil;
+}
+function persen_ppap($a, $b)
+{
+    return $b != 0 ? number_format($a / $b * 100, 2, ',', '.') . '%' : '0,00%';
+}
 
-$sql2=mysql_query("Select * FROM branch WHERE kode_branch='$kode_branch'");
-$br= mysql_fetch_array($sql2);
-$nama_unit=$br['unit'];
-$alamat=$br['alamat'];
+require __DIR__ . '/../fpdf17/fpdf.php';
+while (ob_get_level() > 0) {
+    ob_end_clean();
+}
+$pdf = new FPDF('L', 'mm', array(279.4, 381));
+$pdf->AddPage();
+$pdf->SetTopMargin(15);
+$pdf->SetLeftMargin(12);
+$pdf->SetFillColor(255, 255, 255);
 
-$buss_date=date("y-m-d");
-//cek apakah user sudah login
-if(!isset($_SESSION['userid'])){
-   header("location:../index.html");//jika belum login jangan lanjut..
- exit; }
-
-//cek level user
-if($_SESSION['level']!="unit"){
-     header("location:../index.html");//jika bukan user jangan lanjut
- exit; }
-
-require ('../fpdf17/fpdf.php');
-$pdf=new FPDF('L','mm', array(279.4, 381));
-$pdf->addPage();
-$pdf->setTopMargin(15);
-$pdf->setLeftMargin(12);
-$pdf->setFillColor(255,255,255);
-
-$pdf->SetFont('Arial','B',12);
-
-//membuat kop tabel
-$pdf->SetFont('Arial','B',11);
-$pdf->multicell(0,5,'KOPERASI SIMPAN PINJAM DAN PEMBIAYAAN SYARIAH NUR INSANI UNIT '.$nama_unit.'',0,'J',1);
-$pdf->multicell(0,5,'ALAMAT '.$alamat.'',0,'J',1);
-$pdf->SetFont('Arial','BU',12);
+$pdf->SetFont('Arial', 'B', 11);
+$pdf->MultiCell(0, 5, 'KOPERASI SIMPAN PINJAM DAN PEMBIAYAAN SYARIAH NUR INSANI UNIT ' . $nama_unit, 0, 'J', 1);
+$pdf->MultiCell(0, 5, 'ALAMAT ' . $alamat, 0, 'J', 1);
+$pdf->SetFont('Arial', 'BU', 12);
 $pdf->Ln(4);
-$pdf->multicell(0,5,'REKAP KOLEKTABILITAS PEMBIAYAAN',0,'J',1);
-$pdf->SetFont('Arial','B',12);
-$pdf->multicell(0,5,'Tanggal '.$periode,0,'J',1);
+$pdf->MultiCell(0, 5, 'REKAP KOLEKTABILITAS PEMBIAYAAN', 0, 'J', 1);
+$pdf->SetFont('Arial', 'B', 12);
+$pdf->MultiCell(0, 5, 'Tanggal ' . $periode, 0, 'J', 1);
 $pdf->Ln(4);
 
-$murab ="MURABAHAH";
-$pdf->multicell(0,5,'KOLEKTABILITAS '.$murab,0,'J',1);
-$pdf->Ln(4);
+$nama_gol = array(1 => 'Kredit Lancar', 2 => 'Kredit Kurang Lancar', 3 => 'Kredit Diragukan', 4 => 'Kredit Macet');
+$tarif = array(1 => 0.5, 2 => 10, 3 => 50, 4 => 100);
+foreach (array('MURABAHAH' => false, 'MUSYARAKAH' => true) as $judul => $musyarakah) {
+    $pdf->SetFont('Arial', 'B', 12);
+    $pdf->MultiCell(0, 5, 'KOLEKTABILITAS ' . $judul, 0, 'J', 1);
+    $pdf->Ln(4);
+    $pdf->SetFont('Arial', 'B', 10);
+    $pdf->Cell(15, 5, 'No', 1, 0, 'C');
+    $pdf->Cell(55, 5, 'Kelompok Kolektabilitas', 1, 0, 'C');
+    $pdf->Cell(66, 5, 'Jumlah Debitur', 1, 0, 'C');
+    $pdf->Cell(44, 5, 'Plafond ', 1, 0, 'C');
+    $pdf->Cell(44, 5, 'Saldo Pinjaman', 1, 0, 'C');
+    $pdf->Cell(44, 5, 'Prosent NPL-Gross', 1, 0, 'C');
+    $pdf->Cell(44, 5, 'PPAP', 1, 0, 'C');
 
-$pdf->SetFont('ARIAL','B',10);
-$pdf->Cell(15,5,'No',1,0,'C');
-$pdf->Cell(55,5,'Kelompok Kolektabilitas',1,0,'C');
-$pdf->Cell(66,5,'Jumlah Debitur',1,0,'C');
-$pdf->Cell(44,5,'Nilai Anggunan',1,0,'C');
-$pdf->Cell(44,5,'Plafond ',1,0,'C');
-$pdf->Cell(44,5,'Saldo Pinjaman',1,0,'C');
-$pdf->Cell(44,5,'Prosent NPL-Gross',1,0,'C');
-$pdf->Cell(44,5,'PPAP',1,0,'C');
+    $data = rekap_ppap_data($kode_branch, $musyarakah);
+    $tot_noa = $tot_pla = $tot_saldo = $tot_ppap = 0;
+    foreach ($data as $g) {
+        $tot_saldo += $g[2];
+    }
+    foreach ($data as $gol => $g) {
+        $ppap = $tarif[$gol] / 100 * $g[2];
+        $tot_noa += $g[0];
+        $tot_pla += $g[1];
+        $tot_ppap += $ppap;
+        $pdf->Ln();
+        $pdf->Cell(15, 5, (string) $gol, 1, 0, 'L', 1);
+        $pdf->Cell(55, 5, $nama_gol[$gol], 1, 0, 'L', 1);
+        $pdf->Cell(66, 5, (string) $g[0], 1, 0, 'R');
+        $pdf->Cell(44, 5, number_format($g[1]), 1, 0, 'R');
+        $pdf->Cell(44, 5, number_format($g[2]), 1, 0, 'R');
+        $pdf->Cell(44, 5, persen_ppap($g[2], $tot_saldo), 1, 0, 'R');
+        $pdf->Cell(44, 5, number_format(floor($ppap)), 1, 0, 'R');
+    }
+    $pdf->Ln();
+    $pdf->Cell(70, 5, 'Jumlah Total', 1, 0, 'L', 1);
+    $pdf->Cell(66, 5, (string) $tot_noa, 1, 0, 'R');
+    $pdf->Cell(44, 5, number_format($tot_pla), 1, 0, 'R');
+    $pdf->Cell(44, 5, number_format($tot_saldo), 1, 0, 'R');
+    // NPL-Gross = (Kurang Lancar + Diragukan + Macet) / total saldo
+    $pdf->Cell(44, 5, persen_ppap($data[2][2] + $data[3][2] + $data[4][2], $tot_saldo), 1, 0, 'R');
+    $pdf->Cell(44, 5, number_format($tot_ppap), 1, 0, 'R');
+    $pdf->Ln(9);
+}
 
-
-//query dan arraying coll 1 
-	//$cek_saldo= mysql_fetch_array(mysql_query("SELECT sum(saldo_kredit) - sum(debet) as saldo from rek_loan where unit ='$kode_branch' "));
-	$data_noa= mysql_fetch_array(mysql_query("SELECT count(cif) as noa, sum(Plafond) as pla,sum(os-saldo_margin) as saldo from loan where gol='1' AND loan.unit ='$kode_branch' and os>0 and status_app not in ('MUSYAROKAH')"));
-	$noa=$data_noa['noa'];
-	$saldo= number_format (compat_num($data_noa['saldo']));
-$tot_saldo=($data_noa['saldo']);
-	$pla=number_format (compat_num($data_noa['pla']));
-	$bulat=floor(compat_num(0.5/100 * $data_noa['saldo']));
-	$ppap= number_format (compat_num($bulat));
-	$tot_ppap1= (0.5/100 * $data_noa['saldo']);	
-
-		
-//query dan arraying coll 2 
-	//$cek_saldo2= mysql_fetch_array(mysql_query("SELECT sum(pokok)+sum(margin) as saldo, datediff('$tgl', tgl_tunggak) as selisih from tunggakan where datediff('$tgl', tgl_tunggak) between 91 and 120 AND unit  ='$kode_branch' group by cif order by cif "));
-	$data_noa2= mysql_fetch_array(mysql_query("SELECT count(cif) as noa, sum(Plafond) as pla,sum(os-saldo_margin) as saldo from loan where gol='2' AND loan.unit ='$kode_branch' and os>0 and status_app not in ('MUSYAROKAH')"));
-	$noa2=$data_noa2['noa'];
-	$saldo2=number_format (compat_num($data_noa2['saldo']));
-$tot_saldo2=($data_noa2['saldo']);
-	$pla2=number_format (compat_num($data_noa2['pla']));
-$bulat2=floor(compat_num(10/100 * $data_noa2['saldo']));
-	$ppap2= number_format (compat_num($bulat2));
-	$tot_ppap2= (10/100 * $data_noa2['saldo']);
-//query dan arraying coll 3 
-	//$cek_saldo3= mysql_fetch_array(mysql_query("SELECT sum(pokok)+sum(margin) as saldo, datediff('$tgl', tgl_tunggak) as selisih from tunggakan where datediff('$tgl', tgl_tunggak) between 121 AND 365 AND unit  ='$kode_branch' group by cif order by cif "));
-	$data_noa3= mysql_fetch_array(mysql_query("SELECT count(cif) as noa, sum(Plafond) as pla ,sum(os-saldo_margin) as saldo from loan where gol='3' AND loan.unit ='$kode_branch'and os>0 and status_app not in ('MUSYAROKAH')"));
-	$noa3=$data_noa3['noa'];
-	$saldo3=number_format (compat_num($data_noa3['saldo']));
-$tot_saldo3=($data_noa3['saldo']);
-	$pla3=number_format (compat_num($data_noa3['pla']));
-$bulat3=floor(compat_num(50/100 * $data_noa3['saldo']));
-	$ppap3= number_format(compat_num($bulat3));
-	$tot_ppap3= (50/100 * $data_noa3['saldo']);
-//query dan arraying coll 4
-	//$cek_saldo4= mysql_fetch_array(mysql_query("SELECT sum(pokok)+sum(margin) as saldo, datediff('$tgl', tgl_tunggak) as selisih from tunggakan where datediff('$tgl', tgl_tunggak) >365 AND unit  ='$kode_branch' group by cif order by cif "));
-	$data_noa4= mysql_fetch_array(mysql_query("SELECT count(cif) as noa, sum(Plafond) as pla ,sum(os-saldo_margin) as saldo from loan where gol='4' AND loan.unit ='$kode_branch' and os>0 and status_app not in ('MUSYAROKAH')"));
-	$noa4=$data_noa4['noa'];
-	$saldo4=number_format (compat_num($data_noa4['saldo']));
-$tot_saldo4=($data_noa4['saldo']);
-	$pla4=number_format (compat_num($data_noa4['pla']));
-$bulat4=floor(compat_num(100/100 * $data_noa4['saldo']));
-	$ppap4= number_format(compat_num($bulat4)); 
-$tot_ppap4= (100/100 * $data_noa4['saldo']);
-//porse hitung total 
-	$totnoa=$noa+$noa2+$noa3+$noa4;
-	$totsaldo=number_format (compat_num($tot_saldo+$tot_saldo2+$tot_saldo3+$tot_saldo4));
-	$totpla=number_format (compat_num($data_noa['pla']+$data_noa2['pla']+$data_noa3['pla']+$data_noa4['pla']));
-	$totppap=number_format (compat_num($tot_ppap1+$tot_ppap2+$tot_ppap3+$tot_ppap4));
-	//$perlancar=($cek_saldo['saldo'/($cek_saldo['saldo']+$cek_saldo2['saldo']+$cek_saldo3['saldo']+$cek_saldo4['saldo']));
-$pdf->Ln();
-$pdf->Cell(15,5,'1',1,'L',1);
-$pdf->Cell(55,5,'Kredit Lancar'.$norek,1,'L',1);
-$pdf->Cell(66,5,''.$noa,1,0,'R');
-$pdf->Cell(44,5,''.$Plafond,1,0,'R');
-$pdf->Cell(44,5,''.$pla,1,0,'R');
-$pdf->Cell(44,5,''.$saldo,1,0,'R');
-$pdf->Cell(44,5,''.$perlancar,1,'L',1);
-$pdf->Cell(44,5,''.$ppap,1,0,'R');
-$pdf->Ln();
-$pdf->Cell(15,5,'2',1,'L',1);
-$pdf->Cell(55,5,'Kredit Kurang Lancar'.$norek,1,'L',1);
-$pdf->Cell(66,5,''.$noa2,1,0,'R');
-$pdf->Cell(44,5,''.$Plafond,1,0,'R');
-$pdf->Cell(44,5,''.$pla2,1,0,'R');
-$pdf->Cell(44,5,''.$saldo2,1,0,'R');
-$pdf->Cell(44,5,''.$ke,1,'L',1);
-$pdf->Cell(44,5,''.$ppap2,1,0,'R');
-$pdf->Ln();
-$pdf->Cell(15,5,'3',1,'L',1);
-$pdf->Cell(55,5,'Kredit Diragukan'.$norek,1,'L',1);
-$pdf->Cell(66,5,''.$noa3,1,0,'R');
-$pdf->Cell(44,5,''.$Plafond,1,0,'R');
-$pdf->Cell(44,5,''.$pla3,1,0,'R');
-$pdf->Cell(44,5,''.$saldo3,1,0,'R');
-$pdf->Cell(44,5,''.$ke,1,'L',1);
-$pdf->Cell(44,5,''.$ppap3,1,0,'R');
-$pdf->Ln();
-$pdf->Cell(15,5,'4',1,'L',1);
-$pdf->Cell(55,5,'Kredit Macet'.$norek,1,'L',1);
-$pdf->Cell(66,5,''.$noa4,1,0,'R');
-$pdf->Cell(44,5,''.$Plafond,1,0,'R');
-$pdf->Cell(44,5,''.$pla4,1,0,'R');
-$pdf->Cell(44,5,''.$saldo4,1,0,'R');
-$pdf->Cell(44,5,''.$ke,1,'L',1);
-$pdf->Cell(44,5,''.$ppap4,1,0,'R');
-$pdf->Ln();
-$pdf->Cell(70,5,'Jumlah Total'.$norek,1,'L',1);
-$pdf->Cell(66,5,''.$totnoa,1,0,'R');
-$pdf->Cell(44,5,''.$Plafond,1,0,'R');
-$pdf->Cell(44,5,''.$totpla,1,0,'R');
-$pdf->Cell(44,5,''.$totsaldo,1,0,'R');
-$pdf->Cell(44,5,''.$ke,1,'L',1);
-$pdf->Cell(44,5,''.$totppap,1,0,'R');
-$pdf->Ln(9);
-
-
-$murab ="MUSYARAKAH";
-$pdf->multicell(0,5,'KOLEKTABILITAS '.$murab,0,'J',1);
-$pdf->Ln(4);
-
-$pdf->SetFont('ARIAL','B',10);
-$pdf->Cell(15,5,'No',1,0,'C');
-$pdf->Cell(55,5,'Kelompok Kolektabilitas',1,0,'C');
-$pdf->Cell(66,5,'Jumlah Debitur',1,0,'C');
-$pdf->Cell(44,5,'Nilai Anggunan',1,0,'C');
-$pdf->Cell(44,5,'Plafond ',1,0,'C');
-$pdf->Cell(44,5,'Saldo Pinjaman',1,0,'C');
-$pdf->Cell(44,5,'Prosent NPL-Gross',1,0,'C');
-$pdf->Cell(44,5,'PPAP',1,0,'C');
-
-
-//query dan arraying coll 1 
-	//$cek_saldo= mysql_fetch_array(mysql_query("SELECT sum(saldo_kredit) - sum(debet) as saldo from rek_loan where unit ='$kode_branch' "));
-	$data_noa= mysql_fetch_array(mysql_query("SELECT count(cif) as noa, sum(Plafond) as pla,sum(os-saldo_margin) as saldo from loan where gol='1' AND loan.unit ='$kode_branch' and os>0 and status_app ='MUSYAROKAH'"));
-	$noa=$data_noa['noa'];
-	$saldo= number_format (compat_num($data_noa['saldo']));
-$tot_saldo=($data_noa['saldo']);
-	$pla=number_format (compat_num($data_noa['pla']));
-	$bulat=floor(compat_num(0.5/100 * $data_noa['saldo']));
-	$ppap= number_format (compat_num($bulat));
-	$tot_ppap1= (0.5/100 * $data_noa['saldo']);	
-
-		
-//query dan arraying coll 2 
-	//$cek_saldo2= mysql_fetch_array(mysql_query("SELECT sum(pokok)+sum(margin) as saldo, datediff('$tgl', tgl_tunggak) as selisih from tunggakan where datediff('$tgl', tgl_tunggak) between 91 and 120 AND unit  ='$kode_branch' group by cif order by cif "));
-	$data_noa2= mysql_fetch_array(mysql_query("SELECT count(cif) as noa, sum(Plafond) as pla,sum(os-saldo_margin) as saldo from loan where gol='2' AND loan.unit ='$kode_branch' and os>0 and status_app ='MUSYAROKAH'" ));
-	$noa2=$data_noa2['noa'];
-	$saldo2=number_format (compat_num($data_noa2['saldo']));
-$tot_saldo2=($data_noa2['saldo']);
-	$pla2=number_format (compat_num($data_noa2['pla']));
-$bulat2=floor(compat_num(10/100 * $data_noa2['saldo']));
-	$ppap2= number_format (compat_num($bulat2));
-	$tot_ppap2= (10/100 * $data_noa2['saldo']);
-//query dan arraying coll 3 
-	//$cek_saldo3= mysql_fetch_array(mysql_query("SELECT sum(pokok)+sum(margin) as saldo, datediff('$tgl', tgl_tunggak) as selisih from tunggakan where datediff('$tgl', tgl_tunggak) between 121 AND 365 AND unit  ='$kode_branch' group by cif order by cif "));
-	$data_noa3= mysql_fetch_array(mysql_query("SELECT count(cif) as noa, sum(Plafond) as pla ,sum(os-saldo_margin) as saldo from loan where gol='3' AND loan.unit ='$kode_branch'and os>0 and status_app ='MUSYAROKAH'"));
-	$noa3=$data_noa3['noa'];
-	$saldo3=number_format (compat_num($data_noa3['saldo']));
-$tot_saldo3=($data_noa3['saldo']);
-	$pla3=number_format (compat_num($data_noa3['pla']));
-$bulat3=floor(compat_num(50/100 * $data_noa3['saldo']));
-	$ppap3= number_format(compat_num($bulat3));
-	$tot_ppap3= (50/100 * $data_noa3['saldo']);
-//query dan arraying coll 4
-	//$cek_saldo4= mysql_fetch_array(mysql_query("SELECT sum(pokok)+sum(margin) as saldo, datediff('$tgl', tgl_tunggak) as selisih from tunggakan where datediff('$tgl', tgl_tunggak) >365 AND unit  ='$kode_branch' group by cif order by cif "));
-	$data_noa4= mysql_fetch_array(mysql_query("SELECT count(cif) as noa, sum(Plafond) as pla ,sum(os-saldo_margin) as saldo from loan where gol='4' AND loan.unit ='$kode_branch' and os>0 and status_app ='MUSYAROKAH'"));
-	$noa4=$data_noa4['noa'];
-	$saldo4=number_format (compat_num($data_noa4['saldo']));
-$tot_saldo4=($data_noa4['saldo']);
-	$pla4=number_format (compat_num($data_noa4['pla']));
-$bulat4=floor(compat_num(100/100 * $data_noa4['saldo']));
-	$ppap4= number_format(compat_num($bulat4)); 
-$tot_ppap4= (100/100 * $data_noa4['saldo']);
-//porse hitung total 
-	$totnoa=$noa+$noa2+$noa3+$noa4;
-	$totsaldo=number_format (compat_num($tot_saldo+$tot_saldo2+$tot_saldo3+$tot_saldo4));
-	$totpla=number_format (compat_num($data_noa['pla']+$data_noa2['pla']+$data_noa3['pla']+$data_noa4['pla']));
-	$totppap=number_format (compat_num($tot_ppap1+$tot_ppap2+$tot_ppap3+$tot_ppap4));
-	//$perlancar=($cek_saldo['saldo'/($cek_saldo['saldo']+$cek_saldo2['saldo']+$cek_saldo3['saldo']+$cek_saldo4['saldo']));
-$pdf->Ln();
-$pdf->Cell(15,5,'1',1,'L',1);
-$pdf->Cell(55,5,'Kredit Lancar'.$norek,1,'L',1);
-$pdf->Cell(66,5,''.$noa,1,0,'R');
-$pdf->Cell(44,5,''.$Plafond,1,0,'R');
-$pdf->Cell(44,5,''.$pla,1,0,'R');
-$pdf->Cell(44,5,''.$saldo,1,0,'R');
-$pdf->Cell(44,5,''.$perlancar,1,'L',1);
-$pdf->Cell(44,5,''.$ppap,1,0,'R');
-$pdf->Ln();
-$pdf->Cell(15,5,'2',1,'L',1);
-$pdf->Cell(55,5,'Kredit Kurang Lancar'.$norek,1,'L',1);
-$pdf->Cell(66,5,''.$noa2,1,0,'R');
-$pdf->Cell(44,5,''.$Plafond,1,0,'R');
-$pdf->Cell(44,5,''.$pla2,1,0,'R');
-$pdf->Cell(44,5,''.$saldo2,1,0,'R');
-$pdf->Cell(44,5,''.$ke,1,'L',1);
-$pdf->Cell(44,5,''.$ppap2,1,0,'R');
-$pdf->Ln();
-$pdf->Cell(15,5,'3',1,'L',1);
-$pdf->Cell(55,5,'Kredit Diragukan'.$norek,1,'L',1);
-$pdf->Cell(66,5,''.$noa3,1,0,'R');
-$pdf->Cell(44,5,''.$Plafond,1,0,'R');
-$pdf->Cell(44,5,''.$pla3,1,0,'R');
-$pdf->Cell(44,5,''.$saldo3,1,0,'R');
-$pdf->Cell(44,5,''.$ke,1,'L',1);
-$pdf->Cell(44,5,''.$ppap3,1,0,'R');
-$pdf->Ln();
-$pdf->Cell(15,5,'4',1,'L',1);
-$pdf->Cell(55,5,'Kredit Macet'.$norek,1,'L',1);
-$pdf->Cell(66,5,''.$noa4,1,0,'R');
-$pdf->Cell(44,5,''.$Plafond,1,0,'R');
-$pdf->Cell(44,5,''.$pla4,1,0,'R');
-$pdf->Cell(44,5,''.$saldo4,1,0,'R');
-$pdf->Cell(44,5,''.$ke,1,'L',1);
-$pdf->Cell(44,5,''.$ppap4,1,0,'R');
-$pdf->Ln();
-$pdf->Cell(70,5,'Jumlah Total'.$norek,1,'L',1);
-$pdf->Cell(66,5,''.$totnoa,1,0,'R');
-$pdf->Cell(44,5,''.$Plafond,1,0,'R');
-$pdf->Cell(44,5,''.$totpla,1,0,'R');
-$pdf->Cell(44,5,''.$totsaldo,1,0,'R');
-$pdf->Cell(44,5,''.$ke,1,'L',1);
-$pdf->Cell(44,5,''.$totppap,1,0,'R');
-$pdf->Ln(9);
-
-$pdf->SetFont('ARIAL','B',6);
-$pdf->Cell(40,5,'DIBUAT OLEH',1,0,'C');
-$pdf->Cell(40,5,'DIPERIKSA OLEH ',1,0,'C');
-$pdf->Cell(40,5,'DI SETUJUI OLEH ',1,0,'C');
-$pdf->Ln(20,1);
-$pdf->Cell(40,5,'NAMA OFFICER',1,0,'C');
-$pdf->Cell(40,5,'ATASAN LANGSUNG',1,0,'C');
-$pdf->Cell(40,5,'ATASAN ATASAN LANGSUNG',1,0,'C');
+$pdf->SetFont('Arial', 'B', 6);
+$pdf->Cell(40, 5, 'DIBUAT OLEH', 1, 0, 'C');
+$pdf->Cell(40, 5, 'DIPERIKSA OLEH ', 1, 0, 'C');
+$pdf->Cell(40, 5, 'DI SETUJUI OLEH ', 1, 0, 'C');
+$pdf->Ln(20);
+$pdf->Cell(40, 5, 'NAMA OFFICER', 1, 0, 'C');
+$pdf->Cell(40, 5, 'ATASAN LANGSUNG', 1, 0, 'C');
+$pdf->Cell(40, 5, 'ATASAN ATASAN LANGSUNG', 1, 0, 'C');
 $pdf->Output();
-
-?>
+exit;
