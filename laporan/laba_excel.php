@@ -1,12 +1,12 @@
 <?php require_once __DIR__ . '/../koneksi_db.php';
 /**
  * Export Rugi Laba ke .xlsx (versi lama: tabel HTML yang dinamai laba-rugi.xls). Data kecil, jadi dibuat dalam satu request.
- * Logika sama dengan versi lama (keputusan user: hanya migrasi kode). Perhatikan perbedaan versi lama dengan layar
- * (new_laba.php) yang dipertahankan:
- *   - daftar rekening ditambah filter gr_neraca='rugi-laba'
- *   - pendapatan/beban non operasional (57000/58000) selalu diambil dari unit '001'
- *   - SHU sebelum pajak = SHU operasional + nilai mutlak SHU non operasional
- * Saldo akhir negatif ditulis sebagai nilai mutlak; estimasi pajak 0 (tidak pernah diisi di versi lama).
+ * Perbaikan 2026-11-21 (perintah user, PEKERJAAN_TERTUNDA §32): isi disamakan dengan layar (new_laba.php). Dulu:
+ *   - daftar rekening ditambah filter gr_neraca='rugi-laba' (rekening layar bisa tidak ikut)
+ *   - pendapatan/beban non operasional (57000/58000) selalu diambil dari unit '001', bukan unit user
+ *   - SHU sebelum pajak = SHU operasional + nilai MUTLAK SHU non operasional (rugi non ops malah menambah SHU)
+ * Saldo akhir negatif dan baris SHU non operasional tetap ditulis sebagai nilai mutlak (sama dengan layar); estimasi
+ * pajak 0 (tidak pernah diisi di versi lama).
  */
 require_once __DIR__ . '/../inc/xlsx_writer.php';
 session_start();
@@ -31,7 +31,7 @@ $unit = (string) $unit;
 
 $rekening = db_semua("SELECT kode_rekening,nama_rekening,saldo_awal,saldo_akhir,saldo_jalan,LINE_BALANCE
     FROM `tabel_rugi_laba`
-    where unit =? and posisi='rugi-laba' and gr_neraca='rugi-laba' and kode_rekening not in ('59999')
+    where unit =? and posisi='rugi-laba' and kode_rekening not in ('59999')
     GROUP BY gr_neraca,kode_rekening ORDER BY gr_neraca,kode_rekening ", 's', $unit);
 
 function saldo_rl($unit, $kode)
@@ -43,12 +43,12 @@ $nilai = function ($baris, $kolom) {
 };
 $total_pendapan = saldo_rl($unit, '40000');
 $total_biaya = saldo_rl($unit, '50000');
-// versi lama: unit '001' tetap (bukan unit user)
-$total_pendapan_n = saldo_rl('001', '57000');
-$total_beban = saldo_rl('001', '58000');
+// 2026-11-21: unit user (dulu selalu unit '001') dan SHU non ops bertanda (dulu nilai mutlak), sama dengan layar
+$total_pendapan_n = saldo_rl($unit, '57000');
+$total_beban = saldo_rl($unit, '58000');
 $shu_ops_akhir = $nilai($total_pendapan, 'saldo_akhir') - $nilai($total_biaya, 'saldo_akhir');
 $shu_ops_non_akhir = $nilai($total_pendapan_n, 'saldo_akhir') - $nilai($total_beban, 'saldo_akhir');
-$shu_sb_pajak_akhir = $shu_ops_akhir + abs($shu_ops_non_akhir);
+$shu_sb_pajak_akhir = $shu_ops_akhir + $shu_ops_non_akhir;
 $estimasi_pajak = 0;
 $shu_after_pajak_akhir = $shu_sb_pajak_akhir - $estimasi_pajak;
 

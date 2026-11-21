@@ -5,7 +5,8 @@
  * versi lama; neraca_pdf.php tidak ada di kp/laporan).
  * Dimigrasi 2026-11-03: hanya tampilan (Bootstrap 5) dan query (prepared statement); logika sama dengan versi lama, termasuk:
  *   - saldo akhir negatif ditampilkan sebagai nilai mutlak; SHU non operasional ditampilkan sebagai nilai mutlak
- *   - SHU sebelum pajak = SHU operasional + nilai mutlak SHU non operasional (berbeda dengan versi unit)
+ *   - (diperbaiki 2026-11-21, §32) SHU sebelum pajak = SHU operasional + SHU non operasional bertanda, sama dengan Excel
+ *     kp dan versi unit (dulu nilai mutlak SHU non operasional)
  *   - estimasi pajak tidak pernah diisi (0), sehingga SHU setelah pajak = SHU sebelum pajak
  */
 require_once __DIR__ . '/../../inc/tampilan.php';
@@ -48,7 +49,9 @@ $nilai = function ($baris, $kolom) {
 };
 $shu_ops_akhir = $nilai($total_pendapan, 'saldo_akhir') - $nilai($total_biaya, 'saldo_akhir');
 $shu_ops_non_akhir = $nilai($total_pendapan_n, 'saldo_akhir') - $nilai($total_beban, 'saldo_akhir');
-$shu_sb_pajak_akhir = $shu_ops_akhir + abs($shu_ops_non_akhir);
+// 2026-11-21 (perintah user, §32): SHU non ops bertanda, sama dengan Excel kp (kp/laporan/laba_excel.php) dan versi unit.
+// Dulu nilai mutlak: rugi non operasional malah menambah SHU sebelum pajak.
+$shu_sb_pajak_akhir = $shu_ops_akhir + $shu_ops_non_akhir;
 // versi lama: estimasi pajak ($estimasi_jalan, $shu_ops_akhir1) tidak pernah diisi -> 0
 $estimasi_pajak = 0;
 $shu_after_pajak_akhir = $shu_sb_pajak_akhir - $estimasi_pajak;
