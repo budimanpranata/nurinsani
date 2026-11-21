@@ -118,7 +118,7 @@ halaman_awal('Form Approve Calon Anggota');
       <div class="row gx-4">
         <div class="col-lg-6">
           <?php baris_isian_lead('Kode Unit', 'branch', $ag('UNIT'), 'maxlength="6"'); ?>
-          <?php baris_isian_lead('Cif', 'cif', $cif); ?>
+          <?php baris_isian_lead('Cif', 'cif', $cif, 'readonly'); // 2026-11-21 (perintah user, §38): read-only, approve selalu untuk CIF yang dibuka (dulu bisa diketik ulang) ?>
           <?php baris_isian_lead('Cif Simpanan', 'ciff', $cif, '', false); ?>
           <?php baris_isian_lead('Nomor KTP', 'id', $ag('ID_NUMBER'), $angka . ' maxlength="16"'); ?>
           <?php baris_isian_lead('Nama', 'nama', $ag('CUST_SHORT_NAME'), $besar . ' maxlength="45"'); ?>

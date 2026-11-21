@@ -5,6 +5,8 @@
  * Logika sama dengan versi lama; query kini prepared statement. var_dump($cif) sisa debug dihapus.
  * Perbaikan 2026-11-03 (laporan user): Tempat Lahir disimpan ke TEMPAT_LAHIR (dulu menimpa CITIZENSHIP), Pekerjaan
  * Pasangan ke pekerjaan_pasangan, Bidang Usaha ke calon_loan.usaha (hanya bila kodenya terdaftar di bidang_usaha).
+ * Perbaikan 2026-11-21 (perintah user, §38): hanya CIF dengan pengajuan menunggu (calon_loan gol='0') yang diproses
+ * (isian CIF di new4.php kini read-only); anggota + calon_loan + tunggakan dalam satu transaksi.
  */
 date_default_timezone_set('Asia/Jakarta');
 session_start();
@@ -33,6 +35,19 @@ wajib_cif_area($cif);
 $nama = $pos('nama');
 $nama1 = $pos('wali');
 
+// 2026-11-21 (perintah user, PEKERJAAN_TERTUNDA §38): hanya CIF yang punya pengajuan menunggu approve (calon_loan gol='0').
+// Dulu CIF yang diketik ulang di form (pengajuan lain / sudah di-approve / tanpa pengajuan) tetap diproses: data anggota
+// itu tertimpa isian form dan pengajuannya ter-approve tanpa dibuka.
+if (!db_satu("select 1 as ada from calon_loan where cif =? and gol ='0'", 's', $cif)) {
+    echo "<script> alert (" . json_encode('Pengajuan CIF ' . $cif . ' tidak ditemukan atau sudah di-approve. Tidak ada data yang diubah.', JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP) . ")</script>";
+    echo "<script language='javascript'>document.location.href='data_approval.php'</script>";
+    exit;
+}
+// satu transaksi: anggota, calon_loan, tunggakan (InnoDB); pesan sukses hanya bila semuanya berhasil
+$db = db_ni();
+mysqli_begin_transaction($db);
+$gagal_awal = db_jumlah_gagal();
+
 $i = db_jalankan("update anggota set
     CODE_KEL=?, CAO=?, CUST_SHORT_NAME=?, HADDRESS1=?, HADDRESS2=?, HADDRESS3=?, HPOST_CODE=?, HADDRESS4=?, HADDRESS5=?,
     MOBILE_PHONE=?, HOME_PHONE=?, BIRTH_DATE=?, ID_NUMBER=?, MOTHER_NAME=?, NPWP=?, TEMPAT_LAHIR=?, ID_EXPIRED=?, WARIS=?,
@@ -51,6 +66,14 @@ if ($usaha !== '' && db_satu("select 1 as ada from bidang_usaha where code_bidan
 }
 
 db_jalankan("update tunggakan set CODE_KEL=?,CAO=? where CIF =?", 'sss', $code_kel, $cao, $cif);
+
+if (db_jumlah_gagal() > $gagal_awal) {
+    mysqli_rollback($db);
+    echo "<script> alert ('Approve GAGAL, data tidak disimpan. Silakan ulangi.')</script>";
+    echo "<script language='javascript'>document.location.href='data_approval.php'</script>";
+    exit;
+}
+mysqli_commit($db);
 
 if ($i || $b) {
     // versi lama memakai nama yang sudah di-escape untuk SQL; addslashes menjaga alert tetap benar bila nama berisi tanda kutip
