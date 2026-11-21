@@ -3,6 +3,8 @@
  * Setoran PerKelompok langkah 3: proses setoran anggota yang dipilih di setoran_list.php
  * (nunggak / setoran kurang / setoran penuh + pembayaran angsuran sesuai status pembiayaan), dalam satu transaksi DB.
  * Logika dan urutan query sama dengan versi lama; hanya query (prepared statement) yang berubah.
+ * Perbaikan 2026-11-21 (perintah user, bagian 15): pengecualian tunggakan setor 0 dihitung dari total hari sejak akad
+ * (< 2 hari), bukan komponen hari ->d.
  * Perbaikan 2026-10-31 (perintah user), lihat PEKERJAAN_TERTUNDA.md bagian 15:
  *   - nominal diambil per CIF (bulat[CIF]); versi lama memakai isian ke-i untuk anggota tercentang ke-i
  *   - loan.ke = ke + 1 (versi lama selalu 1 karena $ke_tenor tidak pernah diisi)
@@ -131,8 +133,10 @@ if ($checbox) {
 		$tgl1=new DateTime((string) $tgl_murab);
 		$tgl2=new DateTime((string) $tanggal);
 		$jarak = $tgl2->diff($tgl1);
-		// versi lama: hanya komponen hari dari selisih tanggal (bukan total hari)
-		$jarak =$jarak->d;
+		// 2026-11-21 (perintah user, §15): total hari sejak akad. Versi lama memakai komponen hari saja (->d), sehingga
+		// setoran 0 pada "x bulan 0/1 hari" sesudah akad (mis. akad 1 Jan, setor 2 Apr) ikut dihapus tunggakannya.
+		// Maksud aslinya dipertahankan: setor 0 di hari akad atau H+1 tidak menjadi tunggakan.
+		$jarak =$jarak->days;
 
 		$nama=$kol('Cust_Short_name');
 		// versi lama: $cif dan $no_anggota tidak pernah diisi (kosong di keterangan & rek_loan)
