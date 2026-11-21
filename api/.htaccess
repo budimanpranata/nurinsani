@@ -3,3 +3,16 @@
 <FilesMatch "^(senin|selasa|rabu|kamis|pokok|wajib|tunggakan_eom|loan_mob|omzet|senin_koreksi)\.php$">
     Require all denied
 </FilesMatch>
+# 2026-11-21 (§103 P1-1, perintah user): penerima jurnal tanpa login, hanya dari server pengirimnya.
+<Files "transaksi.php">
+    <RequireAny>
+        Require ip 127.0.0.1 ::1
+        Require ip 192.168.88.140
+    </RequireAny>
+</Files>
+<Files "transaksi_cms.php">
+    <RequireAny>
+        Require ip 127.0.0.1 ::1
+        Require ip 192.168.88.145
+    </RequireAny>
+</Files>

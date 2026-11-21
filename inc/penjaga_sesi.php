@@ -69,6 +69,11 @@ function penjaga_sesi_publik($rel)
     if (in_array($rel, $tetap, true)) {
         return true;
     }
+    // 2026-11-21 (§103 P1-1): penerima jurnal HRIS/CMS dipanggil server lain tanpa sesi; dibatasi IP di file itu sendiri
+    // (inc/terima_jurnal.php) dan di api/.htaccess.
+    if ($rel === 'api/transaksi.php' || $rel === 'api/transaksi_cms.php') {
+        return true;
+    }
     return strpos($rel, 'api/categories/') === 0;
 }
 
