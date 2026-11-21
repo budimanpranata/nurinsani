@@ -19,6 +19,17 @@ $tanggal='2026-03-26';
 $tgl_system='2026-03-26'; 
 $tgl_input=date("Y-m-d");
 
+// 2026-11-21 (perintah user, PEKERJAAN_TERTUNDA §103 P1-6): pengaman jalan ulang. Dulu menjalankan file ini dua kali untuk
+// tanggal yang sama mendebet semua anggota Kamis dua kali. Semua jurnal (tabel_transaksi) dari proses ini berketerangan
+// "... Tagihan Lebaran ..." bertanggal $tanggal; bila sudah ada, berhenti sebelum menulis apa pun. (tunggakan tidak bisa
+// dipakai sebagai penanda: kolom REFF auto-increment, teks keterangan tidak tersimpan.) Isi proses di bawah TIDAK diubah.
+$sudah_jurnal = db_satu("select count(*) n from tabel_transaksi where tanggal_transaksi >= ? and tanggal_transaksi < date_add(?, interval 1 day) and keterangan_transaksi like '%Tagihan Lebaran%'", 'ss', $tanggal, $tanggal);
+$sudah = $sudah_jurnal ? (int) $sudah_jurnal['n'] : 0;
+if ($sudah > 0) {
+    echo "Debet Lebaran tanggal $tanggal SUDAH PERNAH DIJALANKAN ($sudah baris jurnal). Proses dihentikan, tidak ada data yang diubah.\n";
+    exit(1);
+}
+
     
 
                    
