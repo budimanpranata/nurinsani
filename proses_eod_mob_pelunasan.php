@@ -47,13 +47,13 @@ while($data = db_fetch_array($select)){
         $kode_trans="BU/".$unit.$kodetr;      
         
 
-        $ket1="Setoran Pelunasan An $nama";
+        $ket1="Setoran Pelunasan An $nama $ciff";
 if($nominal > 0 ){        
- $ket1="Setoran Pelunasan An $nama";
+ $ket1="Setoran Pelunasan An $nama $ciff";
         $input ="Insert into simpanan (BUSS_DATE,NOREK,UNIT,CIF,CODE_KEL,DEBIT,TYPE,KREDIT,USERID,KET,REFF,CAO,blok,tgl_input,kode_transaksi)VALUES('$tanggal','$norek','$unit','$ciff','$code_kel',0,'01','$nominal','$unit','$ket1','','$cao','1','$tanggal','$kode_trans')";
 $inputtrnsk = db_query($con,$input);
 }else{
-        $ket1="Setoran Pelunasan An $nama";
+        $ket1="Setoran Pelunasan An $nama $ciff";
 }
         
         $cek_saldo_pokok= db_fetch_array(db_query($con,"select sum(KREDIT)- sum(DEBIT) as saldo from simpanan_pokok WHERE cif ='".$ciff."'"));
@@ -69,7 +69,7 @@ $inputtrnsk = db_query($con,$input);
                 $nomor_jurnal=$jurnal_umum[0]+1;
 
                 if($saldo_pokok > 0){
-                    $ket2="PB An $nama dari Simpanan Pokok";
+                    $ket2="PB An $nama $ciff dari Simpanan Pokok";
                     $input1 ="Insert into simpanan_pokok (BUSS_DATE,NOREK,UNIT,CIF,CODE_KEL,DEBIT,TYPE,KREDIT,USERID,KET,REFF,CAO,blok,kode_transaksi)VALUES('$tanggal','$norek','$unit','$ciff','$code_kel','$saldo_pokok','03',0,'$unit','$ket2','','$cao','1','$kode_trans')";
                     $input2 ="Insert into simpanan (BUSS_DATE,NOREK,UNIT,CIF,CODE_KEL,DEBIT,TYPE,KREDIT,USERID,KET,REFF,CAO,blok,tgl_input,kode_transaksi)VALUES('$tanggal','$norek','$unit','$ciff','$code_kel','0','03',$saldo_pokok,'$unit','$ket2','','$cao','1','$tanggal','$kode_trans')";
                     
@@ -87,7 +87,7 @@ $inputtrnsk = db_query($con,$input);
                 }
                 
                 if($saldo_wajib >0){
-                    $ket2="PB An $nama dari Simpanan Wajib";
+                    $ket2="PB An $nama $ciff dari Simpanan Wajib";
                     $input1 ="Insert into simpanan_wajib (BUSS_DATE,NOREK,UNIT,CIF,CODE_KEL,DEBIT,TYPE,KREDIT,USERID,KET,REFF,CAO,blok,kode_transaksi)VALUES('$tanggal','$norek','$unit','$ciff','$code_kel','$saldo_wajib','03',0,'$unit','$ket2','','$cao','1','$kode_trans')";
                     $input2 ="Insert into simpanan (BUSS_DATE,NOREK,UNIT,CIF,CODE_KEL,DEBIT,TYPE,KREDIT,USERID,KET,REFF,CAO,blok,tgl_input,kode_transaksi)VALUES('$tanggal','$norek','$unit','$ciff','$code_kel','0','03',$saldo_wajib,'$unit','$ket2','','$cao','1','$tanggal','$kode_trans')";
 
@@ -105,7 +105,7 @@ $inputtrnsk = db_query($con,$input);
                 }
 
               if($inputtrnsk){
-            $ket="Setoran Pelunasan An $nama";       
+            $ket="Setoran Pelunasan An $nama $ciff";       
         
 
         
@@ -127,7 +127,7 @@ $inputtrnsk = db_query($con,$input);
 
             case "pelunasan19":
              if($inputtrnsk){
-            $ket="Setoran Pelunasan An $nama";       
+            $ket="Setoran Pelunasan An $nama $ciff";       
         
 
         
@@ -147,7 +147,7 @@ $inputtrnsk = db_query($con,$input);
                 break;
             case "pelunasan":
              if($inputtrnsk){
-            $ket="Setoran Pelunasan An $nama";       
+            $ket="Setoran Pelunasan An $nama $ciff";       
         
 
         
@@ -168,7 +168,7 @@ $inputtrnsk = db_query($con,$input);
 
             default:
               if($inputtrnsk){
-            $ket="Setoran Pelunasan An $nama";       
+            $ket="Setoran Pelunasan An $nama $ciff";       
         
 
         

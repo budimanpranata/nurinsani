@@ -53,8 +53,8 @@ order by loan.unit  ");
                 $ke_tenor=$row['next'];
                 $nama=mysqli_real_escape_string ($con,$row['CUST_SHORT_NAME']);
                 $ket="Setor Tagihan $nama $cif";
-                $ket2="Setoran Tagihan $nama";
-                $ket3="Tunggakan Tagihan $nama";
+                $ket2="Setoran Tagihan $nama $cif"; // 2026-11-22: CIF ditambahkan
+                $ket3="Tunggakan Tagihan $nama $cif";
                  
                 $kode_tr=7;
                 $kode_tr=acakangkahuruf($kode_tr);      
@@ -136,7 +136,7 @@ db_query ($con,"insert  into tunggakan (tgl_tunggak,NOREK,UNIT,CIF,CODE_KEL,DEBI
 db_query ($con,"insert into rek_loan(ref,tgl_realisasi,unit,no_anggota,saldo_kredit,debet,tipe,ket,USERID,STATUS,cif,AO)VALUES('','$tanggal','$unit','$no_anggota','0','$pokok','03','$ket','EOD','REALISASI POKOK','$cif',(select cao from loan where cif='$cif' limit 1))");
                
                 db_query ($con,"Update  loan set next_schedule ='$next_schedule',os =os-'$angsuran',saldo_margin=saldo_margin-'$ijaroh',run_tenor='$pb',ke='$ke_tenor'+1 ,last_payment='$tanggal' where cif  ='$cif'");
-                db_query ($con,"insert  into simpanan (BUSS_DATE,NOREK,UNIT,CIF,CODE_KEL,DEBIT,TYPE,KREDIT,USERID,REFF,CAO,tgl_input,kode_transaksi)VALUES('$tanggal','$no_anggota','$unit','$cif','$code_kel','$angsuran','03','0','$userid','$ket','$cao','$tgl_input','$kode_tran') ");
+                db_query ($con,"insert  into simpanan (BUSS_DATE,NOREK,UNIT,CIF,CODE_KEL,DEBIT,TYPE,KREDIT,USERID,KET,REFF,CAO,tgl_input,kode_transaksi)VALUES('$tanggal','$no_anggota','$unit','$cif','$code_kel','$angsuran','03','0','$userid','$ket','','$cao','$tgl_input','$kode_tran') ");
                 db_query ($con,"Update  pinjaman_detail set jumlah_bayar ='$angsuran',tgl_bayar='$tanggal' where id_pinjam  ='$no_anggota' and cicilan='$pb'");
                 db_query ($con,"Update  pinjaman_detail_jatpo set jumlah_bayar ='$angsuran',tgl_bayar='$tanggal' where id_pinjam  ='$no_anggota' and cicilan='$pb'");
                 //mysqli_query ($con,"Update  tunggakan set pokok ='0',margin='0' where cif  ='$cif' and ke='$ke_tenor'");
@@ -161,7 +161,7 @@ db_query ($con,"insert into rek_loan(ref,tgl_realisasi,unit,no_anggota,saldo_kre
                 db_query ($con,"insert into rek_loan(ref,tgl_realisasi,unit,no_anggota,saldo_kredit,debet,tipe,ket,USERID,STATUS,cif,AO)VALUES('','$tanggal','$unit','$no_anggota','0','$pokok','03','$ket','EOD','REALISASI POKOK','$cif',(select cao from loan where cif='$cif' limit 1))");
                
                 db_query ($con,"Update  loan set next_schedule ='$next_schedule',os =os-'$angsuran',saldo_margin=saldo_margin-'$ijaroh',run_tenor='$pb',ke='$ke_tenor'+1 ,last_payment='$tanggal' where cif  ='$cif'");
-                db_query ($con,"insert  into simpanan (BUSS_DATE,NOREK,UNIT,CIF,CODE_KEL,DEBIT,TYPE,KREDIT,USERID,REFF,CAO,tgl_input,kode_transaksi)VALUES('$tanggal','$no_anggota','$unit','$cif','$code_kel','$angsuran','03','0','$userid','$ket','$cao','$tgl_input','$kode_tran') ");
+                db_query ($con,"insert  into simpanan (BUSS_DATE,NOREK,UNIT,CIF,CODE_KEL,DEBIT,TYPE,KREDIT,USERID,KET,REFF,CAO,tgl_input,kode_transaksi)VALUES('$tanggal','$no_anggota','$unit','$cif','$code_kel','$angsuran','03','0','$userid','$ket','','$cao','$tgl_input','$kode_tran') ");
                 db_query ($con,"Update  pinjaman_detail set jumlah_bayar ='$angsuran',tgl_bayar='$tanggal' where id_pinjam  ='$no_anggota' and cicilan='$pb'");
                 db_query ($con,"Update  pinjaman_detail_jatpo set jumlah_bayar ='$angsuran',tgl_bayar='$tanggal' where id_pinjam  ='$no_anggota' and cicilan='$pb'");
                 $jurnal_umum=db_fetch_array(db_query ($con,"SELECT max(nomor_jurnal) FROM jurnal_umum where unit ='$unit' ORDER BY tanggal_selesai DESC"));
@@ -244,7 +244,7 @@ if ($saldo < $angsuran){
                 db_query ($con,"insert into rek_loan(ref,tgl_realisasi,unit,no_anggota,saldo_kredit,debet,tipe,ket,USERID,STATUS,cif,AO)VALUES('','$tanggal','$unit','$no_anggota','0','$ijaroh','03','$ket','EOD','REALISASI BAGHAS','$cif',(select cao from loan where cif='$cif' limit 1))");
  
                 db_query ($con,"Update  loan set next_schedule ='$next_schedule',os =os-'$angsuran',saldo_margin=saldo_margin-'$ijaroh',run_tenor='$pb',ke='$ke_tenor'+1,last_payment='$tanggal' where cif  ='$cif'");
-                db_query ($con,"insert  into simpanan (BUSS_DATE,NOREK,UNIT,CIF,CODE_KEL,DEBIT,TYPE,KREDIT,USERID,REFF,CAO,tgl_input,kode_transaksi)VALUES('$tanggal','$no_anggota','$unit','$cif','$code_kel','$angsuran','03','0','$userid','$ket','$cao','$tgl_input','$kode_tran') ");
+                db_query ($con,"insert  into simpanan (BUSS_DATE,NOREK,UNIT,CIF,CODE_KEL,DEBIT,TYPE,KREDIT,USERID,KET,REFF,CAO,tgl_input,kode_transaksi)VALUES('$tanggal','$no_anggota','$unit','$cif','$code_kel','$angsuran','03','0','$userid','$ket','','$cao','$tgl_input','$kode_tran') ");
                 $jurnal_umum=db_fetch_array(db_query ($con,"SELECT max(nomor_jurnal) FROM jurnal_umum where unit ='$unit' ORDER BY tanggal_selesai DESC"));
                 $nomor_jurnal=$jurnal_umum[0]+1;
 db_query ($con,"insert  into tabel_transaksi(unit,kode_transaksi,kode_rekening,tanggal_transaksi, jenis_transaksi, keterangan_transaksi,debet,id_admin)
@@ -328,7 +328,7 @@ db_query ($con,"insert  into simpanan (BUSS_DATE,NOREK,UNIT,CIF,CODE_KEL,DEBIT,T
                 db_query ($con,"insert into rek_loan(ref,tgl_realisasi,unit,no_anggota,saldo_kredit,debet,tipe,ket,USERID,STATUS,cif,AO)VALUES('','$tanggal','$unit','$no_anggota','0','$ijaroh','03','$ket','EOD','REALISASI BAGHAS','$cif',(select cao from loan where cif='$cif' limit 1))");
  
                 db_query ($con,"Update  loan set next_schedule ='$next_schedule',os =os-'$angsuran',saldo_margin=saldo_margin-'$ijaroh',run_tenor='$pb',ke='$ke_tenor'+1,last_payment='$tanggal' where cif  ='$cif'");
-                db_query ($con,"insert  into simpanan (BUSS_DATE,NOREK,UNIT,CIF,CODE_KEL,DEBIT,TYPE,KREDIT,USERID,REFF,CAO,tgl_input,kode_transaksi)VALUES('$tanggal','$no_anggota','$unit','$cif','$code_kel','$angsuran','03','0','$userid','$ket','$cao','$tgl_input','$kode_tran') ");
+                db_query ($con,"insert  into simpanan (BUSS_DATE,NOREK,UNIT,CIF,CODE_KEL,DEBIT,TYPE,KREDIT,USERID,KET,REFF,CAO,tgl_input,kode_transaksi)VALUES('$tanggal','$no_anggota','$unit','$cif','$code_kel','$angsuran','03','0','$userid','$ket','','$cao','$tgl_input','$kode_tran') ");
                          $jurnal_umum=db_fetch_array(db_query ($con,"SELECT max(nomor_jurnal) FROM jurnal_umum where unit ='$unit' ORDER BY tanggal_selesai DESC"));
                 $nomor_jurnal=$jurnal_umum[0]+1;
                              db_query ($con,"insert  into tabel_transaksi(unit,kode_transaksi,kode_rekening,tanggal_transaksi, jenis_transaksi, keterangan_transaksi,kredit,id_admin)

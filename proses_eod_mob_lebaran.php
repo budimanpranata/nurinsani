@@ -49,11 +49,11 @@ while($data = db_fetch_array($select)){
         $kode_trans="BU/".$unit.$kodetr;      
         
 
-        $ket1="Setoran Angsuran An $nama";
+        $ket1="Setoran Angsuran An $nama $ciff";
         $input ="Insert into simpanan (BUSS_DATE,NOREK,UNIT,CIF,CODE_KEL,DEBIT,TYPE,KREDIT,USERID,KET,REFF,CAO,blok,tgl_input,kode_transaksi)VALUES('$tanggal','$norek','$unit','$ciff','$code_kel',0,'10','$nominal','$unit','$ket1','','$cao','1','$tanggal','$kode_trans')";
         $inputtrnsk = db_query($con,$input);
         if($inputtrnsk){
-        $ket="Setoran Angsuran An $nama";              
+        $ket="Setoran Angsuran An $nama $ciff";              
         
                 $jurnal_umum=db_fetch_array(db_query($con,"SELECT max(nomor_jurnal) FROM jurnal_umum where unit ='$unit' ORDER BY tanggal_selesai DESC"));
                 $nomor_jurnal=$jurnal_umum[0]+1;

@@ -44,7 +44,7 @@ while($data = db_fetch_array($select)){
         $kodetr=8;
         $kodetr=acakangkahuruf($kodetr);
         $kode_trans="BU/".$unit.$kodetr; 
-        $keterangan="Penarikan simpanan an $nama";
+        $keterangan="Penarikan simpanan an $nama $ciff";
         
         // 2026-11-21 (perintah user, PEKERJAAN_TERTUNDA §103 P2-1):
         //  - CAO dari anggota.CAO seperti penarikan manual (stor.php 02); dulu $ds tidak terdefinisi -> CAO kosong.
@@ -58,7 +58,7 @@ while($data = db_fetch_array($select)){
             $norek = $agt['NOREK'];
             $nama = mysqli_real_escape_string($con, (string) $agt['CUST_SHORT_NAME']);
             $kode_trans = "BU/" . $unit . $kodetr;
-            $keterangan = "Penarikan simpanan an $nama";
+            $keterangan = "Penarikan simpanan an $nama $ciff";
         }
         //  - uang sudah diserahkan AO di lapangan, jadi penarikan TETAP dicatat & dijurnal; bila saldo (selain 04/05)
         //    dikurangi penarikan yang masih antre di temp_tarik tidak cukup, hanya peringatan di log cron supaya lead

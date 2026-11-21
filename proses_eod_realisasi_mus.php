@@ -72,7 +72,7 @@ left join nisbah on nisbah.cif = calon_loan.cif
                 $userid=$row['USERID'];
                 $status='ANGGOTA';
                 $norek="$no_anggota";
-                $ket="Realisasi MUSYARAKAH $Cust_Short_name";
+                $ket="Realisasi MUSYARAKAH $Cust_Short_name $cif"; // 2026-11-22: CIF ditambahkan
              $query = db_query ($con,"SELECT os FROM loan WHERE cif= '$cif' ");
              $check = db_fetch_array($query);
             $os_lama=$check['os'];

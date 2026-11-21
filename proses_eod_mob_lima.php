@@ -81,7 +81,7 @@ while($data = db_fetch_array($select)){
             // Uang sudah diterima di lapangan sehingga tidak ditolak seperti menu manual: pokok = nominal bila < 50.000.
             $in_pokok = min(compat_num($nominal), 50000);
            $ket="Setoran simpanan Pokok an $nama";
-                $input ="Insert into simpanan_pokok (BUSS_DATE,NOREK,UNIT,CIF,CODE_KEL,DEBIT,TYPE,KREDIT,USERID,KET,REFF,CAO,blok,kode_transaksi)VALUES('$tanggal','$norek','$unit','" . $ciff . "','$code_kel',0,'04','$in_pokok','$userid','Simpanan Pokok','','$cao','4','$kode_trans')";
+                $input ="Insert into simpanan_pokok (BUSS_DATE,NOREK,UNIT,CIF,CODE_KEL,DEBIT,TYPE,KREDIT,USERID,KET,REFF,CAO,blok,kode_transaksi)VALUES('$tanggal','$norek','$unit','" . $ciff . "','$code_kel',0,'04','$in_pokok','$userid','Simpanan Pokok AN $nama $ciff','','$cao','4','$kode_trans')";
                 $inputtrnsk = db_query($con,$input);
 
                 @db_query($con,"insert  into tabel_transaksi(unit,kode_transaksi,kode_rekening,tanggal_transaksi, jenis_transaksi, keterangan_transaksi,debet,id_admin)
@@ -93,7 +93,7 @@ while($data = db_fetch_array($select)){
             $sisa = $nominal - $in_pokok;
             if($sisa>0){
                $ket="Setoran simpanan 5% an $nama";
-                    $input ="Insert into simpanan_wajib (BUSS_DATE,NOREK,UNIT,CIF,CODE_KEL,DEBIT,TYPE,KREDIT,USERID,KET,REFF,CAO,blok,kode_transaksi)VALUES('$tanggal','$norek','$unit','" . $ciff . "','$code_kel',0,'05','$sisa','$userid','PB Simpanan Wajib','','$cao','1','$kode_trans')";
+                    $input ="Insert into simpanan_wajib (BUSS_DATE,NOREK,UNIT,CIF,CODE_KEL,DEBIT,TYPE,KREDIT,USERID,KET,REFF,CAO,blok,kode_transaksi)VALUES('$tanggal','$norek','$unit','" . $ciff . "','$code_kel',0,'05','$sisa','$userid','Simpanan Wajib AN $nama $ciff','','$cao','1','$kode_trans')";
                     $inputtrnsk = db_query($con,$input);
                     db_query($con,"insert  into tabel_transaksi(unit,kode_transaksi,kode_rekening,tanggal_transaksi, jenis_transaksi, keterangan_transaksi,debet,id_admin)
                     values('$unit','$kode_trans','1120000','$tanggal','Bukti SYSTEM','$ket','$sisa','$userid')");
@@ -109,7 +109,7 @@ while($data = db_fetch_array($select)){
         elseif($pokok == 50000 && $wajib >= 0){
             $ket="Setoran simpanan 5% an $nama";
 
-                $input ="Insert into simpanan_wajib (BUSS_DATE,NOREK,UNIT,CIF,CODE_KEL,DEBIT,TYPE,KREDIT,USERID,KET,REFF,CAO,blok,kode_transaksi)VALUES('$tanggal','$norek','$unit','" . $ciff . "','$code_kel',0,'05','$nominal','$userid','PB Simpanan Wajib','','$cao','1','$kode_trans')";
+                $input ="Insert into simpanan_wajib (BUSS_DATE,NOREK,UNIT,CIF,CODE_KEL,DEBIT,TYPE,KREDIT,USERID,KET,REFF,CAO,blok,kode_transaksi)VALUES('$tanggal','$norek','$unit','" . $ciff . "','$code_kel',0,'05','$nominal','$userid','Simpanan Wajib AN $nama $ciff','','$cao','1','$kode_trans')";
                     $inputtrnsk = db_query($con,$input);
 
 
@@ -128,7 +128,7 @@ while($data = db_fetch_array($select)){
             $in_pokok=50000;
            $ket="Setoran simpanan 5% an $nama";
                
-                $input ="Insert into simpanan_pokok (BUSS_DATE,NOREK,UNIT,CIF,CODE_KEL,DEBIT,TYPE,KREDIT,USERID,KET,REFF,CAO,blok,kode_transaksi)VALUES('$tanggal','$norek','$unit','" . $ciff . "','$code_kel',0,'04','$in_pokok','$userid','Simpanan Pokok','','$cao','4','$kode_trans')";
+                $input ="Insert into simpanan_pokok (BUSS_DATE,NOREK,UNIT,CIF,CODE_KEL,DEBIT,TYPE,KREDIT,USERID,KET,REFF,CAO,blok,kode_transaksi)VALUES('$tanggal','$norek','$unit','" . $ciff . "','$code_kel',0,'04','$in_pokok','$userid','Simpanan Pokok AN $nama $ciff','','$cao','4','$kode_trans')";
                 $inputtrnsk = db_query($con,$input);
                 @db_query($con,"insert  into tabel_transaksi(unit,kode_transaksi,kode_rekening,tanggal_transaksi, jenis_transaksi, keterangan_transaksi,debet,id_admin)
                 values('$unit','$kode_trans','1120000','$tanggal','Bukti SYSTEM','$ket','$in_pokok','$userid')");
@@ -143,7 +143,7 @@ while($data = db_fetch_array($select)){
                     $ket="Setoran simpanan 5% an $nama";
                
 
-                    $input ="Insert into simpanan_wajib (BUSS_DATE,NOREK,UNIT,CIF,CODE_KEL,DEBIT,TYPE,KREDIT,USERID,KET,REFF,CAO,blok,kode_transaksi)VALUES('$tanggal','$norek','$unit','" . $ciff . "','$code_kel',0,'05','$sisa_pokok','$userid','PB Simpanan Wajib','','$cao','1','$kode_trans')";
+                    $input ="Insert into simpanan_wajib (BUSS_DATE,NOREK,UNIT,CIF,CODE_KEL,DEBIT,TYPE,KREDIT,USERID,KET,REFF,CAO,blok,kode_transaksi)VALUES('$tanggal','$norek','$unit','" . $ciff . "','$code_kel',0,'05','$sisa_pokok','$userid','Simpanan Wajib AN $nama $ciff','','$cao','1','$kode_trans')";
                     $inputtrnsk = mysql_query($input);
                 @db_query($con,"insert  into tabel_transaksi(unit,kode_transaksi,kode_rekening,tanggal_transaksi, jenis_transaksi, keterangan_transaksi,debet,id_admin)
                 values('$unit','$kode_trans','1120000','$tgl_system','Bukti SYSTEM','$ket','$wajib_in','$userid')");
@@ -166,14 +166,14 @@ while($data = db_fetch_array($select)){
             $ke_wajib = $jumlah - $ke_pokok;
             if ($ke_pokok > 0) {
                 $ket="Setoran simpanan Pokok an $nama";
-                db_query($con,"Insert into simpanan_pokok (BUSS_DATE,NOREK,UNIT,CIF,CODE_KEL,DEBIT,TYPE,KREDIT,USERID,KET,REFF,CAO,blok,kode_transaksi)VALUES('$tanggal','$norek','$unit','" . $ciff . "','$code_kel',0,'04','$ke_pokok','$userid','Simpanan Pokok','','$cao','4','$kode_trans')");
+                db_query($con,"Insert into simpanan_pokok (BUSS_DATE,NOREK,UNIT,CIF,CODE_KEL,DEBIT,TYPE,KREDIT,USERID,KET,REFF,CAO,blok,kode_transaksi)VALUES('$tanggal','$norek','$unit','" . $ciff . "','$code_kel',0,'04','$ke_pokok','$userid','Simpanan Pokok AN $nama $ciff','','$cao','4','$kode_trans')");
                 db_query($con,"insert  into tabel_transaksi(unit,kode_transaksi,kode_rekening,tanggal_transaksi, jenis_transaksi, keterangan_transaksi,debet,id_admin)
                 values('$unit','$kode_trans','1120000','$tanggal','Bukti SYSTEM','$ket','$ke_pokok','$userid')");
                 db_query($con,"insert  into tabel_transaksi(unit,kode_transaksi,kode_rekening,tanggal_transaksi, jenis_transaksi, keterangan_transaksi,kredit,id_admin)
                 values('$unit','$kode_trans','3102000','$tanggal','Bukti SYSTEM','$ket','$ke_pokok','$userid')");
             }
             if ($ke_wajib > 0) {
-                db_query($con,"Insert into simpanan_wajib (BUSS_DATE,NOREK,UNIT,CIF,CODE_KEL,DEBIT,TYPE,KREDIT,USERID,KET,REFF,CAO,blok,kode_transaksi)VALUES('$tanggal','$norek','$unit','" . $ciff . "','$code_kel',0,'05','$ke_wajib','$userid','PB Simpanan Wajib','','$cao','1','$kode_trans')");
+                db_query($con,"Insert into simpanan_wajib (BUSS_DATE,NOREK,UNIT,CIF,CODE_KEL,DEBIT,TYPE,KREDIT,USERID,KET,REFF,CAO,blok,kode_transaksi)VALUES('$tanggal','$norek','$unit','" . $ciff . "','$code_kel',0,'05','$ke_wajib','$userid','Simpanan Wajib AN $nama $ciff','','$cao','1','$kode_trans')");
                 db_query($con,"insert  into tabel_transaksi(unit,kode_transaksi,kode_rekening,tanggal_transaksi, jenis_transaksi, keterangan_transaksi,debet,id_admin)
                 values('$unit','$kode_trans','1120000','$tanggal','Bukti SYSTEM','$ket1','$ke_wajib','$userid')");
                 db_query($con,"insert  into tabel_transaksi(unit,kode_transaksi,kode_rekening,tanggal_transaksi, jenis_transaksi, keterangan_transaksi,kredit,id_admin)
