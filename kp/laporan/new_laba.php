@@ -4,7 +4,8 @@
  * non operasional, sebelum dan sesudah pajak. Link Excel ke laba_excel.php, link PDF ke neraca_pdf.php (sama dengan
  * versi lama; neraca_pdf.php tidak ada di kp/laporan).
  * Dimigrasi 2026-11-03: hanya tampilan (Bootstrap 5) dan query (prepared statement); logika sama dengan versi lama, termasuk:
- *   - saldo akhir negatif ditampilkan sebagai nilai mutlak; SHU non operasional ditampilkan sebagai nilai mutlak
+ *   - (diperbaiki 2026-11-21, §32 A2) saldo akhir negatif dan SHU non operasional rugi tampil bertanda minus (dulu
+ *     nilai mutlak)
  *   - (diperbaiki 2026-11-21, §32) SHU sebelum pajak = SHU operasional + SHU non operasional bertanda, sama dengan Excel
  *     kp dan versi unit (dulu nilai mutlak SHU non operasional)
  *   - estimasi pajak tidak pernah diisi (0), sehingga SHU setelah pajak = SHU sebelum pajak
@@ -84,8 +85,8 @@ halaman_awal('Laba Rugi');
         <td><?php echo h($row['LINE_BALANCE']); ?></td>
         <td><?php echo h($row['kode_rekening']); ?></td>
         <td><?php echo h($row['nama_rekening']); ?></td>
-        <?php // saldo negatif ditampilkan sebagai nilai mutlak (versi lama) ?>
-        <td class="text-end"><?php echo angka_rl(abs(compat_num($row['saldo_akhir']))); ?></td>
+        <?php // 2026-11-21 (§32 A2): saldo negatif tampil dengan tanda minus (dulu nilai mutlak, tanda hilang) ?>
+        <td class="text-end<?php echo compat_num($row['saldo_akhir']) < 0 ? ' text-danger' : ''; ?>"><?php echo angka_rl($row['saldo_akhir']); ?></td>
       </tr>
     <?php endforeach; ?>
       <tr class="fw-bold">
@@ -94,7 +95,7 @@ halaman_awal('Laba Rugi');
       </tr>
       <tr class="fw-bold">
         <td colspan="3">SHU NON OPERASIONAL</td>
-        <td class="text-end"><?php echo angka_rl(abs($shu_ops_non_akhir)); ?></td>
+        <td class="text-end<?php echo $shu_ops_non_akhir < 0 ? ' text-danger' : ''; ?>"><?php echo angka_rl($shu_ops_non_akhir); ?></td>
       </tr>
       <tr class="fw-bold">
         <td colspan="3">SHU TAHUN BERJALAN SEBELUM PAJAK</td>

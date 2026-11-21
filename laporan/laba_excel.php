@@ -5,8 +5,8 @@
  *   - daftar rekening ditambah filter gr_neraca='rugi-laba' (rekening layar bisa tidak ikut)
  *   - pendapatan/beban non operasional (57000/58000) selalu diambil dari unit '001', bukan unit user
  *   - SHU sebelum pajak = SHU operasional + nilai MUTLAK SHU non operasional (rugi non ops malah menambah SHU)
- * Saldo akhir negatif dan baris SHU non operasional tetap ditulis sebagai nilai mutlak (sama dengan layar); estimasi
- * pajak 0 (tidak pernah diisi di versi lama).
+ * 2026-11-21 (§32 A2): saldo akhir negatif dan SHU non operasional rugi ditulis bertanda (minus), sama dengan layar
+ * (dulu nilai mutlak). Estimasi pajak 0 (tidak pernah diisi di versi lama).
  */
 require_once __DIR__ . '/../inc/xlsx_writer.php';
 session_start();
@@ -65,12 +65,12 @@ foreach ($rekening as $row) {
         array('s', $row['LINE_BALANCE']),
         array('s', $row['kode_rekening']),
         array('s', $row['nama_rekening']),
-        array('n', $akhir < 0 ? abs($akhir) : $akhir),
+        array('n', $akhir), // 2026-11-21 (§32 A2): bertanda (dulu nilai mutlak)
     ), $row['LINE_BALANCE'] == 'HEADING' ? 2 : 0);
 }
 foreach (array(
     array('SHU OPERASIONAL', $shu_ops_akhir),
-    array('SHU NON OPERASIONAL', abs($shu_ops_non_akhir)),
+    array('SHU NON OPERASIONAL', $shu_ops_non_akhir), // 2026-11-21 (§32 A2): bertanda (dulu nilai mutlak)
     array('SHU TAHUN BERJALAN SEBELUM PAJAK', $shu_sb_pajak_akhir),
     array('ESTIMASI TAKSIRAN PAJAK PENGHASILAN', $estimasi_pajak),
     array('SHU TAHUN BERJALAN SETELAH PAJAK', $shu_after_pajak_akhir),

@@ -112,7 +112,8 @@ while($row=mysql_fetch_array($sql))
 	
 	if ($akhir < 0){
 		
-		$akhir = "".number_format (compat_num(abs(compat_num($akhir))), '0', ',', '.')."";
+		// 2026-11-21 (§32 A2): bertanda minus (dulu nilai mutlak, tanda rugi hilang)
+		$akhir = "".number_format (compat_num($akhir), '0', ',', '.')."";
 		
 	}else{
 		$akhir =number_format (compat_num($row['saldo_akhir']), '0', ',', '.');
@@ -146,7 +147,9 @@ while($row=mysql_fetch_array($sql))
 
 echo '<tr class="grey">
 		<td colspan="3"><b>SHU NON OPERASIONAL</td>
-			<td><b>' . number_format(compat_num(abs(compat_num($shu_ops_non_akhir))), 0, ',', '.') . '</td>
+			<td><b>' . number_format(compat_num($shu_ops_non_akhir), 0, ',', '.') . '</td>';
+// 2026-11-21 (§32 A2): SHU non operasional bertanda minus bila rugi (dulu nilai mutlak)
+echo '
 	 </tr>';
 	 
 echo '<tr class="grey">

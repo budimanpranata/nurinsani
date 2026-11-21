@@ -8,6 +8,7 @@
  * Pencarian dan isian sesi sama dengan versi lama; hanya tampilan dan query (prepared statement) yang berubah.
  * Dimigrasi 2026-11-03. Satu-satunya perbedaan: Status kosong kini kembali ke halaman ini (versi lama ke Kr.php,
  * halaman level unit, sehingga user kp mendapat "Anda bukan user").
+ * 2026-11-21 (perintah user, §25 A1): Total NOA / Outstanding hanya pembiayaan os > 0 (sama dengan export accrual).
  */
 require_once __DIR__ . '/../inc/tampilan.php';
 session_start();
@@ -45,10 +46,12 @@ if (isset($_POST['search'])) {
         $_SESSION['unt'] = $unit;
     }
     if ($status == 'CURRENT') {
-        $hasil = db_semua("Select COUNT(loan.cif) AS NOA,SUM(os) AS os, unit From loan");
+        // 2026-11-21 (perintah user, §25 A1): hanya pembiayaan aktif (os > 0), sama dengan export accrual (loan_accrual
+        // diisi dari loan / data_loan os > 0). Dulu semua loan termasuk os 0 dan os minus ikut dihitung.
+        $hasil = db_semua("Select COUNT(loan.cif) AS NOA,SUM(os) AS os, unit From loan where os > 0");
     } else {
         $hasil = db_semua("Select buss_date,COUNT(data_loan.cif) AS NOA,SUM(os) AS os, unit From data_loan
-            Where Month(data_loan.buss_date)=? AND Year(data_loan.buss_date)=?", 'ss', $bulan1, $tahun1);
+            Where Month(data_loan.buss_date)=? AND Year(data_loan.buss_date)=? AND os > 0", 'ss', $bulan1, $tahun1);
     }
     if (!$hasil) {
         $pesan[] = "<script>alert('Maaf...data tidak ditemukan!!!');</script>";

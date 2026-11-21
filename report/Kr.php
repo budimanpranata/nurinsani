@@ -6,6 +6,8 @@
  *           total nominatif + neraca pembanding tampil di jendela progres, baris TOTAL di file.
  *   Neraca pembanding (CURRENT): OS <-> 1411000+1413000, sama dengan Home (permintaan user 2026-10-31).
  * Pencarian dan isian sesi sama dengan versi lama; hanya tampilan, query (prepared statement), dan cara export yang berubah.
+ * 2026-11-21 (perintah user, §25 A1): Total NOA / Outstanding hanya pembiayaan os > 0 (sama dengan export; dulu termasuk
+ * os 0 dan os minus).
  * 2026-11-21 (perintah user, §25): ringkasan EOM hanya unit user (dulu semua unit); tombol Rekap membawa status/bulan/tahun
  * sehingga export EOM berisi snapshot data_loan bulan itu (dulu selalu CURRENT).
  */
@@ -44,7 +46,9 @@ if (isset($_POST['search'])) {
         $_SESSION['unt'] = $unit;
     }
     if ($status == 'CURRENT') {
-        $hasil = db_semua("Select COUNT(loan.cif) AS NOA,SUM(os) AS os, unit From loan where unit =? Group By unit Order By unit", 's', (string) $unit);
+        // 2026-11-21 (perintah user, §25 A1): hanya pembiayaan aktif (os > 0), sama dengan export. Dulu semua loan unit
+        // (termasuk os 0 / lunas dan os minus) ikut dihitung: unit 001 NOA 10.150 di layar vs 1.447 di export.
+        $hasil = db_semua("Select COUNT(loan.cif) AS NOA,SUM(os) AS os, unit From loan where unit =? and os > 0 Group By unit Order By unit", 's', (string) $unit);
         // neraca pembanding (permintaan user 2026-10-31), pemetaan sama dengan Home: OS <-> 1411000+1413000
         $nr = db_satu("select sum(saldo_akhir) as n, count(*) as ada from tabel_master where unit=? and kode_rekening in ('1411000','1413000')", 's', (string) $unit);
         $neraca_os = $nr && $nr['ada'] > 0 ? compat_num($nr['n']) : null;
@@ -52,7 +56,7 @@ if (isset($_POST['search'])) {
         // 2026-11-21 (perintah user, §25): hanya unit user (dulu semua unit tampil); rentang tanggal sama dengan export
         $awal_eom = sprintf('%04d-%02d-01', (int) $tahun1, (int) $bulan1);
         $hasil = ((int) $bulan1 >= 1 && (int) $bulan1 <= 12 && (int) $tahun1 >= 2000) ? db_semua("Select COUNT(data_loan.cif) AS NOA,SUM(os) AS os, unit From data_loan
-            Where data_loan.unit=? AND data_loan.buss_date >= ? AND data_loan.buss_date < ? Group By unit Order By unit",
+            Where data_loan.unit=? AND data_loan.buss_date >= ? AND data_loan.buss_date < ? AND os > 0 Group By unit Order By unit",
             'sss', (string) $unit, $awal_eom, date('Y-m-d', strtotime($awal_eom . ' +1 month'))) : array();
     }
     if (!$hasil) {

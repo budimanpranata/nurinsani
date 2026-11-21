@@ -1,10 +1,12 @@
 <?php require_once __DIR__ . '/../koneksi_db.php';
 /**
  * Menu New Report > Rugi Laba: rekening rugi-laba unit dari tabel_rugi_laba beserta SHU operasional, non operasional,
- * sebelum dan sesudah pajak. Link Excel ke laba_excel.php, link PDF ke neraca_pdf.php (sama dengan versi lama).
+ * sebelum dan sesudah pajak. Link Excel ke laba_excel.php, link PDF ke laba_pdf.php.
  * Logika dan perhitungan sama dengan versi lama (keputusan user: hanya migrasi kode), termasuk:
- *   - saldo akhir negatif ditampilkan sebagai nilai mutlak; SHU non operasional ditampilkan sebagai nilai mutlak
  *   - estimasi pajak tidak pernah diisi (0), sehingga SHU setelah pajak = SHU sebelum pajak
+ * Perbaikan 2026-11-21 (perintah user, PEKERJAAN_TERTUNDA §32 A2): saldo akhir negatif dan SHU non operasional rugi
+ * tampil dengan tanda minus (merah); dulu nilai mutlak sehingga tanda rugi hilang. Tombol PDF ke laba_pdf.php (PDF Rugi
+ * Laba, isi sama dengan layar); dulu ke neraca_pdf.php (PDF Neraca).
  */
 require_once __DIR__ . '/../inc/tampilan.php';
 session_start();
@@ -61,8 +63,8 @@ halaman_awal('Laba Rugi');
 ?>
 <div class="d-flex gap-2 mb-3">
   <a href="laba_excel.php" class="btn btn-outline-success btn-sm">Excel</a>
-  <?php // versi lama: link pdf mengarah ke neraca_pdf.php (PDF neraca), dipertahankan ?>
-  <a href="neraca_pdf.php" class="btn btn-outline-secondary btn-sm">PDF</a>
+  <?php // 2026-11-21 (perintah user, §32 A2): PDF Rugi Laba (dulu mengarah ke neraca_pdf.php = PDF Neraca) ?>
+  <a href="laba_pdf.php" class="btn btn-outline-secondary btn-sm" target="_blank" rel="noopener">PDF</a>
 </div>
 <div class="table-responsive">
   <table class="table table-sm table-bordered table-ni align-middle">
@@ -80,8 +82,8 @@ halaman_awal('Laba Rugi');
         <td><?php echo h($row['LINE_BALANCE']); ?></td>
         <td><?php echo h($row['kode_rekening']); ?></td>
         <td><?php echo h($row['nama_rekening']); ?></td>
-        <?php // saldo negatif ditampilkan sebagai nilai mutlak (versi lama) ?>
-        <td class="text-end"><?php echo angka_rl(compat_num($row['saldo_akhir']) < 0 ? abs(compat_num($row['saldo_akhir'])) : $row['saldo_akhir']); ?></td>
+        <?php // 2026-11-21 (§32 A2): saldo negatif tampil dengan tanda minus (dulu nilai mutlak, tanda hilang) ?>
+        <td class="text-end<?php echo compat_num($row['saldo_akhir']) < 0 ? ' text-danger' : ''; ?>"><?php echo angka_rl($row['saldo_akhir']); ?></td>
       </tr>
     <?php endforeach; ?>
       <tr class="fw-bold">
@@ -90,7 +92,7 @@ halaman_awal('Laba Rugi');
       </tr>
       <tr class="fw-bold">
         <td colspan="3">SHU NON OPERASIONAL</td>
-        <td class="text-end"><?php echo angka_rl(abs(compat_num($shu_ops_non_akhir))); ?></td>
+        <td class="text-end<?php echo $shu_ops_non_akhir < 0 ? ' text-danger' : ''; ?>"><?php echo angka_rl($shu_ops_non_akhir); ?></td>
       </tr>
       <tr class="fw-bold">
         <td colspan="3">SHU TAHUN BERJALAN SEBELUM PAJAK</td>
