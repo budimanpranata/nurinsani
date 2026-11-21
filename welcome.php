@@ -3,6 +3,7 @@
  * Menu Home (level unit): sambutan dan cocokkan saldo nominatif dengan neraca (tabel_master) unit user.
  * Perhitungan dan perbandingan sama dengan versi lama; hanya tampilan dan query (prepared statement) yang berubah.
  * Versi lama memeriksa login di akhir halaman (sesudah query dan tabel tampil); kini di awal.
+ * 2026-11-21 (perintah user, §21): nominatif Simpanan Pokok/Wajib kini dihitung (dulu selalu 0).
  */
 require_once __DIR__ . '/inc/tampilan.php';
 session_start();
@@ -37,10 +38,11 @@ if ($user) {
     $coa_os = compat_num(neraca_home('1411000')) + compat_num(neraca_home('1413000'));
     $coa_margin = neraca_home('1423000');
 
-    // versi lama membaca kolom 'simpanan' padahal alias query-nya simpanan_pokok / simpanan_wajib,
-    // sehingga nominatif simpanan pokok dan wajib selalu kosong (0); dipertahankan
-    $pokok = null;
-    $wajib = null;
+    // 2026-11-21 (perintah user, PEKERJAAN_TERTUNDA §21): nominatif simpanan pokok/wajib = total simpanan_pokok /
+    // simpanan_wajib unit (index UNIT). Dulu kolom 'simpanan' dibaca padahal aliasnya simpanan_pokok / simpanan_wajib,
+    // sehingga selalu 0 dan statusnya selalu "Tidak Sesuai".
+    $pokok = nilai_home("SELECT sum(KREDIT-DEBIT) as simpanan_pokok FROM simpanan_pokok WHERE unit =?", 'simpanan_pokok');
+    $wajib = nilai_home("SELECT sum(KREDIT-DEBIT) as simpanan_wajib FROM simpanan_wajib WHERE unit =?", 'simpanan_wajib');
     $coa_pokok = neraca_home('3102000');
     $coa_wajib = neraca_home('3202000');
 
