@@ -15,6 +15,8 @@
  * (inc/nomor_bukti.php). Nomor berjalan milik user dihitung server dan dipakai Simpan/Selesai/Batal (dulu isian form);
  * nomor baru dipastikan di dalam kunci saat Simpan. Jurnal yang sudah ada di jurnal_keluar dengan tanggal_selesai
  * terisi dianggap selesai dan barisnya tidak tampil lagi.
+ * Perbaikan 2026-11-21 (perintah user, §18): Simpan berhasil -> dialihkan (POST-redirect-GET) sehingga F5 tidak mencatat
+ * baris dobel; tanggal & keterangan terakhir tetap terisi (sesi kk_tanggal/kk_keterangan, dihapus saat Selesai).
  */
 require_once __DIR__ . '/../inc/tampilan.php';
 require_once __DIR__ . '/../inc/nomor_bukti.php';
@@ -37,8 +39,13 @@ foreach (db_semua("select kode_branch,GL from branch where kode_branch=?", 's', 
 $kode_transaksi = nb_tampil('KK', (string) $unit, (string) $userid, 'Kas Keluar');
 $nomor_jurnal = '';
 $kode_bukti_form = $kode_transaksi;
-$tanggal_form = empty($_POST['tanggal_transaksi']) ? $tanggal : $_POST['tanggal_transaksi'];
-$keterangan_form = isset($_POST['keterangan_jurnal']) ? $_POST['keterangan_jurnal'] : '';
+// 2026-11-21 (perintah user, PEKERJAAN_TERTUNDA §18): sesudah Simpan halaman dialihkan (POST-redirect-GET) agar F5 tidak
+// mengirim ulang dan mencatat baris dobel; tanggal & keterangan terakhir disimpan di sesi supaya tetap terisi seperti dulu
+// (dulu terisi dari POST), dan dihapus saat Selesai.
+$tanggal_terakhir = !empty($_SESSION['kk_tanggal']) ? (string) $_SESSION['kk_tanggal'] : $tanggal;
+$keterangan_terakhir = isset($_SESSION['kk_keterangan']) ? (string) $_SESSION['kk_keterangan'] : '';
+$tanggal_form = empty($_POST['tanggal_transaksi']) ? $tanggal_terakhir : $_POST['tanggal_transaksi'];
+$keterangan_form = isset($_POST['keterangan_jurnal']) ? $_POST['keterangan_jurnal'] : $keterangan_terakhir;
 
 /** Insert satu baris tabel_transaksi (sisi debet atau kredit); semua nilai dikirim sebagai teks seperti versi lama. */
 function catat_kas_keluar($unit, $kode_transaksi, $kode_rekening, $tanggal, $keterangan, $sisi, $jumlah, $userid)
@@ -91,6 +98,16 @@ ob_start();
 					$query=catat_kas_keluar($unit, $kode_transaksi, $kode_rekening, $tanggal_transaksi, $keterangan_jurnal, 'debet', $jumlah_dk, $userid);
 				}
 				nb_lepas('KK', $unit);
+				if ($query) {
+					// POST-redirect-GET (2026-11-21): F5 sesudah ini hanya memuat ulang tampilan
+					$_SESSION['kk_tanggal'] = (string) $tanggal_transaksi;
+					$_SESSION['kk_keterangan'] = (string) $keterangan_jurnal;
+					while (ob_get_level() > 0) {
+						ob_end_clean();
+					}
+					header('Location: kas_keluar.php?' . paramEncrypt('page=../transaksi/kas_keluar'));
+					exit;
+				}
 				}
 				// (versi lama mencetak mysql_error() bila gagal; kegagalan kini dicatat di log PHP oleh db_jalankan)
 			}
@@ -125,6 +142,7 @@ ob_start();
 						(string) $kode_transaksi, (string) $tanggal_selesai, (string) $unit);
 
 					if($query_transaksi){
+						unset($_SESSION['kk_tanggal'], $_SESSION['kk_keterangan']);
 						?><script language="javascript">document.location.href="?<?php echo paramEncrypt('page=../transaksi/kas_keluar')?>"</script><?php
 					}
 				}
@@ -251,9 +269,10 @@ halaman_awal('Jurnal Keluar');
 </div>
 
 <form action="<?php echo h($aksi_form); ?>" method="post" name="form" class="text-end">
-  <input type="hidden" name="tanggal_selesai" value="<?php if (empty($_POST['tanggal_transaksi'])) { echo h($tanggal); } else { echo h($_POST['tanggal_transaksi']); } ?>">
+  <?php // tanggal/keterangan terakhir dari POST atau, sesudah pengalihan Simpan, dari sesi (2026-11-21) ?>
+  <input type="hidden" name="tanggal_selesai" value="<?php if (empty($_POST['tanggal_transaksi'])) { echo h($tanggal_terakhir); } else { echo h($_POST['tanggal_transaksi']); } ?>">
   <input type="hidden" name="kode_bukti" value="<?php echo h($kode_transaksi); ?>">
-  <input type="hidden" name="keterangan_jurnal" value="<?php echo h(isset($keterangan_jurnal) ? $keterangan_jurnal : ''); ?>">
+  <input type="hidden" name="keterangan_jurnal" value="<?php echo h(isset($keterangan_jurnal) ? $keterangan_jurnal : $keterangan_terakhir); ?>">
   <button type="submit" name="selesai" value="Selesai" class="btn btn-ni btn-sm px-4" data-konfirmasi="Apakah Anda Yakin?">Selesai</button>
 </form>
 <script>
