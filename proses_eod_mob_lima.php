@@ -49,8 +49,24 @@ while($data = db_fetch_array($select)){
         $kodetr=8;
         $kodetr=acakangkahuruf($kodetr);
         $kode_trans="BU/".$unit.$kodetr;				
-        $ket="Realisasi Simpanan Wajib dan Pokok Unit $unit";		
-        
+        $ket="Realisasi Simpanan Wajib dan Pokok Unit $unit";
+        // 2026-11-21 (perintah user, PEKERJAAN_TERTUNDA §103 P2-3):
+        //  - CIF tanpa baris calon_loan (left join): unit/kelompok/norek/CAO/nama dulu kosong; kini dari anggota.
+        //    CIF yang ada di calon_loan tetap memakai data calon_loan seperti dulu.
+        //  - USERID/id_admin dulu kosong ($userid tidak terdefinisi di cron); kini kode unit seperti penarikan mobile.
+        if ((string) $unit === '') {
+            $agt = db_satu("select UNIT, CODE_KEL, NOREK, CAO, CUST_SHORT_NAME from anggota where CIF = ? limit 1", 's', (string) $ciff);
+            if ($agt) {
+                $unit = $agt['UNIT'];
+                $code_kel = $agt['CODE_KEL'];
+                $norek = $agt['NOREK'];
+                $cao = $agt['CAO'];
+                $nama = mysqli_real_escape_string($con, (string) $agt['CUST_SHORT_NAME']);
+                $kode_trans = "BU/" . $unit . $kodetr;
+            }
+        }
+        $userid = $unit;
+
         
         $cek_wajib = db_query($con,"select SUM(KREDIT-DEBIT) as wajib from simpanan_wajib where cif ='" . $ciff . "'");
         $cwajib = db_fetch_array($cek_wajib);
@@ -61,7 +77,9 @@ while($data = db_fetch_array($select)){
        
                 
         if ($pokok == 0 && $wajib >= 0)  {
-            $in_pokok=50000;
+            // 2026-11-21 (§103 P2-3): dulu selalu 50.000 walau uang yang disetor kurang (kas & pokok lebih catat).
+            // Uang sudah diterima di lapangan sehingga tidak ditolak seperti menu manual: pokok = nominal bila < 50.000.
+            $in_pokok = min(compat_num($nominal), 50000);
            $ket="Setoran simpanan Pokok an $nama";
                 $input ="Insert into simpanan_pokok (BUSS_DATE,NOREK,UNIT,CIF,CODE_KEL,DEBIT,TYPE,KREDIT,USERID,KET,REFF,CAO,blok,kode_transaksi)VALUES('$tanggal','$norek','$unit','" . $ciff . "','$code_kel',0,'04','$in_pokok','$userid','Simpanan Pokok','','$cao','4','$kode_trans')";
                 $inputtrnsk = db_query($con,$input);
@@ -134,18 +152,34 @@ while($data = db_fetch_array($select)){
                 } 
                
         }else {
+            // (cabang "pokok == 0 && wajib == 0" di atas tidak pernah tercapai karena sudah tertangkap cabang pertama)
+            // 2026-11-21 (§103 P2-3), sama dengan perbaikan menu manual stor.php 01 (2026-10-31): dulu KREDIT
+            // simpanan_wajib kosong ($sisa_pokok tidak diisi) padahal jurnal sebesar nominal dengan tanggal kosong
+            // ($tgl_system tidak ada di cron). Kini: bila pokok < 50.000 (dan wajib tidak negatif) pokok dilengkapi
+            // dulu sampai 50.000, sisanya ke wajib; selain itu seluruh nominal ke wajib. Jurnal mengikuti, tanggal EOD_MOB.
             $ket1="Wadiah $nama";
-          
-               $input ="Insert into simpanan_wajib (BUSS_DATE,NOREK,UNIT,CIF,CODE_KEL,DEBIT,TYPE,KREDIT,USERID,KET,REFF,CAO,blok,kode_transaksi)VALUES('$tanggal','$norek','$unit','" . $ciff . "','$code_kel',0,'05','$sisa_pokok','$userid','PB Simpanan Wajib','','$cao','1','$kode_trans')";
-                    $inputtrnsk = db_query($con,$input);
-                    db_query($con,"insert  into tabel_transaksi(unit,kode_transaksi,kode_rekening,tanggal_transaksi, jenis_transaksi, keterangan_transaksi,debet,id_admin)
-                values('$unit','$kode_trans','1120000','$tgl_system','Bukti SYSTEM','$ket','$nominal','$userid')");
-
+            $jumlah = compat_num($nominal);
+            $ke_pokok = 0;
+            if (compat_num($pokok) < 50000 && $wajib >= 0) {
+                $ke_pokok = min($jumlah, 50000 - compat_num($pokok));
+            }
+            $ke_wajib = $jumlah - $ke_pokok;
+            if ($ke_pokok > 0) {
+                $ket="Setoran simpanan Pokok an $nama";
+                db_query($con,"Insert into simpanan_pokok (BUSS_DATE,NOREK,UNIT,CIF,CODE_KEL,DEBIT,TYPE,KREDIT,USERID,KET,REFF,CAO,blok,kode_transaksi)VALUES('$tanggal','$norek','$unit','" . $ciff . "','$code_kel',0,'04','$ke_pokok','$userid','Simpanan Pokok','','$cao','4','$kode_trans')");
+                db_query($con,"insert  into tabel_transaksi(unit,kode_transaksi,kode_rekening,tanggal_transaksi, jenis_transaksi, keterangan_transaksi,debet,id_admin)
+                values('$unit','$kode_trans','1120000','$tanggal','Bukti SYSTEM','$ket','$ke_pokok','$userid')");
                 db_query($con,"insert  into tabel_transaksi(unit,kode_transaksi,kode_rekening,tanggal_transaksi, jenis_transaksi, keterangan_transaksi,kredit,id_admin)
-                values('$unit','$kode_trans','3202000','$tgl_system','Bukti SYSTEM','$ket','$nominal','$userid')");
-       
-          
-        } 
+                values('$unit','$kode_trans','3102000','$tanggal','Bukti SYSTEM','$ket','$ke_pokok','$userid')");
+            }
+            if ($ke_wajib > 0) {
+                db_query($con,"Insert into simpanan_wajib (BUSS_DATE,NOREK,UNIT,CIF,CODE_KEL,DEBIT,TYPE,KREDIT,USERID,KET,REFF,CAO,blok,kode_transaksi)VALUES('$tanggal','$norek','$unit','" . $ciff . "','$code_kel',0,'05','$ke_wajib','$userid','PB Simpanan Wajib','','$cao','1','$kode_trans')");
+                db_query($con,"insert  into tabel_transaksi(unit,kode_transaksi,kode_rekening,tanggal_transaksi, jenis_transaksi, keterangan_transaksi,debet,id_admin)
+                values('$unit','$kode_trans','1120000','$tanggal','Bukti SYSTEM','$ket1','$ke_wajib','$userid')");
+                db_query($con,"insert  into tabel_transaksi(unit,kode_transaksi,kode_rekening,tanggal_transaksi, jenis_transaksi, keterangan_transaksi,kredit,id_admin)
+                values('$unit','$kode_trans','3202000','$tanggal','Bukti SYSTEM','$ket1','$ke_wajib','$userid')");
+            }
+        }
         
         
 
