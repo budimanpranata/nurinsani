@@ -89,10 +89,9 @@ $norek =$anggota;
 		$saldo=$data_saldo['saldo'];
 		// Perbaikan 2026-11-03 (perintah user): musyarokah dilunasi sebesar OS + nisbah (ijaroh) + 2.500 seperti EOD
 		$saldo_os=compat_num($os);
-		if($status_app=='REST'){
-		$os = $os + $ijaroh_mus + 2500;
-
-		}elseif($status_app=='MUSYAROKAH'){
+		// 2026-11-21 (perintah user, PEKERJAAN_TERTUNDA §2k): REST dilunasi sebesar OS saja, sama dengan EOD pelunasan dan
+		// Pelunasan Kelompok. Dulu OS + ijaroh + 2.500: simpanan ditarik lebih, kredit 1411000 lebih, loan.os jadi minus.
+		if($status_app=='MUSYAROKAH'){
 		$os = $saldo_os + compat_num($ijaroh_mus) + 2500;
 
 		}else{
@@ -167,7 +166,8 @@ $norek =$anggota;
 				db_jalankan("insert into rek_loan(ref,tgl_realisasi,unit,no_anggota,saldo_kredit,debet,tipe,ket,USERID,STATUS,cif,AO)VALUES('',?,?,?,'0',?,'03',?,?,'REALISASI BAGHAS',?,(select cao from loan where cif=? limit 1))", 'ssssssss',
 					(string) $tanggal, (string) $unit, (string) $anggota, (string) $baghas_rek, (string) $ket2, (string) $userid, (string) $ciff, (string) $ciff);
 
-				$uos = db_jalankan("Update  loan set os ='0',saldo_margin='0',run_tenor='0',ke='0',last_payment=? where cif  =?", 'ss', (string) $tanggal, (string) $ciff);
+				// 2026-11-21 (perintah user, §2k): status LUNAS seperti MURAB/REST (LUNAS hanya dari menu pelunasan)
+				$uos = db_jalankan("Update  loan set os ='0',saldo_margin='0',run_tenor='0',ke='0',last_payment=?,status='LUNAS' where cif  =?", 'ss', (string) $tanggal, (string) $ciff);
 				db_jalankan("delete from tunggakan where cif  =?", 's', (string) $ciff);
 				db_jalankan("delete from pinjaman_detail_mus where cif  =?", 's', (string) $ciff);
 				db_jalankan("update simpanan set type ='01', blok=' ' where cif=? and type ='02'", 's', (string) $ciff);
