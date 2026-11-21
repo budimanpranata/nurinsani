@@ -12,6 +12,8 @@
  *   - nomor jurnal_masuk otomatis (auto increment); dulu max(jurnal_umum unit)+1 yang bentrok sehingga baris gagal tersimpan
  *   - 05 WO: OS loan_wo dikurangi berdasarkan CIF anggota (dulu CIF dari tabel loan, kosong bila tidak ada loan);
  *     anggota tanpa data loan_wo ditolak (dulu jurnal WO tetap tercatat tanpa OS berkurang)
+ * Perbaikan 2026-11-21 (perintah user, §13): 02 Tarik Tunai: saldo tersedia = saldo simpanan - penarikan yang masih
+ *   antre di temp_tarik (menunggu approve lead); alert "Gagal Input" kini tampil (dulu JavaScript rusak).
  * Rekening, nominal, TYPE, keterangan, dan pesan untuk transaksi yang berhasil tidak berubah.
  */
 require_once __DIR__ . '/inc/tampilan.php';
@@ -208,8 +210,17 @@ if (isset($_POST['search'])) {
                     $code_area = $c_area ? $c_area['code_area'] : null;
                     $SAL = db_satu("select sum(KREDIT)- sum(DEBIT) as SALDO  FROM simpanan where  cif =? and type not in ('04','05')", 's', (string) $ciff);
                     $SALDO = $SAL ? $SAL['SALDO'] : null;
+                    // 2026-11-21 (perintah user, PEKERJAAN_TERTUNDA §13): penarikan yang masih antre di temp_tarik (menunggu
+                    // approve lead, simpanan belum didebet) ikut mengurangi saldo tersedia. Dulu tidak, sehingga dua tarik
+                    // sebelum approve bisa melebihi saldo dan simpanan minus setelah di-approve.
+                    $antre = db_satu("select sum(DEBIT) - sum(KREDIT) as antre FROM temp_tarik where cif =?", 's', (string) $ciff);
+                    $tarik_antre = compat_num($antre ? $antre['antre'] : null);
                     // semantik PHP 5: saldo kosong = 0
-                    if (compat_num($SALDO) < compat_num($nominal)) {
+                    if ($tarik_antre > 0 && compat_num($SALDO) - $tarik_antre < compat_num($nominal)) {
+                        $alert("Maaf,.Saldo Anda Tidak Mencukupi. Saldo $SALDO dikurangi penarikan yang menunggu persetujuan lead "
+                            . $tarik_antre . " = tersedia " . (compat_num($SALDO) - $tarik_antre));
+                        $pindah();
+                    } elseif (compat_num($SALDO) < compat_num($nominal)) {
                         $alert("Maaf,.Saldo Anda Tidak Mencukupi saldo anda adalah $SALDO");
                         $pindah();
                     } else {
@@ -224,8 +235,8 @@ if (isset($_POST['search'])) {
                             catat_transaksi($unit, $kode_trans, '1120000', $tgl_system, 'Bukti Umum', $ket, 'kredit', $nominal, $userid);
                             catat_transaksi($unit, $kode_trans, '2101000', $tgl_system, 'Bukti Umum', $ket, 'debet', $nominal, $userid);
                         } else {
-                            // pesan versi lama memang tidak berpenutup kutip (alert tidak tampil)
-                            $pesan[] = "<script>alert('Maaf,.Gagal Input );</script>";
+                            // 2026-11-21: pesan versi lama tidak berpenutup kutip (alert tidak pernah tampil); kini tampil
+                            $alert('Maaf,.Gagal Input');
                             $pindah();
                         }
                     }
