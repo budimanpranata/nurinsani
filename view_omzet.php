@@ -16,6 +16,8 @@ halaman_awal('Data Omzet Anggota', array('assets/app/datatables-ni.css'));
 <div class="d-flex flex-wrap gap-2 mb-3">
   <button type="button" class="btn btn-ni btn-sm" id="tombol-tambah">+ Tambah Data</button>
   <button type="button" class="btn btn-outline-success btn-sm" id="tombol-nisbah">View Nisbah</button>
+  <?php // 2026-11-21 (perintah user): pintasan ke daftar omzet kosong / porsi nisbah belum sesuai ?>
+  <a href="view_omzet_cek.php" class="btn btn-outline-danger btn-sm">Cek Omzet &amp; Porsi Nisbah</a>
 </div>
 
 <div class="card shadow-sm border-0">

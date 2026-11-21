@@ -49,6 +49,7 @@ var TREE_ITEMS = [
 			['Kelompok', 'kelompok.php'],
 ['Omzet dan Nisbah', 'view_omzet.php'],
 ['Monitoring Nisbah', 'view_nisbah.php'],
+['Cek Omzet & Porsi Nisbah', 'view_omzet_cek.php'],
 
 
 			
