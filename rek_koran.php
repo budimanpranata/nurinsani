@@ -7,6 +7,8 @@
  * dihitung di PHP dengan urutan yang sama.
  * Perbaikan: versi lama mencetak HTML form sebelum PDF (±7 KB sebelum %PDF) dan sesudahnya, sehingga file PDF rusak;
  * kini keluaran dibersihkan sebelum PDF dikirim. Form dikirim ke tab baru agar halaman form tetap terbuka.
+ * Perbaikan 2026-11-21 (perintah user, PEKERJAAN_TERTUNDA §29): user level unit hanya bisa mencetak rekening anggota
+ * unitnya (anggota.UNIT = kode_branch user); level kp tetap semua unit.
  */
 require_once __DIR__ . '/inc/tampilan.php';
 session_start();
@@ -21,6 +23,23 @@ if (!isset($_SESSION['userid'])) {
     exit;
 }
 include "function.php";
+
+/**
+ * true bila user level unit meminta rekening anggota unit LAIN (2026-11-21, §29). Level kp boleh semua unit; rekening
+ * yang tidak ada di anggota tidak ditolak di sini (perilaku lama tetap).
+ */
+function rekening_unit_lain_rk($norek, $userid)
+{
+    if ((isset($_SESSION['level']) ? $_SESSION['level'] : '') !== 'unit') {
+        return false;
+    }
+    $a = db_satu("select UNIT from anggota where norek =?", 's', (string) $norek);
+    if (!$a) {
+        return false;
+    }
+    $u = db_satu("select kode_branch from user where userid =?", 's', (string) $userid);
+    return (string) $a['UNIT'] !== ($u ? (string) $u['kode_branch'] : '');
+}
 
 /** Baris hasil query dengan nilai teks (seperti mysql_fetch_array versi lama). */
 function baris_teks_rk($baris)
@@ -41,6 +60,11 @@ $pesan = array();
 if (isset($_POST['search'])) {
     if (empty($norek) || empty($pilih)) {
         $pesan[] = "<script>alert('Maaf,.isi Nomor REKENING dan Jenis Transaksi yang benar  !!!');</script>";
+        $pesan[] = "<script language='javascript'>document.location.href='rek_koran.php'</script>";
+    } elseif (in_array($pilih, array('01', '03', '04'), true) && rekening_unit_lain_rk($norek, $userid)) {
+        // 2026-11-21 (perintah user, PEKERJAAN_TERTUNDA §29): user unit hanya boleh mencetak rekening anggota unitnya
+        // (dulu norek unit lain yang diketik langsung tetap dicetak, dengan kop unit user)
+        $pesan[] = "<script>alert(" . json_encode('Maaf, rekening ' . $norek . ' tidak ditemukan di unit Anda.', JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP) . ");</script>";
         $pesan[] = "<script language='javascript'>document.location.href='rek_koran.php'</script>";
     } elseif (in_array($pilih, array('01', '03', '04'), true)) {
         // data kepala laporan (sama dengan versi lama: bila ada beberapa loan, yang terakhir dipakai)
