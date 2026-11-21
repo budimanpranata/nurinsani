@@ -27,7 +27,9 @@ while($data = db_fetch_array($select)){
         $norek=$data['norek'];
         $no_anggota=$data['norek'];
         $unit=$data ['unit'];
-        $userid=$data['userid'];
+        // 2026-11-22 (perintah user, §103 P2-4): kolom userid tidak ada di SELECT -> USERID/id_admin kosong;
+        // kini kode unit seperti proses_eod_mob.php
+        $userid=$unit;
         $angsuran=$data ['angsuran'];
         $saldo_margin=$data ['saldo_margin'];
         $nominal=$data ['nominal'];
@@ -274,9 +276,10 @@ $cek_omzet= db_fetch_array(db_query($con,"SELECT nominal from omzet WHERE tangga
 
 					$porsi= $omzet * $nisbah;
                     $angsuran_pokok = $angsuran - $nisbah_mus - 2500;
-                     db_query ($con,"Update  pinjaman_detail_mus set nisbah_anggota ='$nisbah_mus',tgl_bayar='$tanggal' where id_pinjam  ='$norek' and cicilan='$pb'");
-                       
-if ($saldo < $angsuran){    
+                     // 2026-11-22 (§103 P2-4): update jadwal dipindah ke jalur saldo cukup (lihat di bawah); dulu dijalankan
+                     // walau saldo kurang sehingga cicilan yang tidak terbayar ikut bertanggal bayar.
+
+if ($saldo < $angsuran){
         db_query($con,"Update loan set next_schedule='$next_schedule1',ke='$ke_tenor'+1 where cif  ='$cif'");
         $ke_n= mysql_fetch_array(mysql_query("select ke from loan WHERE cif ='$cif'"));
         $ke_lagi=$ke_n['ke'];
@@ -289,13 +292,18 @@ if ($saldo < $angsuran){
 }else{
 
                           $jurnal_umum=db_fetch_array(db_query($con,"SELECT max(nomor_jurnal) FROM jurnal_umum where unit ='$unit' ORDER BY tanggal_selesai DESC"));
-                        $nomor_jurnal=$jurnal_umum[0]+1;                 
-                         
+                        $nomor_jurnal=$jurnal_umum[0]+1;
+                        db_query ($con,"Update  pinjaman_detail_mus set nisbah_anggota ='$nisbah_mus',tgl_bayar='$tanggal' where id_pinjam  ='$norek' and cicilan='$pb'");
+                        // 2026-11-22 (§103 P2-4): $ada_tunggak dulu tidak dihitung di cabang ini (terbawa dari anggota
+                        // sebelumnya di loop); kini dihitung seperti cabang lain & menu Realisasi Tagihan
+                        $cek_tunggak= db_fetch_array(db_query($con,"select sum(KREDIT)- sum(DEBIT) as tunggak from tunggakan WHERE cif='$cif'"));
+                        $ada_tunggak=$cek_tunggak['tunggak'];
+
                         if($ada_tunggak>0){
                             db_query($con,"insert  into tunggakan (tgl_tunggak,NOREK,UNIT,CIF,CODE_KEL,DEBIT,TYPE,KREDIT,USERID,REFF,CAO,blok)VALUES('$tanggal','$norek','$unit','$cif','$code_kel','$angsuran_pokok','01','0','$userid','$ket','$cao','') ") ;
                             //mysqli_query($con,"insert  into tunggakan (tgl_tunggak,NOREK,UNIT,CIF,CODE_KEL,DEBIT,TYPE,KREDIT,USERID,REFF,CAO,blok)VALUES('$tanggal','$norek','$unit','$cif','$code_kel','$ijaroh','02','0','$userid','$ket','$cao','') ");
                             db_query($con,"insert into rek_loan(ref,tgl_realisasi,unit,no_anggota,saldo_kredit,debet,tipe,ket,USERID,STATUS,cif,AO)VALUES('','$tanggal','$unit','$norek','0','$angsuran_pokok','03','$ket2','$userid','REALISASI POKOK','$cif',(select cao from loan where cif='$cif' limit 1))") ;
-                            db_query($con,"insert into rek_loan(ref,tgl_realisasi,unit,no_anggota,saldo_kredit,debet,tipe,ket,USERID,STATUS,cif,AO)VALUES('','$tanggal','$unit','$norek','0','$ijaroh','03','$ket2','$userid','REALISASI BAGHAS','$cif',(select cao from loan where cif='$cif' limit 1))");
+                            db_query($con,"insert into rek_loan(ref,tgl_realisasi,unit,no_anggota,saldo_kredit,debet,tipe,ket,USERID,STATUS,cif,AO)VALUES('','$tanggal','$unit','$norek','0','$nisbah_mus','03','$ket2','$userid','REALISASI BAGHAS','$cif',(select cao from loan where cif='$cif' limit 1))"); // §103 P2-4: dulu $ijaroh (dibatasi saldo_margin 0) -> 0
                             db_query($con,"Update  loan set next_schedule ='$next_schedule',os =os-'$angsuran_pokok',run_tenor='$pb',ke='$ke_tenor'+1,last_payment='$tanggal' where cif  ='$cif'");
                                              
                      
@@ -321,7 +329,7 @@ if ($saldo < $angsuran){
                             }else{
                              
                             db_query($con,"insert into rek_loan(ref,tgl_realisasi,unit,no_anggota,saldo_kredit,debet,tipe,ket,USERID,STATUS,cif,AO)VALUES('','$tanggal','$unit','$no_anggota','0','$angsuran_pokok','03','$ket2','$userid','REALISASI POKOK','$cif',(select cao from loan where cif='$cif' limit 1))");
-                            db_query($con,"insert into rek_loan(ref,tgl_realisasi,unit,no_anggota,saldo_kredit,debet,tipe,ket,USERID,STATUS,cif,AO)VALUES('','$tanggal','$unit','$no_anggota','0','$ijaroh','03','$ket2','$userid','REALISASI BAGHAS','".$cif."',(select cao from loan where cif='".$cif."' limit 1))");
+                            db_query($con,"insert into rek_loan(ref,tgl_realisasi,unit,no_anggota,saldo_kredit,debet,tipe,ket,USERID,STATUS,cif,AO)VALUES('','$tanggal','$unit','$no_anggota','0','$nisbah_mus','03','$ket2','$userid','REALISASI BAGHAS','".$cif."',(select cao from loan where cif='".$cif."' limit 1))"); // §103 P2-4: dulu $ijaroh (0)
                              
                             db_query($con,"Update  loan set next_schedule ='$next_schedule',os =os-'$angsuran_pokok',run_tenor='$pb',ke='$ke_tenor'+1,last_payment='$tanggal' where cif  ='$cif'");
                             db_query($con,"insert  into simpanan (BUSS_DATE,NOREK,UNIT,CIF,CODE_KEL,DEBIT,TYPE,KREDIT,USERID,REFF,CAO,tgl_input,kode_transaksi)VALUES('$tanggal','$norek','$unit','".$ciff."','$code_kel','$angsuran','03','0','$userid','$ket','$cao','$tgl_input','$kode_tran') ") ;
