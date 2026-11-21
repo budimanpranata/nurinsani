@@ -15,6 +15,8 @@
  *     dibatalkan dan baris MyISAM (simpanan_pokok/wajib, jurnal_masuk) dengan kode transaksi PB itu dihapus, lalu
  *     pesan GAGAL (dulu tetap "Suksess").
  *   - cegah klik ganda / kirim ulang: token sekali pakai dari pb_list.php.
+ * Perbaikan 2026-11-21 (perintah user, §17): jenis PB dari form pb_list.php (sesi hanya untuk form lama tanpa jenis);
+ * jenis di luar Debet/Kredit x pokok/wajib ditolak tanpa proses.
  * Rekening, nominal, TYPE, dan isi data untuk PB yang berhasil tidak berubah.
  */
 require_once __DIR__ . '/inc/notif.php';
@@ -51,8 +53,15 @@ function qs_pb($sql, ...$nilai)
 }
 
 $tanggal=$tgl_system;
-$simpan=isset($_SESSION['simpans']) ? $_SESSION['simpans'] : null;
-$baki=isset($_SESSION['bakis']) ? $_SESSION['bakis'] : null;
+// 2026-11-21 (perintah user, §17): jenis PB dari form pb_list.php (daftar yang sedang diisi). Dulu dari sesi = pilihan
+// Search TERAKHIR, sehingga Search di tab lain membalik arah PB tab ini. Form lama tanpa jenis -> sesi seperti dulu.
+if (isset($_POST['baki']) || isset($_POST['simpan'])) {
+	$baki = isset($_POST['baki']) ? (string) $_POST['baki'] : '';
+	$simpan = isset($_POST['simpan']) ? (string) $_POST['simpan'] : '';
+} else {
+	$simpan=isset($_SESSION['simpans']) ? $_SESSION['simpans'] : null;
+	$baki=isset($_SESSION['bakis']) ? $_SESSION['bakis'] : null;
+}
 $nom=isset($_POST['bulat']) ? $_POST['bulat'] : null;
 
 $checbox = isset($_POST['cekbox']) ? $_POST['cekbox'] : null;
@@ -60,6 +69,11 @@ $checbox = isset($_POST['cekbox']) ? $_POST['cekbox'] : null;
 require_once __DIR__ . '/inc/csrf.php';
 if ($checbox && !token_sekali_pakai('pb_token', isset($_POST['pb_token']) ? $_POST['pb_token'] : '')) {
 	notif_pergi('Data PB ini sudah diproses atau halaman sudah kedaluwarsa. Silakan cari kelompok lagi.', 'pb_kel.php', 'warning');
+	exit;
+}
+// jenis PB harus salah satu pilihan menu (Debet/Kredit, pokok/wajib); selain itu tidak ada yang diproses
+if ($checbox && !(in_array((string) $baki, array('Debet', 'Kredit'), true) && in_array((string) $simpan, array('pokok', 'wajib'), true))) {
+	notif_pergi('Jenis Pemindah Bukuan tidak dikenali, tidak ada data yang diproses. Silakan cari kelompok lagi.', 'pb_kel.php', 'warning');
 	exit;
 }
 if ($checbox) {

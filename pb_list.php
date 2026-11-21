@@ -7,6 +7,8 @@
  *     (versi lama memasangkan isian ke-i dengan anggota tercentang ke-i)
  *   - kolom Pokok menampilkan saldo simpanan pokok (versi lama selalu 0 karena salah nama variabel)
  * Perbaikan 2026-11-03 (perintah user): kolom saldo Sukarela (rumus menu Penarikan); nominal dicek di realisasi_pb.php.
+ * Perbaikan 2026-11-21 (perintah user, §17): jenis PB (baki/simpan) dari tautan pb_kel.php, ditampilkan di atas daftar dan
+ * dikirim ke realisasi_pb.php (isian tersembunyi).
  */
 require_once __DIR__ . '/inc/tampilan.php';
 session_start();
@@ -36,10 +38,23 @@ $data_anggota = db_semua("Select loan.cif,unit,Plafond,ijaroh,bagi_hasil,bulat,p
 inner join kelompok on kelompok.code_kel = loan.code_kel
 Where kelompok.code_kel=? and loan.unit=? and os >0", 'ss', $code_kel, (string) $unit);
 
+// 2026-11-21 (perintah user, §17): jenis PB dari tautan pb_kel.php (dulu hanya dari sesi saat Simpan, sehingga Search di
+// tab lain mengganti jenis PB daftar ini). Tautan lama tanpa jenis -> sesi seperti dulu.
+$baki = isset($_GET['baki']) ? (string) $_GET['baki'] : (isset($_SESSION['bakis']) ? (string) $_SESSION['bakis'] : '');
+$simpan = isset($_GET['simpan']) ? (string) $_GET['simpan'] : (isset($_SESSION['simpans']) ? (string) $_SESSION['simpans'] : '');
+$jenis_sah = in_array($baki, array('Debet', 'Kredit'), true) && in_array($simpan, array('pokok', 'wajib'), true);
+
 halaman_awal('PB Kelompok');
 ?>
+<?php if ($jenis_sah): ?>
+<div class="alert alert-info py-2 mb-2">Pemindah Bukuan: <strong><?php echo h($baki); ?></strong> &mdash; Simpanan <strong><?php echo h(ucfirst($simpan)); ?></strong></div>
+<?php else: ?>
+<div class="alert alert-warning py-2 mb-2">Jenis Pemindah Bukuan belum dipilih. Silakan Search ulang dari menu PB PerKelompok.</div>
+<?php endif; ?>
 <form action="realisasi_pb.php" method="post" id="form-pb">
   <input type="hidden" name="pb_token" value="<?php echo h($pb_token); ?>">
+  <input type="hidden" name="baki" value="<?php echo h($baki); ?>">
+  <input type="hidden" name="simpan" value="<?php echo h($simpan); ?>">
   <div class="table-responsive">
     <table class="table table-sm table-bordered table-ni table-hover align-middle">
       <thead>

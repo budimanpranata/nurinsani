@@ -3,6 +3,7 @@
  * Menu Transaksi > PB PerKelompok langkah 1: pilih kelompok (loan os > 0) di unit user, jenis pemindahbukuan
  * (Debet/Kredit) dan jenis simpanan (pokok/wajib), lalu proses per anggota di pb_list.php.
  * Jenis PB dan simpanan disimpan di sesi (simpans/bakis) untuk realisasi_pb.php. Perilaku dan pesan sama dengan versi lama.
+ * 2026-11-21 (perintah user, §17): jenis PB dan simpanan juga dibawa di tautan Proses ke pb_list.php (baki, simpan).
  */
 require_once __DIR__ . '/inc/tampilan.php';
 session_start();
@@ -111,7 +112,8 @@ halaman_awal('PB Kelompok');
         <td class="text-end"><?php echo number_format(compat_num($data['tagihan'])); ?></td>
         <td><?php echo h(tgl_indo($data['next_schedule'])); ?></td>
         <td class="text-center">
-          <a href="pb_list.php?code_kel=<?php echo urlencode($kelompok); ?>" class="btn btn-ni btn-sm"
+          <?php // 2026-11-21 (§17): jenis PB ikut di tautan, agar daftar memakai pilihan Search ini (bukan sesi terakhir) ?>
+          <a href="pb_list.php?code_kel=<?php echo urlencode($kelompok); ?>&amp;baki=<?php echo urlencode((string) $_SESSION['bakis']); ?>&amp;simpan=<?php echo urlencode((string) $_SESSION['simpans']); ?>" class="btn btn-ni btn-sm"
              data-konfirmasi="Anda akan melakukan Pemindah bukuan Kelompok ?">Proses</a>
         </td>
       </tr>
