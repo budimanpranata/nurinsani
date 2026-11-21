@@ -1,4 +1,6 @@
-<?php require_once __DIR__ . '/../koneksi_db.php'; 
+<?php require __DIR__ . '/../inc/hanya_cli.php'; require_once __DIR__ . '/../koneksi_db.php';
+// 2026-11-21 (perintah user, PEKERJAAN_TERTUNDA §103 P1-4): hanya CLI (jalankan manual lewat SSH bila perlu). Dulu bisa
+// dibuka lewat web -> data_wadiah Senin bertambah ganda. Isi proses tidak diubah.
 
 $con = db_ni();
 if (mysqli_connect_errno()) {

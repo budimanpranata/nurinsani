@@ -1,4 +1,5 @@
 # Proses yang dijalankan cron lewat php CLI (crontab server, 2026-11-03); tidak boleh dipicu lewat web.
-<FilesMatch "^(senin|selasa|rabu|kamis|pokok|wajib|tunggakan_eom|loan_mob)\.php$">
+# 2026-11-21 (§103 P1-3/P1-4): omzet dan senin_koreksi ditambahkan.
+<FilesMatch "^(senin|selasa|rabu|kamis|pokok|wajib|tunggakan_eom|loan_mob|omzet|senin_koreksi)\.php$">
     Require all denied
 </FilesMatch>

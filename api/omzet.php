@@ -1,4 +1,6 @@
-<?php require_once __DIR__ . '/../koneksi_db.php'; 
+<?php require __DIR__ . '/../inc/hanya_cli.php'; require_once __DIR__ . '/../koneksi_db.php';
+// 2026-11-21 (perintah user, PEKERJAAN_TERTUNDA §103 P1-3): hanya cron/CLI (23:40). Dulu bisa dibuka lewat web -> jurnal
+// HRIS/CMS hari itu dan omzet tercatat ganda. Isi proses tidak diubah.
 
 $con = db_ni();
 if (mysqli_connect_errno()) {
