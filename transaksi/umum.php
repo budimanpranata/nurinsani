@@ -156,6 +156,9 @@ ob_start();
 					$query=db_jalankan("insert into jurnal_umum(nomor_jurnal,kode_transaksi,tanggal_selesai,unit) values('',?,?,?)", 'sss',
 						(string) $kode_transaksi, (string) $tanggal_selesai, (string) $unit);
 				}else{
+					// 2026-11-21 (perintah user, §20 A5): $query masih true dari atas, sehingga kembali_ke_form() di bawah
+					// membuang alert ini dan menampilkan notif "Jurnal nomor bukti … selesai." padahal tidak dicatat
+					$query = false;
 					echo '<script>alert("Maaf, total debet dan kredit tidak sama!."); window.location="umum.php"</script>';
 				}
 
@@ -186,7 +189,11 @@ if (isset($_POST['selesai'])) {
 $kode_transaksi = nomor_bukti_unit($unit, $userid);
 $kode_bukti_form = $kode_transaksi;
 
-			//untuk menampilkan data (versi lama: total saat Selesai ikut terjumlah lagi di sini)
+			//untuk menampilkan data
+// 2026-11-21 (perintah user, §20 A5): total direset; dulu total hasil pengecekan Selesai ikut terjumlah lagi di sini
+// sehingga saat Selesai tidak balance tabel menampilkan total dobel (100.000 tampil 200.000)
+$tot_debet = null;
+$tot_kredit = null;
 $baris_transaksi = array();
 // hanya baris jurnal yang belum selesai (jurnal_umum dengan tanggal_selesai = sudah selesai, tidak ditampilkan lagi)
 foreach (ju_selesai($kode_transaksi) ? array() : db_semua("select * from tabel_transaksi where kode_transaksi=? and id_admin=? order by id_transaksi", 'ss', (string) $kode_transaksi, (string) $userid) as $row) {

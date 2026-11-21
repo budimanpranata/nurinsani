@@ -179,6 +179,9 @@ if (isset($_POST['search'])) {
                         } else {
                             $skrip[] = "alert('Pengajuan Kembali Gagal di proses..');";
                         }
+                    } else {
+                        // 2026-11-21 (perintah user, §40 A4): dulu berhenti tanpa pesan; data tetap tidak diubah
+                        $skrip[] = "alert(" . json_encode('Jenis akad unit ' . $unit . ' belum diatur (tabel jenis_akad). Pengajuan tidak diproses, hubungi admin.', JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP) . ");";
                     }
                     break;
                 case "03":
