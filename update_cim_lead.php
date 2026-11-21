@@ -38,6 +38,13 @@ $nama1 = $pos('wali');
 // 2026-11-21 (perintah user, PEKERJAAN_TERTUNDA §38): hanya CIF yang punya pengajuan menunggu approve (calon_loan gol='0').
 // Dulu CIF yang diketik ulang di form (pengajuan lain / sudah di-approve / tanpa pengajuan) tetap diproses: data anggota
 // itu tertimpa isian form dan pengajuannya ter-approve tanpa dibuka.
+// 2026-11-21 (perintah user, §38 D7): CIF harus yang dibuka di form new4.php sesi ini (form yang diubah ke CIF lain ditolak)
+$dibuka = isset($_SESSION['approve_cif']) && is_array($_SESSION['approve_cif']) ? $_SESSION['approve_cif'] : array();
+if (!in_array($cif, $dibuka, true)) {
+    echo "<script> alert (" . json_encode('Pengajuan CIF ' . $cif . ' tidak dibuka dari daftar approval. Buka ulang pengajuan dari daftar lalu approve.', JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP) . ")</script>";
+    echo "<script language='javascript'>document.location.href='data_approval.php'</script>";
+    exit;
+}
 if (!db_satu("select 1 as ada from calon_loan where cif =? and gol ='0'", 's', $cif)) {
     echo "<script> alert (" . json_encode('Pengajuan CIF ' . $cif . ' tidak ditemukan atau sudah di-approve. Tidak ada data yang diubah.', JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP) . ")</script>";
     echo "<script language='javascript'>document.location.href='data_approval.php'</script>";
@@ -74,6 +81,8 @@ if (db_jumlah_gagal() > $gagal_awal) {
     exit;
 }
 mysqli_commit($db);
+// sudah di-approve: keluarkan dari daftar CIF yang dibuka
+$_SESSION['approve_cif'] = array_values(array_diff($dibuka, array($cif)));
 
 if ($i || $b) {
     // versi lama memakai nama yang sudah di-escape untuk SQL; addslashes menjaga alert tetap benar bila nama berisi tanda kutip

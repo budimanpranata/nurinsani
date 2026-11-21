@@ -318,9 +318,11 @@ if (isset($_POST['search'])) {
             exit;
         case "04":
             // (versi lama: "tenor <= tenor" selalu benar, tanpa ORDER BY)
+            // 2026-11-21 (perintah user, §29 D4): urut cicilan (lalu tanggal jatuh tempo); dulu urutan mengikuti urutan database
             $sql3 = array_map('baris_teks_rk', db_semua("select CUST_SHORT_NAME,id_pinjam,angsuran_pokok,bunga,tgl_jatuh_tempo,tgl_bayar,jumlah_bayar from pinjaman_detail
                 inner join loan on loan.cif=pinjaman_detail.cif
-                where loan.cif=? and tenor <=tenor", 's', (string) $cif));
+                where loan.cif=? and tenor <=tenor
+                order by pinjaman_detail.id_pinjam, pinjaman_detail.cicilan, pinjaman_detail.tgl_jatuh_tempo", 's', (string) $cif));
             $pdf=new FPDF('P','mm', array(216, 275));
             $pdf->AddPage();
             //$pdf=new FPDF('L','mm', array(216, 330));

@@ -1,8 +1,8 @@
 <?php require_once __DIR__ . '/../../koneksi_db.php';
 /**
  * Menu kp > Report > Akuntasi > Neraca > Rugi-Laba: rekening rugi-laba kp dari tabel_rugi_laba beserta SHU operasional,
- * non operasional, sebelum dan sesudah pajak. Link Excel ke laba_excel.php, link PDF ke neraca_pdf.php (sama dengan
- * versi lama; neraca_pdf.php tidak ada di kp/laporan).
+ * non operasional, sebelum dan sesudah pajak. Link Excel ke laba_excel.php, link PDF ke laba_pdf.php (2026-11-21, §32 D1;
+ * dulu neraca_pdf.php yang tidak ada di kp/laporan).
  * Dimigrasi 2026-11-03: hanya tampilan (Bootstrap 5) dan query (prepared statement); logika sama dengan versi lama, termasuk:
  *   - (diperbaiki 2026-11-21, §32 A2) saldo akhir negatif dan SHU non operasional rugi tampil bertanda minus (dulu
  *     nilai mutlak)
@@ -67,7 +67,8 @@ halaman_awal('Laba Rugi');
 ?>
 <div class="d-flex gap-2 mb-3">
   <a href="laba_excel.php" class="btn btn-outline-success btn-sm">Excel</a>
-  <a href="neraca_pdf.php" class="btn btn-outline-secondary btn-sm">PDF</a>
+  <?php // 2026-11-21 (perintah user, §32 D1): PDF Rugi Laba kp (dulu ke neraca_pdf.php yang tidak ada di kp/laporan) ?>
+  <a href="laba_pdf.php" class="btn btn-outline-secondary btn-sm" target="_blank" rel="noopener">PDF</a>
 </div>
 <div class="table-responsive">
   <table class="table table-sm table-bordered table-ni align-middle">

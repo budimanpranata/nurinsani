@@ -11,6 +11,8 @@
  * Isi sama dengan versi lama: semua transaksi unit dengan tanggal_transaksi di antara kedua tanggal, urut tanggal lalu
  * nomor bukti (id_transaksi sebagai penentu urutan bila keduanya sama), kolom Tanggal, Nomor Bukti, Kode Rekening,
  * Keterangan, Jenis Transaksi, Debet, Kredit, dan baris TOTAL TRANSAKSI di akhir. Versi lama tidak memeriksa login.
+ * 2026-11-21 (perintah user, §31 D6): rentang tanggal_transaksi >= tgl1 dan < tgl2 + 1 hari (dulu between tgl1 and tgl2,
+ * sehingga transaksi berjam di hari terakhir tidak ikut).
  */
 session_start();
 require_once __DIR__ . '/../inc/cek_login.php';
@@ -78,7 +80,7 @@ if ($aksi === 'mulai') {
     $unit = $u ? (string) $u['kode_branch'] : '';
     $t1 = isset($_SESSION['tgl_awal_pos']) ? (string) $_SESSION['tgl_awal_pos'] : '';
     $t2 = isset($_SESSION['tgl_akhir_pos']) ? (string) $_SESSION['tgl_akhir_pos'] : '';
-    $n = db_satu("select count(*) as n from tabel_transaksi where tanggal_transaksi between ? and ? and unit =?", 'sss', $t1, $t2, $unit);
+    $n = db_satu("select count(*) as n from tabel_transaksi where tanggal_transaksi >= ? and tanggal_transaksi < date_add(?, interval 1 day) and unit =?", 'sss', $t1, $t2, $unit);
     $job = bin2hex(random_bytes(12));
     $dir = $folder_induk . DIRECTORY_SEPARATOR . $job;
     if (!@mkdir($dir, 0700)) {
@@ -97,7 +99,7 @@ if (!$meta) {
 if ($aksi === 'proses') {
     // urut tanggal, nomor bukti, id (keyset: lanjut sesudah baris terakhir tahap sebelumnya)
     $sql = "select id_transaksi, tanggal_transaksi, kode_transaksi, kode_rekening, keterangan_transaksi, jenis_transaksi, debet, kredit
-        from tabel_transaksi where tanggal_transaksi between ? and ? and unit =?";
+        from tabel_transaksi where tanggal_transaksi >= ? and tanggal_transaksi < date_add(?, interval 1 day) and unit =?";
     $param = array($meta['t1'], $meta['t2'], $meta['unit']);
     if ($meta['kunci']) {
         list($k_tgl, $k_kode, $k_id) = $meta['kunci'];
@@ -134,7 +136,7 @@ if ($aksi === 'rakit') {
     $berkas = $meta['dir'] . '/hasil.xlsx';
     if (empty($meta['total_ditulis'])) {
         // baris TOTAL TRANSAKSI seperti versi lama (jumlah dari query terpisah, sama dengan versi lama)
-        $tot = db_satu("select sum(debet) as tot_debet, sum(kredit) as tot_kredit from tabel_transaksi where tanggal_transaksi between ? and ? and unit =?",
+        $tot = db_satu("select sum(debet) as tot_debet, sum(kredit) as tot_kredit from tabel_transaksi where tanggal_transaksi >= ? and tanggal_transaksi < date_add(?, interval 1 day) and unit =?",
             'sss', $meta['t1'], $meta['t2'], $meta['unit']);
         if (!xlsx_tulis_baris($meta['dir'] . '/data.part', xlsx_baris_xml((int) $meta['baris'] + 1, array(
             array('s', 'TOTAL TRANSAKSI'), array('s', ''), array('s', ''), array('s', ''), array('s', ''),

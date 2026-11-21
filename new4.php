@@ -25,6 +25,12 @@ if (!isset($_SESSION['userid'])) {
 
 // 2026-11-16 (perintah user): lead hanya membuka pengajuan unit di areanya (dulu CIF dari URL area mana pun bisa)
 wajib_cif_area($cif);
+// 2026-11-21 (perintah user, §38 D7): CIF yang dibuka dicatat di sesi (maks 20, beberapa tab boleh); update_cim_lead.php
+// hanya menerima approve untuk CIF yang dibuka lewat form ini
+$dibuka = isset($_SESSION['approve_cif']) && is_array($_SESSION['approve_cif']) ? $_SESSION['approve_cif'] : array();
+$dibuka = array_values(array_diff($dibuka, array($cif)));
+$dibuka[] = $cif;
+$_SESSION['approve_cif'] = array_slice($dibuka, -20);
 
 $a = db_satu("select * from anggota where cif =?", 's', $cif);
 $r = db_satu("select * from calon_loan where cif =?", 's', $cif);

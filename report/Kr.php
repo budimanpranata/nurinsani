@@ -119,7 +119,6 @@ halaman_awal('Nominative Pembiayaan');
         <th class="text-end">Total Outstanding</th>
         <th class="text-end">Neraca OS<div class="small fw-normal">1411000+1413000 (pembanding)</div></th>
         <th class="text-end">Selisih</th>
-        <th class="text-center">Cetak Nominative</th>
         <th class="text-center">Export</th>
       </tr>
     </thead>
@@ -132,8 +131,7 @@ halaman_awal('Nominative Pembiayaan');
         <?php $nos = isset($neraca_os) ? $neraca_os : null; $sel_os = $nos === null ? null : compat_num($data['os']) - $nos; ?>
         <td class="text-end"><?php echo $nos === null ? '-' : number_format($nos); ?></td>
         <td class="text-end<?php echo $sel_os ? ' text-danger fw-semibold' : ''; ?>"><?php echo $sel_os === null ? '-' : number_format($sel_os); ?></td>
-        <?php // versi lama: link ke /cetak_tag.php dengan $tipe yang tidak pernah diisi (file tidak ada) ?>
-        <td class="text-center"><a href="/cetak_tag.php?type=" class="btn btn-outline-secondary btn-sm" data-konfirmasi="Apakah Anda yakin?">Cetak</a></td>
+        <?php // 2026-11-21 (perintah user, §25 D2): tombol Cetak dihapus (dulu ke /cetak_tag.php?type= yang tidak ada, 404) ?>
         <td class="text-center">
           <?php // 2026-11-21 (§25): status/periode hasil Cari ikut tombol (dulu export selalu CURRENT) ?>
           <button type="button" class="btn btn-outline-success btn-sm" data-export-xlsx

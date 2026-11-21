@@ -115,7 +115,6 @@ halaman_awal('Nominative Acrual');
         <th class="text-center">Bussdate</th>
         <th class="text-end">Total NOA</th>
         <th class="text-end">Total OS</th>
-        <th class="text-center">Cetak</th>
         <th class="text-center">Export</th>
         <th class="text-center">Proses</th>
       </tr>
@@ -126,8 +125,7 @@ halaman_awal('Nominative Acrual');
         <td class="text-center"><?php echo h($data['tgl']); ?></td>
         <td class="text-end"><?php echo h($data['NOA']); ?></td>
         <td class="text-end"><?php echo number_format(compat_num($data['os'])); ?></td>
-        <?php // versi lama: link ke /cetak_tag.php dengan $tipe yang tidak pernah diisi (file tidak ada) ?>
-        <td class="text-center"><a href="/cetak_tag.php?type=" class="btn btn-outline-secondary btn-sm" data-konfirmasi="Apakah Anda yakin?">Cetak</a></td>
+        <?php // 2026-11-21 (perintah user, §25 D2): tombol Cetak dihapus (dulu ke /cetak_tag.php?type= yang tidak ada, 404) ?>
         <td class="text-center">
           <button type="button" class="btn btn-outline-success btn-sm" data-export-xlsx data-export-url="nominatif_kp_export.php" data-export-satuan="rekening">Rekap (.xlsx)</button>
         </td>
