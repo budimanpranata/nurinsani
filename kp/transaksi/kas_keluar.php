@@ -18,6 +18,8 @@
  * Perbaikan 2026-11-03 (perintah user, PEKERJAAN_TERTUNDA.md bagian 65): nomor bukti urut per unit KK/-<unit>-<6 digit>
  * (inc/nomor_bukti.php, dulu KK/<unit><userid><nomor>); nomor baru dipastikan di dalam kunci saat Simpan supaya dua user
  * tidak mendapat nomor yang sama. Selesai = ada di jurnal_keluar dengan tanggal_selesai terisi.
+ * Perbaikan 2026-11-21 (perintah user, sama dengan menu unit §18): Simpan berhasil -> dialihkan (POST-redirect-GET)
+ * sehingga F5 tidak mencatat baris dobel; tanggal & keterangan terakhir tetap terisi (sesi kpkk_*, dihapus saat Selesai).
  */
 require_once __DIR__ . '/../../inc/tampilan.php';
 require_once __DIR__ . '/../../inc/nomor_bukti.php';
@@ -63,9 +65,14 @@ function catat_kas_keluar_kp($unit, $kode_transaksi, $kode_rekening, $tanggal, $
 }
 
 $kode_transaksi = nomor_bukti_kk($unitt, $userid);
-$tanggal_form = empty($_POST['tanggal_transaksi']) ? $tanggal : $_POST['tanggal_transaksi'];
-$keterangan_form = isset($_POST['keterangan_jurnal']) ? $_POST['keterangan_jurnal'] : '';
-$keterangan_jurnal = '';
+// 2026-11-21 (perintah user): sesudah Simpan halaman dialihkan (POST-redirect-GET) agar F5 tidak mengirim ulang dan
+// mencatat baris dobel; tanggal & keterangan terakhir disimpan di sesi (kpkk_*) supaya tetap terisi seperti dulu (dulu dari
+// POST), dihapus saat Selesai.
+$tanggal_terakhir = !empty($_SESSION['kpkk_tanggal']) ? (string) $_SESSION['kpkk_tanggal'] : $tanggal;
+$keterangan_terakhir = isset($_SESSION['kpkk_keterangan']) ? (string) $_SESSION['kpkk_keterangan'] : '';
+$tanggal_form = empty($_POST['tanggal_transaksi']) ? $tanggal_terakhir : $_POST['tanggal_transaksi'];
+$keterangan_form = isset($_POST['keterangan_jurnal']) ? $_POST['keterangan_jurnal'] : $keterangan_terakhir;
+$keterangan_jurnal = $keterangan_terakhir === '' ? '' : ucwords($keterangan_terakhir);
 
 // pesan/script dari proses ditampilkan di bawah form, seperti versi lama
 ob_start();
@@ -100,9 +107,19 @@ if (isset($_POST['simpan'])) {
     } else {
         // nomor dipastikan ulang di dalam kunci (nomor baru bisa sudah diambil user lain sejak halaman dibuka)
         $kode_kirim = nomor_bukti_kk($unitt, $userid);
-        catat_kas_keluar_kp($unitt, $kode_kirim, $kode_rekening, $tanggal_transaksi, $keterangan_transaksi, 'debet', $jumlah_dk, $userid);
+        $tersimpan = catat_kas_keluar_kp($unitt, $kode_kirim, $kode_rekening, $tanggal_transaksi, $keterangan_transaksi, 'debet', $jumlah_dk, $userid);
         nb_lepas('KK', $unitt);
         $kode_transaksi = $kode_kirim;
+        if ($tersimpan) {
+            // POST-redirect-GET (2026-11-21): F5 sesudah ini hanya memuat ulang tampilan
+            $_SESSION['kpkk_tanggal'] = $tanggal_transaksi;
+            $_SESSION['kpkk_keterangan'] = isset($_POST['keterangan_jurnal']) ? (string) $_POST['keterangan_jurnal'] : '';
+            while (ob_get_level() > 0) {
+                ob_end_clean();
+            }
+            header('Location: kas_keluar.php?' . paramEncrypt('page=../transaksi/kas_keluar'));
+            exit;
+        }
     }
 }
 
@@ -141,6 +158,7 @@ if (isset($_POST['selesai'])) {
                 db_jalankan("delete from jurnal_keluar where kode_transaksi=?", 's', $kode_kirim);
                 echo "<script>alert('Penyimpanan kredit kas gagal, transaksi belum diselesaikan.');</script>";
             } else {
+                unset($_SESSION['kpkk_tanggal'], $_SESSION['kpkk_keterangan']);
                 ?><script language="javascript">document.location.href="?<?php echo paramEncrypt('page=../transaksi/kas_keluar')?>"</script><?php
             }
         }
@@ -254,7 +272,7 @@ halaman_awal('Jurnal Keluar');
 </div>
 
 <form action="<?php echo h($aksi_form); ?>" method="post" name="form" class="text-end">
-  <input type="hidden" name="tanggal_selesai" value="<?php if (empty($_POST['tanggal_transaksi'])) { echo h($tanggal); } else { echo h($_POST['tanggal_transaksi']); } ?>">
+  <input type="hidden" name="tanggal_selesai" value="<?php if (empty($_POST['tanggal_transaksi'])) { echo h($tanggal_terakhir); } else { echo h($_POST['tanggal_transaksi']); } ?>">
   <input type="hidden" name="kode_bukti" value="<?php echo h($kode_transaksi); ?>">
   <input type="hidden" name="keterangan_jurnal" value="<?php echo h($keterangan_jurnal); ?>">
   <button type="submit" name="selesai" value="Selesai" class="btn btn-ni btn-sm px-4" data-konfirmasi="Apakah Anda Yakin?">Selesai</button>
