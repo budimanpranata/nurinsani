@@ -15,6 +15,8 @@
  * jurnal + update calon_loan dalam satu transaksi dengan kunci per CIF; CIF harus dari unit di area lead (01/02/03);
  * CIF tidak ditemukan diberi pesan; isian kosong kembali ke halaman ini (dulu buka_bokir.php, 404).
  * Hitungan, rekening jurnal, dan hasil untuk isian yang valid tidak berubah.
+ * Perbaikan 2026-11-21 (perintah user, §40): Turun Plafond hanya untuk status_app MURAB (wakalah sudah direalisasi);
+ * status lain ditolak dengan pesan tanpa perubahan apa pun.
  */
 require_once __DIR__ . '/../inc/tampilan.php';
 session_start();
@@ -112,6 +114,18 @@ if (isset($_POST['search'])) {
                     $kunci = db_satu("SELECT GET_LOCK(?, 10) AS ok", 's', 'nurinsani_turun_plafond_' . $cif);
                     if (!$kunci || (int) $kunci['ok'] !== 1) {
                         $skrip[] = "alert('CIF ini sedang diproses, coba lagi')";
+                        $skrip[] = "document.location.href='turun_pangajuan.php';";
+                        break;
+                    }
+                    // 2026-11-21 (perintah user, §40): Turun Plafond hanya sesudah wakalah direalisasi (status MURAB).
+                    // Dulu status apa pun diproses: APPROVE/PENDING -> jurnal balik wakalah yang belum pernah ada (1431000
+                    // minus) dan status jadi MURAB sehingga EOD wakalah terlewati; MUSYAROKAH berubah akad; BATAL hidup lagi.
+                    $st_app = db_satu("select status_app from calon_loan WHERE cif=?", 's', $cif);
+                    $st_app = $st_app ? (string) $st_app['status_app'] : '';
+                    if ($st_app !== 'MURAB') {
+                        db_satu("SELECT RELEASE_LOCK(?) AS ok", 's', 'nurinsani_turun_plafond_' . $cif);
+                        $skrip[] = "alert(" . json_encode('Turun Plafond hanya untuk pengajuan yang wakalahnya sudah direalisasi (status MURAB). Status CIF '
+                            . $cif . ' saat ini: ' . ($st_app === '' ? '(kosong)' : $st_app), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP) . ");";
                         $skrip[] = "document.location.href='turun_pangajuan.php';";
                         break;
                     }
