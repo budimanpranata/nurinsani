@@ -13,7 +13,9 @@
  *     bila ada, tabel_master_eoy unit 0000 Desember tahun sebelum tahun terpilih (perbaikan 2026-11-03 atas perintah user;
  *     versi lama Desember 2025 tetap) mengganti saldo akhir dan menjadi saldo awal "min"; normal/posisi dari coa untuk
  *     kode_rekening baris itu
- *   - saldo awal saldo berjalan: All data -> saldo awal "min"; tanpa All data -> saldo awal tabel_master
+ *   - saldo awal saldo berjalan (2026-11-21, perintah user, §28 A3): saldo_akhir tabel_master_eoy unit 0000 Desember
+ *     tahun lalu, dengan maupun tanpa All data (dulu All data = saldo_awal EOY, tanpa = saldo_awal tabel_master); saldo
+ *     akhir kepala = saldo_akhir tabel_master (dulu ditimpa saldo_akhir EOY)
  *   - transaksi tabel_transaksi unit user (kode_branch): bulan 1 s.d. bulan terpilih, kecuali rekening rugi-laba tanpa
  *     All data: hanya bulan terpilih; posisi selain Neraca / rugi-laba: tanpa transaksi
  *   - saldo berjalan: normal debet = saldo + debet - kredit; normal kredit = saldo - debet + kredit
@@ -115,25 +117,24 @@ if ($aksi === 'mulai') {
         jawab_json(array('pesan' => 'Tahun belum dipilih. Pilih tahun lalu klik Cari lagi.'), 400);
     }
     $tahun_eoy = (string) ((int) $tahun - 1);
-    foreach (db_semua("select saldo_awal,saldo_akhir from tabel_master_eoy WHERE rekening_gl =? and unit ='0000' and month(tanggal_awal)='12' and Year(tanggal_awal)=?", 'ss', $norek, $tahun_eoy) as $row) {
-        $saldo_awal_min = $row['saldo_awal'];
-        $saldo_akhir = $row['saldo_akhir'];
-    }
+    // 2026-11-21 (perintah user, §28 A3, sama untuk semua Buku Besar): saldo awal perhitungan = saldo_akhir
+    // tabel_master_eoy (unit 0000) Desember tahun lalu, dengan maupun tanpa All data. Dulu: All data = saldo_awal EOY,
+    // tanpa All data = saldo_awal tabel_master; saldo akhir kepala ditimpa saldo_akhir EOY.
+    $eoy = db_satu("select saldo_akhir from tabel_master_eoy WHERE rekening_gl =? and unit ='0000' and month(tanggal_awal)='12' and Year(tanggal_awal)=?", 'ss', $norek, $tahun_eoy);
+    $saldo_eoy = $eoy ? compat_num($eoy['saldo_akhir']) : 0;
     $normal = $pilih = null;
     foreach (db_semua("select normal,posisi from coa WHERE kode_rek =?", 's', (string) $kode_rekening) as $row) {
         $normal = $row['normal'];
         $pilih = $row['posisi'];
     }
     $all = $checkbox == "checkbox";
-    if ($all) {
-        $saldo_awal = $saldo_awal_min;
-    }
-    $saldo_mulai = compat_num($saldo_awal);
+    $saldo_mulai = $saldo_eoy;
     $ada_query = $pilih === 'Neraca' || $pilih === 'rugi-laba';
     $meta = array('jenis' => 'buku_besar_kp', 'userid' => $userid, 'unit' => $unit, 'norek' => $norek, 'bulan' => $bulan, 'tahun' => $tahun,
         'debet_normal' => $normal == 'debet', 'bulan_saja' => !$all && $pilih === 'rugi-laba', 'ada_query' => $ada_query,
         'saldo' => $saldo_mulai, 'saldo_mulai' => $saldo_mulai, 'id_akhir' => 0, 'baris' => 1, 'selesai' => 0, 'tot_debet' => 0, 'tot_kredit' => 0,
-        'kepala' => array('no' => $kode_rekening, 'nama' => $nama_rekening, 'saldo_awal' => compat_num($saldo_awal), 'saldo_akhir' => compat_num($saldo_akhir)),
+        'kepala' => array('no' => $kode_rekening, 'nama' => $nama_rekening, 'saldo_awal' => $saldo_eoy, 'saldo_akhir' => compat_num($saldo_akhir)),
+        'tahun_eoy' => $tahun_eoy, 'eoy_ada' => (bool) $eoy,
         'all' => $all, 'posisi' => $pilih, 'normal' => $normal);
     $total = 0;
     if ($ada_query) {
@@ -217,6 +218,8 @@ if ($aksi === 'rakit') {
             array('Saldo Awal', $k['saldo_awal']), array('Saldo Akhir', $k['saldo_akhir']),
             array('Bulan', $meta['bulan']), array('Tahun', $meta['tahun']),
             array('All data', $meta['all'] ? 'ya' : 'tidak'), array('Posisi / Normal', $meta['posisi'] . ' / ' . $meta['normal']),
+            array('Saldo awal dari', 'saldo_akhir tabel_master_eoy unit 0000 Desember ' . $meta['tahun_eoy']
+                . (empty($meta['eoy_ada']) ? ' (TIDAK DITEMUKAN, dihitung 0)' : '')),
         );
         $xml = '';
         foreach ($info as $i => $baris_info) {

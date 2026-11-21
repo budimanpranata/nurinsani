@@ -9,9 +9,10 @@
  *   GET  aksi=unduh&job=...      -> kirim file .xlsx lalu hapus file sementara
  *
  * Logika sama dengan versi lama (lihat PEKERJAAN_TERTUNDA.md bagian 28 untuk keanehannya):
- *   - current : saldo dari tabel_master; eom : saldo awal dari tabel_master_eoy Desember tahun sebelumnya, saldo akhir dari
- *     tabel_master_konsol bulan dan tahun terpilih (perbaikan 2026-10-31; versi lama memakai 2025/2026 tetap)
- *   - saldo awal saldo berjalan: All data -> saldo awal "min"; tanpa All data -> saldo awal tabel_master (current) / 0 (eom)
+ *   - kepala laporan: No/Nama Perkiraan dan Saldo Akhir dari tabel_master (current) / tabel_master_konsol bulan & tahun
+ *     terpilih (eom); Saldo Awal = saldo awal perhitungan
+ *   - saldo awal saldo berjalan (2026-11-21, perintah user, §28 A3; semua report, dengan/tanpa All data): saldo_akhir
+ *     tabel_master_eoy Desember tahun sebelum tahun terpilih (dikunci di tabel itu); tidak ada -> 0 + keterangan di Info
  *   - transaksi: bulan 1 s.d. bulan terpilih, kecuali rekening rugi-laba tanpa All data: hanya bulan terpilih
  *   - saldo berjalan: normal debet = saldo + debet - kredit; normal kredit = saldo - debet + kredit
  *   - urutan transaksi = id_transaksi (versi lama tanpa ORDER BY, mengikuti index rekening)
@@ -95,33 +96,29 @@ if ($aksi === 'mulai') {
     $u = db_satu("select kode_branch from user where userid=?", 's', $userid);
     $unit = $u ? (string) $u['kode_branch'] : '';
 
-    // nilai kepala laporan dan saldo awal, sama dengan versi lama
-    $saldo_awal = null;          // saldo awal untuk perhitungan tanpa "All data"
-    $saldo_awal_min = null;      // saldo awal untuk perhitungan dengan "All data"
-    $saldo_akhir = null;         // ditampilkan sebagai "Saldo Awal" di kepala laporan
-    $kode_2021 = $nama_2021 = $saldo_akhir_2021 = null;   // "No/Nama Perkiraan" dan "Saldo Akhir" di kepala laporan
-    if ($report == 'current') {
-        foreach (db_semua("select saldo_awal,saldo_akhir,kode_rekening,nama_rekening from tabel_master WHERE kode_rekening =? and unit =?", 'ss', $norek, $unit) as $row) {
-            $saldo_awal = $row['saldo_awal'];
-            $saldo_akhir = $row['saldo_akhir'];
-        }
-        $s = db_satu("select saldo_awal from tabel_master WHERE kode_rekening =? and unit =?", 'ss', $norek, $unit);
-        $saldo_awal_min = $s ? $s['saldo_awal'] : null;
-    } else {
-        // perbaikan 2026-10-31 (perintah user): versi lama memakai tahun tetap (EOY Desember 2025, konsol 2026);
-        // kini EOY = Desember tahun sebelum tahun terpilih, konsol = tahun terpilih
-        if (!ctype_digit($tahun)) {
-            jawab_json(array('pesan' => 'Tahun belum dipilih. Pilih tahun lalu klik Cari lagi.'), 400);
-        }
-        $tahun_eoy = (string) ((int) $tahun - 1);
-        foreach (db_semua("select saldo_awal,saldo_akhir,kode_rekening,nama_rekening from tabel_master_eoy WHERE kode_rekening =? and unit =? and month(tanggal_awal)='12' and Year(tanggal_awal)=?", 'sss', $norek, $unit, $tahun_eoy) as $row) {
-            $saldo_awal_min = $row['saldo_awal'];
-            $saldo_akhir = $row['saldo_akhir'];
-        }
+    // 2026-11-21 (perintah user, PEKERJAAN_TERTUNDA §28 A3): saldo awal perhitungan untuk SEMUA report (current/EOM,
+    // dengan/tanpa All data) = saldo_akhir tabel_master_eoy Desember tahun sebelum tahun terpilih (saldo akhir tahun lalu
+    // yang dikunci di tabel itu). Dulu: current = saldo_awal tabel_master; EOM tanpa All data = 0; EOM All data =
+    // saldo_awal EOY. Kepala laporan current dulu kosong (No/Nama) dan Saldo Awal berisi saldo_akhir.
+    if (!ctype_digit($tahun)) {
+        jawab_json(array('pesan' => 'Tahun belum dipilih. Pilih tahun lalu klik Cari lagi.'), 400);
+    }
+    $tahun_eoy = (string) ((int) $tahun - 1);
+    $eoy = db_satu("select saldo_akhir from tabel_master_eoy WHERE kode_rekening =? and unit =? and month(tanggal_awal)='12' and Year(tanggal_awal)=?",
+        'sss', $norek, $unit, $tahun_eoy);
+    $saldo_eoy = $eoy ? compat_num($eoy['saldo_akhir']) : 0;
+    $kode_kepala = $nama_kepala = $saldo_akhir_kepala = null;   // "No/Nama Perkiraan" dan "Saldo Akhir" di kepala laporan
+    foreach (db_semua("select saldo_akhir,kode_rekening,nama_rekening from tabel_master WHERE kode_rekening =? and unit =?", 'ss', $norek, $unit) as $row) {
+        $kode_kepala = $row['kode_rekening'];
+        $nama_kepala = $row['nama_rekening'];
+        $saldo_akhir_kepala = $row['saldo_akhir'];
+    }
+    if ($report != 'current') {
+        // EOM: saldo akhir kepala dari konsol bulan & tahun terpilih (perbaikan 2026-10-31: tahun dari pilihan)
         foreach (db_semua("select saldo_akhir,kode_rekening,nama_rekening from tabel_master_konsol WHERE kode_rekening =? and unit =? and month(tanggal_awal)=? and Year(tanggal_awal)=?", 'ssss', $norek, $unit, $bulan, $tahun) as $row) {
-            $saldo_akhir_2021 = $row['saldo_akhir'];
-            $kode_2021 = $row['kode_rekening'];
-            $nama_2021 = $row['nama_rekening'];
+            $saldo_akhir_kepala = $row['saldo_akhir'];
+            $kode_kepala = $row['kode_rekening'];
+            $nama_kepala = $row['nama_rekening'];
         }
     }
     $normal = $pilih = null;
@@ -130,13 +127,14 @@ if ($aksi === 'mulai') {
         $pilih = $row['posisi'];
     }
     $all = $checkbox == "checkbox";
-    $saldo_mulai = compat_num($all ? $saldo_awal_min : $saldo_awal);
+    $saldo_mulai = $saldo_eoy;
     // posisi selain Neraca / rugi-laba: versi lama tidak menjalankan query transaksi sama sekali
     $ada_query = $pilih === 'Neraca' || $pilih === 'rugi-laba';
     $meta = array('jenis' => 'buku_besar', 'userid' => $userid, 'unit' => $unit, 'norek' => $norek, 'bulan' => $bulan, 'tahun' => $tahun,
         'debet_normal' => $normal == 'debet', 'bulan_saja' => !$all && $pilih === 'rugi-laba', 'ada_query' => $ada_query,
         'saldo' => $saldo_mulai, 'saldo_mulai' => $saldo_mulai, 'id_akhir' => 0, 'baris' => 1, 'selesai' => 0, 'tot_debet' => 0, 'tot_kredit' => 0,
-        'kepala' => array('no' => $kode_2021, 'nama' => $nama_2021, 'saldo_awal' => compat_num($saldo_akhir), 'saldo_akhir' => compat_num($saldo_akhir_2021)),
+        'kepala' => array('no' => $kode_kepala, 'nama' => $nama_kepala, 'saldo_awal' => $saldo_eoy, 'saldo_akhir' => compat_num($saldo_akhir_kepala)),
+        'tahun_eoy' => $tahun_eoy, 'eoy_ada' => (bool) $eoy,
         'report' => $report, 'all' => $all, 'posisi' => $pilih, 'normal' => $normal);
     $total = 0;
     if ($ada_query) {
@@ -220,6 +218,8 @@ if ($aksi === 'rakit') {
             array('Saldo Awal', $k['saldo_awal']), array('Saldo Akhir', $k['saldo_akhir']),
             array('Report', $meta['report']), array('Bulan', $meta['bulan']), array('Tahun', $meta['tahun']),
             array('All data', $meta['all'] ? 'ya' : 'tidak'), array('Posisi / Normal', $meta['posisi'] . ' / ' . $meta['normal']),
+            array('Saldo awal dari', 'saldo_akhir tabel_master_eoy Desember ' . $meta['tahun_eoy']
+                . (empty($meta['eoy_ada']) ? ' (TIDAK DITEMUKAN, dihitung 0)' : '')),
         );
         $xml = '';
         foreach ($info as $i => $baris_info) {

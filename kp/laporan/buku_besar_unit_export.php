@@ -11,6 +11,7 @@
  *
  * Logika sama dengan excel_buku_besar_unit.php versi lama, kecuali saldo awal:
  *   - No/Nama Perkiraan dan saldo akhir kepala: baris terakhir tabel_master WHERE kode_rekening dan unit terpilih
+ *   - (2026-11-21, perintah user, §28 A3: kini kolom saldo_akhir EOY, sama untuk semua Buku Besar)
  *   - saldo awal (dengan maupun tanpa All data) = saldo_awal tabel_master_eoy unit terpilih Desember tahun sebelum tahun
  *     terpilih, yaitu saldo per tanggal_awal = saldo akhir tahun sebelumnya; kolom sama dengan Buku Besar KP dan menu unit
  *     (perintah user 2026-11-03; versi lama saldo_akhir tabel_master_konsol_eoy Desember 2021 tetap, tabel itu tidak ada
@@ -114,9 +115,11 @@ if ($aksi === 'mulai') {
     // saldo awal: saldo_awal EOY Desember tahun sebelum tahun terpilih (= saldo per tanggal_awal), unit terpilih;
     // kolom sama dengan Buku Besar KP dan menu unit (perintah user 2026-11-03)
     $tahun_eoy = (string) ((int) $tahun - 1);
-    $s_awal = db_satu("select saldo_awal from tabel_master_eoy WHERE kode_rekening =? and unit =? and month(tanggal_awal)='12' and Year(tanggal_awal)=?",
+    // 2026-11-21 (perintah user, §28 A3, sama untuk semua Buku Besar): kolom saldo_akhir EOY (saldo akhir tahun lalu yang
+    // dikunci); dulu saldo_awal EOY
+    $s_awal = db_satu("select saldo_akhir from tabel_master_eoy WHERE kode_rekening =? and unit =? and month(tanggal_awal)='12' and Year(tanggal_awal)=?",
         'sss', $norek, $unit, $tahun_eoy);
-    $saldo_awal = $s_awal ? $s_awal['saldo_awal'] : null;
+    $saldo_awal = $s_awal ? $s_awal['saldo_akhir'] : null;
     $normal = $pilih = null;
     foreach (db_semua("select normal,posisi from coa WHERE kode_rek =?", 's', $norek) as $row) {
         $normal = $row['normal'];
@@ -211,7 +214,7 @@ if ($aksi === 'rakit') {
         $info = array(
             array('Unit', $meta['unit']), array('No Perkiraan', $k['no']), array('Nama Perkiraan', $k['nama']),
             array('Saldo Awal', $k['saldo_awal']), array('Saldo Akhir', $k['saldo_akhir']),
-            array('Bulan', $meta['bulan']), array('Tahun', $meta['tahun']), array('Saldo awal dari', 'tabel_master_eoy Desember ' . $meta['tahun_eoy']),
+            array('Bulan', $meta['bulan']), array('Tahun', $meta['tahun']), array('Saldo awal dari', 'saldo_akhir tabel_master_eoy Desember ' . $meta['tahun_eoy']),
             array('All data', $meta['all'] ? 'ya' : 'tidak'), array('Posisi / Normal', $meta['posisi'] . ' / ' . $meta['normal']),
         );
         $xml = '';
