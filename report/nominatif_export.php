@@ -11,6 +11,10 @@
  * Tambahan 2026-10-31 (permintaan user): baris TOTAL di file, dan ringkasan total nominatif dengan neraca pembanding
  * (OS <-> 1411000+1413000, margin <-> 1423000) di jendela progres.
  * Percepatan: tunggakan pokok/margin diambil sekali per 500 anggota (versi lama: 2 query per anggota).
+ * 2026-11-21 (perintah user, PEKERJAAN_TERTUNDA §25): status EOM benar-benar mengexport snapshot akhir bulan (data_loan
+ * unit + bulan/tahun dari tombol Rekap: ?status=EOM&bulan=&tahun=); dulu selalu CURRENT. Snapshot diambil sekali saat
+ * mulai ke file sementara lalu ditulis 500 baris per tahap (progres sama). Tunggakan EOM = baris tunggakan bertanggal
+ * <= tanggal snapshot. Pembanding neraca hanya untuk CURRENT (tabel_master = saldo hari ini). Kolom sama dengan CURRENT.
  */
 session_start();
 require_once __DIR__ . '/../inc/cek_login.php';
@@ -84,15 +88,58 @@ if ($aksi === 'mulai') {
     }
     $u = db_satu("select kode_branch from user where userid=?", 's', $userid);
     $unit = $u ? (string) $u['kode_branch'] : '';
-    // versi lama: if ($status ='CURRENT') selalu benar, jadi yang diexport selalu data loan saat ini
-    $n = db_satu("select count(*) as n from loan where unit=? and os > 0", 's', $unit);
+    // 2026-11-21 (perintah user, §25): status/bulan/tahun dari tombol Rekap (hasil Cari di Kr.php). Dulu selalu CURRENT
+    // (versi lama: if ($status ='CURRENT') selalu benar; cabang EOM-nya pun SQL error).
+    $status = isset($_REQUEST['status']) ? (string) $_REQUEST['status'] : 'CURRENT';
+    $periode = null;
+    if ($status === 'EOM') {
+        $bln = isset($_REQUEST['bulan']) ? (int) $_REQUEST['bulan'] : 0;
+        $thn = isset($_REQUEST['tahun']) ? (int) $_REQUEST['tahun'] : 0;
+        if ($bln < 1 || $bln > 12 || $thn < 2000 || $thn > (int) date('Y') + 1) {
+            jawab_json(array('pesan' => 'Pilih Bulan dan Tahun EOM lalu Cari Report lagi.'), 400);
+        }
+        $periode = sprintf('%04d-%02d', $thn, $bln);
+    } elseif ($status !== 'CURRENT') {
+        jawab_json(array('pesan' => 'Status Nominative tidak dikenali.'), 400);
+    }
     $job = bin2hex(random_bytes(12));
     $dir = $folder_induk . DIRECTORY_SEPARATOR . $job;
     if (!@mkdir($dir, 0700)) {
         jawab_json(array('pesan' => 'Folder sementara export tidak bisa dibuat.'), 500);
     }
-    $meta = array('userid' => $userid, 'unit' => $unit, 'total' => (int) ($n ? $n['n'] : 0), 'selesai' => 0,
-        'cif_akhir' => '', 'baris' => 1, 'dir' => $dir);
+    if ($periode === null) {
+        $n = db_satu("select count(*) as n from loan where unit=? and os > 0", 's', $unit);
+        $total = (int) ($n ? $n['n'] : 0);
+    } else {
+        // EOM: snapshot data_loan unit + bulan itu diambil SEKALI ke file sementara (data_loan tanpa index unit/tanggal,
+        // membaca ulang per tahap akan lambat), lalu ditulis 500 baris per tahap seperti CURRENT
+        $awal = $periode . '-01';
+        $akhir = date('Y-m-d', strtotime($awal . ' +1 month'));
+        $rows = db_semua("select data_loan.no_anggota, data_loan.unit, data_loan.Cust_Short_name, Plafond, data_loan.cif, os, saldo_margin,
+                data_loan.code_kel, tenor, run_tenor, tgl_akad as tgl_murab, maturity_date, data_loan.cao, angsuran,
+                bidang_usaha.nama_usaha as usaha, status_app, nama_kel, nama_ao, gol, data_loan.buss_date
+            from data_loan
+            left join kelompok on data_loan.code_kel=kelompok.code_kel
+            left join ao on ao.cao = data_loan.cao
+            left join bidang_usaha on bidang_usaha.code_bidang = data_loan.usaha
+            where data_loan.unit =? and data_loan.buss_date >= ? and data_loan.buss_date < ? and os > 0
+            group by data_loan.cif order by data_loan.cif", 'sss', $unit, $awal, $akhir);
+        $isi = '';
+        $tgl_eom = '';
+        foreach ($rows as $r) {
+            $isi .= json_encode($r) . "\n";
+            $tgl_eom = max($tgl_eom, substr((string) $r['buss_date'], 0, 10));
+        }
+        if (file_put_contents($dir . '/eom.jsonl', $isi, LOCK_EX) === false) {
+            hapus_folder($dir);
+            jawab_json(array('pesan' => 'Gagal menulis file sementara export.'), 500);
+        }
+        $total = count($rows);
+        unset($rows, $isi);
+    }
+    $meta = array('userid' => $userid, 'unit' => $unit, 'total' => $total, 'selesai' => 0,
+        'cif_akhir' => '', 'baris' => 1, 'dir' => $dir, 'status' => $status, 'periode' => $periode,
+        'tgl_eom' => $periode === null ? '' : ($tgl_eom !== '' ? $tgl_eom : date('Y-m-t', strtotime($awal))), 'posisi' => 0);
     simpan_job($meta);
     jawab_json(array('job' => $job, 'total' => $meta['total']));
 }
@@ -103,6 +150,22 @@ if (!$meta) {
 }
 
 if ($aksi === 'proses') {
+  if (!empty($meta['periode'])) {
+    // EOM: 500 baris berikutnya dari file snapshot
+    $data = array();
+    $fh = fopen($meta['dir'] . '/eom.jsonl', 'rb');
+    if (!$fh) {
+        jawab_json(array('pesan' => 'File sementara export tidak ditemukan. Silakan ulangi.'), 500);
+    }
+    fseek($fh, (int) $meta['posisi']);
+    while (count($data) < NOMINATIF_PER_TAHAP && ($l = fgets($fh)) !== false) {
+        if (trim($l) !== '') {
+            $data[] = json_decode($l, true);
+        }
+    }
+    $meta['posisi'] = ftell($fh);
+    fclose($fh);
+  } else {
     $data = db_semua("select loan.no_anggota, loan.unit, loan.Cust_Short_name, Plafond, loan.cif, os, saldo_margin, loan.code_kel,
             tenor, run_tenor, tgl_akad as tgl_murab, maturity_date, loan.cao, angsuran,
             bidang_usaha.nama_usaha as usaha, status_app, nama_kel, nama_ao, gol
@@ -112,14 +175,19 @@ if ($aksi === 'proses') {
         left join bidang_usaha on bidang_usaha.code_bidang = loan.usaha
         where loan.unit =? and os > 0 and loan.cif > ?
         group by loan.cif order by loan.cif limit " . NOMINATIF_PER_TAHAP, 'ss', $meta['unit'], $meta['cif_akhir']);
+  }
 
-    // tunggakan pokok (01) dan margin (02) untuk semua anggota tahap ini dalam satu query
+    // tunggakan pokok (01) dan margin (02) untuk semua anggota tahap ini dalam satu query.
+    // EOM (2026-11-21): posisi per tanggal snapshot = baris tunggakan bertanggal <= tanggal EOM (KREDIT = tunggakan,
+    // DEBIT = pembayaran pada tanggalnya)
     $tunggak = array();
     if ($data) {
         $cif = array_map(function ($d) { return (string) $d['cif']; }, $data);
         $tanda = implode(',', array_fill(0, count($cif), '?'));
-        foreach (db_semua("select cif, type, sum(KREDIT-DEBIT) as n from tunggakan where type in ('01','02') and cif in ($tanda) group by cif, type order by cif, type",
-            str_repeat('s', count($cif)), ...$cif) as $t) {
+        $batas = empty($meta['periode']) ? '' : ' and tgl_tunggak <= ?';
+        $param = empty($meta['periode']) ? $cif : array_merge($cif, array($meta['tgl_eom'] . ' 23:59:59'));
+        foreach (db_semua("select cif, type, sum(KREDIT-DEBIT) as n from tunggakan where type in ('01','02') and cif in ($tanda)$batas group by cif, type order by cif, type",
+            str_repeat('s', count($param)), ...$param) as $t) {
             $tunggak[(string) $t['cif']][(string) $t['type']] = $t['n'];
         }
     }
@@ -210,7 +278,9 @@ if ($aksi === 'rakit') {
     //   saldo margin       <-> 1423000
     // nilai neraca = saldo_akhir tabel_master apa adanya (perintah user); selisih = nominatif - saldo_akhir
     $neraca = array();
-    foreach (db_semua("select kode_rekening, saldo_akhir from tabel_master where unit=? and kode_rekening in ('1411000','1413000','1423000')", 's', $meta['unit']) as $n) {
+    // EOM (2026-11-21): tabel_master berisi saldo hari ini, bukan akhir bulan -> pembanding neraca tidak ditampilkan ('-')
+    $baris_neraca = empty($meta['periode']) ? db_semua("select kode_rekening, saldo_akhir from tabel_master where unit=? and kode_rekening in ('1411000','1413000','1423000')", 's', $meta['unit']) : array();
+    foreach ($baris_neraca as $n) {
         $neraca[(string) $n['kode_rekening']] = compat_num($n['saldo_akhir']);
     }
     $neraca_os = isset($neraca['1411000']) || isset($neraca['1413000'])
@@ -238,7 +308,8 @@ if ($aksi === 'unduh') {
     if (!is_file($berkas)) {
         jawab_json(array('pesan' => 'File export belum siap.'), 404);
     }
-    $nama = 'rekap_nominative_' . preg_replace('/[^A-Za-z0-9_-]/', '', $meta['unit']) . '_' . date('Ymd_His') . '.xlsx';
+    $nama = 'rekap_nominative_' . preg_replace('/[^A-Za-z0-9_-]/', '', $meta['unit'])
+        . (empty($meta['periode']) ? '' : '_EOM_' . str_replace('-', '', $meta['periode'])) . '_' . date('Ymd_His') . '.xlsx';
     header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
     header('Content-Disposition: attachment; filename="' . $nama . '"');
     header('Content-Length: ' . filesize($berkas));

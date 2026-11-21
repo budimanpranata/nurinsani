@@ -6,6 +6,8 @@
  *           total nominatif + neraca pembanding tampil di jendela progres, baris TOTAL di file.
  *   Neraca pembanding (CURRENT): OS <-> 1411000+1413000, sama dengan Home (permintaan user 2026-10-31).
  * Pencarian dan isian sesi sama dengan versi lama; hanya tampilan, query (prepared statement), dan cara export yang berubah.
+ * 2026-11-21 (perintah user, §25): ringkasan EOM hanya unit user (dulu semua unit); tombol Rekap membawa status/bulan/tahun
+ * sehingga export EOM berisi snapshot data_loan bulan itu (dulu selalu CURRENT).
  */
 require_once __DIR__ . '/../inc/tampilan.php';
 session_start();
@@ -47,8 +49,11 @@ if (isset($_POST['search'])) {
         $nr = db_satu("select sum(saldo_akhir) as n, count(*) as ada from tabel_master where unit=? and kode_rekening in ('1411000','1413000')", 's', (string) $unit);
         $neraca_os = $nr && $nr['ada'] > 0 ? compat_num($nr['n']) : null;
     } else {
-        $hasil = db_semua("Select COUNT(data_loan.cif) AS NOA,SUM(os) AS os, unit From data_loan
-            Where Month(data_loan.buss_date)=? AND Year(data_loan.buss_date)=? Group By unit Order By unit", 'ss', $bulan1, $tahun1);
+        // 2026-11-21 (perintah user, §25): hanya unit user (dulu semua unit tampil); rentang tanggal sama dengan export
+        $awal_eom = sprintf('%04d-%02d-01', (int) $tahun1, (int) $bulan1);
+        $hasil = ((int) $bulan1 >= 1 && (int) $bulan1 <= 12 && (int) $tahun1 >= 2000) ? db_semua("Select COUNT(data_loan.cif) AS NOA,SUM(os) AS os, unit From data_loan
+            Where data_loan.unit=? AND data_loan.buss_date >= ? AND data_loan.buss_date < ? Group By unit Order By unit",
+            'sss', (string) $unit, $awal_eom, date('Y-m-d', strtotime($awal_eom . ' +1 month'))) : array();
     }
     if (!$hasil) {
         $pesan[] = "<script>alert('Maaf...data tidak ditemukan!!!');</script>";
@@ -126,7 +131,10 @@ halaman_awal('Nominative Pembiayaan');
         <?php // versi lama: link ke /cetak_tag.php dengan $tipe yang tidak pernah diisi (file tidak ada) ?>
         <td class="text-center"><a href="/cetak_tag.php?type=" class="btn btn-outline-secondary btn-sm" data-konfirmasi="Apakah Anda yakin?">Cetak</a></td>
         <td class="text-center">
-          <button type="button" class="btn btn-outline-success btn-sm" data-export-xlsx data-export-url="nominatif_export.php" data-export-satuan="baris">Rekap (.xlsx)</button>
+          <?php // 2026-11-21 (§25): status/periode hasil Cari ikut tombol (dulu export selalu CURRENT) ?>
+          <button type="button" class="btn btn-outline-success btn-sm" data-export-xlsx
+                  data-export-url="nominatif_export.php?<?php echo h(http_build_query($status === 'EOM' ? array('status' => 'EOM', 'bulan' => $bulan1, 'tahun' => $tahun1) : array('status' => 'CURRENT'))); ?>"
+                  data-export-satuan="baris">Rekap (.xlsx)</button>
         </td>
       </tr>
     <?php endforeach; ?>
