@@ -59,7 +59,7 @@ $tgl_lahir = $in('tgl_lahir');
 $tgl_wakalah = $in('tgl_skep');
 $tgl_akad = $in('tgl_akad');
 $ibu = $in('ibu');
-$buss_date = date('Y-m-d h:m:s'); // sama dengan versi lama ("m" = bulan)
+$buss_date = date('Y-m-d H:i:s'); // 2026-11-21 (perintah user, §35): dulu 'h:m:s' (jam 12-an, m = bulan bukan menit)
 $usaha = $in('usaha');
 $agama = $in('agama');
 $negara = $in('negara');

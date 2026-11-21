@@ -30,7 +30,7 @@ include "conn2.php";
 		$tgl_wa= $_POST['tgl_skep'];
 		$tgl_akad	= $_POST['tgl_akad'];
 		$ibu 		= $_POST['ibu'];
-		$buss_date	= date("Y-m-d H:m:s");
+		$buss_date	= date("Y-m-d H:i:s"); // 2026-11-21 (perintah user, §35): dulu "H:m:s" (m = bulan, bukan menit)
 		$usaha		= $_POST['usaha'];
 		$agama 		= $_POST['agama'];
 		$negara 	= $_POST['negara'];

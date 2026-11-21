@@ -31,7 +31,7 @@ include "conn2.php";
 		$tgl_wa= mysql_real_escape_string($_POST['tgl_skep']);
 		$tgl_akad	= mysql_real_escape_string($_POST['tgl_akad']);
 		$ibu 		= mysql_real_escape_string($_POST['ibu']);
-		$buss_date	= date("Y-m-d H:m:s");
+		$buss_date	= date("Y-m-d H:i:s"); // 2026-11-21 (perintah user, §35): dulu "H:m:s" (m = bulan, bukan menit)
 		$usaha		= mysql_real_escape_string($_POST['usaha']);
 		$agama 		= mysql_real_escape_string($_POST['agama']);
 		$negara 	= mysql_real_escape_string($_POST['negara']);
