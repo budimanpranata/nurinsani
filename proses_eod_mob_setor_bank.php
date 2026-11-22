@@ -47,7 +47,7 @@ while($data = db_fetch_array($select)){
         $kodetr=8;
         $kodetr=acakangkahuruf($kodetr);
         $kode_transaksi="BU/".$unit.$kodetr; 
-        $keterangan="Penarikan simpanan an $nama";
+        // 2026-11-22 (perintah user, P3-4): dihapus `$keterangan="Penarikan simpanan an $nama";` (tidak pernah dipakai, $nama tak terdefinisi -> warning)
         
         $query=db_query($con,"insert into tabel_transaksi(unit,kode_transaksi,kode_rekening,tanggal_transaksi, jenis_transaksi, keterangan_transaksi,debet,id_admin)
         values('1010','$kode_transaksi','1010-$kode_rekening','$tanggal_transaksi','Kas Keluar','$keterangan_jurnal','$nominal','$unit')");	
