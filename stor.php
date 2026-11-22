@@ -110,6 +110,11 @@ foreach (db_semua("select DATE_ADD(next_schedule,INTERVAL 7 DAY) as next_schedul
     $cif = $row['cif'];
     $cao = $row['cao'];
 }
+// 2026-11-22 (perintah user, §13 C): anggota tanpa loan (mis. setoran pokok pertama sebelum pencairan) dulu ber-CAO kosong
+// di simpanan/pokok/wajib/temp_tarik; kini memakai CAO anggota. Anggota yang punya loan tetap loan.cao.
+if ($cao === null) {
+    $cao = $ds;
+}
 
 $pesan = array();      // script alert/pindah halaman, dicetak di tempat yang sama dengan versi lama
 $mutasi = array();     // baris tabel mutasi di bawah form
@@ -278,8 +283,8 @@ if (isset($_POST['search'])) {
                             catat_simpanan('simpanan_wajib', $isi($nominal, '05', 0));
                         }
                         catat_simpanan('simpanan', $isi(0, '01', $nominal));
-                        // versi lama memakai $kode_transaksi yang belum diisi: kode transaksi jurnal_masuk kosong (dipertahankan)
-                        catat_jurnal_masuk('', $tgl_system, $unit);
+                        // 2026-11-22 (perintah user, §13 A): dulu kode transaksi kosong ($kode_transaksi tak diisi); kini sama dengan tabel_transaksi
+                        catat_jurnal_masuk($kode_trans, $tgl_system, $unit);
                         catat_transaksi($unit, $kode_trans, $gl, $tgl_system, 'Bukti SYSTEM', $keterangan, 'debet', $nominal, $userid);
                         catat_transaksi($unit, $kode_trans, '2101000', $tgl_system, 'Bukti SYSTEM', $keterangan, 'kredit', $nominal, $userid);
                     } else {
@@ -292,7 +297,7 @@ if (isset($_POST['search'])) {
                             catat_simpanan('simpanan_wajib', $isi(0, '04', $nominal));
                         }
                         catat_simpanan('simpanan', $isi($nominal, '01', 0));
-                        catat_jurnal_masuk('', $tgl_system, $unit);
+                        catat_jurnal_masuk($kode_trans, $tgl_system, $unit); // 2026-11-22 (§13 A): dulu kode transaksi kosong
                         // Perbaikan 2026-11-04 (perintah user): versi lama memakai $ket yang belum diisi sehingga keterangan jurnal
                         // debet 2101000 kosong; kini isian Keterangan form (seperti arah Debet), bila kosong "PB Simpanan Pokok/Wajib an <nama>"
                         $ket_pb = trim((string) $keterangan) !== '' ? $keterangan : 'PB Simpanan ' . ($simpan == "pokok" ? 'Pokok' : 'Wajib') . " an $nama";
