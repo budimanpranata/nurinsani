@@ -230,7 +230,7 @@ if($update){
             if($update_shu){
                 $berhasil="Neraca dan Rugi Laba Berhasil dihitung";		
             }else{
-                echo mysqli_error();
+                echo mysqli_error($con); // 2026-11-22 (P3-1): dulu tanpa argumen -> fatal di PHP 8 (posting semua unit batal)
             }
             ///////////////////HITUNG LABA-RUGI////////////////////
             //hapus table semporial yang lama
@@ -239,7 +239,7 @@ if($update){
                 //1. Tahap Penginputan
                 db_query ($con,"INSERT INTO tabel_rugi_laba SELECT * FROM tabel_master where gr_neraca='rugi-laba' and unit ='$unitt'");
                         }else{
-                echo mysqli_error();
+                echo mysqli_error($con); // 2026-11-22 (P3-1): dulu tanpa argumen -> fatal di PHP 8 (posting semua unit batal)
             }
                                 
        
