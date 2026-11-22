@@ -48,6 +48,9 @@ while($data = db_fetch_array($select)){
         
 
         $ket1="Setoran Pelunasan An $nama $ciff";
+        // 2026-11-22 (perintah user, P2-11): di-reset per anggota. Dulu nilai anggota sebelumnya terbawa sehingga anggota
+        // pelunasan dari tabungan (nominal 0) ikut dijurnal kas Rp 0 + header jurnal_masuk.
+        $inputtrnsk = false;
 if($nominal > 0 ){        
  $ket1="Setoran Pelunasan An $nama $ciff";
         $input ="Insert into simpanan (BUSS_DATE,NOREK,UNIT,CIF,CODE_KEL,DEBIT,TYPE,KREDIT,USERID,KET,REFF,CAO,blok,tgl_input,kode_transaksi)VALUES('$tanggal','$norek','$unit','$ciff','$code_kel',0,'01','$nominal','$unit','$ket1','','$cao','1','$tanggal','$kode_trans')";
@@ -65,8 +68,7 @@ $inputtrnsk = db_query($con,$input);
 
        switch ($jenis_pelunasan) {
             case "pelunasanDO":
-                $jurnal_umum=db_fetch_array(db_query($con,"SELECT max(nomor_jurnal) FROM jurnal_umum where unit ='$unit' ORDER BY tanggal_selesai DESC"));
-                $nomor_jurnal=$jurnal_umum[0]+1;
+                // 2026-11-22 (P2-11): nomor jurnal_masuk kini auto increment (dulu max(jurnal_umum)+1 -> bisa bentrok dengan kunci jurnal_masuk)
 
                 if($saldo_pokok > 0){
                     $ket2="PB An $nama $ciff dari Simpanan Pokok";
@@ -109,7 +111,7 @@ $inputtrnsk = db_query($con,$input);
         
 
         
-                db_query($con,"insert into jurnal_masuk(nomor_jurnal,kode_transaksi,tanggal_selesai,unit) values('$nomor_jurnal','$kode_trans','$tanggal','$unit')");
+                db_query($con,"insert into jurnal_masuk(kode_transaksi,tanggal_selesai,unit) values('$kode_trans','$tanggal','$unit')");
                 db_query($con,"insert  into tabel_transaksi(unit,kode_transaksi,kode_rekening,tanggal_transaksi, jenis_transaksi, keterangan_transaksi,debet,id_admin)
                 values('$unit','$kode_trans','1120000','$tanggal','Bukti SYSTEM','$ket1','$nominal','$unit')");
                 db_query($con,"insert  into tabel_transaksi(unit,kode_transaksi,kode_rekening,tanggal_transaksi, jenis_transaksi, keterangan_transaksi,kredit,id_admin)
@@ -118,7 +120,7 @@ $inputtrnsk = db_query($con,$input);
                 
             }
             else{
-            echo "<script>alert('Maaf,.Porses Input Gagal');</script>";
+            if ($nominal > 0) echo "<script>alert('Maaf,.Porses Input Gagal');</script>"; // 2026-11-22: nominal 0 = tidak ada setoran, bukan gagal
           
             }
 
@@ -131,7 +133,7 @@ $inputtrnsk = db_query($con,$input);
         
 
         
-                db_query($con,"insert into jurnal_masuk(nomor_jurnal,kode_transaksi,tanggal_selesai,unit) values('$nomor_jurnal','$kode_trans','$tanggal','$unit')");
+                db_query($con,"insert into jurnal_masuk(kode_transaksi,tanggal_selesai,unit) values('$kode_trans','$tanggal','$unit')");
                 db_query($con,"insert  into tabel_transaksi(unit,kode_transaksi,kode_rekening,tanggal_transaksi, jenis_transaksi, keterangan_transaksi,debet,id_admin)
                 values('$unit','$kode_trans','1120000','$tanggal','Bukti SYSTEM','$ket1','$nominal','$unit')");
                 db_query($con,"insert  into tabel_transaksi(unit,kode_transaksi,kode_rekening,tanggal_transaksi, jenis_transaksi, keterangan_transaksi,kredit,id_admin)
@@ -140,7 +142,7 @@ $inputtrnsk = db_query($con,$input);
                 
             }
             else{
-            echo "<script>alert('Maaf,.Porses Input Gagal');</script>";
+            if ($nominal > 0) echo "<script>alert('Maaf,.Porses Input Gagal');</script>"; // 2026-11-22: nominal 0 = tidak ada setoran, bukan gagal
           
             }
                 
@@ -151,7 +153,7 @@ $inputtrnsk = db_query($con,$input);
         
 
         
-                db_query($con,"insert into jurnal_masuk(nomor_jurnal,kode_transaksi,tanggal_selesai,unit) values('$nomor_jurnal','$kode_trans','$tanggal','$unit')");
+                db_query($con,"insert into jurnal_masuk(kode_transaksi,tanggal_selesai,unit) values('$kode_trans','$tanggal','$unit')");
                 db_query($con,"insert  into tabel_transaksi(unit,kode_transaksi,kode_rekening,tanggal_transaksi, jenis_transaksi, keterangan_transaksi,debet,id_admin)
                 values('$unit','$kode_trans','1120000','$tanggal','Bukti SYSTEM','$ket1','$nominal','$unit')");
                 db_query($con,"insert  into tabel_transaksi(unit,kode_transaksi,kode_rekening,tanggal_transaksi, jenis_transaksi, keterangan_transaksi,kredit,id_admin)
@@ -160,7 +162,7 @@ $inputtrnsk = db_query($con,$input);
                 
             }
             else{
-            echo "<script>alert('Maaf,.Porses Input Gagal');</script>";
+            if ($nominal > 0) echo "<script>alert('Maaf,.Porses Input Gagal');</script>"; // 2026-11-22: nominal 0 = tidak ada setoran, bukan gagal
           
             }
                
@@ -172,7 +174,7 @@ $inputtrnsk = db_query($con,$input);
         
 
         
-                db_query($con,"insert into jurnal_masuk(nomor_jurnal,kode_transaksi,tanggal_selesai,unit) values('$nomor_jurnal','$kode_trans','$tanggal','$unit')");
+                db_query($con,"insert into jurnal_masuk(kode_transaksi,tanggal_selesai,unit) values('$kode_trans','$tanggal','$unit')");
                 db_query($con,"insert  into tabel_transaksi(unit,kode_transaksi,kode_rekening,tanggal_transaksi, jenis_transaksi, keterangan_transaksi,debet,id_admin)
                 values('$unit','$kode_trans','1120000','$tanggal','Bukti SYSTEM','$ket1','$nominal','$unit')");
                 db_query($con,"insert  into tabel_transaksi(unit,kode_transaksi,kode_rekening,tanggal_transaksi, jenis_transaksi, keterangan_transaksi,kredit,id_admin)
@@ -181,7 +183,7 @@ $inputtrnsk = db_query($con,$input);
                 
             }
             else{
-            echo "<script>alert('Maaf,.Porses Input Gagal');</script>";
+            if ($nominal > 0) echo "<script>alert('Maaf,.Porses Input Gagal');</script>"; // 2026-11-22: nominal 0 = tidak ada setoran, bukan gagal
           
             }
                break;   
