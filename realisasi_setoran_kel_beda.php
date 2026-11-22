@@ -156,7 +156,7 @@ if ($checbox) {
 				qs("insert  into tunggakan (tgl_tunggak,NOREK,UNIT,CIF,CODE_KEL,DEBIT,TYPE,KREDIT,USERID,KET,REFF,CAO,blok)VALUES(?,?,?,?,?,?,?,'0',?,'BH',?,?,'') ",
 					$tanggal, $norek, $unit, $c, $code_kel, $debet, $type, $userid, $reff, $cao);
 			} else {
-				qs("insert  into tunggakan (tgl_tunggak,NOREK,UNIT,CIF,CODE_KEL,DEBIT,TYPE,KREDIT,USERID,REFF,CAO,blok)VALUES(?,?,?,?,?,?,?,'0',?,?,?,'') ",
+				qs("insert  into tunggakan (tgl_tunggak,NOREK,UNIT,CIF,CODE_KEL,DEBIT,TYPE,KREDIT,USERID,KET,REFF,CAO,blok)VALUES(?,?,?,?,?,?,?,'0',?,?,'',?,'') ",
 					$tanggal, $norek, $unit, $c, $code_kel, $debet, $type, $userid, $reff, $cao);
 			}
 		};

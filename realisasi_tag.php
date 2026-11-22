@@ -172,7 +172,7 @@ if ($saldo < $angsuran){ $kategori = 'tunggak'; // §2b ringkasan
 $cek_tunggak=db_satu("select sum(KREDIT)- sum(DEBIT) as tunggak from tunggakan WHERE cif=?", 's', (string) $cif);
             $ada_tunggak=$cek_tunggak['tunggak'];    
             if($ada_tunggak>0){
-db_jalankan("insert  into tunggakan (tgl_tunggak,NOREK,UNIT,CIF,CODE_KEL,DEBIT,TYPE,KREDIT,USERID,REFF,CAO,blok)VALUES(?,?,?,?,?,?,'01','0',?,?,?,'') ", 'sssssssss', (string) $tanggal, (string) $no_anggota, (string) $unit, (string) $cif, (string) $code_kel, (string) $pokok, (string) $userid, (string) $ket, (string) $cao);
+db_jalankan("insert  into tunggakan (tgl_tunggak,NOREK,UNIT,CIF,CODE_KEL,DEBIT,TYPE,KREDIT,USERID,KET,REFF,CAO,blok)VALUES(?,?,?,?,?,?,'01','0',?,?,'',?,'') ", 'sssssssss', (string) $tanggal, (string) $no_anggota, (string) $unit, (string) $cif, (string) $code_kel, (string) $pokok, (string) $userid, (string) $ket, (string) $cao);
 
 db_jalankan("insert into rek_loan(ref,tgl_realisasi,unit,no_anggota,saldo_kredit,debet,tipe,ket,USERID,STATUS,cif,AO)VALUES('',?,?,?,'0',?,'03',?,?,'REALISASI POKOK',?,(select cao from loan where cif=? limit 1))", 'ssssssss', (string) $tanggal, (string) $unit, (string) $no_anggota, (string) $pokok, (string) $ket, (string) $userid, (string) $cif, (string) $cif);
                
@@ -269,8 +269,8 @@ if ($saldo < $angsuran){ $kategori = 'tunggak'; // §2b ringkasan
 $cek_tunggak=db_satu("select sum(KREDIT)- sum(DEBIT) as tunggak from tunggakan WHERE cif=?", 's', (string) $cif);
             $ada_tunggak=$cek_tunggak['tunggak'];    
             if($ada_tunggak>0){
-db_jalankan("insert  into tunggakan (tgl_tunggak,NOREK,UNIT,CIF,CODE_KEL,DEBIT,TYPE,KREDIT,USERID,REFF,CAO,blok)VALUES(?,?,?,?,?,?,'01','0',?,?,?,'') ", 'sssssssss', (string) $tanggal, (string) $no_anggota, (string) $unit, (string) $cif, (string) $code_kel, (string) $pokok, (string) $userid, (string) $ket, (string) $cao);
-                db_jalankan("insert  into tunggakan (tgl_tunggak,NOREK,UNIT,CIF,CODE_KEL,DEBIT,TYPE,KREDIT,USERID,REFF,CAO,blok)VALUES(?,?,?,?,?,?,'02','0',?,?,?,'') ", 'sssssssss', (string) $tanggal, (string) $no_anggota, (string) $unit, (string) $cif, (string) $code_kel, (string) $ijaroh, (string) $userid, (string) $ket, (string) $cao);
+db_jalankan("insert  into tunggakan (tgl_tunggak,NOREK,UNIT,CIF,CODE_KEL,DEBIT,TYPE,KREDIT,USERID,KET,REFF,CAO,blok)VALUES(?,?,?,?,?,?,'01','0',?,?,'',?,'') ", 'sssssssss', (string) $tanggal, (string) $no_anggota, (string) $unit, (string) $cif, (string) $code_kel, (string) $pokok, (string) $userid, (string) $ket, (string) $cao);
+                db_jalankan("insert  into tunggakan (tgl_tunggak,NOREK,UNIT,CIF,CODE_KEL,DEBIT,TYPE,KREDIT,USERID,KET,REFF,CAO,blok)VALUES(?,?,?,?,?,?,'02','0',?,?,'',?,'') ", 'sssssssss', (string) $tanggal, (string) $no_anggota, (string) $unit, (string) $cif, (string) $code_kel, (string) $ijaroh, (string) $userid, (string) $ket, (string) $cao);
 db_jalankan("insert into rek_loan(ref,tgl_realisasi,unit,no_anggota,saldo_kredit,debet,tipe,ket,USERID,STATUS,cif,AO)VALUES('',?,?,?,'0',?,'03',?,?,'REALISASI POKOK',?,(select cao from loan where cif=? limit 1))", 'ssssssss', (string) $tanggal, (string) $unit, (string) $no_anggota, (string) $pokok, (string) $ket, (string) $userid, (string) $cif, (string) $cif);
                 db_jalankan("insert into rek_loan(ref,tgl_realisasi,unit,no_anggota,saldo_kredit,debet,tipe,ket,USERID,STATUS,cif,AO)VALUES('',?,?,?,'0',?,'03',?,?,'REALISASI BAGHAS',?,(select cao from loan where cif=? limit 1))", 'ssssssss', (string) $tanggal, (string) $unit, (string) $no_anggota, (string) $ijaroh, (string) $ket, (string) $userid, (string) $cif, (string) $cif);
  
@@ -371,7 +371,7 @@ if ($saldo < $angsuran){ $kategori = 'tunggak'; // §2b ringkasan
 $cek_tunggak=db_satu("select sum(KREDIT)- sum(DEBIT) as tunggak from tunggakan WHERE cif=?", 's', (string) $cif);
             $ada_tunggak=$cek_tunggak['tunggak'];    
             if($ada_tunggak>0){
-db_jalankan("insert  into tunggakan (tgl_tunggak,NOREK,UNIT,CIF,CODE_KEL,DEBIT,TYPE,KREDIT,USERID,REFF,CAO,blok)VALUES(?,?,?,?,?,?,'01','0',?,?,?,'') ", 'sssssssss', (string) $tanggal, (string) $no_anggota, (string) $unit, (string) $cif, (string) $code_kel, (string) $angsuran_pokok, (string) $userid, (string) $ket, (string) $cao);
+db_jalankan("insert  into tunggakan (tgl_tunggak,NOREK,UNIT,CIF,CODE_KEL,DEBIT,TYPE,KREDIT,USERID,KET,REFF,CAO,blok)VALUES(?,?,?,?,?,?,'01','0',?,?,'',?,'') ", 'sssssssss', (string) $tanggal, (string) $no_anggota, (string) $unit, (string) $cif, (string) $code_kel, (string) $angsuran_pokok, (string) $userid, (string) $ket, (string) $cao);
 //mysql_query("insert  into tunggakan (tgl_tunggak,NOREK,UNIT,CIF,CODE_KEL,DEBIT,TYPE,KREDIT,USERID,REFF,CAO,blok)VALUES('$tanggal','$no_anggota','$unit','$cif','$code_kel','$nisbah_mus','01','0','$userid','$ket','$cao','') ") or die(mysql_error("GAGAL INPUT"));
 
 db_jalankan("insert into rek_loan(ref,tgl_realisasi,unit,no_anggota,saldo_kredit,debet,tipe,ket,USERID,STATUS,cif,AO)VALUES('',?,?,?,'0',?,'03',?,?,'REALISASI POKOK',?,(select cao from loan where cif=? limit 1))", 'ssssssss', (string) $tanggal, (string) $unit, (string) $no_anggota, (string) $angsuran, (string) $ket, (string) $userid, (string) $cif, (string) $cif);
@@ -443,8 +443,8 @@ $cek_tunggak=db_satu("select sum(KREDIT)- sum(DEBIT) as tunggak from tunggakan W
             $ada_tunggak=$cek_tunggak['tunggak'];    
 
             if($ada_tunggak>0){
-db_jalankan("insert  into tunggakan (tgl_tunggak,NOREK,UNIT,CIF,CODE_KEL,DEBIT,TYPE,KREDIT,USERID,REFF,CAO,blok)VALUES(?,?,?,?,?,?,'01','0',?,?,?,'') ", 'sssssssss', (string) $tanggal, (string) $no_anggota, (string) $unit, (string) $cif, (string) $code_kel, (string) $pokok, (string) $userid, (string) $ket, (string) $cao);
-                db_jalankan("insert  into tunggakan (tgl_tunggak,NOREK,UNIT,CIF,CODE_KEL,DEBIT,TYPE,KREDIT,USERID,REFF,CAO,blok)VALUES(?,?,?,?,?,?,'02','0',?,?,?,'') ", 'sssssssss', (string) $tanggal, (string) $no_anggota, (string) $unit, (string) $cif, (string) $code_kel, (string) $ijaroh, (string) $userid, (string) $ket, (string) $cao);
+db_jalankan("insert  into tunggakan (tgl_tunggak,NOREK,UNIT,CIF,CODE_KEL,DEBIT,TYPE,KREDIT,USERID,KET,REFF,CAO,blok)VALUES(?,?,?,?,?,?,'01','0',?,?,'',?,'') ", 'sssssssss', (string) $tanggal, (string) $no_anggota, (string) $unit, (string) $cif, (string) $code_kel, (string) $pokok, (string) $userid, (string) $ket, (string) $cao);
+                db_jalankan("insert  into tunggakan (tgl_tunggak,NOREK,UNIT,CIF,CODE_KEL,DEBIT,TYPE,KREDIT,USERID,KET,REFF,CAO,blok)VALUES(?,?,?,?,?,?,'02','0',?,?,'',?,'') ", 'sssssssss', (string) $tanggal, (string) $no_anggota, (string) $unit, (string) $cif, (string) $code_kel, (string) $ijaroh, (string) $userid, (string) $ket, (string) $cao);
 db_jalankan("insert into rek_loan(ref,tgl_realisasi,unit,no_anggota,saldo_kredit,debet,tipe,ket,USERID,STATUS,cif,AO)VALUES('',?,?,?,'0',?,'03',?,?,'REALISASI POKOK',?,(select cao from loan where cif=? limit 1))", 'ssssssss', (string) $tanggal, (string) $unit, (string) $no_anggota, (string) $pokok, (string) $ket, (string) $userid, (string) $cif, (string) $cif);
                 db_jalankan("insert into rek_loan(ref,tgl_realisasi,unit,no_anggota,saldo_kredit,debet,tipe,ket,USERID,STATUS,cif,AO)VALUES('',?,?,?,'0',?,'03',?,?,'REALISASI BAGHAS',?,(select cao from loan where cif=? limit 1))", 'ssssssss', (string) $tanggal, (string) $unit, (string) $no_anggota, (string) $ijaroh, (string) $ket, (string) $userid, (string) $cif, (string) $cif);
  
@@ -616,8 +616,8 @@ if ($saldo < $angsuran){ $kategori = 'tunggak'; // §2b ringkasan
 $cek_tunggak=db_satu("select sum(KREDIT)- sum(DEBIT) as tunggak from tunggakan WHERE cif=?", 's', (string) $cif);
             $ada_tunggak=$cek_tunggak['tunggak'];    
             if($ada_tunggak>0){
-db_jalankan("insert  into tunggakan (tgl_tunggak,NOREK,UNIT,CIF,CODE_KEL,DEBIT,TYPE,KREDIT,USERID,REFF,CAO,blok)VALUES(?,?,?,?,?,?,'01','0',?,?,?,'') ", 'sssssssss', (string) $tanggal, (string) $no_anggota, (string) $unit, (string) $cif, (string) $code_kel, (string) $pokok, (string) $userid, (string) $ket, (string) $cao);
-                db_jalankan("insert  into tunggakan (tgl_tunggak,NOREK,UNIT,CIF,CODE_KEL,DEBIT,TYPE,KREDIT,USERID,REFF,CAO,blok)VALUES(?,?,?,?,?,?,'02','0',?,?,?,'') ", 'sssssssss', (string) $tanggal, (string) $no_anggota, (string) $unit, (string) $cif, (string) $code_kel, (string) $ijaroh, (string) $userid, (string) $ket, (string) $cao);
+db_jalankan("insert  into tunggakan (tgl_tunggak,NOREK,UNIT,CIF,CODE_KEL,DEBIT,TYPE,KREDIT,USERID,KET,REFF,CAO,blok)VALUES(?,?,?,?,?,?,'01','0',?,?,'',?,'') ", 'sssssssss', (string) $tanggal, (string) $no_anggota, (string) $unit, (string) $cif, (string) $code_kel, (string) $pokok, (string) $userid, (string) $ket, (string) $cao);
+                db_jalankan("insert  into tunggakan (tgl_tunggak,NOREK,UNIT,CIF,CODE_KEL,DEBIT,TYPE,KREDIT,USERID,KET,REFF,CAO,blok)VALUES(?,?,?,?,?,?,'02','0',?,?,'',?,'') ", 'sssssssss', (string) $tanggal, (string) $no_anggota, (string) $unit, (string) $cif, (string) $code_kel, (string) $ijaroh, (string) $userid, (string) $ket, (string) $cao);
 db_jalankan("insert into rek_loan(ref,tgl_realisasi,unit,no_anggota,saldo_kredit,debet,tipe,ket,USERID,STATUS,cif,AO)VALUES('',?,?,?,'0',?,'03',?,?,'REALISASI POKOK',?,(select cao from loan where cif=? limit 1))", 'ssssssss', (string) $tanggal, (string) $unit, (string) $no_anggota, (string) $pokok, (string) $ket, (string) $userid, (string) $cif, (string) $cif);
                 db_jalankan("insert into rek_loan(ref,tgl_realisasi,unit,no_anggota,saldo_kredit,debet,tipe,ket,USERID,STATUS,cif,AO)VALUES('',?,?,?,'0',?,'03',?,?,'REALISASI BAGHAS',?,(select cao from loan where cif=? limit 1))", 'ssssssss', (string) $tanggal, (string) $unit, (string) $no_anggota, (string) $ijaroh, (string) $ket, (string) $userid, (string) $cif, (string) $cif);
  

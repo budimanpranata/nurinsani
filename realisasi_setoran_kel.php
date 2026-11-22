@@ -160,12 +160,12 @@ if ($checbox) {
 				qs("insert into tunggakan (tgl_tunggak,NOREK,UNIT,CIF,CODE_KEL,DEBIT,TYPE,KREDIT,USERID,KET,REFF,CAO,blok)VALUES(?,?,?,?,?,'0',?,?,?,?,'',?,'') ",
 					$tanggal, $norek, $unit, $c, $code_kel, $type, $kredit, $userid, $ket, $cao);
 			} else {
-				qs("insert  into tunggakan (tgl_tunggak,NOREK,UNIT,CIF,CODE_KEL,DEBIT,TYPE,KREDIT,USERID,REFF,CAO,blok)VALUES(?,?,?,?,?,'0',?,?,?,?,?,'') ",
+				qs("insert  into tunggakan (tgl_tunggak,NOREK,UNIT,CIF,CODE_KEL,DEBIT,TYPE,KREDIT,USERID,KET,REFF,CAO,blok)VALUES(?,?,?,?,?,'0',?,?,?,?,'',?,'') ",
 					$tanggal, $norek, $unit, $c, $code_kel, $type, $kredit, $userid, $ket, $cao);
 			}
 		};
 		$tunggak_debet = function ($type, $debet, $reff) use ($tanggal, $norek, $unit, $c, $code_kel, $userid, $cao) {
-			qs("insert  into tunggakan (tgl_tunggak,NOREK,UNIT,CIF,CODE_KEL,DEBIT,TYPE,KREDIT,USERID,REFF,CAO,blok)VALUES(?,?,?,?,?,?,?,'0',?,?,?,'') ",
+			qs("insert  into tunggakan (tgl_tunggak,NOREK,UNIT,CIF,CODE_KEL,DEBIT,TYPE,KREDIT,USERID,KET,REFF,CAO,blok)VALUES(?,?,?,?,?,?,?,'0',?,?,'',?,'') ",
 				$tanggal, $norek, $unit, $c, $code_kel, $debet, $type, $userid, $reff, $cao);
 		};
 		$tagihan = function ($status) use ($c, $tanggal) {
