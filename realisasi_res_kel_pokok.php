@@ -142,7 +142,7 @@ if ($pilih=='01') {
            
             //Realiasasi Murabahah Debit pada Aset Murabahaha total Plafond
             db_jalankan("insert into simpanan(BUSS_DATE,NOREK,UNIT,CIF,CODE_KEL,DEBIT,TYPE,KREDIT,USERID,KET,REFF,CAO,kode_transaksi)
-            values(?,?,?,?,?,?,'01','0',?,'Realisasi Restrukturisasi','',?,?)", 'sssssssss', (string) $tgl_system, (string) $norek, (string) $unit, (string) $cif, (string) $code_kel, (string) $simpanan, (string) $userid, (string) $cao, (string) $kode_trans);
+            values(?,?,?,?,?,?,'01','0',?,?,'',?,?)", 'ssssssssss', (string) $tgl_system, (string) $norek, (string) $unit, (string) $cif, (string) $code_kel, (string) $simpanan, (string) $userid, (string) "Realisasi Restrukturisasi $Cust_Short_name $cif", (string) $cao, (string) $kode_trans);
             
             db_jalankan("insert  into tabel_transaksi(unit,kode_transaksi,kode_rekening,tanggal_transaksi, jenis_transaksi, keterangan_transaksi,debet,id_admin)
                         values(?,?,'2101000',?,'Bukti SYSTEM',?,?,?)", 'ssssss', (string) $unit, (string) $kode_trans, (string) $tgl_system, (string) $ket, (string) $simpanan, (string) $userid);
@@ -234,7 +234,7 @@ db_jalankan("insert into rest_covid values('',?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)", '
            
             //Realiasasi Murabahah Debit pada Aset Murabahaha total Plafond
             db_jalankan("insert into simpanan(BUSS_DATE,NOREK,UNIT,CIF,CODE_KEL,DEBIT,TYPE,KREDIT,USERID,KET,REFF,CAO,kode_transaksi)
-values(?,?,?,?,?,?,'01','0',?,'Realisasi Restrukturisasi','',?,?)", 'sssssssss', (string) $tgl_system, (string) $norek, (string) $unit, (string) $cif, (string) $code_kel, (string) $simpanan, (string) $userid, (string) $cao, (string) $kode_trans);
+values(?,?,?,?,?,?,'01','0',?,?,'',?,?)", 'ssssssssss', (string) $tgl_system, (string) $norek, (string) $unit, (string) $cif, (string) $code_kel, (string) $simpanan, (string) $userid, (string) "Realisasi Restrukturisasi $Cust_Short_name $cif", (string) $cao, (string) $kode_trans);
 
 db_jalankan("insert  into tabel_transaksi(unit,kode_transaksi,kode_rekening,tanggal_transaksi, jenis_transaksi, keterangan_transaksi,debet,id_admin)
             values(?,?,'2101000',?,'Bukti SYSTEM',?,?,?)", 'ssssss', (string) $unit, (string) $kode_trans, (string) $tgl_system, (string) $ket, (string) $simpanan, (string) $userid);

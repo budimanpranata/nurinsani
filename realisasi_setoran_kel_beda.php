@@ -198,7 +198,7 @@ if ($checbox) {
 				qs("insert  into simpanan (BUSS_DATE,NOREK,UNIT,CIF,CODE_KEL,DEBIT,TYPE,KREDIT,USERID,KET,REFF,CAO,blok,tgl_input,kode_transaksi)VALUES(?,?,?,?,?,?,'03','0',?,?,'',?,'2',?,?) ",
 					$tanggal, $norek, $unit, $c, $code_kel, $angsuran, $userid, $teks, $cao, $tgl_input, $kode_tran);
 			} else {
-				qs("insert  into simpanan (BUSS_DATE,NOREK,UNIT,CIF,CODE_KEL,DEBIT,TYPE,KREDIT,USERID,REFF,CAO,tgl_input,kode_transaksi)VALUES(?,?,?,?,?,?,'03','0',?,?,?,?,?) ",
+				qs("insert  into simpanan (BUSS_DATE,NOREK,UNIT,CIF,CODE_KEL,DEBIT,TYPE,KREDIT,USERID,KET,REFF,CAO,tgl_input,kode_transaksi)VALUES(?,?,?,?,?,?,'03','0',?,?,'',?,?,?) ",
 					$tanggal, $norek, $unit, $c, $code_kel, $angsuran, $userid, $teks, $cao, $tgl_input, $kode_tran);
 			}
 		};

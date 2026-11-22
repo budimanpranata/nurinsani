@@ -154,7 +154,7 @@ if (isset($_POST['search'])) {
                     if ($pokok == 0 && $wajib >= 0) {
                         $in_pokok = 50000;
                         $ket = "Setoran simpanan Pokok an $nama";
-                        catat_simpanan('simpanan_pokok', $dasar + array('TYPE' => '04', 'KREDIT' => $in_pokok, 'USERID' => $userid, 'KET' => 'Simpanan Pokok', 'REFF' => '', 'CAO' => $cao, 'blok' => '4', 'kode_transaksi' => $kode_trans));
+                        catat_simpanan('simpanan_pokok', $dasar + array('TYPE' => '04', 'KREDIT' => $in_pokok, 'USERID' => $userid, 'KET' => "Simpanan Pokok AN $nama $ciff", 'REFF' => '', 'CAO' => $cao, 'blok' => '4', 'kode_transaksi' => $kode_trans));
                         catat_transaksi($unit, $kode_trans, '1120000', $tgl_system, 'Bukti SYSTEM', $ket, 'debet', $in_pokok, $userid);
                         catat_transaksi($unit, $kode_trans, '3102000', $tgl_system, 'Bukti SYSTEM', $ket, 'kredit', $in_pokok, $userid);
 
@@ -162,7 +162,7 @@ if (isset($_POST['search'])) {
                         $sisa = compat_num($nominal) - $in_pokok;
                         if ($sisa > 0) {
                             $ket = "Setoran simpanan 5% an $nama";
-                            catat_simpanan('simpanan_wajib', $dasar + array('TYPE' => '05', 'KREDIT' => $sisa, 'USERID' => $userid, 'KET' => 'PB Simpanan Wajib', 'REFF' => '', 'CAO' => $cao, 'blok' => '1', 'kode_transaksi' => $kode_trans));
+                            catat_simpanan('simpanan_wajib', $dasar + array('TYPE' => '05', 'KREDIT' => $sisa, 'USERID' => $userid, 'KET' => "Simpanan Wajib AN $nama $ciff", 'REFF' => '', 'CAO' => $cao, 'blok' => '1', 'kode_transaksi' => $kode_trans));
                             // Perbaikan 2026-11-04 (perintah user): versi lama memakai $ket1 yang belum diisi sehingga keterangan
                             // jurnal 1120000/3202000 kosong; kini sama dengan setoran wajib lain ("Setoran simpanan 5% an <nama>")
                             catat_transaksi($unit, $kode_trans, '1120000', $tgl_system, 'Bukti SYSTEM', $ket, 'debet', $sisa, $userid);
@@ -171,7 +171,7 @@ if (isset($_POST['search'])) {
                     } elseif ($pokok == 50000 && $wajib >= 0) {
                         //JIKA PUNYA POKOK DA BELUM MEMPUNYA WAJIB
                         $ket = "Setoran simpanan 5% an $nama";
-                        catat_simpanan('simpanan_wajib', $dasar + array('TYPE' => '05', 'KREDIT' => $nominal, 'USERID' => $userid, 'KET' => 'PB Simpanan Wajib', 'REFF' => '', 'CAO' => $cao, 'blok' => '1', 'kode_transaksi' => $kode_trans));
+                        catat_simpanan('simpanan_wajib', $dasar + array('TYPE' => '05', 'KREDIT' => $nominal, 'USERID' => $userid, 'KET' => "Simpanan Wajib AN $nama $ciff", 'REFF' => '', 'CAO' => $cao, 'blok' => '1', 'kode_transaksi' => $kode_trans));
                         catat_transaksi($unit, $kode_trans, '1120000', $tgl_system, 'Bukti SYSTEM', $ket, 'debet', $nominal, $userid);
                         catat_transaksi($unit, $kode_trans, '3202000', $tgl_system, 'Bukti SYSTEM', $ket, 'kredit', $nominal, $userid);
                     } else {
@@ -188,12 +188,12 @@ if (isset($_POST['search'])) {
                         $ke_wajib = $jumlah - $ke_pokok;
                         if ($ke_pokok > 0) {
                             $ket = "Setoran simpanan Pokok an $nama";
-                            catat_simpanan('simpanan_pokok', $dasar + array('TYPE' => '04', 'KREDIT' => $ke_pokok, 'USERID' => $userid, 'KET' => 'Simpanan Pokok', 'REFF' => '', 'CAO' => $cao, 'blok' => '4', 'kode_transaksi' => $kode_trans));
+                            catat_simpanan('simpanan_pokok', $dasar + array('TYPE' => '04', 'KREDIT' => $ke_pokok, 'USERID' => $userid, 'KET' => "Simpanan Pokok AN $nama $ciff", 'REFF' => '', 'CAO' => $cao, 'blok' => '4', 'kode_transaksi' => $kode_trans));
                             catat_transaksi($unit, $kode_trans, '1120000', $tgl_system, 'Bukti SYSTEM', $ket, 'debet', $ke_pokok, $userid);
                             catat_transaksi($unit, $kode_trans, '3102000', $tgl_system, 'Bukti SYSTEM', $ket, 'kredit', $ke_pokok, $userid);
                         }
                         if ($ke_wajib > 0) {
-                            catat_simpanan('simpanan_wajib', $dasar + array('TYPE' => '05', 'KREDIT' => $ke_wajib, 'USERID' => $userid, 'KET' => 'PB Simpanan Wajib', 'REFF' => '', 'CAO' => $cao, 'blok' => '1', 'kode_transaksi' => $kode_trans));
+                            catat_simpanan('simpanan_wajib', $dasar + array('TYPE' => '05', 'KREDIT' => $ke_wajib, 'USERID' => $userid, 'KET' => "Simpanan Wajib AN $nama $ciff", 'REFF' => '', 'CAO' => $cao, 'blok' => '1', 'kode_transaksi' => $kode_trans));
                             catat_transaksi($unit, $kode_trans, '1120000', $tgl_system, 'Bukti SYSTEM', $ket1, 'debet', $ke_wajib, $userid);
                             catat_transaksi($unit, $kode_trans, '3202000', $tgl_system, 'Bukti SYSTEM', $ket1, 'kredit', $ke_wajib, $userid);
                         }
@@ -243,7 +243,7 @@ if (isset($_POST['search'])) {
                     break;
 
                 case "03":
-                    $ket1 = "Setoran Angsuran An $nama";
+                    $ket1 = "Setoran Angsuran An $nama $ciff"; // 2026-11-22: CIF ditambahkan
                     $inputtrnsk = db_jalankan("Insert into simpanan (BUSS_DATE,NOREK,UNIT,CIF,CODE_KEL,DEBIT,TYPE,KREDIT,USERID,KET,REFF,CAO,blok,tgl_input,kode_transaksi)
                         VALUES(?,?,?,?,?,0,'01',?,?,?,'',?,'1',?,?)", 'sssssssssss',
                         (string) $tgl_system, $norek, (string) $unit, (string) $ciff, (string) $code_kel, $nominal, (string) $userid, $ket1, (string) $cao, $tanggal, $kode_trans);

@@ -82,7 +82,7 @@ ob_start();
                                     values(?,?,'2101000',?,'Bukti Umum',?,?,?)", 'ssssss', (string) $unit, (string) $kode_transaksi, (string) $tanggal_transaksi, "Realisasi Hapus Buku An $nama ", (string) $pokok, (string) $userid);
                     $query=db_jalankan("insert into tabel_transaksi(unit,kode_transaksi,kode_rekening,tanggal_transaksi, jenis_transaksi, keterangan_transaksi,kredit,id_admin)
                                     values(?,?,'1413000',?,'Bukti Umum',?,?,?)", 'ssssss', (string) $unit, (string) $kode_transaksi, (string) $tanggal_transaksi, "Realisasi Hapus Buku An $nama", (string) $pokok, (string) $userid);       
-                    $query=db_jalankan("insert  into simpanan (BUSS_DATE,NOREK,UNIT,CIF,CODE_KEL,DEBIT,TYPE,KREDIT,USERID,KET,REFF,CAO,kode_transaksi)VALUES(?,?,?,?,?,?,'01','0',?,'Realisasi Hapus Buku','',?,?) ", 'sssssssss', (string) $tanggal_transaksi, (string) $no_anggota, (string) $unit, (string) $cif, (string) $code_kel, (string) $pokok, (string) $userid, (string) $cao, (string) $kode_transaksi) or die(mysql_error());             
+                    $query=db_jalankan("insert  into simpanan (BUSS_DATE,NOREK,UNIT,CIF,CODE_KEL,DEBIT,TYPE,KREDIT,USERID,KET,REFF,CAO,kode_transaksi)VALUES(?,?,?,?,?,?,'01','0',?,?,'',?,?) ", 'ssssssssss', (string) $tanggal_transaksi, (string) $no_anggota, (string) $unit, (string) $cif, (string) $code_kel, (string) $pokok, (string) $userid, (string) "Realisasi Hapus Buku $nama $cif", (string) $cao, (string) $kode_transaksi) or die(mysql_error());             
          
                  
                  
@@ -98,7 +98,7 @@ ob_start();
                     $query=db_jalankan("insert into tabel_transaksi(unit,kode_transaksi,kode_rekening,tanggal_transaksi, jenis_transaksi, keterangan_transaksi,kredit,id_admin)
                                     values(?,?,'1413000',?,'Bukti Umum',?,?,?)", 'ssssss', (string) $unit, (string) $kode_transaksi, (string) $tanggal_transaksi, "Realisasi Hapus Buku An $nama", (string) $pokok, (string) $userid);
                      
-                    $query=db_jalankan("insert  into simpanan (BUSS_DATE,NOREK,UNIT,CIF,CODE_KEL,DEBIT,TYPE,KREDIT,USERID,KET,REFF,CAO,kode_transaksi)VALUES(?,?,?,?,?,?,'01','0',?,'Realisasi Hapus Buku','',?,?) ", 'sssssssss', (string) $tanggal_transaksi, (string) $no_anggota, (string) $unit, (string) $cif, (string) $code_kel, (string) $sisa, (string) $userid, (string) $cao, (string) $kode_transaksi) or die(mysql_error());             
+                    $query=db_jalankan("insert  into simpanan (BUSS_DATE,NOREK,UNIT,CIF,CODE_KEL,DEBIT,TYPE,KREDIT,USERID,KET,REFF,CAO,kode_transaksi)VALUES(?,?,?,?,?,?,'01','0',?,?,'',?,?) ", 'ssssssssss', (string) $tanggal_transaksi, (string) $no_anggota, (string) $unit, (string) $cif, (string) $code_kel, (string) $sisa, (string) $userid, (string) "Realisasi Hapus Buku $nama $cif", (string) $cao, (string) $kode_transaksi) or die(mysql_error());             
                    
                     }
                      
@@ -125,7 +125,7 @@ ob_start();
                     $query=db_jalankan("insert into tabel_transaksi(unit,kode_transaksi,kode_rekening,tanggal_transaksi, jenis_transaksi, keterangan_transaksi,kredit,id_admin)
 
                                     values(?,?,'1413000',?,'Bukti Umum',?,?,?)", 'ssssss', (string) $unit, (string) $kode_transaksi, (string) $tanggal_transaksi, "Realisasi Hapus Buku An $nama", (string) $pokok, (string) $userid);       
-                    $query=db_jalankan("insert  into simpanan (BUSS_DATE,NOREK,UNIT,CIF,CODE_KEL,DEBIT,TYPE,KREDIT,USERID,KET,REFF,CAO,kode_transaksi)VALUES(?,?,?,?,?,?,'01','0',?,'Realisasi Hapus Buku','',?,?) ", 'sssssssss', (string) $tanggal_transaksi, (string) $no_anggota, (string) $unit, (string) $cif, (string) $code_kel, (string) $pokok, (string) $userid, (string) $cao, (string) $kode_transaksi) or die(mysql_error());             
+                    $query=db_jalankan("insert  into simpanan (BUSS_DATE,NOREK,UNIT,CIF,CODE_KEL,DEBIT,TYPE,KREDIT,USERID,KET,REFF,CAO,kode_transaksi)VALUES(?,?,?,?,?,?,'01','0',?,?,'',?,?) ", 'ssssssssss', (string) $tanggal_transaksi, (string) $no_anggota, (string) $unit, (string) $cif, (string) $code_kel, (string) $pokok, (string) $userid, (string) "Realisasi Hapus Buku $nama $cif", (string) $cao, (string) $kode_transaksi) or die(mysql_error());             
          
                  
                  
@@ -141,7 +141,7 @@ ob_start();
                     $query=db_jalankan("insert into tabel_transaksi(unit,kode_transaksi,kode_rekening,tanggal_transaksi, jenis_transaksi, keterangan_transaksi,kredit,id_admin)
                                     values(?,?,'1413000',?,'Bukti Umum',?,?,?)", 'ssssss', (string) $unit, (string) $kode_transaksi, (string) $tanggal_transaksi, "Realisasi Hapus Buku An $nama", (string) $pokok, (string) $userid);
                      
-                    $query=db_jalankan("insert  into simpanan (BUSS_DATE,NOREK,UNIT,CIF,CODE_KEL,DEBIT,TYPE,KREDIT,USERID,KET,REFF,CAO,kode_transaksi)VALUES(?,?,?,?,?,?,'01','0',?,'Realisasi Hapus Buku','',?,?) ", 'sssssssss', (string) $tanggal_transaksi, (string) $no_anggota, (string) $unit, (string) $cif, (string) $code_kel, (string) $sisa, (string) $userid, (string) $cao, (string) $kode_transaksi) or die(mysql_error());             
+                    $query=db_jalankan("insert  into simpanan (BUSS_DATE,NOREK,UNIT,CIF,CODE_KEL,DEBIT,TYPE,KREDIT,USERID,KET,REFF,CAO,kode_transaksi)VALUES(?,?,?,?,?,?,'01','0',?,?,'',?,?) ", 'ssssssssss', (string) $tanggal_transaksi, (string) $no_anggota, (string) $unit, (string) $cif, (string) $code_kel, (string) $sisa, (string) $userid, (string) "Realisasi Hapus Buku $nama $cif", (string) $cao, (string) $kode_transaksi) or die(mysql_error());             
                    
 		}
                      
@@ -178,7 +178,7 @@ ob_start();
                                     values(?,?,'2101000',?,'Bukti Umum',?,?,?)", 'ssssss', (string) $unit, (string) $kode_transaksi, (string) $tanggal_transaksi, "Realisasi Hapus Buku An $nama ", (string) $pokok, (string) $userid);
                     $query=db_jalankan("insert into tabel_transaksi(unit,kode_transaksi,kode_rekening,tanggal_transaksi, jenis_transaksi, keterangan_transaksi,kredit,id_admin)
                                     values(?,?,'1413000',?,'Bukti Umum',?,?,?)", 'ssssss', (string) $unit, (string) $kode_transaksi, (string) $tanggal_transaksi, "Realisasi Hapus Buku An $nama", (string) $pokok, (string) $userid);   
-                    $query=db_jalankan("insert  into simpanan (BUSS_DATE,NOREK,UNIT,CIF,CODE_KEL,DEBIT,TYPE,KREDIT,USERID,KET,REFF,CAO,kode_transaksi)VALUES(?,?,?,?,?,?,'01','0',?,'Realisasi Hapus Buku','',?,?) ", 'sssssssss', (string) $tanggal_transaksi, (string) $no_anggota, (string) $unit, (string) $cif, (string) $code_kel, (string) $pokok, (string) $userid, (string) $cao, (string) $kode_transaksi) or die(mysql_error());             
+                    $query=db_jalankan("insert  into simpanan (BUSS_DATE,NOREK,UNIT,CIF,CODE_KEL,DEBIT,TYPE,KREDIT,USERID,KET,REFF,CAO,kode_transaksi)VALUES(?,?,?,?,?,?,'01','0',?,?,'',?,?) ", 'ssssssssss', (string) $tanggal_transaksi, (string) $no_anggota, (string) $unit, (string) $cif, (string) $code_kel, (string) $pokok, (string) $userid, (string) "Realisasi Hapus Buku $nama $cif", (string) $cao, (string) $kode_transaksi) or die(mysql_error());             
                  
                  
                     }else{
@@ -187,7 +187,7 @@ ob_start();
                                     values(?,?,'1512000',?,'Bukti Umum',?,?,?)", 'ssssss', (string) $unit, (string) $kode_transaksi, (string) $tanggal_transaksi, "Realisasi Hapus Buku An $nama ", (string) $kurang, (string) $userid);
                         $query=db_jalankan("insert into tabel_transaksi(unit,kode_transaksi,kode_rekening,tanggal_transaksi, jenis_transaksi, keterangan_transaksi,debet,id_admin)
                                     values(?,?,'2101000',?,'Bukti Umum',?,?,?)", 'ssssss', (string) $unit, (string) $kode_transaksi, (string) $tanggal_transaksi, "Realisasi Hapus Buku An $nama ", (string) $sisa, (string) $userid);   
-                        $query=db_jalankan("insert  into simpanan (BUSS_DATE,NOREK,UNIT,CIF,CODE_KEL,DEBIT,TYPE,KREDIT,USERID,KET,REFF,CAO,kode_transaksi)VALUES(?,?,?,?,?,?,'01','0',?,'Realisasi Hapus Buku','',?,?) ", 'sssssssss', (string) $tanggal_transaksi, (string) $no_anggota, (string) $unit, (string) $cif, (string) $code_kel, (string) $sisa, (string) $userid, (string) $cao, (string) $kode_transaksi) or die(mysql_error());
+                        $query=db_jalankan("insert  into simpanan (BUSS_DATE,NOREK,UNIT,CIF,CODE_KEL,DEBIT,TYPE,KREDIT,USERID,KET,REFF,CAO,kode_transaksi)VALUES(?,?,?,?,?,?,'01','0',?,?,'',?,?) ", 'ssssssssss', (string) $tanggal_transaksi, (string) $no_anggota, (string) $unit, (string) $cif, (string) $code_kel, (string) $sisa, (string) $userid, (string) "Realisasi Hapus Buku $nama $cif", (string) $cao, (string) $kode_transaksi) or die(mysql_error());
                                                              
                         $query=db_jalankan("insert into tabel_transaksi(unit,kode_transaksi,kode_rekening,tanggal_transaksi, jenis_transaksi, keterangan_transaksi,kredit,id_admin)
                                     values(?,?,'1413000',?,'Bukti Umum',?,?,?)", 'ssssss', (string) $unit, (string) $kode_transaksi, (string) $tanggal_transaksi, "Realisasi Hapus Buku An $nama", (string) $pokok, (string) $userid);
@@ -232,7 +232,7 @@ ob_start();
                                     values(?,?,'2101000',?,'Bukti Umum',?,?,?)", 'ssssss', (string) $unit, (string) $kode_transaksi, (string) $tanggal_transaksi, "Realisasi Hapus Buku An $nama ", (string) $pokok, (string) $userid);
                     $query=db_jalankan("insert into tabel_transaksi(unit,kode_transaksi,kode_rekening,tanggal_transaksi, jenis_transaksi, keterangan_transaksi,kredit,id_admin)
                                     values(?,?,'1472000',?,'Bukti Umum',?,?,?)", 'ssssss', (string) $unit, (string) $kode_transaksi, (string) $tanggal_transaksi, "Realisasi Hapus Buku An $nama", (string) $pokok, (string) $userid);       
-                    $query=db_jalankan("insert  into simpanan (BUSS_DATE,NOREK,UNIT,CIF,CODE_KEL,DEBIT,TYPE,KREDIT,USERID,KET,REFF,CAO,kode_transaksi)VALUES(?,?,?,?,?,?,'01','0',?,'Realisasi Hapus Buku','',?,?) ", 'sssssssss', (string) $tanggal_transaksi, (string) $no_anggota, (string) $unit, (string) $cif, (string) $code_kel, (string) $pokok, (string) $userid, (string) $cao, (string) $kode_transaksi) or die(mysql_error());             
+                    $query=db_jalankan("insert  into simpanan (BUSS_DATE,NOREK,UNIT,CIF,CODE_KEL,DEBIT,TYPE,KREDIT,USERID,KET,REFF,CAO,kode_transaksi)VALUES(?,?,?,?,?,?,'01','0',?,?,'',?,?) ", 'ssssssssss', (string) $tanggal_transaksi, (string) $no_anggota, (string) $unit, (string) $cif, (string) $code_kel, (string) $pokok, (string) $userid, (string) "Realisasi Hapus Buku $nama $cif", (string) $cao, (string) $kode_transaksi) or die(mysql_error());             
          
                  
                  
@@ -248,7 +248,7 @@ ob_start();
  $query=db_jalankan("insert into tabel_transaksi(unit,kode_transaksi,kode_rekening,tanggal_transaksi, jenis_transaksi, keterangan_transaksi,debet,id_admin)
                                     values(?,?,'2101000',?,'Bukti Umum',?,?,?)", 'ssssss', (string) $unit, (string) $kode_transaksi, (string) $tanggal_transaksi, "Realisasi Hapus Buku An $nama ", (string) $sisa, (string) $userid);         
                      
-                    $query=db_jalankan("insert  into simpanan (BUSS_DATE,NOREK,UNIT,CIF,CODE_KEL,DEBIT,TYPE,KREDIT,USERID,KET,REFF,CAO,kode_transaksi)VALUES(?,?,?,?,?,?,'01','0',?,'Realisasi Hapus Buku','',?,?) ", 'sssssssss', (string) $tanggal_transaksi, (string) $no_anggota, (string) $unit, (string) $cif, (string) $code_kel, (string) $sisa, (string) $userid, (string) $cao, (string) $kode_transaksi) or die(mysql_error());             
+                    $query=db_jalankan("insert  into simpanan (BUSS_DATE,NOREK,UNIT,CIF,CODE_KEL,DEBIT,TYPE,KREDIT,USERID,KET,REFF,CAO,kode_transaksi)VALUES(?,?,?,?,?,?,'01','0',?,?,'',?,?) ", 'ssssssssss', (string) $tanggal_transaksi, (string) $no_anggota, (string) $unit, (string) $cif, (string) $code_kel, (string) $sisa, (string) $userid, (string) "Realisasi Hapus Buku $nama $cif", (string) $cao, (string) $kode_transaksi) or die(mysql_error());             
                    
                     }
                      
@@ -275,7 +275,7 @@ ob_start();
                     $query=db_jalankan("insert into tabel_transaksi(unit,kode_transaksi,kode_rekening,tanggal_transaksi, jenis_transaksi, keterangan_transaksi,kredit,id_admin)
 
                                     values(?,?,'1413000',?,'Bukti Umum',?,?,?)", 'ssssss', (string) $unit, (string) $kode_transaksi, (string) $tanggal_transaksi, "Realisasi Hapus Buku An $nama", (string) $pokok, (string) $userid);       
-                    $query=db_jalankan("insert  into simpanan (BUSS_DATE,NOREK,UNIT,CIF,CODE_KEL,DEBIT,TYPE,KREDIT,USERID,KET,REFF,CAO,kode_transaksi)VALUES(?,?,?,?,?,?,'01','0',?,'Realisasi Hapus Buku','',?,?) ", 'sssssssss', (string) $tanggal_transaksi, (string) $no_anggota, (string) $unit, (string) $cif, (string) $code_kel, (string) $pokok, (string) $userid, (string) $cao, (string) $kode_transaksi) or die(mysql_error());             
+                    $query=db_jalankan("insert  into simpanan (BUSS_DATE,NOREK,UNIT,CIF,CODE_KEL,DEBIT,TYPE,KREDIT,USERID,KET,REFF,CAO,kode_transaksi)VALUES(?,?,?,?,?,?,'01','0',?,?,'',?,?) ", 'ssssssssss', (string) $tanggal_transaksi, (string) $no_anggota, (string) $unit, (string) $cif, (string) $code_kel, (string) $pokok, (string) $userid, (string) "Realisasi Hapus Buku $nama $cif", (string) $cao, (string) $kode_transaksi) or die(mysql_error());             
          
                  
                  
@@ -291,7 +291,7 @@ ob_start();
                     $query=db_jalankan("insert into tabel_transaksi(unit,kode_transaksi,kode_rekening,tanggal_transaksi, jenis_transaksi, keterangan_transaksi,kredit,id_admin)
                                     values(?,?,'1413000',?,'Bukti Umum',?,?,?)", 'ssssss', (string) $unit, (string) $kode_transaksi, (string) $tanggal_transaksi, "Realisasi Hapus Buku An $nama", (string) $pokok, (string) $userid);
                      
-                    $query=db_jalankan("insert  into simpanan (BUSS_DATE,NOREK,UNIT,CIF,CODE_KEL,DEBIT,TYPE,KREDIT,USERID,KET,REFF,CAO,kode_transaksi)VALUES(?,?,?,?,?,?,'01','0',?,'Realisasi Hapus Buku','',?,?) ", 'sssssssss', (string) $tanggal_transaksi, (string) $no_anggota, (string) $unit, (string) $cif, (string) $code_kel, (string) $sisa, (string) $userid, (string) $cao, (string) $kode_transaksi) or die(mysql_error());             
+                    $query=db_jalankan("insert  into simpanan (BUSS_DATE,NOREK,UNIT,CIF,CODE_KEL,DEBIT,TYPE,KREDIT,USERID,KET,REFF,CAO,kode_transaksi)VALUES(?,?,?,?,?,?,'01','0',?,?,'',?,?) ", 'ssssssssss', (string) $tanggal_transaksi, (string) $no_anggota, (string) $unit, (string) $cif, (string) $code_kel, (string) $sisa, (string) $userid, (string) "Realisasi Hapus Buku $nama $cif", (string) $cao, (string) $kode_transaksi) or die(mysql_error());             
                    
 		}
                      
@@ -328,7 +328,7 @@ ob_start();
                                     values(?,?,'2101000',?,'Bukti Umum',?,?,?)", 'ssssss', (string) $unit, (string) $kode_transaksi, (string) $tanggal_transaksi, "Realisasi Hapus Buku An $nama ", (string) $pokok, (string) $userid);
                     $query=db_jalankan("insert into tabel_transaksi(unit,kode_transaksi,kode_rekening,tanggal_transaksi, jenis_transaksi, keterangan_transaksi,kredit,id_admin)
                                     values(?,?,'1413000',?,'Bukti Umum',?,?,?)", 'ssssss', (string) $unit, (string) $kode_transaksi, (string) $tanggal_transaksi, "Realisasi Hapus Buku An $nama", (string) $pokok, (string) $userid);   
-                    $query=db_jalankan("insert  into simpanan (BUSS_DATE,NOREK,UNIT,CIF,CODE_KEL,DEBIT,TYPE,KREDIT,USERID,KET,REFF,CAO,kode_transaksi)VALUES(?,?,?,?,?,?,'01','0',?,'Realisasi Hapus Buku','',?,?) ", 'sssssssss', (string) $tanggal_transaksi, (string) $no_anggota, (string) $unit, (string) $cif, (string) $code_kel, (string) $pokok, (string) $userid, (string) $cao, (string) $kode_transaksi) or die(mysql_error());             
+                    $query=db_jalankan("insert  into simpanan (BUSS_DATE,NOREK,UNIT,CIF,CODE_KEL,DEBIT,TYPE,KREDIT,USERID,KET,REFF,CAO,kode_transaksi)VALUES(?,?,?,?,?,?,'01','0',?,?,'',?,?) ", 'ssssssssss', (string) $tanggal_transaksi, (string) $no_anggota, (string) $unit, (string) $cif, (string) $code_kel, (string) $pokok, (string) $userid, (string) "Realisasi Hapus Buku $nama $cif", (string) $cao, (string) $kode_transaksi) or die(mysql_error());             
                  
                  
                     }else{
@@ -337,7 +337,7 @@ ob_start();
                                     values(?,?,'1512000',?,'Bukti Umum',?,?,?)", 'ssssss', (string) $unit, (string) $kode_transaksi, (string) $tanggal_transaksi, "Realisasi Hapus Buku An $nama ", (string) $kurang, (string) $userid);
                         $query=db_jalankan("insert into tabel_transaksi(unit,kode_transaksi,kode_rekening,tanggal_transaksi, jenis_transaksi, keterangan_transaksi,debet,id_admin)
                                     values(?,?,'2101000',?,'Bukti Umum',?,?,?)", 'ssssss', (string) $unit, (string) $kode_transaksi, (string) $tanggal_transaksi, "Realisasi Hapus Buku An $nama ", (string) $sisa, (string) $userid);   
-                        $query=db_jalankan("insert  into simpanan (BUSS_DATE,NOREK,UNIT,CIF,CODE_KEL,DEBIT,TYPE,KREDIT,USERID,KET,REFF,CAO,kode_transaksi)VALUES(?,?,?,?,?,?,'01','0',?,'Realisasi Hapus Buku','',?,?) ", 'sssssssss', (string) $tanggal_transaksi, (string) $no_anggota, (string) $unit, (string) $cif, (string) $code_kel, (string) $sisa, (string) $userid, (string) $cao, (string) $kode_transaksi) or die(mysql_error());
+                        $query=db_jalankan("insert  into simpanan (BUSS_DATE,NOREK,UNIT,CIF,CODE_KEL,DEBIT,TYPE,KREDIT,USERID,KET,REFF,CAO,kode_transaksi)VALUES(?,?,?,?,?,?,'01','0',?,?,'',?,?) ", 'ssssssssss', (string) $tanggal_transaksi, (string) $no_anggota, (string) $unit, (string) $cif, (string) $code_kel, (string) $sisa, (string) $userid, (string) "Realisasi Hapus Buku $nama $cif", (string) $cao, (string) $kode_transaksi) or die(mysql_error());
                                                              
                         $query=db_jalankan("insert into tabel_transaksi(unit,kode_transaksi,kode_rekening,tanggal_transaksi, jenis_transaksi, keterangan_transaksi,kredit,id_admin)
                                     values(?,?,'1413000',?,'Bukti Umum',?,?,?)", 'ssssss', (string) $unit, (string) $kode_transaksi, (string) $tanggal_transaksi, "Realisasi Hapus Buku An $nama", (string) $pokok, (string) $userid);
@@ -386,7 +386,7 @@ ob_start();
                                     values(?,?,'2101000',?,'Bukti Umum',?,?,?)", 'ssssss', (string) $unit, (string) $kode_transaksi, (string) $tanggal_transaksi, "Realisasi Hapus Buku An $nama ", (string) $pokok, (string) $userid);
                     $query=db_jalankan("insert into tabel_transaksi(unit,kode_transaksi,kode_rekening,tanggal_transaksi, jenis_transaksi, keterangan_transaksi,kredit,id_admin)
                                     values(?,?,'1413000',?,'Bukti Umum',?,?,?)", 'ssssss', (string) $unit, (string) $kode_transaksi, (string) $tanggal_transaksi, "Realisasi Hapus Buku An $nama", (string) $pokok, (string) $userid);       
-                    $query=db_jalankan("insert  into simpanan (BUSS_DATE,NOREK,UNIT,CIF,CODE_KEL,DEBIT,TYPE,KREDIT,USERID,KET,REFF,CAO,kode_transaksi)VALUES(?,?,?,?,?,?,'01','0',?,'Realisasi Hapus Buku','',?,?) ", 'sssssssss', (string) $tanggal_transaksi, (string) $no_anggota, (string) $unit, (string) $cif, (string) $code_kel, (string) $pokok, (string) $userid, (string) $cao, (string) $kode_transaksi) or die(mysql_error());             
+                    $query=db_jalankan("insert  into simpanan (BUSS_DATE,NOREK,UNIT,CIF,CODE_KEL,DEBIT,TYPE,KREDIT,USERID,KET,REFF,CAO,kode_transaksi)VALUES(?,?,?,?,?,?,'01','0',?,?,'',?,?) ", 'ssssssssss', (string) $tanggal_transaksi, (string) $no_anggota, (string) $unit, (string) $cif, (string) $code_kel, (string) $pokok, (string) $userid, (string) "Realisasi Hapus Buku $nama $cif", (string) $cao, (string) $kode_transaksi) or die(mysql_error());             
          
                  
                  
@@ -402,7 +402,7 @@ ob_start();
                     $query=db_jalankan("insert into tabel_transaksi(unit,kode_transaksi,kode_rekening,tanggal_transaksi, jenis_transaksi, keterangan_transaksi,kredit,id_admin)
                                     values(?,?,'1413000',?,'Bukti Umum',?,?,?)", 'ssssss', (string) $unit, (string) $kode_transaksi, (string) $tanggal_transaksi, "Realisasi Hapus Buku An $nama", (string) $pokok, (string) $userid);
                      
-                    $query=db_jalankan("insert  into simpanan (BUSS_DATE,NOREK,UNIT,CIF,CODE_KEL,DEBIT,TYPE,KREDIT,USERID,KET,REFF,CAO,kode_transaksi)VALUES(?,?,?,?,?,?,'01','0',?,'Realisasi Hapus Buku','',?,?) ", 'sssssssss', (string) $tanggal_transaksi, (string) $no_anggota, (string) $unit, (string) $cif, (string) $code_kel, (string) $sisa, (string) $userid, (string) $cao, (string) $kode_transaksi) or die(mysql_error());             
+                    $query=db_jalankan("insert  into simpanan (BUSS_DATE,NOREK,UNIT,CIF,CODE_KEL,DEBIT,TYPE,KREDIT,USERID,KET,REFF,CAO,kode_transaksi)VALUES(?,?,?,?,?,?,'01','0',?,?,'',?,?) ", 'ssssssssss', (string) $tanggal_transaksi, (string) $no_anggota, (string) $unit, (string) $cif, (string) $code_kel, (string) $sisa, (string) $userid, (string) "Realisasi Hapus Buku $nama $cif", (string) $cao, (string) $kode_transaksi) or die(mysql_error());             
                    
                     }
                      
@@ -429,7 +429,7 @@ ob_start();
                     $query=db_jalankan("insert into tabel_transaksi(unit,kode_transaksi,kode_rekening,tanggal_transaksi, jenis_transaksi, keterangan_transaksi,kredit,id_admin)
 
                                     values(?,?,'1413000',?,'Bukti Umum',?,?,?)", 'ssssss', (string) $unit, (string) $kode_transaksi, (string) $tanggal_transaksi, "Realisasi Hapus Buku An $nama", (string) $pokok, (string) $userid);       
-                    $query=db_jalankan("insert  into simpanan (BUSS_DATE,NOREK,UNIT,CIF,CODE_KEL,DEBIT,TYPE,KREDIT,USERID,KET,REFF,CAO,kode_transaksi)VALUES(?,?,?,?,?,?,'01','0',?,'Realisasi Hapus Buku','',?,?) ", 'sssssssss', (string) $tanggal_transaksi, (string) $no_anggota, (string) $unit, (string) $cif, (string) $code_kel, (string) $pokok, (string) $userid, (string) $cao, (string) $kode_transaksi) or die(mysql_error());             
+                    $query=db_jalankan("insert  into simpanan (BUSS_DATE,NOREK,UNIT,CIF,CODE_KEL,DEBIT,TYPE,KREDIT,USERID,KET,REFF,CAO,kode_transaksi)VALUES(?,?,?,?,?,?,'01','0',?,?,'',?,?) ", 'ssssssssss', (string) $tanggal_transaksi, (string) $no_anggota, (string) $unit, (string) $cif, (string) $code_kel, (string) $pokok, (string) $userid, (string) "Realisasi Hapus Buku $nama $cif", (string) $cao, (string) $kode_transaksi) or die(mysql_error());             
          
                  
                  
@@ -445,7 +445,7 @@ ob_start();
                     $query=db_jalankan("insert into tabel_transaksi(unit,kode_transaksi,kode_rekening,tanggal_transaksi, jenis_transaksi, keterangan_transaksi,kredit,id_admin)
                                     values(?,?,'1413000',?,'Bukti Umum',?,?,?)", 'ssssss', (string) $unit, (string) $kode_transaksi, (string) $tanggal_transaksi, "Realisasi Hapus Buku An $nama", (string) $pokok, (string) $userid);
                      
-                    $query=db_jalankan("insert  into simpanan (BUSS_DATE,NOREK,UNIT,CIF,CODE_KEL,DEBIT,TYPE,KREDIT,USERID,KET,REFF,CAO,kode_transaksi)VALUES(?,?,?,?,?,?,'01','0',?,'Realisasi Hapus Buku','',?,?) ", 'sssssssss', (string) $tanggal_transaksi, (string) $no_anggota, (string) $unit, (string) $cif, (string) $code_kel, (string) $sisa, (string) $userid, (string) $cao, (string) $kode_transaksi) or die(mysql_error());             
+                    $query=db_jalankan("insert  into simpanan (BUSS_DATE,NOREK,UNIT,CIF,CODE_KEL,DEBIT,TYPE,KREDIT,USERID,KET,REFF,CAO,kode_transaksi)VALUES(?,?,?,?,?,?,'01','0',?,?,'',?,?) ", 'ssssssssss', (string) $tanggal_transaksi, (string) $no_anggota, (string) $unit, (string) $cif, (string) $code_kel, (string) $sisa, (string) $userid, (string) "Realisasi Hapus Buku $nama $cif", (string) $cao, (string) $kode_transaksi) or die(mysql_error());             
                    
 		}
                      
@@ -482,7 +482,7 @@ ob_start();
                                     values(?,?,'2101000',?,'Bukti Umum',?,?,?)", 'ssssss', (string) $unit, (string) $kode_transaksi, (string) $tanggal_transaksi, "Realisasi Hapus Buku An $nama ", (string) $pokok, (string) $userid);
                     $query=db_jalankan("insert into tabel_transaksi(unit,kode_transaksi,kode_rekening,tanggal_transaksi, jenis_transaksi, keterangan_transaksi,kredit,id_admin)
                                     values(?,?,'1413000',?,'Bukti Umum',?,?,?)", 'ssssss', (string) $unit, (string) $kode_transaksi, (string) $tanggal_transaksi, "Realisasi Hapus Buku An $nama", (string) $pokok, (string) $userid);   
-                    $query=db_jalankan("insert  into simpanan (BUSS_DATE,NOREK,UNIT,CIF,CODE_KEL,DEBIT,TYPE,KREDIT,USERID,KET,REFF,CAO,kode_transaksi)VALUES(?,?,?,?,?,?,'01','0',?,'Realisasi Hapus Buku','',?,?) ", 'sssssssss', (string) $tanggal_transaksi, (string) $no_anggota, (string) $unit, (string) $cif, (string) $code_kel, (string) $pokok, (string) $userid, (string) $cao, (string) $kode_transaksi) or die(mysql_error());             
+                    $query=db_jalankan("insert  into simpanan (BUSS_DATE,NOREK,UNIT,CIF,CODE_KEL,DEBIT,TYPE,KREDIT,USERID,KET,REFF,CAO,kode_transaksi)VALUES(?,?,?,?,?,?,'01','0',?,?,'',?,?) ", 'ssssssssss', (string) $tanggal_transaksi, (string) $no_anggota, (string) $unit, (string) $cif, (string) $code_kel, (string) $pokok, (string) $userid, (string) "Realisasi Hapus Buku $nama $cif", (string) $cao, (string) $kode_transaksi) or die(mysql_error());             
                  
                  
                     }else{
@@ -491,7 +491,7 @@ ob_start();
                                     values(?,?,'1512000',?,'Bukti Umum',?,?,?)", 'ssssss', (string) $unit, (string) $kode_transaksi, (string) $tanggal_transaksi, "Realisasi Hapus Buku An $nama ", (string) $kurang, (string) $userid);
                         $query=db_jalankan("insert into tabel_transaksi(unit,kode_transaksi,kode_rekening,tanggal_transaksi, jenis_transaksi, keterangan_transaksi,debet,id_admin)
                                     values(?,?,'2101000',?,'Bukti Umum',?,?,?)", 'ssssss', (string) $unit, (string) $kode_transaksi, (string) $tanggal_transaksi, "Realisasi Hapus Buku An $nama ", (string) $sisa, (string) $userid);   
-                        $query=db_jalankan("insert  into simpanan (BUSS_DATE,NOREK,UNIT,CIF,CODE_KEL,DEBIT,TYPE,KREDIT,USERID,KET,REFF,CAO,kode_transaksi)VALUES(?,?,?,?,?,?,'01','0',?,'Realisasi Hapus Buku','',?,?) ", 'sssssssss', (string) $tanggal_transaksi, (string) $no_anggota, (string) $unit, (string) $cif, (string) $code_kel, (string) $sisa, (string) $userid, (string) $cao, (string) $kode_transaksi) or die(mysql_error());
+                        $query=db_jalankan("insert  into simpanan (BUSS_DATE,NOREK,UNIT,CIF,CODE_KEL,DEBIT,TYPE,KREDIT,USERID,KET,REFF,CAO,kode_transaksi)VALUES(?,?,?,?,?,?,'01','0',?,?,'',?,?) ", 'ssssssssss', (string) $tanggal_transaksi, (string) $no_anggota, (string) $unit, (string) $cif, (string) $code_kel, (string) $sisa, (string) $userid, (string) "Realisasi Hapus Buku $nama $cif", (string) $cao, (string) $kode_transaksi) or die(mysql_error());
                                                              
                         $query=db_jalankan("insert into tabel_transaksi(unit,kode_transaksi,kode_rekening,tanggal_transaksi, jenis_transaksi, keterangan_transaksi,kredit,id_admin)
                                     values(?,?,'1413000',?,'Bukti Umum',?,?,?)", 'ssssss', (string) $unit, (string) $kode_transaksi, (string) $tanggal_transaksi, "Realisasi Hapus Buku An $nama", (string) $pokok, (string) $userid);
@@ -538,7 +538,7 @@ ob_start();
                                     values(?,?,'2101000',?,'Bukti Umum',?,?,?)", 'ssssss', (string) $unit, (string) $kode_transaksi, (string) $tanggal_transaksi, "Realisasi Hapus Buku An $nama ", (string) $pokok, (string) $userid);
                     $query=db_jalankan("insert into tabel_transaksi(unit,kode_transaksi,kode_rekening,tanggal_transaksi, jenis_transaksi, keterangan_transaksi,kredit,id_admin)
                                     values(?,?,'1413000',?,'Bukti Umum',?,?,?)", 'ssssss', (string) $unit, (string) $kode_transaksi, (string) $tanggal_transaksi, "Realisasi Hapus Buku An $nama", (string) $pokok, (string) $userid);       
-                    $query=db_jalankan("insert  into simpanan (BUSS_DATE,NOREK,UNIT,CIF,CODE_KEL,DEBIT,TYPE,KREDIT,USERID,KET,REFF,CAO,kode_transaksi)VALUES(?,?,?,?,?,?,'01','0',?,'Realisasi Hapus Buku','',?,?) ", 'sssssssss', (string) $tanggal_transaksi, (string) $no_anggota, (string) $unit, (string) $cif, (string) $code_kel, (string) $pokok, (string) $userid, (string) $cao, (string) $kode_transaksi) or die(mysql_error());             
+                    $query=db_jalankan("insert  into simpanan (BUSS_DATE,NOREK,UNIT,CIF,CODE_KEL,DEBIT,TYPE,KREDIT,USERID,KET,REFF,CAO,kode_transaksi)VALUES(?,?,?,?,?,?,'01','0',?,?,'',?,?) ", 'ssssssssss', (string) $tanggal_transaksi, (string) $no_anggota, (string) $unit, (string) $cif, (string) $code_kel, (string) $pokok, (string) $userid, (string) "Realisasi Hapus Buku $nama $cif", (string) $cao, (string) $kode_transaksi) or die(mysql_error());             
          
                  
                  
@@ -554,7 +554,7 @@ ob_start();
                     $query=db_jalankan("insert into tabel_transaksi(unit,kode_transaksi,kode_rekening,tanggal_transaksi, jenis_transaksi, keterangan_transaksi,kredit,id_admin)
                                     values(?,?,'1413000',?,'Bukti Umum',?,?,?)", 'ssssss', (string) $unit, (string) $kode_transaksi, (string) $tanggal_transaksi, "Realisasi Hapus Buku An $nama", (string) $pokok, (string) $userid);
                      
-                    $query=db_jalankan("insert  into simpanan (BUSS_DATE,NOREK,UNIT,CIF,CODE_KEL,DEBIT,TYPE,KREDIT,USERID,KET,REFF,CAO,kode_transaksi)VALUES(?,?,?,?,?,?,'01','0',?,'Realisasi Hapus Buku','',?,?) ", 'sssssssss', (string) $tanggal_transaksi, (string) $no_anggota, (string) $unit, (string) $cif, (string) $code_kel, (string) $sisa, (string) $userid, (string) $cao, (string) $kode_transaksi) or die(mysql_error());             
+                    $query=db_jalankan("insert  into simpanan (BUSS_DATE,NOREK,UNIT,CIF,CODE_KEL,DEBIT,TYPE,KREDIT,USERID,KET,REFF,CAO,kode_transaksi)VALUES(?,?,?,?,?,?,'01','0',?,?,'',?,?) ", 'ssssssssss', (string) $tanggal_transaksi, (string) $no_anggota, (string) $unit, (string) $cif, (string) $code_kel, (string) $sisa, (string) $userid, (string) "Realisasi Hapus Buku $nama $cif", (string) $cao, (string) $kode_transaksi) or die(mysql_error());             
                    
                     }
                      
@@ -581,7 +581,7 @@ ob_start();
                     $query=db_jalankan("insert into tabel_transaksi(unit,kode_transaksi,kode_rekening,tanggal_transaksi, jenis_transaksi, keterangan_transaksi,kredit,id_admin)
 
                                     values(?,?,'1413000',?,'Bukti Umum',?,?,?)", 'ssssss', (string) $unit, (string) $kode_transaksi, (string) $tanggal_transaksi, "Realisasi Hapus Buku An $nama", (string) $pokok, (string) $userid);       
-                    $query=db_jalankan("insert  into simpanan (BUSS_DATE,NOREK,UNIT,CIF,CODE_KEL,DEBIT,TYPE,KREDIT,USERID,KET,REFF,CAO,kode_transaksi)VALUES(?,?,?,?,?,?,'01','0',?,'Realisasi Hapus Buku','',?,?) ", 'sssssssss', (string) $tanggal_transaksi, (string) $no_anggota, (string) $unit, (string) $cif, (string) $code_kel, (string) $pokok, (string) $userid, (string) $cao, (string) $kode_transaksi) or die(mysql_error());             
+                    $query=db_jalankan("insert  into simpanan (BUSS_DATE,NOREK,UNIT,CIF,CODE_KEL,DEBIT,TYPE,KREDIT,USERID,KET,REFF,CAO,kode_transaksi)VALUES(?,?,?,?,?,?,'01','0',?,?,'',?,?) ", 'ssssssssss', (string) $tanggal_transaksi, (string) $no_anggota, (string) $unit, (string) $cif, (string) $code_kel, (string) $pokok, (string) $userid, (string) "Realisasi Hapus Buku $nama $cif", (string) $cao, (string) $kode_transaksi) or die(mysql_error());             
          
                  
                  
@@ -597,7 +597,7 @@ ob_start();
                     $query=db_jalankan("insert into tabel_transaksi(unit,kode_transaksi,kode_rekening,tanggal_transaksi, jenis_transaksi, keterangan_transaksi,kredit,id_admin)
                                     values(?,?,'1413000',?,'Bukti Umum',?,?,?)", 'ssssss', (string) $unit, (string) $kode_transaksi, (string) $tanggal_transaksi, "Realisasi Hapus Buku An $nama", (string) $pokok, (string) $userid);
                      
-                    $query=db_jalankan("insert  into simpanan (BUSS_DATE,NOREK,UNIT,CIF,CODE_KEL,DEBIT,TYPE,KREDIT,USERID,KET,REFF,CAO,kode_transaksi)VALUES(?,?,?,?,?,?,'01','0',?,'Realisasi Hapus Buku','',?,?) ", 'sssssssss', (string) $tanggal_transaksi, (string) $no_anggota, (string) $unit, (string) $cif, (string) $code_kel, (string) $sisa, (string) $userid, (string) $cao, (string) $kode_transaksi) or die(mysql_error());             
+                    $query=db_jalankan("insert  into simpanan (BUSS_DATE,NOREK,UNIT,CIF,CODE_KEL,DEBIT,TYPE,KREDIT,USERID,KET,REFF,CAO,kode_transaksi)VALUES(?,?,?,?,?,?,'01','0',?,?,'',?,?) ", 'ssssssssss', (string) $tanggal_transaksi, (string) $no_anggota, (string) $unit, (string) $cif, (string) $code_kel, (string) $sisa, (string) $userid, (string) "Realisasi Hapus Buku $nama $cif", (string) $cao, (string) $kode_transaksi) or die(mysql_error());             
                    
 		}
                      
@@ -634,7 +634,7 @@ ob_start();
                                     values(?,?,'2101000',?,'Bukti Umum',?,?,?)", 'ssssss', (string) $unit, (string) $kode_transaksi, (string) $tanggal_transaksi, "Realisasi Hapus Buku An $nama ", (string) $pokok, (string) $userid);
                     $query=db_jalankan("insert into tabel_transaksi(unit,kode_transaksi,kode_rekening,tanggal_transaksi, jenis_transaksi, keterangan_transaksi,kredit,id_admin)
                                     values(?,?,'1413000',?,'Bukti Umum',?,?,?)", 'ssssss', (string) $unit, (string) $kode_transaksi, (string) $tanggal_transaksi, "Realisasi Hapus Buku An $nama", (string) $pokok, (string) $userid);   
-                    $query=db_jalankan("insert  into simpanan (BUSS_DATE,NOREK,UNIT,CIF,CODE_KEL,DEBIT,TYPE,KREDIT,USERID,KET,REFF,CAO,kode_transaksi)VALUES(?,?,?,?,?,?,'01','0',?,'Realisasi Hapus Buku','',?,?) ", 'sssssssss', (string) $tanggal_transaksi, (string) $no_anggota, (string) $unit, (string) $cif, (string) $code_kel, (string) $pokok, (string) $userid, (string) $cao, (string) $kode_transaksi) or die(mysql_error());             
+                    $query=db_jalankan("insert  into simpanan (BUSS_DATE,NOREK,UNIT,CIF,CODE_KEL,DEBIT,TYPE,KREDIT,USERID,KET,REFF,CAO,kode_transaksi)VALUES(?,?,?,?,?,?,'01','0',?,?,'',?,?) ", 'ssssssssss', (string) $tanggal_transaksi, (string) $no_anggota, (string) $unit, (string) $cif, (string) $code_kel, (string) $pokok, (string) $userid, (string) "Realisasi Hapus Buku $nama $cif", (string) $cao, (string) $kode_transaksi) or die(mysql_error());             
                  
                  
                     }else{
@@ -643,7 +643,7 @@ ob_start();
                                     values(?,?,'1512000',?,'Bukti Umum',?,?,?)", 'ssssss', (string) $unit, (string) $kode_transaksi, (string) $tanggal_transaksi, "Realisasi Hapus Buku An $nama ", (string) $kurang, (string) $userid);
                         $query=db_jalankan("insert into tabel_transaksi(unit,kode_transaksi,kode_rekening,tanggal_transaksi, jenis_transaksi, keterangan_transaksi,debet,id_admin)
                                     values(?,?,'2101000',?,'Bukti Umum',?,?,?)", 'ssssss', (string) $unit, (string) $kode_transaksi, (string) $tanggal_transaksi, "Realisasi Hapus Buku An $nama ", (string) $sisa, (string) $userid);   
-                        $query=db_jalankan("insert  into simpanan (BUSS_DATE,NOREK,UNIT,CIF,CODE_KEL,DEBIT,TYPE,KREDIT,USERID,KET,REFF,CAO,kode_transaksi)VALUES(?,?,?,?,?,?,'01','0',?,'Realisasi Hapus Buku','',?,?) ", 'sssssssss', (string) $tanggal_transaksi, (string) $no_anggota, (string) $unit, (string) $cif, (string) $code_kel, (string) $sisa, (string) $userid, (string) $cao, (string) $kode_transaksi) or die(mysql_error());
+                        $query=db_jalankan("insert  into simpanan (BUSS_DATE,NOREK,UNIT,CIF,CODE_KEL,DEBIT,TYPE,KREDIT,USERID,KET,REFF,CAO,kode_transaksi)VALUES(?,?,?,?,?,?,'01','0',?,?,'',?,?) ", 'ssssssssss', (string) $tanggal_transaksi, (string) $no_anggota, (string) $unit, (string) $cif, (string) $code_kel, (string) $sisa, (string) $userid, (string) "Realisasi Hapus Buku $nama $cif", (string) $cao, (string) $kode_transaksi) or die(mysql_error());
                                                              
                         $query=db_jalankan("insert into tabel_transaksi(unit,kode_transaksi,kode_rekening,tanggal_transaksi, jenis_transaksi, keterangan_transaksi,kredit,id_admin)
                                     values(?,?,'1413000',?,'Bukti Umum',?,?,?)", 'ssssss', (string) $unit, (string) $kode_transaksi, (string) $tanggal_transaksi, "Realisasi Hapus Buku An $nama", (string) $pokok, (string) $userid);
@@ -691,7 +691,7 @@ ob_start();
                                     values(?,?,'2101000',?,'Bukti Umum',?,?,?)", 'ssssss', (string) $unit, (string) $kode_transaksi, (string) $tanggal_transaksi, "Realisasi Hapus Buku An $nama ", (string) $pokok, (string) $userid);
                     $query=db_jalankan("insert into tabel_transaksi(unit,kode_transaksi,kode_rekening,tanggal_transaksi, jenis_transaksi, keterangan_transaksi,kredit,id_admin)
                                     values(?,?,'1413000',?,'Bukti Umum',?,?,?)", 'ssssss', (string) $unit, (string) $kode_transaksi, (string) $tanggal_transaksi, "Realisasi Hapus Buku An $nama", (string) $pokok, (string) $userid);       
-                    $query=db_jalankan("insert  into simpanan (BUSS_DATE,NOREK,UNIT,CIF,CODE_KEL,DEBIT,TYPE,KREDIT,USERID,KET,REFF,CAO,kode_transaksi)VALUES(?,?,?,?,?,?,'01','0',?,'Realisasi Hapus Buku','',?,?) ", 'sssssssss', (string) $tanggal_transaksi, (string) $no_anggota, (string) $unit, (string) $cif, (string) $code_kel, (string) $pokok, (string) $userid, (string) $cao, (string) $kode_transaksi) or die(mysql_error());             
+                    $query=db_jalankan("insert  into simpanan (BUSS_DATE,NOREK,UNIT,CIF,CODE_KEL,DEBIT,TYPE,KREDIT,USERID,KET,REFF,CAO,kode_transaksi)VALUES(?,?,?,?,?,?,'01','0',?,?,'',?,?) ", 'ssssssssss', (string) $tanggal_transaksi, (string) $no_anggota, (string) $unit, (string) $cif, (string) $code_kel, (string) $pokok, (string) $userid, (string) "Realisasi Hapus Buku $nama $cif", (string) $cao, (string) $kode_transaksi) or die(mysql_error());             
          
                  
                  
@@ -707,7 +707,7 @@ ob_start();
                     $query=db_jalankan("insert into tabel_transaksi(unit,kode_transaksi,kode_rekening,tanggal_transaksi, jenis_transaksi, keterangan_transaksi,kredit,id_admin)
                                     values(?,?,'1413000',?,'Bukti Umum',?,?,?)", 'ssssss', (string) $unit, (string) $kode_transaksi, (string) $tanggal_transaksi, "Realisasi Hapus Buku An $nama", (string) $pokok, (string) $userid);
                      
-                    $query=db_jalankan("insert  into simpanan (BUSS_DATE,NOREK,UNIT,CIF,CODE_KEL,DEBIT,TYPE,KREDIT,USERID,KET,REFF,CAO,kode_transaksi)VALUES(?,?,?,?,?,?,'01','0',?,'Realisasi Hapus Buku','',?,?) ", 'sssssssss', (string) $tanggal_transaksi, (string) $no_anggota, (string) $unit, (string) $cif, (string) $code_kel, (string) $sisa, (string) $userid, (string) $cao, (string) $kode_transaksi) or die(mysql_error());             
+                    $query=db_jalankan("insert  into simpanan (BUSS_DATE,NOREK,UNIT,CIF,CODE_KEL,DEBIT,TYPE,KREDIT,USERID,KET,REFF,CAO,kode_transaksi)VALUES(?,?,?,?,?,?,'01','0',?,?,'',?,?) ", 'ssssssssss', (string) $tanggal_transaksi, (string) $no_anggota, (string) $unit, (string) $cif, (string) $code_kel, (string) $sisa, (string) $userid, (string) "Realisasi Hapus Buku $nama $cif", (string) $cao, (string) $kode_transaksi) or die(mysql_error());             
                    
                     }
                      
@@ -734,7 +734,7 @@ ob_start();
                     $query=db_jalankan("insert into tabel_transaksi(unit,kode_transaksi,kode_rekening,tanggal_transaksi, jenis_transaksi, keterangan_transaksi,kredit,id_admin)
 
                                     values(?,?,'1413000',?,'Bukti Umum',?,?,?)", 'ssssss', (string) $unit, (string) $kode_transaksi, (string) $tanggal_transaksi, "Realisasi Hapus Buku An $nama", (string) $pokok, (string) $userid);       
-                    $query=db_jalankan("insert  into simpanan (BUSS_DATE,NOREK,UNIT,CIF,CODE_KEL,DEBIT,TYPE,KREDIT,USERID,KET,REFF,CAO,kode_transaksi)VALUES(?,?,?,?,?,?,'01','0',?,'Realisasi Hapus Buku','',?,?) ", 'sssssssss', (string) $tanggal_transaksi, (string) $no_anggota, (string) $unit, (string) $cif, (string) $code_kel, (string) $pokok, (string) $userid, (string) $cao, (string) $kode_transaksi) or die(mysql_error());             
+                    $query=db_jalankan("insert  into simpanan (BUSS_DATE,NOREK,UNIT,CIF,CODE_KEL,DEBIT,TYPE,KREDIT,USERID,KET,REFF,CAO,kode_transaksi)VALUES(?,?,?,?,?,?,'01','0',?,?,'',?,?) ", 'ssssssssss', (string) $tanggal_transaksi, (string) $no_anggota, (string) $unit, (string) $cif, (string) $code_kel, (string) $pokok, (string) $userid, (string) "Realisasi Hapus Buku $nama $cif", (string) $cao, (string) $kode_transaksi) or die(mysql_error());             
          
                  
                  
@@ -750,7 +750,7 @@ ob_start();
                     $query=db_jalankan("insert into tabel_transaksi(unit,kode_transaksi,kode_rekening,tanggal_transaksi, jenis_transaksi, keterangan_transaksi,kredit,id_admin)
                                     values(?,?,'1413000',?,'Bukti Umum',?,?,?)", 'ssssss', (string) $unit, (string) $kode_transaksi, (string) $tanggal_transaksi, "Realisasi Hapus Buku An $nama", (string) $pokok, (string) $userid);
                      
-                    $query=db_jalankan("insert  into simpanan (BUSS_DATE,NOREK,UNIT,CIF,CODE_KEL,DEBIT,TYPE,KREDIT,USERID,KET,REFF,CAO,kode_transaksi)VALUES(?,?,?,?,?,?,'01','0',?,'Realisasi Hapus Buku','',?,?) ", 'sssssssss', (string) $tanggal_transaksi, (string) $no_anggota, (string) $unit, (string) $cif, (string) $code_kel, (string) $sisa, (string) $userid, (string) $cao, (string) $kode_transaksi) or die(mysql_error());             
+                    $query=db_jalankan("insert  into simpanan (BUSS_DATE,NOREK,UNIT,CIF,CODE_KEL,DEBIT,TYPE,KREDIT,USERID,KET,REFF,CAO,kode_transaksi)VALUES(?,?,?,?,?,?,'01','0',?,?,'',?,?) ", 'ssssssssss', (string) $tanggal_transaksi, (string) $no_anggota, (string) $unit, (string) $cif, (string) $code_kel, (string) $sisa, (string) $userid, (string) "Realisasi Hapus Buku $nama $cif", (string) $cao, (string) $kode_transaksi) or die(mysql_error());             
                    
 		}
                      
@@ -787,7 +787,7 @@ ob_start();
                                     values(?,?,'2101000',?,'Bukti Umum',?,?,?)", 'ssssss', (string) $unit, (string) $kode_transaksi, (string) $tanggal_transaksi, "Realisasi Hapus Buku An $nama ", (string) $pokok, (string) $userid);
                     $query=db_jalankan("insert into tabel_transaksi(unit,kode_transaksi,kode_rekening,tanggal_transaksi, jenis_transaksi, keterangan_transaksi,kredit,id_admin)
                                     values(?,?,'1413000',?,'Bukti Umum',?,?,?)", 'ssssss', (string) $unit, (string) $kode_transaksi, (string) $tanggal_transaksi, "Realisasi Hapus Buku An $nama", (string) $pokok, (string) $userid);   
-                    $query=db_jalankan("insert  into simpanan (BUSS_DATE,NOREK,UNIT,CIF,CODE_KEL,DEBIT,TYPE,KREDIT,USERID,KET,REFF,CAO,kode_transaksi)VALUES(?,?,?,?,?,?,'01','0',?,'Realisasi Hapus Buku','',?,?) ", 'sssssssss', (string) $tanggal_transaksi, (string) $no_anggota, (string) $unit, (string) $cif, (string) $code_kel, (string) $pokok, (string) $userid, (string) $cao, (string) $kode_transaksi) or die(mysql_error());             
+                    $query=db_jalankan("insert  into simpanan (BUSS_DATE,NOREK,UNIT,CIF,CODE_KEL,DEBIT,TYPE,KREDIT,USERID,KET,REFF,CAO,kode_transaksi)VALUES(?,?,?,?,?,?,'01','0',?,?,'',?,?) ", 'ssssssssss', (string) $tanggal_transaksi, (string) $no_anggota, (string) $unit, (string) $cif, (string) $code_kel, (string) $pokok, (string) $userid, (string) "Realisasi Hapus Buku $nama $cif", (string) $cao, (string) $kode_transaksi) or die(mysql_error());             
                  
                  
                     }else{
@@ -796,7 +796,7 @@ ob_start();
                                     values(?,?,'1512000',?,'Bukti Umum',?,?,?)", 'ssssss', (string) $unit, (string) $kode_transaksi, (string) $tanggal_transaksi, "Realisasi Hapus Buku An $nama ", (string) $kurang, (string) $userid);
                         $query=db_jalankan("insert into tabel_transaksi(unit,kode_transaksi,kode_rekening,tanggal_transaksi, jenis_transaksi, keterangan_transaksi,debet,id_admin)
                                     values(?,?,'2101000',?,'Bukti Umum',?,?,?)", 'ssssss', (string) $unit, (string) $kode_transaksi, (string) $tanggal_transaksi, "Realisasi Hapus Buku An $nama ", (string) $sisa, (string) $userid);   
-                        $query=db_jalankan("insert  into simpanan (BUSS_DATE,NOREK,UNIT,CIF,CODE_KEL,DEBIT,TYPE,KREDIT,USERID,KET,REFF,CAO,kode_transaksi)VALUES(?,?,?,?,?,?,'01','0',?,'Realisasi Hapus Buku','',?,?) ", 'sssssssss', (string) $tanggal_transaksi, (string) $no_anggota, (string) $unit, (string) $cif, (string) $code_kel, (string) $sisa, (string) $userid, (string) $cao, (string) $kode_transaksi) or die(mysql_error());
+                        $query=db_jalankan("insert  into simpanan (BUSS_DATE,NOREK,UNIT,CIF,CODE_KEL,DEBIT,TYPE,KREDIT,USERID,KET,REFF,CAO,kode_transaksi)VALUES(?,?,?,?,?,?,'01','0',?,?,'',?,?) ", 'ssssssssss', (string) $tanggal_transaksi, (string) $no_anggota, (string) $unit, (string) $cif, (string) $code_kel, (string) $sisa, (string) $userid, (string) "Realisasi Hapus Buku $nama $cif", (string) $cao, (string) $kode_transaksi) or die(mysql_error());
                                                              
                         $query=db_jalankan("insert into tabel_transaksi(unit,kode_transaksi,kode_rekening,tanggal_transaksi, jenis_transaksi, keterangan_transaksi,kredit,id_admin)
                                     values(?,?,'1413000',?,'Bukti Umum',?,?,?)", 'ssssss', (string) $unit, (string) $kode_transaksi, (string) $tanggal_transaksi, "Realisasi Hapus Buku An $nama", (string) $pokok, (string) $userid);
@@ -844,7 +844,7 @@ ob_start();
                                     values(?,?,'2101000',?,'Bukti Umum',?,?,?)", 'ssssss', (string) $unit, (string) $kode_transaksi, (string) $tanggal_transaksi, "Realisasi Hapus Buku An $nama ", (string) $pokok, (string) $userid);
                     $query=db_jalankan("insert into tabel_transaksi(unit,kode_transaksi,kode_rekening,tanggal_transaksi, jenis_transaksi, keterangan_transaksi,kredit,id_admin)
                                     values(?,?,'1413000',?,'Bukti Umum',?,?,?)", 'ssssss', (string) $unit, (string) $kode_transaksi, (string) $tanggal_transaksi, "Realisasi Hapus Buku An $nama", (string) $pokok, (string) $userid);       
-                    $query=db_jalankan("insert  into simpanan (BUSS_DATE,NOREK,UNIT,CIF,CODE_KEL,DEBIT,TYPE,KREDIT,USERID,KET,REFF,CAO,kode_transaksi)VALUES(?,?,?,?,?,?,'01','0',?,'Realisasi Hapus Buku','',?,?) ", 'sssssssss', (string) $tanggal_transaksi, (string) $no_anggota, (string) $unit, (string) $cif, (string) $code_kel, (string) $pokok, (string) $userid, (string) $cao, (string) $kode_transaksi) or die(mysql_error());             
+                    $query=db_jalankan("insert  into simpanan (BUSS_DATE,NOREK,UNIT,CIF,CODE_KEL,DEBIT,TYPE,KREDIT,USERID,KET,REFF,CAO,kode_transaksi)VALUES(?,?,?,?,?,?,'01','0',?,?,'',?,?) ", 'ssssssssss', (string) $tanggal_transaksi, (string) $no_anggota, (string) $unit, (string) $cif, (string) $code_kel, (string) $pokok, (string) $userid, (string) "Realisasi Hapus Buku $nama $cif", (string) $cao, (string) $kode_transaksi) or die(mysql_error());             
          
                  
                  
@@ -860,7 +860,7 @@ ob_start();
                     $query=db_jalankan("insert into tabel_transaksi(unit,kode_transaksi,kode_rekening,tanggal_transaksi, jenis_transaksi, keterangan_transaksi,kredit,id_admin)
                                     values(?,?,'1413000',?,'Bukti Umum',?,?,?)", 'ssssss', (string) $unit, (string) $kode_transaksi, (string) $tanggal_transaksi, "Realisasi Hapus Buku An $nama", (string) $pokok, (string) $userid);
                      
-                    $query=db_jalankan("insert  into simpanan (BUSS_DATE,NOREK,UNIT,CIF,CODE_KEL,DEBIT,TYPE,KREDIT,USERID,KET,REFF,CAO,kode_transaksi)VALUES(?,?,?,?,?,?,'01','0',?,'Realisasi Hapus Buku','',?,?) ", 'sssssssss', (string) $tanggal_transaksi, (string) $no_anggota, (string) $unit, (string) $cif, (string) $code_kel, (string) $sisa, (string) $userid, (string) $cao, (string) $kode_transaksi) or die(mysql_error());             
+                    $query=db_jalankan("insert  into simpanan (BUSS_DATE,NOREK,UNIT,CIF,CODE_KEL,DEBIT,TYPE,KREDIT,USERID,KET,REFF,CAO,kode_transaksi)VALUES(?,?,?,?,?,?,'01','0',?,?,'',?,?) ", 'ssssssssss', (string) $tanggal_transaksi, (string) $no_anggota, (string) $unit, (string) $cif, (string) $code_kel, (string) $sisa, (string) $userid, (string) "Realisasi Hapus Buku $nama $cif", (string) $cao, (string) $kode_transaksi) or die(mysql_error());             
                    
                     }
                      
@@ -887,7 +887,7 @@ ob_start();
                     $query=db_jalankan("insert into tabel_transaksi(unit,kode_transaksi,kode_rekening,tanggal_transaksi, jenis_transaksi, keterangan_transaksi,kredit,id_admin)
 
                                     values(?,?,'1413000',?,'Bukti Umum',?,?,?)", 'ssssss', (string) $unit, (string) $kode_transaksi, (string) $tanggal_transaksi, "Realisasi Hapus Buku An $nama", (string) $pokok, (string) $userid);       
-                    $query=db_jalankan("insert  into simpanan (BUSS_DATE,NOREK,UNIT,CIF,CODE_KEL,DEBIT,TYPE,KREDIT,USERID,KET,REFF,CAO,kode_transaksi)VALUES(?,?,?,?,?,?,'01','0',?,'Realisasi Hapus Buku','',?,?) ", 'sssssssss', (string) $tanggal_transaksi, (string) $no_anggota, (string) $unit, (string) $cif, (string) $code_kel, (string) $pokok, (string) $userid, (string) $cao, (string) $kode_transaksi) or die(mysql_error());             
+                    $query=db_jalankan("insert  into simpanan (BUSS_DATE,NOREK,UNIT,CIF,CODE_KEL,DEBIT,TYPE,KREDIT,USERID,KET,REFF,CAO,kode_transaksi)VALUES(?,?,?,?,?,?,'01','0',?,?,'',?,?) ", 'ssssssssss', (string) $tanggal_transaksi, (string) $no_anggota, (string) $unit, (string) $cif, (string) $code_kel, (string) $pokok, (string) $userid, (string) "Realisasi Hapus Buku $nama $cif", (string) $cao, (string) $kode_transaksi) or die(mysql_error());             
          
                  
                  
@@ -903,7 +903,7 @@ ob_start();
                     $query=db_jalankan("insert into tabel_transaksi(unit,kode_transaksi,kode_rekening,tanggal_transaksi, jenis_transaksi, keterangan_transaksi,kredit,id_admin)
                                     values(?,?,'1413000',?,'Bukti Umum',?,?,?)", 'ssssss', (string) $unit, (string) $kode_transaksi, (string) $tanggal_transaksi, "Realisasi Hapus Buku An $nama", (string) $pokok, (string) $userid);
                      
-                    $query=db_jalankan("insert  into simpanan (BUSS_DATE,NOREK,UNIT,CIF,CODE_KEL,DEBIT,TYPE,KREDIT,USERID,KET,REFF,CAO,kode_transaksi)VALUES(?,?,?,?,?,?,'01','0',?,'Realisasi Hapus Buku','',?,?) ", 'sssssssss', (string) $tanggal_transaksi, (string) $no_anggota, (string) $unit, (string) $cif, (string) $code_kel, (string) $sisa, (string) $userid, (string) $cao, (string) $kode_transaksi) or die(mysql_error());             
+                    $query=db_jalankan("insert  into simpanan (BUSS_DATE,NOREK,UNIT,CIF,CODE_KEL,DEBIT,TYPE,KREDIT,USERID,KET,REFF,CAO,kode_transaksi)VALUES(?,?,?,?,?,?,'01','0',?,?,'',?,?) ", 'ssssssssss', (string) $tanggal_transaksi, (string) $no_anggota, (string) $unit, (string) $cif, (string) $code_kel, (string) $sisa, (string) $userid, (string) "Realisasi Hapus Buku $nama $cif", (string) $cao, (string) $kode_transaksi) or die(mysql_error());             
                    
 		}
                      
@@ -940,7 +940,7 @@ ob_start();
                                     values(?,?,'2101000',?,'Bukti Umum',?,?,?)", 'ssssss', (string) $unit, (string) $kode_transaksi, (string) $tanggal_transaksi, "Realisasi Hapus Buku An $nama ", (string) $pokok, (string) $userid);
                     $query=db_jalankan("insert into tabel_transaksi(unit,kode_transaksi,kode_rekening,tanggal_transaksi, jenis_transaksi, keterangan_transaksi,kredit,id_admin)
                                     values(?,?,'1413000',?,'Bukti Umum',?,?,?)", 'ssssss', (string) $unit, (string) $kode_transaksi, (string) $tanggal_transaksi, "Realisasi Hapus Buku An $nama", (string) $pokok, (string) $userid);   
-                    $query=db_jalankan("insert  into simpanan (BUSS_DATE,NOREK,UNIT,CIF,CODE_KEL,DEBIT,TYPE,KREDIT,USERID,KET,REFF,CAO,kode_transaksi)VALUES(?,?,?,?,?,?,'01','0',?,'Realisasi Hapus Buku','',?,?) ", 'sssssssss', (string) $tanggal_transaksi, (string) $no_anggota, (string) $unit, (string) $cif, (string) $code_kel, (string) $pokok, (string) $userid, (string) $cao, (string) $kode_transaksi) or die(mysql_error());             
+                    $query=db_jalankan("insert  into simpanan (BUSS_DATE,NOREK,UNIT,CIF,CODE_KEL,DEBIT,TYPE,KREDIT,USERID,KET,REFF,CAO,kode_transaksi)VALUES(?,?,?,?,?,?,'01','0',?,?,'',?,?) ", 'ssssssssss', (string) $tanggal_transaksi, (string) $no_anggota, (string) $unit, (string) $cif, (string) $code_kel, (string) $pokok, (string) $userid, (string) "Realisasi Hapus Buku $nama $cif", (string) $cao, (string) $kode_transaksi) or die(mysql_error());             
                  
                  
                     }else{
@@ -949,7 +949,7 @@ ob_start();
                                     values(?,?,'1512000',?,'Bukti Umum',?,?,?)", 'ssssss', (string) $unit, (string) $kode_transaksi, (string) $tanggal_transaksi, "Realisasi Hapus Buku An $nama ", (string) $kurang, (string) $userid);
                         $query=db_jalankan("insert into tabel_transaksi(unit,kode_transaksi,kode_rekening,tanggal_transaksi, jenis_transaksi, keterangan_transaksi,debet,id_admin)
                                     values(?,?,'2101000',?,'Bukti Umum',?,?,?)", 'ssssss', (string) $unit, (string) $kode_transaksi, (string) $tanggal_transaksi, "Realisasi Hapus Buku An $nama ", (string) $sisa, (string) $userid);   
-                        $query=db_jalankan("insert  into simpanan (BUSS_DATE,NOREK,UNIT,CIF,CODE_KEL,DEBIT,TYPE,KREDIT,USERID,KET,REFF,CAO,kode_transaksi)VALUES(?,?,?,?,?,?,'01','0',?,'Realisasi Hapus Buku','',?,?) ", 'sssssssss', (string) $tanggal_transaksi, (string) $no_anggota, (string) $unit, (string) $cif, (string) $code_kel, (string) $sisa, (string) $userid, (string) $cao, (string) $kode_transaksi) or die(mysql_error());
+                        $query=db_jalankan("insert  into simpanan (BUSS_DATE,NOREK,UNIT,CIF,CODE_KEL,DEBIT,TYPE,KREDIT,USERID,KET,REFF,CAO,kode_transaksi)VALUES(?,?,?,?,?,?,'01','0',?,?,'',?,?) ", 'ssssssssss', (string) $tanggal_transaksi, (string) $no_anggota, (string) $unit, (string) $cif, (string) $code_kel, (string) $sisa, (string) $userid, (string) "Realisasi Hapus Buku $nama $cif", (string) $cao, (string) $kode_transaksi) or die(mysql_error());
                                                              
                         $query=db_jalankan("insert into tabel_transaksi(unit,kode_transaksi,kode_rekening,tanggal_transaksi, jenis_transaksi, keterangan_transaksi,kredit,id_admin)
                                     values(?,?,'1413000',?,'Bukti Umum',?,?,?)", 'ssssss', (string) $unit, (string) $kode_transaksi, (string) $tanggal_transaksi, "Realisasi Hapus Buku An $nama", (string) $pokok, (string) $userid);
@@ -998,7 +998,7 @@ ob_start();
                                     values(?,?,'2101000',?,'Bukti Umum',?,?,?)", 'ssssss', (string) $unit, (string) $kode_transaksi, (string) $tanggal_transaksi, "Realisasi Hapus Buku An $nama ", (string) $pokok, (string) $userid);
                     $query=db_jalankan("insert into tabel_transaksi(unit,kode_transaksi,kode_rekening,tanggal_transaksi, jenis_transaksi, keterangan_transaksi,kredit,id_admin)
                                     values(?,?,'1413000',?,'Bukti Umum',?,?,?)", 'ssssss', (string) $unit, (string) $kode_transaksi, (string) $tanggal_transaksi, "Realisasi Hapus Buku An $nama", (string) $pokok, (string) $userid);       
-                    $query=db_jalankan("insert  into simpanan (BUSS_DATE,NOREK,UNIT,CIF,CODE_KEL,DEBIT,TYPE,KREDIT,USERID,KET,REFF,CAO,kode_transaksi)VALUES(?,?,?,?,?,?,'01','0',?,'Realisasi Hapus Buku','',?,?) ", 'sssssssss', (string) $tanggal_transaksi, (string) $no_anggota, (string) $unit, (string) $cif, (string) $code_kel, (string) $pokok, (string) $userid, (string) $cao, (string) $kode_transaksi) or die(mysql_error());             
+                    $query=db_jalankan("insert  into simpanan (BUSS_DATE,NOREK,UNIT,CIF,CODE_KEL,DEBIT,TYPE,KREDIT,USERID,KET,REFF,CAO,kode_transaksi)VALUES(?,?,?,?,?,?,'01','0',?,?,'',?,?) ", 'ssssssssss', (string) $tanggal_transaksi, (string) $no_anggota, (string) $unit, (string) $cif, (string) $code_kel, (string) $pokok, (string) $userid, (string) "Realisasi Hapus Buku $nama $cif", (string) $cao, (string) $kode_transaksi) or die(mysql_error());             
          
                  
                  
@@ -1014,7 +1014,7 @@ ob_start();
                     $query=db_jalankan("insert into tabel_transaksi(unit,kode_transaksi,kode_rekening,tanggal_transaksi, jenis_transaksi, keterangan_transaksi,kredit,id_admin)
                                     values(?,?,'1413000',?,'Bukti Umum',?,?,?)", 'ssssss', (string) $unit, (string) $kode_transaksi, (string) $tanggal_transaksi, "Realisasi Hapus Buku An $nama", (string) $pokok, (string) $userid);
                      
-                    $query=db_jalankan("insert  into simpanan (BUSS_DATE,NOREK,UNIT,CIF,CODE_KEL,DEBIT,TYPE,KREDIT,USERID,KET,REFF,CAO,kode_transaksi)VALUES(?,?,?,?,?,?,'01','0',?,'Realisasi Hapus Buku','',?,?) ", 'sssssssss', (string) $tanggal_transaksi, (string) $no_anggota, (string) $unit, (string) $cif, (string) $code_kel, (string) $sisa, (string) $userid, (string) $cao, (string) $kode_transaksi) or die(mysql_error());             
+                    $query=db_jalankan("insert  into simpanan (BUSS_DATE,NOREK,UNIT,CIF,CODE_KEL,DEBIT,TYPE,KREDIT,USERID,KET,REFF,CAO,kode_transaksi)VALUES(?,?,?,?,?,?,'01','0',?,?,'',?,?) ", 'ssssssssss', (string) $tanggal_transaksi, (string) $no_anggota, (string) $unit, (string) $cif, (string) $code_kel, (string) $sisa, (string) $userid, (string) "Realisasi Hapus Buku $nama $cif", (string) $cao, (string) $kode_transaksi) or die(mysql_error());             
                    
                     }
                      
@@ -1041,7 +1041,7 @@ ob_start();
                     $query=db_jalankan("insert into tabel_transaksi(unit,kode_transaksi,kode_rekening,tanggal_transaksi, jenis_transaksi, keterangan_transaksi,kredit,id_admin)
 
                                     values(?,?,'1413000',?,'Bukti Umum',?,?,?)", 'ssssss', (string) $unit, (string) $kode_transaksi, (string) $tanggal_transaksi, "Realisasi Hapus Buku An $nama", (string) $pokok, (string) $userid);       
-                    $query=db_jalankan("insert  into simpanan (BUSS_DATE,NOREK,UNIT,CIF,CODE_KEL,DEBIT,TYPE,KREDIT,USERID,KET,REFF,CAO,kode_transaksi)VALUES(?,?,?,?,?,?,'01','0',?,'Realisasi Hapus Buku','',?,?) ", 'sssssssss', (string) $tanggal_transaksi, (string) $no_anggota, (string) $unit, (string) $cif, (string) $code_kel, (string) $pokok, (string) $userid, (string) $cao, (string) $kode_transaksi) or die(mysql_error());             
+                    $query=db_jalankan("insert  into simpanan (BUSS_DATE,NOREK,UNIT,CIF,CODE_KEL,DEBIT,TYPE,KREDIT,USERID,KET,REFF,CAO,kode_transaksi)VALUES(?,?,?,?,?,?,'01','0',?,?,'',?,?) ", 'ssssssssss', (string) $tanggal_transaksi, (string) $no_anggota, (string) $unit, (string) $cif, (string) $code_kel, (string) $pokok, (string) $userid, (string) "Realisasi Hapus Buku $nama $cif", (string) $cao, (string) $kode_transaksi) or die(mysql_error());             
          
                  
                  
@@ -1057,7 +1057,7 @@ ob_start();
                     $query=db_jalankan("insert into tabel_transaksi(unit,kode_transaksi,kode_rekening,tanggal_transaksi, jenis_transaksi, keterangan_transaksi,kredit,id_admin)
                                     values(?,?,'1413000',?,'Bukti Umum',?,?,?)", 'ssssss', (string) $unit, (string) $kode_transaksi, (string) $tanggal_transaksi, "Realisasi Hapus Buku An $nama", (string) $pokok, (string) $userid);
                      
-                    $query=db_jalankan("insert  into simpanan (BUSS_DATE,NOREK,UNIT,CIF,CODE_KEL,DEBIT,TYPE,KREDIT,USERID,KET,REFF,CAO,kode_transaksi)VALUES(?,?,?,?,?,?,'01','0',?,'Realisasi Hapus Buku','',?,?) ", 'sssssssss', (string) $tanggal_transaksi, (string) $no_anggota, (string) $unit, (string) $cif, (string) $code_kel, (string) $sisa, (string) $userid, (string) $cao, (string) $kode_transaksi) or die(mysql_error());             
+                    $query=db_jalankan("insert  into simpanan (BUSS_DATE,NOREK,UNIT,CIF,CODE_KEL,DEBIT,TYPE,KREDIT,USERID,KET,REFF,CAO,kode_transaksi)VALUES(?,?,?,?,?,?,'01','0',?,?,'',?,?) ", 'ssssssssss', (string) $tanggal_transaksi, (string) $no_anggota, (string) $unit, (string) $cif, (string) $code_kel, (string) $sisa, (string) $userid, (string) "Realisasi Hapus Buku $nama $cif", (string) $cao, (string) $kode_transaksi) or die(mysql_error());             
                    
 		}
                      
@@ -1094,7 +1094,7 @@ ob_start();
                                     values(?,?,'2101000',?,'Bukti Umum',?,?,?)", 'ssssss', (string) $unit, (string) $kode_transaksi, (string) $tanggal_transaksi, "Realisasi Hapus Buku An $nama ", (string) $pokok, (string) $userid);
                     $query=db_jalankan("insert into tabel_transaksi(unit,kode_transaksi,kode_rekening,tanggal_transaksi, jenis_transaksi, keterangan_transaksi,kredit,id_admin)
                                     values(?,?,'1413000',?,'Bukti Umum',?,?,?)", 'ssssss', (string) $unit, (string) $kode_transaksi, (string) $tanggal_transaksi, "Realisasi Hapus Buku An $nama", (string) $pokok, (string) $userid);   
-                    $query=db_jalankan("insert  into simpanan (BUSS_DATE,NOREK,UNIT,CIF,CODE_KEL,DEBIT,TYPE,KREDIT,USERID,KET,REFF,CAO,kode_transaksi)VALUES(?,?,?,?,?,?,'01','0',?,'Realisasi Hapus Buku','',?,?) ", 'sssssssss', (string) $tanggal_transaksi, (string) $no_anggota, (string) $unit, (string) $cif, (string) $code_kel, (string) $pokok, (string) $userid, (string) $cao, (string) $kode_transaksi) or die(mysql_error());             
+                    $query=db_jalankan("insert  into simpanan (BUSS_DATE,NOREK,UNIT,CIF,CODE_KEL,DEBIT,TYPE,KREDIT,USERID,KET,REFF,CAO,kode_transaksi)VALUES(?,?,?,?,?,?,'01','0',?,?,'',?,?) ", 'ssssssssss', (string) $tanggal_transaksi, (string) $no_anggota, (string) $unit, (string) $cif, (string) $code_kel, (string) $pokok, (string) $userid, (string) "Realisasi Hapus Buku $nama $cif", (string) $cao, (string) $kode_transaksi) or die(mysql_error());             
                  
                  
                     }else{
@@ -1103,7 +1103,7 @@ ob_start();
                                     values(?,?,'1512000',?,'Bukti Umum',?,?,?)", 'ssssss', (string) $unit, (string) $kode_transaksi, (string) $tanggal_transaksi, "Realisasi Hapus Buku An $nama ", (string) $kurang, (string) $userid);
                         $query=db_jalankan("insert into tabel_transaksi(unit,kode_transaksi,kode_rekening,tanggal_transaksi, jenis_transaksi, keterangan_transaksi,debet,id_admin)
                                     values(?,?,'2101000',?,'Bukti Umum',?,?,?)", 'ssssss', (string) $unit, (string) $kode_transaksi, (string) $tanggal_transaksi, "Realisasi Hapus Buku An $nama ", (string) $sisa, (string) $userid);   
-                        $query=db_jalankan("insert  into simpanan (BUSS_DATE,NOREK,UNIT,CIF,CODE_KEL,DEBIT,TYPE,KREDIT,USERID,KET,REFF,CAO,kode_transaksi)VALUES(?,?,?,?,?,?,'01','0',?,'Realisasi Hapus Buku','',?,?) ", 'sssssssss', (string) $tanggal_transaksi, (string) $no_anggota, (string) $unit, (string) $cif, (string) $code_kel, (string) $sisa, (string) $userid, (string) $cao, (string) $kode_transaksi) or die(mysql_error());
+                        $query=db_jalankan("insert  into simpanan (BUSS_DATE,NOREK,UNIT,CIF,CODE_KEL,DEBIT,TYPE,KREDIT,USERID,KET,REFF,CAO,kode_transaksi)VALUES(?,?,?,?,?,?,'01','0',?,?,'',?,?) ", 'ssssssssss', (string) $tanggal_transaksi, (string) $no_anggota, (string) $unit, (string) $cif, (string) $code_kel, (string) $sisa, (string) $userid, (string) "Realisasi Hapus Buku $nama $cif", (string) $cao, (string) $kode_transaksi) or die(mysql_error());
                                                              
                         $query=db_jalankan("insert into tabel_transaksi(unit,kode_transaksi,kode_rekening,tanggal_transaksi, jenis_transaksi, keterangan_transaksi,kredit,id_admin)
                                     values(?,?,'1413000',?,'Bukti Umum',?,?,?)", 'ssssss', (string) $unit, (string) $kode_transaksi, (string) $tanggal_transaksi, "Realisasi Hapus Buku An $nama", (string) $pokok, (string) $userid);

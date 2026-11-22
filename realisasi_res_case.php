@@ -91,8 +91,8 @@ if ($pilih=='01') {
             $Plafond=$row['Plafond'];
 			$bagi_hasil=$row['bagi_hasil'];
 			$piutang=$Plafond + $bagi_hasil;
-            $ket="Realisasi Restrukturisasi $Cust_Short_name";
-			$ket1="Realisasi Reversal Restrukturisasi $Cust_Short_name";
+            $ket="Realisasi Restrukturisasi $Cust_Short_name $cif"; // 2026-11-22: CIF ditambahkan
+			$ket1="Realisasi Reversal Restrukturisasi $Cust_Short_name $cif";
 			$pokok_os=$os - $saldo_margin;
 			$wadiah = ($Plafond + $bagi_hasil)-$os;
 			$wadiah_margin=$bagi_hasil - $saldo_margin;

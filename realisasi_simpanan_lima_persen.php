@@ -94,7 +94,7 @@ $kode_trans="BU/".$unit.$kodetr;
             if ($pokok == 0 && $wajib >= 0)  {
                 $in_pokok=50000;
                 $ket="Setoran simpanan Pokok an $nama";
-                catat_simpanan_5('simpanan_pokok', $tgl_system, $norek, $unit, $value, $code_kel, $in_pokok, $userid, $kode_trans, "Simpanan Pokok AN $nama", $cao);
+                catat_simpanan_5('simpanan_pokok', $tgl_system, $norek, $unit, $value, $code_kel, $in_pokok, $userid, $kode_trans, "Simpanan Pokok AN $nama $value", $cao);
                 catat_transaksi_5($unit, $kode_trans, '1120000', $tgl_system, $ket, 'debet', $in_pokok, $userid);
                 catat_transaksi_5($unit, $kode_trans, '3102000', $tgl_system, $ket, 'kredit', $in_pokok, $userid);
 
@@ -102,7 +102,7 @@ $kode_trans="BU/".$unit.$kodetr;
                 $sisa = $nominal - $in_pokok;
                 if($sisa>0){
                     $ket="Setoran simpanan 5% an $nama";
-                    catat_simpanan_5('simpanan_wajib', $tgl_system, $norek, $unit, $value, $code_kel, $sisa, $userid, $kode_trans, "Simpanan Wajib AN $nama", $cao);
+                    catat_simpanan_5('simpanan_wajib', $tgl_system, $norek, $unit, $value, $code_kel, $sisa, $userid, $kode_trans, "Simpanan Wajib AN $nama $value", $cao);
                     catat_transaksi_5($unit, $kode_trans, '1120000', $tgl_system, $ket, 'debet', $sisa, $userid);
                     catat_transaksi_5($unit, $kode_trans, '3202000', $tgl_system, $ket, 'kredit', $sisa, $userid);
                 }
@@ -110,7 +110,7 @@ $kode_trans="BU/".$unit.$kodetr;
             //JIKA PUNYA POKOK DA BELUM MEMPUNYA WAJIB
             elseif($pokok == 50000 && $wajib >= 0){
                 $ket="Setoran simpanan 5% an $nama";
-                catat_simpanan_5('simpanan_wajib', $tgl_system, $norek, $unit, $value, $code_kel, $nominal, $userid, $kode_trans, "Simpanan Wajib AN $nama", $cao);
+                catat_simpanan_5('simpanan_wajib', $tgl_system, $norek, $unit, $value, $code_kel, $nominal, $userid, $kode_trans, "Simpanan Wajib AN $nama $value", $cao);
                 catat_transaksi_5($unit, $kode_trans, '1120000', $tgl_system, $ket, 'debet', $nominal, $userid);
                 catat_transaksi_5($unit, $kode_trans, '3202000', $tgl_system, $ket, 'kredit', $nominal, $userid);
             }
@@ -126,13 +126,13 @@ $kode_trans="BU/".$unit.$kodetr;
                 $ke_wajib = $nominal - $ke_pokok;
                 if ($ke_pokok > 0) {
                     $ket="Setoran simpanan Pokok an $nama";
-                    catat_simpanan_5('simpanan_pokok', $tgl_system, $norek, $unit, $value, $code_kel, $ke_pokok, $userid, $kode_trans, "Simpanan Pokok AN $nama", $cao);
+                    catat_simpanan_5('simpanan_pokok', $tgl_system, $norek, $unit, $value, $code_kel, $ke_pokok, $userid, $kode_trans, "Simpanan Pokok AN $nama $value", $cao);
                     catat_transaksi_5($unit, $kode_trans, '1120000', $tgl_system, $ket, 'debet', $ke_pokok, $userid);
                     catat_transaksi_5($unit, $kode_trans, '3102000', $tgl_system, $ket, 'kredit', $ke_pokok, $userid);
                 }
                 if ($ke_wajib > 0) {
                     $ket="Setoran simpanan 5% an $nama";
-                    catat_simpanan_5('simpanan_wajib', $tgl_system, $norek, $unit, $value, $code_kel, $ke_wajib, $userid, $kode_trans, "Simpanan Wajib AN $nama", $cao);
+                    catat_simpanan_5('simpanan_wajib', $tgl_system, $norek, $unit, $value, $code_kel, $ke_wajib, $userid, $kode_trans, "Simpanan Wajib AN $nama $value", $cao);
                     catat_transaksi_5($unit, $kode_trans, '1120000', $tgl_system, $ket, 'debet', $ke_wajib, $userid);
                     catat_transaksi_5($unit, $kode_trans, '3202000', $tgl_system, $ket, 'kredit', $ke_wajib, $userid);
                 }

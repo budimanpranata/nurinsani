@@ -62,7 +62,7 @@ if ($cekbox) {
             $USERID=$row['USERID'];
             $status='ANGGOTA';
             $norek="$no_anggota";
-            $ket="Realisasi Murabahah $Cust_Short_name";
+            $ket="Realisasi Murabahah $Cust_Short_name $cif"; // 2026-11-22: CIF ditambahkan
  		$check = db_satu("SELECT os FROM loan WHERE cif= ? ", 's', (string) $cif);
 		$os_lama=$check['os'];
 		if ($os_lama >0) {

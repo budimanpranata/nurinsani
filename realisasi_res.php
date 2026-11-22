@@ -90,7 +90,7 @@ if ($pilih=='01') {
 } else{
 	$simpanan=0;
 }
-            $ket="Realisasi Restrukturisasi $Cust_Short_name";
+            $ket="Realisasi Restrukturisasi $Cust_Short_name $cif"; // 2026-11-22: CIF ditambahkan
 			$pokok_os=$os - $saldo_margin;
 			// §2f (2026-11-19, perintah user): simpanan yang diambil maksimal sebesar sisa pokok (dulu simpanan > sisa pokok
 			// -> OS, angsuran & jurnal minus, kelebihan simpanan ikut terdebet). Debit simpanan & jurnal memakai nilai ini.

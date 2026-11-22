@@ -206,8 +206,8 @@ db_jalankan("Update  tagihan_cs set status_realisasi ='BAYAR'  where cif  =? and
 				if($kembali_nisbah > 0){
 					// nisbah yang terdebet melebihi bagian anggota dikembalikan ke simpanan
 					// (EOD menaruh teks keterangan di REFF yang berupa nomor otomatis, sehingga teksnya hilang; kini di KET)
-					db_jalankan("insert  into simpanan (BUSS_DATE,NOREK,UNIT,CIF,CODE_KEL,DEBIT,TYPE,KREDIT,USERID,KET,REFF,CAO,tgl_input,kode_transaksi)VALUES(?,?,?,?,?,'0','03',?,?,'Pengembalian Nisbah Pelunasan','',?,?,?)", 'ssssssssss',
-						(string) $tanggal, (string) $anggota, (string) $unit, (string) $cif, (string) $code_kel, (string) $kembali_nisbah, (string) $userid, (string) $cao, (string) $tgl_input, (string) $kode_trans);
+					db_jalankan("insert  into simpanan (BUSS_DATE,NOREK,UNIT,CIF,CODE_KEL,DEBIT,TYPE,KREDIT,USERID,KET,REFF,CAO,tgl_input,kode_transaksi)VALUES(?,?,?,?,?,'0','03',?,?,?,'',?,?,?)", 'sssssssssss',
+						(string) $tanggal, (string) $anggota, (string) $unit, (string) $cif, (string) $code_kel, (string) $kembali_nisbah, (string) $userid, (string) "Pengembalian Nisbah Pelunasan an $nama $cif", (string) $cao, (string) $tgl_input, (string) $kode_trans);
 					db_jalankan("insert  into tabel_transaksi(unit,kode_transaksi,kode_rekening,tanggal_transaksi, jenis_transaksi, keterangan_transaksi,debet,id_admin)
 					values(?,?,'41063',?,'Bukti SYSTEM','Pengembalian Nisbah Pelunasan',?,?)", 'sssss', (string) $unit, (string) $kode_trans, (string) $tanggal, (string) $kembali_nisbah, (string) $userid);
 					db_jalankan("insert  into tabel_transaksi(unit,kode_transaksi,kode_rekening,tanggal_transaksi, jenis_transaksi, keterangan_transaksi,kredit,id_admin)

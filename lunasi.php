@@ -151,8 +151,8 @@ $norek =$anggota;
 				db_jalankan("insert into jurnal_umum(nomor_jurnal,kode_transaksi,tanggal_selesai,unit) values('',?,?,?)", 'sss', (string) $kode_trans, (string) $tanggal, (string) $unit);
 				if($kembali_nisbah > 0){
 					// nisbah yang terdebet melebihi bagian anggota dikembalikan ke simpanan
-					db_jalankan("insert  into simpanan (BUSS_DATE,NOREK,UNIT,CIF,CODE_KEL,DEBIT,TYPE,KREDIT,USERID,KET,REFF,CAO,tgl_input,kode_transaksi)VALUES(?,?,?,?,?,'0','03',?,?,'Pengembalian Nisbah Pelunasan','',?,?,?)", 'ssssssssss',
-						(string) $tanggal, (string) $norek, (string) $unit, (string) $ciff, (string) $code_kel, (string) $kembali_nisbah, (string) $userid, (string) $cao, (string) $date, (string) $kode_trans);
+					db_jalankan("insert  into simpanan (BUSS_DATE,NOREK,UNIT,CIF,CODE_KEL,DEBIT,TYPE,KREDIT,USERID,KET,REFF,CAO,tgl_input,kode_transaksi)VALUES(?,?,?,?,?,'0','03',?,?,?,'',?,?,?)", 'sssssssssss',
+						(string) $tanggal, (string) $norek, (string) $unit, (string) $ciff, (string) $code_kel, (string) $kembali_nisbah, (string) $userid, (string) "Pengembalian Nisbah Pelunasan an $nama $ciff", (string) $cao, (string) $date, (string) $kode_trans);
 					db_jalankan("insert  into tabel_transaksi(unit,kode_transaksi,kode_rekening,tanggal_transaksi, jenis_transaksi, keterangan_transaksi,debet,id_admin)
 					values(?,?,'41063',?,'Bukti SYSTEM','Pengembalian Nisbah Pelunasan',?,?)", 'sssss', (string) $unit, (string) $kode_trans, (string) $tanggal, (string) $kembali_nisbah, (string) $userid);
 					db_jalankan("insert  into tabel_transaksi(unit,kode_transaksi,kode_rekening,tanggal_transaksi, jenis_transaksi, keterangan_transaksi,kredit,id_admin)

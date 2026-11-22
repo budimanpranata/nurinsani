@@ -74,7 +74,7 @@ foreach ($cekbox as $value) {
     $cao = $row['cao'];
     $USERID = $row['USERID'];
     $norek = "$no_anggota";
-    $ket = "Realisasi MUSYARAKAH $Cust_Short_name";
+    $ket = "Realisasi MUSYARAKAH $Cust_Short_name $cif"; // 2026-11-22: CIF ditambahkan
 
     $check = db_satu("SELECT os FROM loan WHERE cif = ?", 's', (string) $cif);
     $os_lama = $check ? $check['os'] : null;
