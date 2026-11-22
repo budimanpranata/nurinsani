@@ -83,8 +83,10 @@ halaman_awal('Home');
       </thead>
       <tbody>
       <?php foreach ($baris_cek as $b):
-          // perbandingan sama dengan versi lama ($nominatif == $neraca)
-          $cocok = $b[1] == $b[2];
+          // 2026-11-22 (perintah user, PEKERJAAN_TERTUNDA §21): neraca tetap tampil apa adanya (boleh negatif), tetapi
+          // dibandingkan sebagai nilai positif. Dulu $nominatif == $neraca langsung; 1423000 (margin, bernormal kredit)
+          // tersimpan negatif sehingga Saldo Margin selalu "Tidak Sesuai" (mis. 16.566.409 vs -16.142.154).
+          $cocok = $b[1] == ($b[2] === null ? null : (string) abs(compat_num($b[2])));
       ?>
         <tr>
           <td><?php echo h($b[0]); ?></td>
