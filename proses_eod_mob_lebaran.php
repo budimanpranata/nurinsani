@@ -49,19 +49,20 @@ while($data = db_fetch_array($select)){
         $kode_trans="BU/".$unit.$kodetr;      
         
 
-        $ket1="Setoran Angsuran An $nama $ciff";
+        // 2026-11-22 (perintah user, P3-5): simpanan TYPE 10 = tabungan lebaran -> keterangan "Setoran Lebaran An nama CIF"
+        // di simpanan & kedua baris jurnal (dulu "Setoran Angsuran An .." / kredit 2101000 "Simpanan Pokok")
+        $ket1="Setoran Lebaran An $nama $ciff";
         $input ="Insert into simpanan (BUSS_DATE,NOREK,UNIT,CIF,CODE_KEL,DEBIT,TYPE,KREDIT,USERID,KET,REFF,CAO,blok,tgl_input,kode_transaksi)VALUES('$tanggal','$norek','$unit','$ciff','$code_kel',0,'10','$nominal','$unit','$ket1','','$cao','1','$tanggal','$kode_trans')";
         $inputtrnsk = db_query($con,$input);
         if($inputtrnsk){
-        $ket="Setoran Angsuran An $nama $ciff";              
+        $ket="Setoran Lebaran An $nama $ciff";              
         
-                $jurnal_umum=db_fetch_array(db_query($con,"SELECT max(nomor_jurnal) FROM jurnal_umum where unit ='$unit' ORDER BY tanggal_selesai DESC"));
-                $nomor_jurnal=$jurnal_umum[0]+1;
-                db_query($con,"insert into jurnal_masuk(nomor_jurnal,kode_transaksi,tanggal_selesai,unit) values('$nomor_jurnal','$kode_trans','$tanggal','$unit')");
+                // 2026-11-22 (P3-5): nomor jurnal_masuk auto increment (dulu max(jurnal_umum)+1 -> bisa bentrok, header hilang)
+                db_query($con,"insert into jurnal_masuk(kode_transaksi,tanggal_selesai,unit) values('$kode_trans','$tanggal','$unit')");
                 db_query($con,"insert  into tabel_transaksi(unit,kode_transaksi,kode_rekening,tanggal_transaksi, jenis_transaksi, keterangan_transaksi,debet,id_admin)
                 values('$unit','$kode_trans','1120000','$tanggal','Bukti SYSTEM','$ket1','$nominal','$unit')");
                 db_query($con,"insert  into tabel_transaksi(unit,kode_transaksi,kode_rekening,tanggal_transaksi, jenis_transaksi, keterangan_transaksi,kredit,id_admin)
-                values('$unit','$kode_trans','2101000','$tanggal','Bukti SYSTEM','Simpanan Pokok','$nominal','$unit')");
+                values('$unit','$kode_trans','2101000','$tanggal','Bukti SYSTEM','$ket1','$nominal','$unit')");
               
                 
             }
