@@ -129,12 +129,27 @@ if ($aksi === 'mulai') {
     }
     $all = $checkbox == "checkbox";
     $saldo_mulai = $saldo_eoy;
+    $sumber_awal = 'saldo_akhir tabel_master_eoy unit 0000 Desember ' . $tahun_eoy . ($eoy ? '' : ' (TIDAK DITEMUKAN, dihitung 0)');
+    // 2026-11-22 (perintah user, §28): rekening rugi-laba tanpa All data hanya mengambil transaksi bulan terpilih, jadi
+    // saldo awalnya posisi awal bulan itu (rugi-laba dinolkan di EOY): capture tabel_master_konsol bulan & tahun terpilih
+    // (saldo_awal) bila ada; belum ada (bulan berjalan) -> saldo_awal tabel_master. Neraca & All data tetap dari EOY.
+    if (!$all && $pilih === 'rugi-laba') {
+        $awal_bulan = db_satu("select saldo_awal from tabel_master_konsol WHERE rekening_gl =? and month(tanggal_awal)=? and Year(tanggal_awal)=?",
+            'sss', $norek, $bulan, $tahun);
+        if ($awal_bulan) {
+            $saldo_mulai = compat_num($awal_bulan['saldo_awal']);
+            $sumber_awal = 'saldo_awal tabel_master_konsol bulan ' . $bulan . ' tahun ' . $tahun;
+        } else {
+            $saldo_mulai = compat_num($saldo_awal);
+            $sumber_awal = 'saldo_awal tabel_master (bulan berjalan; capture konsol bulan ' . $bulan . ' tahun ' . $tahun . ' belum ada)';
+        }
+    }
     $ada_query = $pilih === 'Neraca' || $pilih === 'rugi-laba';
     $meta = array('jenis' => 'buku_besar_kp', 'userid' => $userid, 'unit' => $unit, 'norek' => $norek, 'bulan' => $bulan, 'tahun' => $tahun,
         'debet_normal' => $normal == 'debet', 'bulan_saja' => !$all && $pilih === 'rugi-laba', 'ada_query' => $ada_query,
         'saldo' => $saldo_mulai, 'saldo_mulai' => $saldo_mulai, 'id_akhir' => 0, 'baris' => 1, 'selesai' => 0, 'tot_debet' => 0, 'tot_kredit' => 0,
-        'kepala' => array('no' => $kode_rekening, 'nama' => $nama_rekening, 'saldo_awal' => $saldo_eoy, 'saldo_akhir' => compat_num($saldo_akhir)),
-        'tahun_eoy' => $tahun_eoy, 'eoy_ada' => (bool) $eoy,
+        'kepala' => array('no' => $kode_rekening, 'nama' => $nama_rekening, 'saldo_awal' => $saldo_mulai, 'saldo_akhir' => compat_num($saldo_akhir)),
+        'tahun_eoy' => $tahun_eoy, 'eoy_ada' => (bool) $eoy, 'sumber_awal' => $sumber_awal,
         'all' => $all, 'posisi' => $pilih, 'normal' => $normal);
     $total = 0;
     if ($ada_query) {
@@ -218,8 +233,7 @@ if ($aksi === 'rakit') {
             array('Saldo Awal', $k['saldo_awal']), array('Saldo Akhir', $k['saldo_akhir']),
             array('Bulan', $meta['bulan']), array('Tahun', $meta['tahun']),
             array('All data', $meta['all'] ? 'ya' : 'tidak'), array('Posisi / Normal', $meta['posisi'] . ' / ' . $meta['normal']),
-            array('Saldo awal dari', 'saldo_akhir tabel_master_eoy unit 0000 Desember ' . $meta['tahun_eoy']
-                . (empty($meta['eoy_ada']) ? ' (TIDAK DITEMUKAN, dihitung 0)' : '')),
+            array('Saldo awal dari', $meta['sumber_awal']),
         );
         $xml = '';
         foreach ($info as $i => $baris_info) {

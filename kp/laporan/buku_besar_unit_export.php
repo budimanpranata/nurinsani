@@ -106,11 +106,12 @@ if ($aksi === 'mulai') {
     }
 
     // kepala laporan: baris terakhir tabel_master rekening dan unit terpilih (versi lama)
-    $saldo_akhir = $kode_rekening = $nama_rekening = null;
-    foreach (db_semua("select saldo_akhir,kode_rekening,nama_rekening from tabel_master WHERE kode_rekening =? and unit =?", 'ss', $norek, $unit) as $row) {
+    $saldo_akhir = $kode_rekening = $nama_rekening = $tm_saldo_awal = null;
+    foreach (db_semua("select saldo_akhir,saldo_awal,kode_rekening,nama_rekening from tabel_master WHERE kode_rekening =? and unit =?", 'ss', $norek, $unit) as $row) {
         $kode_rekening = $row['kode_rekening'];
         $nama_rekening = $row['nama_rekening'];
         $saldo_akhir = $row['saldo_akhir'];
+        $tm_saldo_awal = $row['saldo_awal'];
     }
     // saldo awal: saldo_awal EOY Desember tahun sebelum tahun terpilih (= saldo per tanggal_awal), unit terpilih;
     // kolom sama dengan Buku Besar KP dan menu unit (perintah user 2026-11-03)
@@ -127,12 +128,27 @@ if ($aksi === 'mulai') {
     }
     $all = $checkbox == "checkbox";
     $saldo_mulai = compat_num($saldo_awal);
+    $sumber_awal = 'saldo_akhir tabel_master_eoy Desember ' . $tahun_eoy;
+    // 2026-11-22 (perintah user, §28): rekening rugi-laba tanpa All data hanya mengambil transaksi bulan terpilih, jadi
+    // saldo awalnya posisi awal bulan itu (rugi-laba dinolkan di EOY): capture tabel_master_konsol unit, bulan & tahun
+    // terpilih (saldo_awal) bila ada; belum ada (bulan berjalan) -> saldo_awal tabel_master. Neraca & All data tetap EOY.
+    if (!$all && $pilih === 'rugi-laba') {
+        $awal_bulan = db_satu("select saldo_awal from tabel_master_konsol WHERE kode_rekening =? and unit =? and month(tanggal_awal)=? and Year(tanggal_awal)=?",
+            'ssss', $norek, $unit, $bulan, $tahun);
+        if ($awal_bulan) {
+            $saldo_mulai = compat_num($awal_bulan['saldo_awal']);
+            $sumber_awal = 'saldo_awal tabel_master_konsol bulan ' . $bulan . ' tahun ' . $tahun;
+        } else {
+            $saldo_mulai = compat_num($tm_saldo_awal);
+            $sumber_awal = 'saldo_awal tabel_master (bulan berjalan; capture konsol bulan ' . $bulan . ' tahun ' . $tahun . ' belum ada)';
+        }
+    }
     $ada_query = $pilih === 'Neraca' || $pilih === 'rugi-laba';
     $meta = array('jenis' => 'buku_besar_unit_kp', 'userid' => $userid, 'unit' => $unit, 'norek' => $norek, 'bulan' => $bulan, 'tahun' => $tahun,
-        'tahun_eoy' => $tahun_eoy,
+        'tahun_eoy' => $tahun_eoy, 'sumber_awal' => $sumber_awal,
         'debet_normal' => $normal == 'debet', 'bulan_saja' => !$all && $pilih === 'rugi-laba', 'ada_query' => $ada_query,
         'saldo' => $saldo_mulai, 'saldo_mulai' => $saldo_mulai, 'id_akhir' => 0, 'baris' => 1, 'selesai' => 0, 'tot_debet' => 0, 'tot_kredit' => 0,
-        'kepala' => array('no' => $kode_rekening, 'nama' => $nama_rekening, 'saldo_awal' => compat_num($saldo_awal), 'saldo_akhir' => compat_num($saldo_akhir)),
+        'kepala' => array('no' => $kode_rekening, 'nama' => $nama_rekening, 'saldo_awal' => $saldo_mulai, 'saldo_akhir' => compat_num($saldo_akhir)),
         'all' => $all, 'posisi' => $pilih, 'normal' => $normal);
     $total = 0;
     if ($ada_query) {
@@ -214,7 +230,7 @@ if ($aksi === 'rakit') {
         $info = array(
             array('Unit', $meta['unit']), array('No Perkiraan', $k['no']), array('Nama Perkiraan', $k['nama']),
             array('Saldo Awal', $k['saldo_awal']), array('Saldo Akhir', $k['saldo_akhir']),
-            array('Bulan', $meta['bulan']), array('Tahun', $meta['tahun']), array('Saldo awal dari', 'saldo_akhir tabel_master_eoy Desember ' . $meta['tahun_eoy']),
+            array('Bulan', $meta['bulan']), array('Tahun', $meta['tahun']), array('Saldo awal dari', $meta['sumber_awal']),
             array('All data', $meta['all'] ? 'ya' : 'tidak'), array('Posisi / Normal', $meta['posisi'] . ' / ' . $meta['normal']),
         );
         $xml = '';
