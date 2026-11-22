@@ -198,7 +198,8 @@ $update=db_jalankan("UPDATE loan SET status='CETAK',gol ='1' where cif=?", 's', 
                 values(?,?,?,?,?,?,?,'0','',?,?,?,?)", 'sssssssssss', (string) $reff, (string) $no_anggota, (string) $x1, (string) $pokok, (string) $ijaroh, (string) $awal_hari, (string) (isset($awal) ? $awal : ''), (string) $cif, (string) $unit, (string) $cao, (string) $code_kel) or die(mysql_error());
                            
                 }
-                db_jalankan("delete from pinjaman_detail_temp where tgl_jatuh_tempo in (select tgl_libur from param_libur where tgl_libur=pinjaman_detail_temp.tgl_jatuh_tempo)");
+                // 2026-11-22 (perintah user): dibatasi anggota ini (dulu tanpa id_pinjam -> minggu libur jadwal anggota lain yang kartunya belum dicetak ikut terhapus, cicilan bolong)
+                db_jalankan("delete from pinjaman_detail_temp where tgl_jatuh_tempo in (select tgl_libur from param_libur where tgl_libur=pinjaman_detail_temp.tgl_jatuh_tempo) and id_pinjam=?", 's', (string) $no_anggota);
                 // @count harus di koneksi yang sama dengan UPDATE berikutnya (db_ni() selalu koneksi yang sama)
                 $up=db_jalankan("SET @count = 0");
                 $update=db_jalankan("UPDATE pinjaman_detail_temp SET cicilan=@count:=@count+1 where id_pinjam=? ORDER BY cicilan", 's', (string) $no_anggota);

@@ -197,7 +197,8 @@ $tgl_system = $cek['param_tgl'];
                     values('$reff','$no_anggota','$x1','$pokok','$ijaroh','$awal_hari','$awal_hari','0','','$cif','$unit','$cao','$code_kel')") ;
                                
                     }
-                    db_query($con,"delete from pinjaman_detail_temp where tgl_jatuh_tempo in (select tgl_libur from param_libur where tgl_libur=pinjaman_detail_temp.tgl_jatuh_tempo)");
+                    // 2026-11-22 (perintah user): dibatasi anggota ini (dulu tanpa id_pinjam -> minggu libur jadwal anggota lain yang kartunya belum dicetak ikut terhapus, cicilan bolong)
+                    db_query($con,"delete from pinjaman_detail_temp where tgl_jatuh_tempo in (select tgl_libur from param_libur where tgl_libur=pinjaman_detail_temp.tgl_jatuh_tempo) and id_pinjam='$no_anggota'");
                     $up=db_query($con,"SET @count = 0;");
                     $update=db_query($con,"UPDATE pinjaman_detail_temp SET cicilan=@count:=@count+1 where id_pinjam='$no_anggota' ORDER BY cicilan");
                     db_query($con,"delete from pinjaman_detail_temp where cicilan > '$Tenor' AND cif='$cif'");   
