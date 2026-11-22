@@ -30,7 +30,9 @@ while($row = mysql_fetch_array($result)){
 $unit=$row['kode_branch'];
 }
 
-$date=date('Y-m-d');	
+$date=date('Y-m-d');
+// 2026-11-22 (perintah user, P3-7): hanya booking yang masih menunggu proses (Booking Debet) yang disaring; dulu semua CIF yang
+// pernah di-booking (termasuk Done) tidak pernah muncul lagi
 $query = "
 select 
 tunggakan.unit,
@@ -53,7 +55,7 @@ plafond
 from tunggakan
 inner join loan on loan.cif = tunggakan.cif
 left join kelompok on kelompok.code_kel = loan.code_kel
-Where loan.unit='$unit' and os > 0 and kelompok.code_kel='$code_kel' and loan.cif not in (select cif from booking_debet )
+Where loan.unit='$unit' and os > 0 and kelompok.code_kel='$code_kel' and loan.cif not in (select cif from booking_debet where status_booking='Booking Debet' )
 group by tunggakan.cif
 HAVING sum(KREDIT-DEBIT) > 0
 ";

@@ -105,7 +105,10 @@ if ($checbox) {
 		}
 
              $input ="Insert into booking_debet (cif,simpanan,tunggakan,tgl_booking,status_booking)
-	 VALUES('$cif','$simpanan','$ada_tunggak','$tgl_system','Booking Debet')";
+	 VALUES('$cif','$simpanan','$ada_tunggak','$tgl_system','Booking Debet')
+	 ON DUPLICATE KEY UPDATE simpanan=VALUES(simpanan), tunggakan=VALUES(tunggakan), tgl_booking=VALUES(tgl_booking), status_booking=VALUES(status_booking)";
+	 // 2026-11-22 (perintah user, P3-7): anggota yang bookingnya sudah Done / Saldo Tidak Cukup / Tidak Ada Tunggakan boleh
+	 // di-booking lagi -> baris lama diperbarui (dulu INSERT gagal karena PK cif)
 	  $inputtrnsk = db_query ($con,$input);
 		
 
