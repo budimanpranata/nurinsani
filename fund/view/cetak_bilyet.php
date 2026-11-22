@@ -20,6 +20,8 @@ if ((isset($_SESSION['level']) ? $_SESSION['level'] : '') != "admin") {
 }
 require_once __DIR__ . '/../../inc/enkripsi.php';
 require_once __DIR__ . '/../../inc/cetak_deposito.php';
+require_once __DIR__ . '/../../inc/csrf.php';
+tolak_lintas_situs(); // 2026-11-22 (pentest T-5): halaman ini mengubah deposito.status_print saat dibuka; tolak link dari situs lain
 include "../../indo_tgl.php";
 $kode = isset($_GET['kd']) ? trim((string) $_GET['kd']) : '';
 $reprint = isset($_GET['reprint']) ? trim((string) $_GET['reprint']) : '';

@@ -75,6 +75,32 @@ function token_sekali_pakai($kunci, $token)
     return false;
 }
 
+/**
+ * 2026-11-22 (perintah user, sisa pentest T-5): halaman cetak yang MENULIS data lewat GET (link biasa) ditolak bila
+ * dibuka dari situs lain. Cookie SameSite=Lax tetap terkirim pada link GET lintas situs, jadi token POST tidak cukup.
+ * Browser modern mengirim Sec-Fetch-Site: same-origin (dari menu aplikasi), none (diketik / bookmark), same-site,
+ * atau cross-site (link dari situs lain). Hanya cross-site yang ditolak (403); tanpa header (browser lama) tetap jalan.
+ * Panggil di awal halaman, sebelum query tulis.
+ */
+function tolak_lintas_situs()
+{
+    $asal = isset($_SERVER['HTTP_SEC_FETCH_SITE']) ? strtolower(trim((string) $_SERVER['HTTP_SEC_FETCH_SITE'])) : '';
+    if ($asal !== 'cross-site') {
+        return;
+    }
+    while (ob_get_level() > 0) {
+        ob_end_clean();
+    }
+    if (!headers_sent()) {
+        http_response_code(403);
+        header('Cache-Control: no-store');
+        header('Content-Type: text/html; charset=utf-8');
+    }
+    echo '<!DOCTYPE html><html><head><meta charset="utf-8"><title>Ditolak</title></head><body>'
+        . '<p style="font-family:sans-serif">Halaman ini hanya bisa dibuka dari menu aplikasi.</p></body></html>';
+    exit;
+}
+
 /** Hentikan permintaan (419) bila token tidak cocok. Panggil di awal pemrosesan POST. */
 function csrf_wajib($mode = 'halaman')
 {

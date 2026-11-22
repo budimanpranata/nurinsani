@@ -1,6 +1,8 @@
 <?php require_once __DIR__ . '/koneksi_db.php';
 session_start();
 ob_start();
+require_once __DIR__ . '/inc/csrf.php';
+tolak_lintas_situs(); // 2026-11-22 (pentest T-5): halaman ini menulis total_laris saat dibuka; tolak link dari situs lain
 $userid=$_SESSION['userid'];
 $tgl_jatuh_tempo=$_SESSION['jatuh'];
 $cao=$_SESSION['code_cao'];

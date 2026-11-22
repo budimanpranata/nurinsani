@@ -2,6 +2,8 @@
 session_start();
 require_once __DIR__ . '/inc/cek_login.php';
 wajib_level('unit');
+require_once __DIR__ . '/inc/csrf.php';
+tolak_lintas_situs(); // 2026-11-22 (pentest T-5): halaman ini memindah jadwal & mengubah status loan saat dibuka; tolak link dari situs lain
 ob_start();
     $userid=$_SESSION['userid'];
 include "conn2.php";

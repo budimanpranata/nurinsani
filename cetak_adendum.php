@@ -3,7 +3,9 @@ error_reporting(0);
 session_start();  
 require_once __DIR__ . '/inc/cek_login.php';
 wajib_level('unit');
-ob_start();  
+require_once __DIR__ . '/inc/csrf.php';
+tolak_lintas_situs(); // 2026-11-22 (pentest T-5): halaman ini memindah jadwal covid saat dibuka; tolak link dari situs lain
+ob_start();
 
 $userid=$_SESSION['userid'];
 $pilih=$_SESSION['spilih'];
