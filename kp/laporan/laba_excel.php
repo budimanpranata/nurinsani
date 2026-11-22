@@ -3,8 +3,11 @@ session_start();
 ob_start();
 $userid=$_SESSION['userid'];
 $userid=$_SESSION['userid'];
-$tgl_cari=$_SESSION['tgl_caris'];
-$unit=$_SESSION['units'];
+// 2026-11-22 (§32, perintah user): unit = unit user (1010) seperti layar kp/laporan/new_laba.php; dulu
+// $_SESSION['units'] (diisi menu Neraca Konsol / Buku Besar Unit) sehingga Excel bisa berisi unit lain atau kosong.
+// tgl_caris tidak dipakai di file ini.
+$u_excel = isset($_SESSION['userid']) ? db_satu("select kode_branch from user where userid=?", 's', (string) $_SESSION['userid']) : null;
+$unit = $u_excel ? (string) $u_excel['kode_branch'] : '';
 
 
 //cek apakah user sudah login
@@ -67,6 +70,11 @@ $shu_sb_pajak_mut_kredit=$shu_ops_mut_kredit + $shu_non_ops_mut_kredit;
 $shu_sb_pajak_akhir=$shu_ops_akhir + $shu_ops_non_akhir;
 
 //estimasi
+// 2026-11-22 (§32, perintah user): estimasi pajak = saldo 59999 kp (hasil EOM); dulu variabelnya tidak pernah diisi -> 0
+// dan baris "setelah pajak" mencetak SHU sebelum pajak
+require_once __DIR__ . '/../../inc/rugi_laba_pdf.php';
+$estimasi_pajak = estimasi_pajak_rl($unit);
+$shu_after_pajak_kp = $shu_sb_pajak_akhir - $estimasi_pajak;
 
 $shu_after_pajak_awal=$shu_sb_pajak_awal - $estimasi_awal;
 $shu_after_pajak_jalan=$shu_sb_pajak_jalan - $estimasi_jalan;
@@ -160,12 +168,12 @@ echo '<tr class="grey">
 	 echo '<tr class="grey">
 		<td colspan="3"><b>ESTIMASI TAKSIRAN PAJAK PENGHASILAN</td>
 		
-		<td><b>' . number_format(compat_num($shu_ops_akhir1), 0, ',', '.') . '</td>
+		<td><b>' . number_format(compat_num($estimasi_pajak), 0, ',', '.') . '</td>
 	 </tr>';
 echo '<tr class="grey">
 		<td colspan="3"><b>SHU TAHUN BERJALAN SETELAH PAJAK</td>
-		
-		<td><b>' . number_format(compat_num($shu_sb_pajak_akhir), 0, ',', '.') . '</td>
+
+		<td><b>' . number_format(compat_num($shu_after_pajak_kp), 0, ',', '.') . '</td>
 	 </tr>	 	 
 	 
 

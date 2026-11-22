@@ -8,7 +8,8 @@
  *     nilai mutlak)
  *   - (diperbaiki 2026-11-21, §32) SHU sebelum pajak = SHU operasional + SHU non operasional bertanda, sama dengan Excel
  *     kp dan versi unit (dulu nilai mutlak SHU non operasional)
- *   - estimasi pajak tidak pernah diisi (0), sehingga SHU setelah pajak = SHU sebelum pajak
+ *   - (diperbaiki 2026-11-22, §32) estimasi pajak = saldo rekening 59999 kp (dulu tidak pernah diisi -> 0, sehingga SHU
+ *     setelah pajak = SHU sebelum pajak)
  */
 require_once __DIR__ . '/../../inc/tampilan.php';
 session_start();
@@ -53,8 +54,9 @@ $shu_ops_non_akhir = $nilai($total_pendapan_n, 'saldo_akhir') - $nilai($total_be
 // 2026-11-21 (perintah user, §32): SHU non ops bertanda, sama dengan Excel kp (kp/laporan/laba_excel.php) dan versi unit.
 // Dulu nilai mutlak: rugi non operasional malah menambah SHU sebelum pajak.
 $shu_sb_pajak_akhir = $shu_ops_akhir + $shu_ops_non_akhir;
-// versi lama: estimasi pajak ($estimasi_jalan, $shu_ops_akhir1) tidak pernah diisi -> 0
-$estimasi_pajak = 0;
+// 2026-11-22 (§32, perintah user): estimasi pajak = saldo 59999 kp (hasil EOM); dulu tidak pernah diisi -> 0
+require_once __DIR__ . '/../../inc/rugi_laba_pdf.php';
+$estimasi_pajak = estimasi_pajak_rl($unit);
 $shu_after_pajak_akhir = $shu_sb_pajak_akhir - $estimasi_pajak;
 
 /** Format angka laporan (titik ribuan, tanpa desimal) seperti versi lama. */
