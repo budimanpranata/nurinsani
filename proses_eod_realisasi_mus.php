@@ -14,6 +14,18 @@ mysqli_autocommit($con,FALSE);
  
 
 include "function.php";
+// 2026-11-22 (perintah user, P2-10): query proses per anggota dihitung gagalnya. Bila ada yang gagal, proses anggota itu
+// dibatalkan (ROLLBACK TO SAVEPOINT; loan_detail MyISAM dihapus manual) dan anggota dicatat ke gagal_loan supaya tampil di
+// menu Realisasi -> Monitoring Gagal EOD. Dulu tetap di-commit walau ada query gagal (data setengah).
+function eod_q($con, $sql)
+{
+    $r = db_query($con, $sql);
+    if ($r === false) {
+        $GLOBALS['__eod_gagal'] = (isset($GLOBALS['__eod_gagal']) ? $GLOBALS['__eod_gagal'] : 0) + 1;
+        $GLOBALS['__eod_err'] = mysqli_error($con) . ' | ' . substr(preg_replace('/\s+/', ' ', $sql), 0, 150);
+    }
+    return $r;
+}
 
 
 
@@ -78,8 +90,11 @@ left join nisbah on nisbah.cif = calon_loan.cif
             $os_lama=$check['os'];
             if ($os_lama > 0) {
     
-            db_query($con,"insert INTO gagal_loan select * from calon_loan WHERE cif ='$cif'") ;
+            db_query($con,"REPLACE INTO gagal_loan select * from calon_loan WHERE cif ='$cif'") ;
                     }else{
+                // 2026-11-22 (P2-10): titik batal per anggota
+                $GLOBALS['__eod_gagal'] = 0; $GLOBALS['__eod_err'] = ''; $ld_ok = false;
+                mysqli_query($con, "SAVEPOINT sp_anggota");
     
     
                 $kodetr=5;
@@ -88,41 +103,41 @@ left join nisbah on nisbah.cif = calon_loan.cif
                 
                 $kode_transaksi="BU/".$kode_tr;
                 //pencatatan du jurnal realasisi Piutang Murabahaha total jumlah Pokok dan margin
-                db_query($con,"insert into jurnal_umum(kode_transaksi,tanggal_selesai) values('$kode_trans','$tgl_system')");
+                eod_q($con,"insert into jurnal_umum(kode_transaksi,tanggal_selesai) values('$kode_trans','$tgl_system')");
                
                 //Realiasasi Murabahah Debit pada Aset Murabahaha total Plafond
-                db_query($con,"insert  into tabel_transaksi(unit,kode_transaksi,kode_rekening,tanggal_transaksi, jenis_transaksi, keterangan_transaksi,debet,id_admin)
+                eod_q($con,"insert  into tabel_transaksi(unit,kode_transaksi,kode_rekening,tanggal_transaksi, jenis_transaksi, keterangan_transaksi,debet,id_admin)
                 values('$unit','$kode_trans','1472000','$tgl_system','Bukti SYSTEM','$ket','$Plafond','$userid')");
                
                 //Realiasasi Murabahah Debit pada Piutang Murabahaha total jumlah Pokok dan margin
-                db_query($con,"insert  into tabel_transaksi(unit,kode_transaksi,kode_rekening,tanggal_transaksi, jenis_transaksi, keterangan_transaksi,kredit,id_admin)
+                eod_q($con,"insert  into tabel_transaksi(unit,kode_transaksi,kode_rekening,tanggal_transaksi, jenis_transaksi, keterangan_transaksi,kredit,id_admin)
                         values('$unit','$kode_trans','1120000','$tgl_system','Bukti SYSTEM','$ket','$Plafond','$userid')");
                
                // §1 (2026-11-16, perintah user): dulu ke tabel salah ketik rekap_nsibah (tidak ada) sehingga nisbah tidak pernah
                // tercatat; kini rekap_nisbah, sama dengan realisasi manual (realisasi_musyarakah.php).
-               db_query($con,"insert into rekap_nisbah(cif,nisbah,omzet,tgl_realisasi) values('$cif','$nisbah','$omzet','$tgl_system')");
+               eod_q($con,"insert into rekap_nisbah(cif,nisbah,omzet,tgl_realisasi) values('$cif','$nisbah','$omzet','$tgl_system')");
          
-        db_query($con,"delete from loan  WHERE cif ='$cif'");
-        db_query($con,"delete from tunggakan  WHERE cif ='$cif'");
-        db_query($con,"delete from omzet  WHERE cif ='$cif'");	
-        db_query($con,"insert  INTO loan select * from calon_loan WHERE cif ='$cif'") ;
-        db_query($con,"INSERT INTO `loan_detail` (code_kel,buss_date,no_anggota,cif,suffic,Cust_Short_name,Deal_type,bagi_hasil,Tenor,Plafond,unit,Contract_Date,hari_tagih,angsuran,storan,cao,USERID)
+        eod_q($con,"delete from loan  WHERE cif ='$cif'");
+        eod_q($con,"delete from tunggakan  WHERE cif ='$cif'");
+        eod_q($con,"delete from omzet  WHERE cif ='$cif'");	
+        eod_q($con,"insert  INTO loan select * from calon_loan WHERE cif ='$cif'") ;
+        $ld_ok = eod_q($con,"INSERT INTO `loan_detail` (code_kel,buss_date,no_anggota,cif,suffic,Cust_Short_name,Deal_type,bagi_hasil,Tenor,Plafond,unit,Contract_Date,hari_tagih,angsuran,storan,cao,USERID)
                             VALUES ('$code_kel','$buss_date','$no_anggota','$cif','$ke','$Cust_Short_name','$Deal_type','$bagi_hasil','$Tenor','$Plafond','$unit','$murab','$hari','$angsuran','$bulat','$cao','$userid')") ;
                
-    db_query($con,"insert into simpanan(BUSS_DATE,NOREK,UNIT,CIF,CODE_KEL,KREDIT,TYPE,USERID,KET,REFF,CAO,kode_transaksi)
+    eod_q($con,"insert into simpanan(BUSS_DATE,NOREK,UNIT,CIF,CODE_KEL,KREDIT,TYPE,USERID,KET,REFF,CAO,kode_transaksi)
                 values('$tgl_system','$norek','$unit','$cif','$code_kel','$Plafond','01','$userid','$ket','','$cao','$kode_trans')");           
-    db_query($con,"insert into simpanan(BUSS_DATE,NOREK,UNIT,CIF,CODE_KEL,DEBIT,TYPE,KREDIT,USERID,KET,REFF,CAO,kode_transaksi)
+    eod_q($con,"insert into simpanan(BUSS_DATE,NOREK,UNIT,CIF,CODE_KEL,DEBIT,TYPE,KREDIT,USERID,KET,REFF,CAO,kode_transaksi)
                 values('$tgl_system','$norek','$unit','$cif','$code_kel','$Plafond','01','0','$userid','$ket','','$cao','$kode_trans')");
-    $update=db_query($con,"UPDATE simpanan SET blok='', TYPE='01' where cif='$cif' and type ='02' ");
-    $update=db_query($con,"UPDATE loan SET status='CETAK',gol ='1', deal_produk ='3' where cif='$cif'");
+    $update=eod_q($con,"UPDATE simpanan SET blok='', TYPE='01' where cif='$cif' and type ='02' ");
+    $update=eod_q($con,"UPDATE loan SET status='CETAK',gol ='1', deal_produk ='3' where cif='$cif'");
     
                
                
-                db_query($con,"INSERT INTO `rek_loan` (tgl_realisasi,unit,no_anggota,saldo_kredit,debet,tipe,ket,USERID,STATUS,cif,AO)
+                eod_q($con,"INSERT INTO `rek_loan` (tgl_realisasi,unit,no_anggota,saldo_kredit,debet,tipe,ket,USERID,STATUS,cif,AO)
                         VALUES ('$buss_date','$unit','$no_anggota','$os','0','L001','$ket','$userid','REALISASI MURABAHAH','$cif','$cao')") ;
-                db_query($con,"delete from `calon_loan`  WHERE cif ='$cif'");
-               db_query($con,"delete from pinjaman_detail_mus where cif='$cif'"); 
-               db_query($con,"delete from pinjaman_detail where cif='$cif'"); 
+                eod_q($con,"delete from `calon_loan`  WHERE cif ='$cif'");
+               eod_q($con,"delete from pinjaman_detail_mus where cif='$cif'"); 
+               eod_q($con,"delete from pinjaman_detail where cif='$cif'"); 
 //mysqli_query($con,"delete from pinjaman_detail_temp_mus where cif='$cif'"); 
                 //mysqli_query ($con,"insert  into simpanan (BUSS_DATE,NOREK,UNIT,CIF,CODE_KEL,DEBIT,TYPE,KREDIT,USERID,REFF)VALUES('$buss_date','$no_anggota','$unit','$cif','$code_kel','0','01','0','$userid','') ") ;
                    
@@ -133,17 +148,25 @@ left join nisbah on nisbah.cif = calon_loan.cif
                     $x1 ++;
                     $reff="$no_anggota$x1";
                     $awal_hari= date ("Y-m-d", strtotime("+7 DAY", strtotime($awal_hari)));
-                    $update= db_query($con,"INSERT INTO pinjaman_detail_temp_mus (id,id_pinjam,cicilan,angsuran_pokok,bunga,tgl_jatuh_tempo,tgl_bayar,jumlah_bayar,ket,cif,unit,ao,code_kel)
+                    $update= eod_q($con,"INSERT INTO pinjaman_detail_temp_mus (id,id_pinjam,cicilan,angsuran_pokok,bunga,tgl_jatuh_tempo,tgl_bayar,jumlah_bayar,ket,cif,unit,ao,code_kel)
                     values('$reff','$no_anggota','$x1','$pokok','$ijaroh','$awal_hari','$awal_hari','0','','$cif','$unit','$cao','$code_kel')") ;
                                
                     }
-db_query($con,"delete from pinjaman_detail_temp_mus where cicilan > '$Tenor' AND cif='$cif'");  
+eod_q($con,"delete from pinjaman_detail_temp_mus where cicilan > '$Tenor' AND cif='$cif'");  
     
                            
     
             
        
                
+                // 2026-11-22 (P2-10): ada query gagal -> batalkan proses anggota ini saja, catat ke gagal_loan & log cron
+                if (!empty($GLOBALS['__eod_gagal'])) {
+                    mysqli_query($con, "ROLLBACK TO SAVEPOINT sp_anggota");
+                    if ($ld_ok) db_query($con, "delete from loan_detail where cif='$cif' and Contract_Date='$murab' and suffic='$ke' limit 1");
+                    db_query($con, "REPLACE INTO gagal_loan select * from calon_loan WHERE cif ='$cif'");
+                    echo "GAGAL realisasi $cif $Cust_Short_name: " . $GLOBALS['__eod_err'] . " (dibatalkan, dicatat di gagal_loan)\n";
+                }
+                mysqli_query($con, "RELEASE SAVEPOINT sp_anggota");
         }
     
        

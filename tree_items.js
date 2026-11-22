@@ -27,6 +27,7 @@ var TREE_ITEMS = [
 		 	['Wakalah', 'realisasi_wakalah.php'],
 			['Murabahah', 'realisasi.php'],
 			['Musyarakah', 'realisasi_musyarokah.php'],
+			['Monitoring Gagal EOD', 'monitoring_gagal_eod.php'],
 			['Tagihan Kelompok', 'tab.php'],
 			['Hapus Buku', './transaksi/hapus_buku.php'],
 

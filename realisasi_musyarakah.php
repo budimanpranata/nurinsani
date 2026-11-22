@@ -80,7 +80,8 @@ foreach ($cekbox as $value) {
     $os_lama = $check ? $check['os'] : null;
     if ($os_lama > 0) {
         // seperti EOD: anggota yang masih punya OS dicatat ke gagal_loan dan tidak direalisasi
-        db_jalankan("insert INTO gagal_loan select * from calon_loan WHERE cif = ?", 's', (string) $cif);
+        // 2026-11-22 (P2-10): REPLACE (dulu INSERT gagal diam-diam bila CIF sudah pernah tercatat -> catatan lama tidak diperbarui)
+        db_jalankan("REPLACE INTO gagal_loan select * from calon_loan WHERE cif = ?", 's', (string) $cif);
         continue;
     }
 
