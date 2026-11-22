@@ -26,6 +26,7 @@ $unit = '1010';
 if (isset($_POST['hitung_shu'])) {
     $pesan_alert = array();
     $gagal = array();
+    $gagal_awal = db_jumlah_gagal();
     db_jalankan("UPDATE tabel_master set saldo_awal ='0',saldo_akhir='0',mut_debet='0',mut_kredit='0',sisa_debet='0',sisa_kredit='0' where LINE_BALANCE ='HEADING' and unit =? and kode_rekening not in ('2500000')", 's', $unit);
     db_jalankan("UPDATE tabel_master set saldo_akhir='0' where LINE_BALANCE ='DETAIL' and unit =?", 's', $unit);
     db_jalankan("update tabel_master set saldo_akhir = sisa_debet - sisa_kredit where gr_neraca ='AKTIVA' and unit =?", 's', $unit);
@@ -106,6 +107,11 @@ if (isset($_POST['hitung_shu'])) {
     } else {
         $gagal[] = 'Hapus data lama tabel_rugi_laba gagal: ' . db_error_terakhir();
     }
+    // 2026-11-22 (§33): alert sukses lama hanya melihat update terakhir; kini setiap query yang gagal ikut dilaporkan
+    $jumlah_gagal = db_jumlah_gagal() - $gagal_awal;
+    if ($jumlah_gagal > 0) {
+        $gagal[] = $jumlah_gagal . ' update saldo gagal (terakhir: ' . db_error_terakhir() . '). Hasil belum lengkap, tekan Proses lagi.';
+    }
     $_SESSION['pesan_shu'] = array('alert' => $pesan_alert, 'gagal' => $gagal, 'berhasil' => (bool) $update_shu);
     header('Location: hitung_shu.php');
     exit;
@@ -134,6 +140,9 @@ if ($hasil) {
     <form action="hitung_shu.php" method="post" name="postform" id="myform">
       <button type="submit" name="hitung_shu" value="Proses" class="btn btn-ni px-4" data-konfirmasi="Apakah Anda Yakin?">Proses</button>
     </form>
+    <?php else: ?>
+    <div class="alert alert-warning mb-0">Masih ada <?php echo number_format($cek_posting, 0, ',', '.'); ?> transaksi 1010 belum diposting
+      (<?php echo h($tgl_awal); ?> s.d. <?php echo h($tgl_akhir); ?>). Jalankan Posting Ulang dulu, lalu buka menu ini lagi.</div>
     <?php endif; ?>
     <?php if ($hasil): ?>
       <?php foreach ($hasil['gagal'] as $g): ?>

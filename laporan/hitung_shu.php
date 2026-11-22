@@ -7,6 +7,9 @@
  * (prepared statement) yang berubah. Satu-satunya penyesuaian: 4 update saldo_jalan yang di versi lama dijalankan ulang
  * untuk setiap rekening rugi-laba kini dijalankan sekali saja (hasilnya sama, tidak bergantung pada baris).
  * Tabel_master MyISAM, jadi proses tidak bisa dibungkus transaksi DB (sama dengan versi lama).
+ * 2026-11-22 (§33, perintah user, hanya tampilan): setiap query gagal ikut dilaporkan (dulu alert sukses hanya melihat
+ * update terakhir); bila ada transaksi belum diposting tampil pesan jumlahnya (dulu tombol hilang tanpa penjelasan);
+ * konfirmasi SweetAlert (data-konfirmasi) dan proses lalu kembali ke halaman ini (refresh tidak memproses ulang).
  */
 require_once __DIR__ . '/../inc/tampilan.php';
 session_start();
@@ -25,10 +28,12 @@ foreach (db_semua("select kode_branch from user where userid=?", 's', (string) $
 }
 $unit = (string) $unit;
 
-$pesan_alert = array();
-$berhasil = false;
-$gagal = array();
+ob_start();
 if (isset($_POST['hitung_shu'])) {
+    $pesan_alert = array();
+    $berhasil = false;
+    $gagal = array();
+    $gagal_awal = db_jumlah_gagal();
 
     db_jalankan("UPDATE tabel_master set saldo_awal ='0',saldo_akhir='0',mut_debet='0',mut_kredit='0',sisa_debet='0',sisa_kredit='0' where LINE_BALANCE ='HEADING' and unit =? and kode_rekening not in ('2500000')", 's', $unit);
     db_jalankan("UPDATE tabel_master set saldo_akhir='0' where LINE_BALANCE ='DETAIL' and unit =?", 's', $unit);
@@ -133,7 +138,23 @@ if (isset($_POST['hitung_shu'])) {
     } else {
         $gagal[] = 'Hapus data lama tabel_rugi_laba gagal.';
     }
+
+    // 2026-11-22 (§33): alert sukses lama hanya melihat update terakhir; kini setiap query yang gagal ikut dilaporkan
+    $jumlah_gagal = db_jumlah_gagal() - $gagal_awal;
+    if ($jumlah_gagal > 0) {
+        $gagal[] = $jumlah_gagal . ' update saldo gagal (terakhir: ' . db_error_terakhir() . '). Hasil belum lengkap, tekan Proses lagi.';
+    }
+    // 2026-11-22 (§33): hasil disimpan di sesi lalu kembali ke halaman ini (refresh tidak memproses ulang)
+    $_SESSION['pesan_shu'] = array('alert' => $pesan_alert, 'gagal' => $gagal, 'berhasil' => $berhasil);
+    header('Location: hitung_shu.php');
+    exit;
 }
+
+$hasil = isset($_SESSION['pesan_shu']) ? $_SESSION['pesan_shu'] : null;
+unset($_SESSION['pesan_shu']);
+$pesan_alert = $hasil ? $hasil['alert'] : array();
+$gagal = $hasil ? $hasil['gagal'] : array();
+$berhasil = $hasil ? (bool) $hasil['berhasil'] : false;
 
 // tombol Proses hanya bila semua transaksi unit sudah diposting
 $cek = db_satu("select count(*) as n from tabel_transaksi where keterangan_posting='' and unit =?", 's', $unit);
@@ -150,8 +171,10 @@ foreach ($pesan_alert as $pesan) {
     <p class="text-muted fst-italic">Proses bisa dilakukan setelah semua data diposting.</p>
     <?php if ($cek_posting === 0): ?>
     <form action="?<?php echo paramEncrypt('page=../laporan/hitung_shu') ?>" method="post" name="postform" id="myform">
-      <button type="submit" name="hitung_shu" value="Proses" class="btn btn-primary" onclick="return confirm('Apakah Anda Yakin?')">Proses</button>
+      <button type="submit" name="hitung_shu" value="Proses" class="btn btn-primary" data-konfirmasi="Apakah Anda Yakin?">Proses</button>
     </form>
+    <?php else: ?>
+    <div class="alert alert-warning mb-0">Masih ada <?php echo number_format($cek_posting, 0, ',', '.'); ?> transaksi belum diposting. Jalankan menu Posting Jurnal dulu, lalu buka menu ini lagi.</div>
     <?php endif; ?>
     <?php foreach ($gagal as $g): ?>
     <div class="alert alert-danger mt-3 mb-0"><?php echo h($g); ?></div>
