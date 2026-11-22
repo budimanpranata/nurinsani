@@ -30,6 +30,12 @@ while ($row = db_fetch_assoc($res_loan)){
 $cif = $row['cif'];
 $tgl_akad = $row['tgl_murab'];
 $tenor = (int)$row['Tenor'];
+// 2026-11-22 (perintah user, P3-2 #2): tgl_murab kosong/0000 atau tenor <= 0 dilewati (dulu jatuh tempo dihitung dari
+// hari ini / tanggal rusak -> pinjaman lewat tempo tampak belum jatuh tempo)
+if (trim((string) $tgl_akad) === '' || strpos((string) $tgl_akad, '0000-00-00') === 0 || $tenor <= 0) {
+    echo "Dilewati (tgl_murab/tenor tidak valid): $cif\n";
+    continue;
+}
 
 $maturity_db = date('Y-m-d',strtotime($row['maturity_date']));
 
@@ -61,97 +67,16 @@ $update_count++;
 //mysqli_autocommit($con,FALSE);
  
 
+// 2026-11-22 (perintah user, P3-2 #1): enam UPDATE golongan (rumus per deal_produk + aturan jatuh tempo) memakai helper
+// bersama inc/kolektabilitas.php (SQL sama persis dengan versi ini dan dengan menu Report PPAP unit & Hitung PPAP KP), kini
+// dalam satu transaksi per unit: bila gagal, gol unit itu tetap hasil kemarin (dulu tanpa transaksi -> bisa setengah).
+require_once __DIR__ . '/inc/kolektabilitas.php';
 $ambilunit=db_query($con,"select unit from loan where os > 0 group by unit order by unit");
 while($row_hit_mut=db_fetch_array($ambilunit)){
-    $unit=$row_hit_mut['unit'];	
-
-    
-db_query($con,"update loan
-set gol=(SELECT
-CASE
-WHEN ROUND(sum(KREDIT-DEBIT)/(angsuran+2500)) between 1 and 3 then '1'
-WHEN ROUND(sum(KREDIT-DEBIT)/(angsuran+2500)) between 4 and 6 then '2'
-WHEN ROUND(sum(KREDIT-DEBIT)/(angsuran+2500)) between 7 and 12 then '3'
-WHEN ROUND(sum(KREDIT-DEBIT)/(angsuran+2500)) > 12 then '4'
-else '1' end
-FROM
-tunggakan
-where loan.cif=tunggakan.CIF
-) where loan.unit ='$unit' and deal_produk='2' and os > 0");
-       
-db_query($con,"update loan
-set gol=(SELECT
-
-CASE
-WHEN sum(KREDIT-DEBIT)/(angsuran) between 1 and 3 then '1'
-WHEN sum(KREDIT-DEBIT)/(angsuran) between 4 and 6 then '2'
-WHEN sum(KREDIT-DEBIT)/(angsuran) between 7 and 12 then '3'
-WHEN sum(KREDIT-DEBIT)/(angsuran) > 12 then '4'
-else '1' end
-FROM
-tunggakan
-where loan.cif=tunggakan.CIF
-) where loan.unit ='$unit' and deal_produk='1' and os > 0");
-       
-db_query($con,"update loan
-set gol=(SELECT
-
-CASE
-WHEN sum(KREDIT-DEBIT)/(pokok+ijaroh) between 1 and 3 then '1'
-WHEN sum(KREDIT-DEBIT)/(pokok+ijaroh) between 4 and 6 then '2'
-WHEN sum(KREDIT-DEBIT)/(pokok+ijaroh) between 7 and 12 then '3'
-WHEN sum(KREDIT-DEBIT)/(pokok+ijaroh) > 12 then '4'
-else '1' end
-FROM
-tunggakan
-where loan.cif=tunggakan.CIF
-) where loan.unit ='$unit' and deal_produk='3' and os > 0");
-       
-db_query($con,"update loan
-set gol=(SELECT
-CASE
-WHEN ROUND(sum(KREDIT-DEBIT)/(angsuran+2500)) between 1 and 3 then '1'
-WHEN ROUND(sum(KREDIT-DEBIT)/(angsuran+2500)) between 4 and 6 then '2'
-WHEN ROUND(sum(KREDIT-DEBIT)/(angsuran+2500)) between 7 and 12 then '3'
-WHEN ROUND(sum(KREDIT-DEBIT)/(angsuran+2500)) > 12 then '4'
-else '1' end
-FROM
-tunggakan
-where loan.cif=tunggakan.CIF
-) where loan.unit ='$unit' and deal_produk='4' and os > 0");
-       
-    
-       
-
-db_query($con,"update loan
-set gol = 
-CASE
-	WHEN datediff('$tgl',maturity_date) between 1 and 30 then '2'
-	WHEN datediff('$tgl',maturity_date) between 31 and 60 then '3'
-	WHEN datediff('$tgl',maturity_date) > 60 then '4'
-	else '2' 
-END
-	where 
-	unit ='$unit' 
-	and maturity_date <= '$tgl' 
-	and os > 0 AND gol in ('1','2')");  
-
-
-db_query($con,"update loan
-set gol = 
-CASE
-	WHEN datediff('$tgl',maturity_date) between 1 and 59 then '3'
-	WHEN datediff('$tgl',maturity_date) between 31 and 60 then '3'
-	WHEN datediff('$tgl',maturity_date) > 60 then '4'
-	else '3' 
-END
-	where 
-	unit ='$unit' 
-	and maturity_date <= '$tgl' 
-	and os > 0 AND gol in ('3')");     
-    
-                        
-
+    $unit=$row_hit_mut['unit'];
+    if (!hitung_kolektabilitas($unit, $tgl)) {
+        echo "GAGAL hitung kolektabilitas unit $unit (dibatalkan, gol tetap hasil sebelumnya)\n";
+    }
 }
 
  
